@@ -3,11 +3,13 @@
 #include "../lunokiot_config.hpp"
 
 #include "Shutdown.hpp"
+#include "../system/SystemEvents.hpp"
 
 #include "../static/img_poweroff_fullscreen.c"
 
-ShutdownApplication::ShutdownApplication() {
-    LunokIoTApplication();
+ShutdownApplication::ShutdownApplication(bool restart): restart(restart) {
+    SaveDataBeforeShutdown();
+
     ttgo->shake();
 
     nextRedraw=0;
@@ -48,20 +50,23 @@ ShutdownApplication::ShutdownApplication() {
 
 bool ShutdownApplication::Tick() {
     if ( nullptr == this->GetCanvas() ) { return false; }
-    unsigned long secsFromBegin = ((millis()-timeFromBegin)/1000);
+    unsigned long milisFromBegin = millis()-timeFromBegin;
     bright-=8;
-    if ( bright > 0 ) {
-        ttgo->setBrightness(bright);
+    if ( bright > 0 ) { ttgo->setBrightness(bright); }
+    if ( milisFromBegin > 2200 ) {
+        ttgo->setBrightness(0);
+        ttgo->tft->fillScreen(TFT_BLACK);
+        if ( restart ) {
+            Serial.println("System restart NOW!");
+            Serial.flush();
+            delay(10);
+            ESP.restart();
+        } else {
+            Serial.println("System shutdown NOW!");
+            Serial.flush();
+            delay(10);
+            ttgo->shutdown();
+        }
     }
-    if ( secsFromBegin == 2 ) {
-        Serial.println("System shutdown!");
-        Serial.flush();
-        delay(10);
-        ttgo->shutdown();
-    }
-    if ( 1 == secsFromBegin ) {
-        ttgo->shake();
-    }
-
     return true;
 }

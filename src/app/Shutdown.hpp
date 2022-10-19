@@ -5,11 +5,12 @@
 
 class ShutdownApplication: public LunokIoTApplication {
     private:
+        bool restart;
         unsigned long nextRedraw;
         unsigned long timeFromBegin;
         int16_t bright=255;
     public:
-        ShutdownApplication();
+        ShutdownApplication(bool restart=false);
         bool Tick();
 };
 
