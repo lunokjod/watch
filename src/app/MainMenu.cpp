@@ -14,7 +14,8 @@
 #include "Playground1.hpp"
 #include "Playground2.hpp"
 #include "Playground3.hpp"
-
+#include "../static/img_mainmenu_provisioning.xbm"
+#include "Provisioning.hpp"
 #include "SetTime.hpp"
 #include "../static/img_mainmenu_settime.xbm"
 
@@ -30,6 +31,7 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new ProvisioningApplication()); } },
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, []() { LaunchApplication(new SetTimeApplication()); } },
     {"Playground3",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication3()); } },
     {"Playground2",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication2()); } },

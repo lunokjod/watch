@@ -15,6 +15,7 @@
 #include "../system/SystemEvents.hpp"
 #include <wifi_provisioning/manager.h>
 
+#include "../static/img_back_32.xbm"
 #include "Watchface.hpp"
 
 // https://github.com/ricmoo/QRCode
@@ -133,88 +134,49 @@ bool ProvisioningApplication::Tick() {
     if ( nullptr == this->GetCanvas() ) { return false; }
 
     if ( false == provisioningStarted ) {
-        BackToWatchface->Interact(touched,touchX,touchY);
-        StartProvisioningButton->Interact(touched,touchX,touchY);
-        ClearProvisioningButton->Interact(touched,touchX,touchY);
+        backBtn->Interact(touched,touchX,touchY);
+        clearProvBtn->Interact(touched,touchX,touchY);
+        startProvBtn->Interact(touched,touchX,touchY);
     }
 
     static unsigned long nextRedraw=0;
     if ( nextRedraw < millis() ) {
+        canvas->fillSprite(canvas->color24to16(0x212121));
         char stepsString[128] = { 0 };
-        // new picture!!!
-        // BGR, but color24to16 seems swaps fine :)
-        this->GetCanvas()->fillSprite(ttgo->tft->color24to16(0x565b71));
-        //this->GetCanvas()->fillSprite(ttgo->tft->color24to16(0x0));
 
-        if ( false == provisioningStarted ) {
-            this->GetCanvas()->drawXBitmap((TFT_WIDTH/2)-(img_provisioning_160_width/2),(TFT_HEIGHT/2)-(img_provisioning_160_height/2), img_provisioning_160_bits, img_provisioning_160_width, img_provisioning_160_height, ttgo->tft->color24to16(0x242424));
-        } else {
+        if ( provisioningStarted ) {
             if ( nullptr != currentQRRendered ) {
                 this->GetCanvas()->setPivot(TFT_WIDTH/2,(TFT_HEIGHT/2));
                 currentQRRendered->pushRotated(this->GetCanvas(),0);
 
             }
         }
-        /*
-        if (nullptr != pop) {
-            this->GetCanvas()->setTextSize(1);
-            this->GetCanvas()->setFreeFont(&FreeMonoBold9pt7b);
-            this->GetCanvas()->setTextDatum(BC_DATUM);
-            this->GetCanvas()->setTextWrap(false,false);
-            int32_t posX = TFT_WIDTH/2;
-            int32_t posY = TFT_HEIGHT-12;
-            sprintf(stepsString,"PoP: %s",pop);
-            this->GetCanvas()->setTextColor(TFT_WHITE);
-            this->GetCanvas()->drawString(stepsString, posX, posY);
-        }*/
-
-        nextRedraw = millis()+100;
+        if ( false == provisioningStarted ) {
+            backBtn->DrawTo(this->GetCanvas());
+            clearProvBtn->DrawTo(this->GetCanvas());
+            startProvBtn->DrawTo(this->GetCanvas());
+        }
+        nextRedraw = millis()+(1000/4);
+        return true;
     }
-
-    if ( false == provisioningStarted ) {
-
-        
-        BackToWatchface->DrawTo(this->GetCanvas());
-
-
-        // clear NVS provisioning
-        ClearProvisioningButton->DrawTo(this->GetCanvas());
-        uint16_t iconColor = ttgo->tft->color24to16(0xffffff);
-        int16_t cx = (ClearProvisioningButton->x + (ClearProvisioningButton->GetCanvas()->height()/2)-(img_trash_48_height/2));
-        int16_t cy = (ClearProvisioningButton->y + (ClearProvisioningButton->GetCanvas()->width()/2)-(img_trash_48_width/2));
-        this->GetCanvas()->drawXBitmap(cx,cy,img_trash_48_bits, img_trash_48_width, img_trash_48_height,iconColor);
-
-        // begin provisioning
-        StartProvisioningButton->DrawTo(this->GetCanvas());
-        cx = (StartProvisioningButton->x + (StartProvisioningButton->GetCanvas()->width()/2)-(img_provisioning_48_width/2));
-        cy = (StartProvisioningButton->y + (StartProvisioningButton->GetCanvas()->height()/2)-(img_provisioning_48_height/2));
-        //x = (StartProvisioningButton->x -(img_trash_48_width/2));
-        //y = (StartProvisioningButton->y -(img_trash_48_height/2));
-        this->GetCanvas()->drawXBitmap(cx,cy,img_provisioning_48_bits, img_provisioning_48_width, img_provisioning_48_height,iconColor);
-     }
-    return true;
+    return false;
 }
 
 ProvisioningApplication::~ProvisioningApplication(){
 
-    if ( nullptr != BackToWatchface ) {
-        ButtonWidget * btnPtr = BackToWatchface;
-        BackToWatchface = nullptr;
-        btnPtr->canvas->deleteSprite();
-        delete btnPtr;
+    if ( nullptr != backBtn ) {
+        delete backBtn;
+        backBtn = nullptr;
     }
-    if ( nullptr != StartProvisioningButton ) {
-        ButtonWidget * btnPtr = StartProvisioningButton;
-        StartProvisioningButton = nullptr;
-        btnPtr->canvas->deleteSprite();
-        delete btnPtr;
+    if ( nullptr != clearProvBtn ) {
+        delete clearProvBtn;
+        clearProvBtn = nullptr;
     }
-    if ( nullptr != ClearProvisioningButton ) {
-        ButtonWidget * btnPtr = ClearProvisioningButton;
-        ClearProvisioningButton = nullptr;
-        btnPtr->canvas->deleteSprite();
-        delete btnPtr;
+    if ( nullptr != startProvBtn ) {
+        delete startProvBtn;
+        startProvBtn = nullptr;
     }
+
     if ( nullptr!= currentQRRendered ) {
         TFT_eSprite * btnPtr = currentQRRendered;
         currentQRRendered = nullptr;
@@ -537,29 +499,20 @@ void BeginProvisioning(void) {
 
 
 ProvisioningApplication::ProvisioningApplication() {
-    LunokIoTApplication();
+    backBtn=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+        LaunchApplication(new WatchfaceApplication());
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
 
-    BackToWatchface = new ButtonWidget(5,155,70,80,[&,this]() {
-        Serial.println("Provisioning: User has rejected the provisioning");
-        Serial.println("Provisioning: @TODO launch watchface here!");
-        //LaunchApplication(new WatchfaceApplication());
-    }, ttgo->tft->color565(54,44,39)); // BRG
-
-    ClearProvisioningButton = new ButtonWidget(5,5,70,70,[&,this]() {
+    clearProvBtn=new ButtonImageXBMWidget(5,5,70,70,[&,this](){
         provisioned=false;
         wifi_prov_mgr_reset_provisioning();
         Serial.println("Provisioning: NVS: Provisioning data destroyed");
-        SaveDataBeforeShutdown();
-        Serial.println("ESP32: -- Restart --");
-        Serial.flush();
-        delay(300);
-        ESP.restart();
-        LaunchApplication(new ShutdownApplication());
-    }, ttgo->tft->color565(0,255,0)); // BRG
-    //ClearProvisioningButton->enabled=provisioned;
-    StartProvisioningButton = new ButtonWidget(90,5,230,140,[&, this]() {
+        LaunchApplication(new ShutdownApplication(true));
+    },img_trash_48_bits,img_trash_48_height,img_trash_48_width,TFT_WHITE,TFT_RED);
+
+    startProvBtn=new ButtonImageXBMWidget(90,5,230,140,[&,this](){
         Serial.printf("Provisioning: %p: Starting provisioning procedure...\n",this);
         BeginProvisioning();
-    }, ttgo->tft->color565(255,0,80)); // BRG
-    StartProvisioningButton->taskStackSize=LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE;
+    },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,ttgo->tft->color24to16(0x2347bc));
+    startProvBtn->taskStackSize=LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE;
 }
