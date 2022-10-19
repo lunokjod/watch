@@ -19,17 +19,19 @@ BatteryApplication::~BatteryApplication() {
 
 BatteryApplication::BatteryApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        this->dirtyFrame = true;
+        this->dirtyFrame = true;    // first full redraw must be
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
 
+    // this KVO launch callback every time PMU_EVENT_BATT_PC differs from last (change detection)
     BattPCEvent = new EventKVO([&, this](){
-        this->dirtyFrame = true;
+        this->dirtyFrame = true; // mark as dirty for full redraw the next Tick
     },PMU_EVENT_BATT_PC);
 }
 bool BatteryApplication::Tick() {
-    btnBack->Interact(touched,touchX, touchY);
-    if ( this->dirtyFrame ) {
+    btnBack->Interact(touched,touchX, touchY); // user touch the button?
+
+    if ( this->dirtyFrame ) { // only refresh when dirty
         if (millis() > nextRedraw ) {
             canvas->fillSprite(TFT_BLACK);
             canvas->pushImage(TFT_WIDTH-90,40,img_battery_empty_160.width,img_battery_empty_160.height, (uint16_t *)img_battery_empty_160.pixel_data);

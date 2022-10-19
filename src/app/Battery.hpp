@@ -1,13 +1,17 @@
 #ifndef __LUNOKIOT__BATTERY_APP__
 #define __LUNOKIOT__BATTERY_APP__
+/*
+ * This app explains the KVO funcionality (callback when bus event received)
+ */
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "../system/Application.hpp"
-#include "../static/img_back_32.xbm"
-#include "Watchface.hpp"
-
-#include "../system/SystemEvents.hpp"
 #include "../system/Datasources/kvo.hpp"
+
+#include "../system/Application.hpp"
+#include "../static/img_back_32.xbm" // back buton image
+#include "Watchface.hpp"             // needed on LaunchApplication
+#include "../system/SystemEvents.hpp"   // the event bus
 
 class BatteryApplication: public LunokIoTApplication {
     private:
