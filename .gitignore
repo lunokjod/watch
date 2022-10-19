@@ -5,3 +5,4 @@
 .vscode/ipch
 _img/
 src/lunokiot_config.hpp
+openWeatherKey.txt

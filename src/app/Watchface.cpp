@@ -58,7 +58,7 @@ extern int16_t downTouchX;
 extern int16_t downTouchY;
 
 extern int batteryPercent;
-const String openWeatherMapApiKey = "b228d64ad499d78d86419fe10a131241";
+extern const String openWeatherMapApiKey;
 
 extern void AlertLedEnable(bool enabled);
 int currentSec=random(0,60);

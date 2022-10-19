@@ -99,6 +99,7 @@ extern double touchDragDistance; // get distance from last drag
 extern int16_t touchDragVectorX; // drag vectorX
 extern int16_t touchDragVectorY; // drag vectorY
 
+const String openWeatherMapApiKey = "@@OPENWEATHER_APIKEY@@";
 
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
 const uint8_t userTall = 197;

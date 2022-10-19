@@ -34,12 +34,13 @@ outputFilename = basePath + "/src/lunokiot_config.hpp"
 templateFilename = basePath + "/tool/lunokiot.hpp.template"
 
 counterFile = basePath + "/tool/.buildCount.txt"
+openWeatherFile = basePath + "/openWeatherKey.txt"
 
 templateFile = open(templateFilename, "r")
 templateData = templateFile.read() 
 templateFile.close()
 buildCount = 0
-
+openweatherKey = ""
 if not os.path.exists(counterFile):
     with open(counterFile,'w') as f:
         f.write(buildCount)
@@ -48,9 +49,13 @@ with open(counterFile,'r') as f:
     buildCount+=1 
 with open(counterFile,'w') as f:
     f.write(str(buildCount))
+with open(openWeatherFile,'r') as f:
+    openweatherKey = f.read()
 
 outputData = templateData.replace("@@BUILD_NUMBER@@", str(buildCount))
 outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
+outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
+
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))
 #outputData = outputData.replace("@@LUNOKIOT_OTA_HOST@@", str(get_ip()))
