@@ -1,0 +1,17 @@
+#ifndef __LUNOKIOT__CHANGEME_APP__
+#define __LUNOKIOT__CHANGEME_APP__
+
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+#include "../system/Application.hpp"
+
+class MainMenuApplication: public LunokIoTApplication {
+    private:
+        unsigned long nextRedraw=0;
+    public:
+        MainMenuApplication();
+        ~MainMenuApplication();
+        bool Tick();
+};
+
+#endif

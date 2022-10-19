@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 _img/
+src/lunokiot_config.hpp

@@ -1,0 +1,17 @@
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+#include "Apptemplate.hpp"
+
+MainMenuApplication::~MainMenuApplication() {
+    
+}
+MainMenuApplication::MainMenuApplication() {
+    
+}
+bool MainMenuApplication::Tick() {
+    if (millis() > nextRedraw ) {
+        nextRedraw=millis()+(1000/2);
+        return true;
+    }
+    return false;
+}

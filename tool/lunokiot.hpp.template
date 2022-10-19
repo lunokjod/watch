@@ -1,0 +1,113 @@
+#ifndef ___LUNOKIOT__CONFIG__GENERATED__
+#define ___LUNOKIOT__CONFIG__GENERATED__
+
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <esp_event.h>
+#include <esp_event_base.h>
+
+#include "system/Application.hpp"
+
+#define uS_TO_S_FACTOR 1000000
+
+#define LUNOKIOT_WAKE_TIME_S 60
+
+// event timewait
+#define LUNOKIOT_EVENT_DONTCARE_TIME_TICKS 5
+#define LUNOKIOT_EVENT_FAST_TIME_TICKS 10
+#define LUNOKIOT_EVENT_TIME_TICKS 100
+#define LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS 1000
+
+// UI LockTimes
+extern SemaphoreHandle_t UISemaphore;
+#define LUNOKIOT_UI_SHORT_WAIT 5
+
+
+#define LUNOKIOT_EVENT_MANDATORY_TIME_TICKS portMAX_DELAY
+
+#define LUNOKIOT_BUILD_NUMBER @@BUILD_NUMBER@@
+#define LUNOKIOT_KEY "@@LUNOKIOT_KEY@@"
+//#define LUNOKIOT_SERIAL "@@LUNOKIOT_SERIALNUMBER@@"
+//#define LUNOKIOT_UNIQUEID "@@LUNOKIOT_UNIQUEID@@"
+//#define LUNOKIOT_OTA_HOST "@@LUNOKIOT_OTA_HOST@@"
+
+extern const unsigned long UITimeout;
+#define LUNOKIOT_TASK_STACK_SIZE 1024*4
+#define LUNOKIOT_APP_STACK_SIZE 1024*8
+#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*16
+
+extern TTGOClass *ttgo;
+extern RTC_DATA_ATTR uint32_t bootCount;
+
+extern bool systemSleep;
+extern unsigned long currentBootTime;
+
+extern esp_event_loop_handle_t systemEventloopHandler;
+
+extern LunokIoTApplication *currentApplication;
+
+extern uint8_t bmaRotation;
+extern float axpTemp;
+extern float bmaTemp;
+extern int batteryPercent;
+extern bool vbusPresent;
+
+extern unsigned long beginBMAActivity;
+extern unsigned long timeBMAActivityStationary;
+extern unsigned long timeBMAActivityWalking;
+extern unsigned long timeBMAActivityRunning;
+extern unsigned long timeBMAActivityInvalid;
+extern unsigned long timeBMAActivityNone;
+extern uint32_t beginStepsBMAActivity;
+extern uint32_t stepsBMAActivityStationary;
+extern uint32_t stepsBMAActivityWalking;
+extern uint32_t stepsBMAActivityRunning;
+extern uint32_t stepsBMAActivityInvalid;
+extern uint32_t stepsBMAActivityNone;
+
+extern const char * currentActivity;
+extern uint32_t stepCount;
+extern int16_t accXMax;
+extern int16_t accXMin;
+extern int16_t accYMax;
+extern int16_t accYMin;
+extern int16_t accZMax;
+extern int16_t accZMin;
+extern int16_t pcX;
+extern int16_t pcY;
+extern int16_t pcZ;
+extern int16_t lpcX;
+extern int16_t lpcY;
+extern int16_t lpcZ;
+extern float degX;
+extern float degY;
+extern float degZ;
+extern int16_t accX;
+extern int16_t accY;
+extern int16_t accZ;
+extern uint32_t FPS;
+const uint32_t MAXFPS = 17;
+
+extern int16_t touchX; // X coordinate from last sample
+extern int16_t touchY; // Y coordinate from last sample
+extern bool touched;   // thumb detected from last sample
+extern double touchDragAngle; // get angle from last drag
+extern double touchDragDistance; // get distance from last drag
+extern int16_t touchDragVectorX; // drag vectorX
+extern int16_t touchDragVectorY; // drag vectorY
+
+
+// https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
+const uint8_t userTall = 197;
+//const uint8_t userTall = 166; // user tall in CM
+const float MAN_STEP_PROPORTION = 0.415;
+const float WOMAN_STEP_PROPORTION = 0.413;
+const float stepDistanceCm = userTall * MAN_STEP_PROPORTION;
+
+extern bool provisioned;
+extern bool provisioningStarted;
+
+#endif
