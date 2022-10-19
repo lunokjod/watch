@@ -20,7 +20,7 @@
 #include "UI/UI.hpp"
 
 #include "../app/Shutdown.hpp"
-#include "../app/Provisioning.hpp"
+#include "../app/Provisioning2.hpp"
 
 #include "../app/Watchface.hpp"
 
@@ -29,6 +29,7 @@ bool systemSleep = false;
 esp_event_loop_handle_t systemEventloopHandler;
 ESP_EVENT_DEFINE_BASE(SYSTEM_EVENTS);
 
+bool provisioned=false;
 int hallData = 0;               // hall sensor data
 bool vbusPresent =false;        // USB connected?
 int batteryPercent;             // -1 if no batt
@@ -458,14 +459,15 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
         if ( ttgo->bl->isOn() ) {
             Serial.println("Event: user wants to put device to sleep");
             ScreenSleep();
+            LaunchApplication(nullptr);
             delay(100);
             DoSleep();
         } else {
             Serial.println("Event: user wants to get a screen");
             TakeSamples();
             //delay(50);
-            ScreenWake();
             LaunchApplication(new WatchfaceApplication());
+            ScreenWake();
             //delay(100);
         }
         /*
@@ -887,13 +889,14 @@ void SystemEventBootEnd() {
 #include <WiFi.h>
 
 bool NetworkHandler() {
-
+    /* Initialize TCP/IP */
+    //ESP_ERROR_CHECK(esp_netif_init());
     provisioned = NVS.getInt("provisioned");
     Serial.printf("lunokIoT: NVS: System provisioned: %s\n",(provisioned?"true":"false"));
 
     if ( false == provisioned ) {
-        Serial.println("lunokIoT: Device not provisioned: Launching 'ProvisioningApplication'...");
-        LaunchApplication(new ProvisioningApplication());
+        Serial.println("lunokIoT: Device not provisioned: Launching 'Provisioning2Application'...");
+        LaunchApplication(new Provisioning2Application());
         return false;
     }
     return true;

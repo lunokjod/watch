@@ -55,9 +55,15 @@ void LaunchApplicationTask(void * data) {
             delete overlay;
             overlay = nullptr;
         }
-        Serial.printf("Application: %p launched!\n", instance);
-        FPS=MAXFPS; // reset refresh rate
-        currentApplication = instance;
+        if ( nullptr == data ) {
+            Serial.println("Application: None");
+            currentApplication = nullptr;
+            ttgo->tft->fillScreen(TFT_BLACK);
+        } else {
+            Serial.printf("Application: %p launched!\n", instance);
+            FPS=MAXFPS; // reset refresh rate
+            currentApplication = instance;
+        }
         xSemaphoreGive( UISemaphore );
     } else {
         Serial.println("Application: ERROR: Unable to get application semaphore");

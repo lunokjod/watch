@@ -11,7 +11,6 @@
 
 #include "system/Application.hpp"
 #include "app/Watchface.hpp"
-#include "app/Provisioning.hpp"
 
 TTGOClass *ttgo;
 
