@@ -51,7 +51,6 @@ bool ShutdownApplication::Tick() {
     unsigned long secsFromBegin = ((millis()-timeFromBegin)/1000);
     bright-=8;
     if ( bright > 0 ) {
-        //Serial.printf("WOOOO: %d\n", bright);
         ttgo->setBrightness(bright);
     }
     if ( secsFromBegin == 2 ) {
