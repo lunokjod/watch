@@ -12,8 +12,6 @@
 #include "system/Application.hpp"
 #include "app/Watchface.hpp"
 #include "app/Provisioning.hpp"
-#include "app/IATest.hpp"
-#include "app/ActivityRecorder.hpp"
 
 TTGOClass *ttgo;
 
@@ -30,9 +28,10 @@ void setup() {
       Serial.setDebugOutput(true);
       esp_log_level_set("*", ESP_LOG_VERBOSE);
   #endif
-  // announe product name
+
+  // announe myself
   Serial.printf("lunokIoT: 'компаньон' #%d//%s// (boot number %u)\n", LUNOKIOT_BUILD_NUMBER, LUNOKIOT_KEY, bootCount);
-  ++bootCount;
+  bootCount++;
   Serial.println("lunokIoT: Init lilyGo TWatch2020 hardware...");
   // lilygo Twatch library dependencies
   ttgo = TTGOClass::getWatch();
@@ -43,30 +42,31 @@ void setup() {
   ttgo->tft->setRotation(0);  //  default correct position, the ttgo code sux
 
   Serial.println("lunokIoT: System initializing...");
-  DrawSplash();
-  ttgo->openBL();
+  DrawSplash(); // simple eyecandy
 
-  NVS.begin();
+  NVS.begin(); // need NVS to get the current configuration
+
   // begin system communications with itself (lunokIoT system)
   SystemEventsStart();
-  AXPIntHandler();
+  AXPIntHandler();  // interrupt handlers
   BMPIntHandler();
   //RTCIntHandler();
-  // first, connect with the user via the screen and buttons!!! (born to serve xD)
+
+  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
   UIStart();
 
-  bool netDone = NetworkHandler();
+  bool netDone = NetworkHandler(); // already provisioned?
 
 
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
   Serial.printf("lunokIoT: Boot time: %lums\n", currentBootTime);
-  SystemEventBootEnd();
+
+  SystemEventBootEnd(); // notify system end boot procedure
 
   if ( netDone ) {
     LaunchApplication(new WatchfaceApplication());
-//    LaunchApplication(new ActivityRecorderApplication());
   }
 }
 
-void loop() { vTaskDelete( NULL ); }
+void loop() { vTaskDelete( NULL ); } // don't need arduinofw loop

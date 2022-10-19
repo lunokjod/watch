@@ -87,6 +87,10 @@ void DrawSplash() {
     splashBuffer->drawString(buildNumberAsString, posX, posY);
     ttgo->tft->setPivot(TFT_WIDTH/2, TFT_HEIGHT/2);
     splashBuffer->pushSprite(0,0);
+    splashBuffer->deleteSprite();
+    delete splashBuffer;
+    splashBuffer = nullptr;
+    ttgo->openBL();
 }
 
 void DrawSplashLoopAsTask( void * parameter ) {
