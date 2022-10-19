@@ -1,5 +1,5 @@
-#ifndef __LUNOKIOT__PLAYGROUND3_APP__
-#define __LUNOKIOT__PLAYGROUND3_APP__
+#ifndef __LUNOKIOT__SET_TIME_APP__
+#define __LUNOKIOT__SET_TIME_APP__
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
