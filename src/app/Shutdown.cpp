@@ -49,8 +49,12 @@ ShutdownApplication::ShutdownApplication() {
 bool ShutdownApplication::Tick() {
     if ( nullptr == this->GetCanvas() ) { return false; }
     unsigned long secsFromBegin = ((millis()-timeFromBegin)/1000);
-
-    if ( secsFromBegin == 3 ) {
+    bright-=8;
+    if ( bright > 0 ) {
+        //Serial.printf("WOOOO: %d\n", bright);
+        ttgo->setBrightness(bright);
+    }
+    if ( secsFromBegin == 2 ) {
         Serial.println("System shutdown!");
         Serial.flush();
         delay(10);
@@ -59,9 +63,6 @@ bool ShutdownApplication::Tick() {
     if ( 1 == secsFromBegin ) {
         ttgo->shake();
     }
-    //if ( nextRedraw < millis() ) {
 
-    //    nextRedraw = millis()+1000;
-    //}
     return true;
 }

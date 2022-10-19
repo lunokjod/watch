@@ -7,6 +7,7 @@ class ShutdownApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw;
         unsigned long timeFromBegin;
+        int16_t bright=255;
     public:
         ShutdownApplication();
         bool Tick();
