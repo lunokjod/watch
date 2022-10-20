@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 #include <esp_event_base.h>
+#include <list>
+#include <functional>
 
 ESP_EVENT_DECLARE_BASE(SYSTEM_EVENTS);
 
@@ -38,6 +40,19 @@ enum {
     BMA_EVENT_TEMP,
     BMA_EVENT_DIRECTION
 };
+
+
+class NetworkTaskDescriptor {
+    public:
+        char *name = nullptr; // task description
+        unsigned long everyTimeMS = -1; // lapse in millis
+        unsigned long _nextTrigger = -1; // first launch in next time window
+        unsigned long _lastCheck = -1;  // internal record
+        void * payload = nullptr;
+        std::function<void ()> callback = nullptr;
+};
+bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk);
+bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
 
 void AXPIntHandler();
 void BMPIntHandler();

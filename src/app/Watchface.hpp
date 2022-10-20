@@ -12,6 +12,7 @@
 #include "../UI/representation/Point2D.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../UI/widgets/GaugeWidget.hpp"
+#include "../system/SystemEvents.hpp"
 
 class WatchfaceApplication: public LunokIoTApplication {
     public:
@@ -20,7 +21,7 @@ class WatchfaceApplication: public LunokIoTApplication {
         CanvasWidget * backgroundCanvas = nullptr;
         CanvasWidget * marksCanvas = nullptr;
         //TFT_eSprite * marksCanvasCache = nullptr;
-
+        NetworkTaskDescriptor * myTask = nullptr;
         CanvasWidget * watchFaceCanvas;
         //CanvasWidget * dayNightCanvas;
         //CanvasWidget * dayNightCacheCanvas;

@@ -29,6 +29,7 @@
 
 #include "../static/img_weather_800.c"
 
+#include "../system/SystemEvents.hpp"
 #include "MainMenu.hpp"
 
 #include <WiFi.h>
@@ -318,7 +319,67 @@ WatchfaceApplication::WatchfaceApplication() {
 
     esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived,this);
 
-    xTaskCreate(WatchfaceApplication::NTPSync, "", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE,nullptr, uxTaskPriorityGet(NULL), &NTPTaskHandler);
+    if ( nullptr == myTask ) {
+        myTask = new NetworkTaskDescriptor();
+        myTask->name = (char *)"NTP Watchface";
+        myTask->everyTimeMS = ((60*1000)*60)*24; // once a day
+        myTask->payload = (void *)this;
+        myTask->_lastCheck=millis();
+        if ( false == ntpSyncDone ) { 
+            myTask->_nextTrigger=0; // launch NOW if no synched never again
+        }
+        myTask->callback = [&,this]() {
+            Serial.println("Watchface: Trying to sync NTP time...");
+            delay(100);
+            //init and get the time
+            configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+            //timeClient.begin();
+            // Set offset time in seconds to adjust for your timezone, for example:
+            // GMT +1 = 3600
+            // GMT +8 = 28800
+            // GMT -1 = -3600
+            // GMT 0 = 0
+            /*
+            timeClient.setTimeOffset(0);
+            while(!timeClient.update()) {
+                yield();
+                timeClient.forceUpdate();
+            }
+            */
+            delay(100);
+            struct tm timeinfo;
+            if (getLocalTime(&timeinfo)) {
+                ttgo->rtc->syncToRtc(); // WTF? magic code now works? // old: why don't work as expect? (getLocalTime to RTC)
+                RTC_Date d = ttgo->rtc->getDateTime();
+                if (d.year != (timeinfo.tm_year + 1900) || d.month != timeinfo.tm_mon + 1
+                                || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
+                                || d.minute != timeinfo.tm_min) {
+                    Serial.printf("Write RTC Fail: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                } else {
+                    Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                }
+                Serial.println("NTP sync done!");
+                //@TODO esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+
+                ntpSyncDone = true;
+            }
+        };
+        bool added = AddNetworkTask(myTask);
+        Serial.printf("Watchface: WiFi task added: %s\n", (added?"true":"false"));
+    }
+/*
+    //xTaskCreate(WatchfaceApplication::NTPSync, "", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE,nullptr, uxTaskPriorityGet(NULL), &NTPTaskHandler);
+typedef struct {
+    const char *name = { 0 };
+    unsigned long everyTimeMS = -1;
+    unsigned long nextTrigger = -1;
+    unsigned long lastCheck = -1;
+    void * payload = nullptr;
+    std::function<void (void *)> callback = nullptr;
+} NetworkTaskDescriptor;
+bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
+*/
+
 
     bottomRightButton = new ActiveRect(172,172,70,50,[&, this]() {
         LaunchApplication(new MainMenuApplication());
@@ -329,6 +390,11 @@ WatchfaceApplication::WatchfaceApplication() {
 }
 WatchfaceApplication::~WatchfaceApplication() {
     Serial.printf("WatchfaceApplication: %p DELETE\n",this);
+    if (nullptr != myTask) {
+        RemoveNetworkTask(myTask);
+        delete myTask;
+        myTask = nullptr;
+    }
     if ( nullptr != watchFaceCanvas ) {
         delete watchFaceCanvas;
         watchFaceCanvas = nullptr;

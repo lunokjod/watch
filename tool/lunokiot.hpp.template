@@ -37,7 +37,7 @@ extern SemaphoreHandle_t UISemaphore;
 extern const unsigned long UITimeout;
 #define LUNOKIOT_TASK_STACK_SIZE 1024*4
 #define LUNOKIOT_APP_STACK_SIZE 1024*8
-#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*16
+#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32
 
 extern TTGOClass *ttgo;
 extern RTC_DATA_ATTR uint32_t bootCount;
@@ -108,7 +108,9 @@ const float MAN_STEP_PROPORTION = 0.415;
 const float WOMAN_STEP_PROPORTION = 0.413;
 const float stepDistanceCm = userTall * MAN_STEP_PROPORTION;
 
-extern bool provisioned;
-extern bool provisioningStarted;
+
+const unsigned long NetworkTimeout = 2*1000; // time until wifi is killed by timeout
+const unsigned long ReconnectPeriodMs = (60*1000)*15; // TEST // timed WiFi network connection (fetch data)
+extern bool provisioned; // 
 
 #endif

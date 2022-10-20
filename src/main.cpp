@@ -54,18 +54,11 @@ void setup() {
   // Start the interface with the user via the screen and buttons!!! (born to serve xD)
   UIStart();
 
-  bool netDone = NetworkHandler(); // already provisioned?
-
-
+  NetworkHandler(); // already provisioned?
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
-  Serial.printf("lunokIoT: Boot time: %lums\n", currentBootTime);
-
-  SystemEventBootEnd(); // notify system end boot procedure
-
-  if ( netDone ) {
-    LaunchApplication(new WatchfaceApplication());
-  }
+  Serial.printf("lunokIoT: Boot time: %lu ms\n", currentBootTime);
+  SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
 }
 
 void loop() { vTaskDelete( NULL ); } // don't need arduinofw loop

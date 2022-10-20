@@ -307,16 +307,15 @@ static void DoSleepTask(void* args) {
     }
 
     doSleepThreads++;
-
     Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
     Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
 
     Serial.printf("ESP32: DoSleep(%d) began!\n", doSleepThreads);
     //Serial.printf("WIFI STATUS: %d\n", WiFi.status());
-    size_t retries = 4;
+    size_t retries = 3;
     Serial.printf("WIFISTATUS: %d\n",WiFi.status());
-    if ( WL_IDLE_STATUS == WiFi.status() ) {WiFi.mode(WIFI_OFF); }
-    while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
+    //while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
+    while ( WL_CONNECTED == WiFi.status()) {
         Serial.printf("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for radio powerdown....\n", retries);
         delay(2000);
         retries--;
@@ -324,11 +323,11 @@ static void DoSleepTask(void* args) {
             Serial.println("ESP32: Forcing WiFI off due timeout");
             WiFi.disconnect(true);
             delay(100);
-            WiFi.mode(WIFI_OFF);
-            delay(200);
             break;
         }
     }
+    WiFi.mode(WIFI_OFF);
+    delay(200);
     Serial.println("ESP32: WiFi released, DoSleep continue...");
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
@@ -502,7 +501,6 @@ void ScreenSleep() {
         ttgo->displaySleep();
         delay(50);
         ttgo->touchToSleep();
-        Serial.println("@TODO think about RADIOS (BLE/WiFI) and set 160 if radio is in use");
         Serial.flush();
         delay(50);
         //setCpuFrequencyMhz(80);
@@ -666,7 +664,16 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    
     Serial.println("lunokIoT: System event: up and running...");
+
+    if ( provisioned ) {
+        Serial.println("lunokIoT: Device provisioned: Launching 'WatchfaceApplication'...");
+        LaunchApplication(new WatchfaceApplication());
+        return;
+    }
+    Serial.println("lunokIoT: Device not provisioned: Launching 'Provisioning2Application'...");
+    LaunchApplication(new Provisioning2Application());
 }
 
 static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -683,9 +690,26 @@ static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int
             wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)event_data;
             Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n",base,(const char *) wifi_sta_cfg->ssid,(const char *) wifi_sta_cfg->password);
             identified=true;
+        } else if ( WIFI_PROV_CRED_FAIL == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n",base);
+            identified=true;
+        } else if ( WIFI_PROV_CRED_SUCCESS == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n",base);
+            identified=true;
+        } else if ( WIFI_PROV_END == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: End\n",base);
+            identified=true;
+        } else if ( WIFI_PROV_DEINIT == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Deinit\n",base);
+            identified=true;
         }
     } else if ( WIFI_EVENT == base) {
-        if ( WIFI_EVENT_STA_START == id ) {
+        if ( WIFI_EVENT_SCAN_DONE == id ) {
+            wifi_event_sta_scan_done_t *scanData = (wifi_event_sta_scan_done_t *)event_data;
+            const char * scanDoneStr = (scanData->status?"failed":"done");
+            Serial.printf("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n",base,scanData->scan_id,scanDoneStr,scanData->number);
+            identified=true;
+        } else if ( WIFI_EVENT_STA_START == id ) {
             Serial.printf("FreeRTOS event:'%s' WiFi STA: Start\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_STOP == id ) {
@@ -697,6 +721,20 @@ static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int
         } else if ( WIFI_EVENT_STA_DISCONNECTED == id ) {
             Serial.printf("FreeRTOS event:'%s' WiFi STA: Disconnected\n",base);
             identified=true;
+        } else if ( WIFI_EVENT_AP_START == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi AP: Start\n",base);
+            identified=true;
+        } else if ( WIFI_EVENT_AP_STOP == id ) {
+            Serial.printf("FreeRTOS event:'%s' WiFi AP: Stop\n",base);
+            identified=true;
+        } else if ( WIFI_EVENT_AP_STACONNECTED == id ) {
+            wifi_event_ap_staconnected_t *apStaData = (wifi_event_ap_staconnected_t *)event_data;
+            Serial.printf("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            identified=true;
+        } else if ( WIFI_EVENT_AP_STADISCONNECTED == id ) {
+            wifi_event_ap_stadisconnected_t *apStaData = (wifi_event_ap_stadisconnected_t *)event_data;
+            Serial.printf("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            identified=true;
         }
     } else if ( IP_EVENT == base) {
         if ( IP_EVENT_STA_GOT_IP == id ) {
@@ -705,7 +743,15 @@ static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int
         } else if ( IP_EVENT_STA_LOST_IP == id ) {
             Serial.printf("FreeRTOS event:'%s' Network: IP Lost\n",base);
             identified=true;
-        }        
+        } else if ( IP_EVENT_AP_STAIPASSIGNED == id ) {
+            ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
+            esp_ip4_addr_t newIP = assignedIP->ip;
+            unsigned char octet[4]  = {0,0,0,0};
+            for (int i=0; i<4; i++) { octet[i] = ( newIP.addr >> (i*8) ) & 0xFF; }
+            Serial.printf("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n",base,octet[0],octet[1],octet[2],octet[3]);
+            identified=true;
+        }
+        
     }
 
     if (false == identified ) {
@@ -887,17 +933,126 @@ void SystemEventBootEnd() {
 }
 
 #include <WiFi.h>
+std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
+
+bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk) {
+    Serial.printf("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
+    networkPendingTasks.remove(oldTsk);
+    return true;
+}
+
+bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
+    size_t offset = 0;
+    for (auto const& tsk : networkPendingTasks) {
+        if ( tsk == nuTsk ) {
+            Serial.printf("AddNetworkTask: Task %p '%s' already on the list (offset: %d)\n", tsk,tsk->name, offset);
+            return false;
+        }
+        offset++;
+    }
+    networkPendingTasks.push_back(nuTsk);
+    Serial.printf("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
+    return true;
+}
+
+static void NetworkHandlerTask(void* args) {
+    delay(5000); // arbitrary wait before begin first connection
+    unsigned long nextConnectMS = 0;
+    unsigned long beginConnected = -1;
+    unsigned long beginIdle = -1;
+    while(true) {
+        delay(1000);
+        if ( systemSleep ) { continue; }
+        if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
+        
+        if ( millis() > nextConnectMS ) { // begin connection?
+            //check the pending tasks... if no one, don't connect
+            Serial.println("Network: Timed WiFi connection procedure begin");
+            bool mustStart = false;
+
+            for (auto const& tsk : networkPendingTasks) {
+                //CHECK THE TIMEOUTS
+                if ( -1 == tsk->_nextTrigger ) {
+                    tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                } else {
+                    if ( millis() > tsk->_nextTrigger ) {
+                        Serial.printf("NetworkTask: Pending task '%s'\n", tsk->name);
+                        mustStart = true;
+                    }
+                }
+                tsk->_lastCheck = millis();
+            }
+            if ( mustStart ) {
+                WiFi.begin();
+            } else {
+                Serial.println("Network: No tasks pending for this period... don't launch WiFi");
+            }
+            nextConnectMS = millis()+ReconnectPeriodMs;
+            continue;
+        }
+
+        wl_status_t currStat = WiFi.status();
+        /*
+        if ( WL_IDLE_STATUS == currStat) {
+            if ( -1 == beginIdle ) {
+                beginIdle = millis();
+            } else {
+                unsigned long idleMS = millis()-beginIdle;
+                if ( idleMS > NetworkTimeout ) {
+                    Serial.printf("Network: WiFi TIMEOUT (idle) at %d sec\n", idleMS/1000);
+                    WiFi.disconnect();
+                    WiFi.mode(WIFI_OFF);
+                    beginIdle=-1;
+                    continue;
+                }
+                Serial.printf("Network: WiFi idle: %d sec\n", idleMS/1000);
+            }
+            continue;
+        } else */
+        if ( WL_CONNECTED == currStat) {
+            if ( -1 == beginConnected ) {
+                beginConnected = millis();
+            } else {
+                unsigned long connectedMS = millis()-beginConnected;
+                if ( connectedMS > NetworkTimeout ) {
+                    Serial.printf("Network: WiFi TIMEOUT (connected) at %d sec of use\n", connectedMS/1000);
+                    WiFi.disconnect(true);
+                    delay(100);
+                    WiFi.mode(WIFI_OFF);
+                    beginConnected=-1;
+                    continue;
+                }
+                //CHECK THE tasks
+                for (auto const& tsk : networkPendingTasks) {
+                    if ( -1 == tsk->_nextTrigger ) {
+                        tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                    } else {
+                        if ( millis() > tsk->_nextTrigger ) {
+                            Serial.printf("NetworkTask: Running pending task '%s'...\n", tsk->name);
+                            tsk->callback();
+                            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                            tsk->_lastCheck = millis();
+                            continue;
+                        }
+                    }
+                    tsk->_lastCheck = millis();
+                }
+                Serial.printf("Network: WiFi connected due: %d sec\n", connectedMS/1000);
+            }
+            continue;
+        }
+        // empty loop, use it to reset all counters
+        beginConnected = -1;
+        beginIdle = -1;
+    }
+    vTaskDelete(NULL); // never return
+}
 
 bool NetworkHandler() {
-    /* Initialize TCP/IP */
-    //ESP_ERROR_CHECK(esp_netif_init());
-    provisioned = NVS.getInt("provisioned");
-    Serial.printf("lunokIoT: NVS: System provisioned: %s\n",(provisioned?"true":"false"));
+    provisioned = (bool)NVS.getInt("provisioned"); // initial value load
 
-    if ( false == provisioned ) {
-        Serial.println("lunokIoT: Device not provisioned: Launching 'Provisioning2Application'...");
-        LaunchApplication(new Provisioning2Application());
-        return false;
-    }
-    return true;
+    xTaskCreate(NetworkHandlerTask, "nEt", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+
+    if ( provisioned ) { return true; }
+    return false;
 }
