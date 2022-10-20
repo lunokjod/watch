@@ -52,7 +52,7 @@ bool ShutdownApplication::Tick() {
     if ( nullptr == this->GetCanvas() ) { return false; }
     unsigned long milisFromBegin = millis()-timeFromBegin;
     bright-=8;
-    if ( bright > 0 ) { ttgo->setBrightness(bright); }
+    if ( bright > -1 ) { ttgo->setBrightness(bright); }
     if ( milisFromBegin > 2200 ) {
         ttgo->setBrightness(0);
         ttgo->tft->fillScreen(TFT_BLACK);
