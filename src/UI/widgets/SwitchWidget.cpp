@@ -29,10 +29,14 @@ void SwitchWidget::DrawTo(TFT_eSprite * endCanvas) {
 
     const int32_t dotSize = 8;
     if ( switchEnabled ) {
-        uint32_t lightColor = canvas->alphaBlend(128,switchColor,TFT_WHITE);
+        int16_t enabledColor = TFT_DARKGREY;
+        if ( enabled ) {
+            enabledColor = TFT_WHITE;
+        }
+        uint32_t lightColor = canvas->alphaBlend(128,switchColor,enabledColor);
         buffer->canvas->fillCircle(64-20,32,switchHeight,TFT_BLACK);
         buffer->canvas->fillCircle(64-20,32,switchHeight-border,lightColor);
-        uint32_t moreLightColor = canvas->alphaBlend(128,lightColor,TFT_WHITE);
+        uint32_t moreLightColor = canvas->alphaBlend(128,lightColor,enabledColor);
         buffer->canvas->fillCircle(64-20,32,dotSize,moreLightColor); // decorative dot remarks true
     } else {
         uint32_t darkColor = canvas->alphaBlend(128,switchColor,TFT_BLACK);
