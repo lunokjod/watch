@@ -47,10 +47,12 @@ void LaunchApplicationTask(void * data) {
     delay(20);
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
         if ( nullptr != currentApplication ) {
-            Serial.printf("Application: %p closing to run: %p\n", currentApplication,instance);
+            Serial.printf("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
             LunokIoTApplication *ptrOldApp = currentApplication;
             currentApplication = nullptr;
-            delete ptrOldApp;
+            if ( nullptr != ptrOldApp ) {
+                delete ptrOldApp;
+            }
             overlay->deleteSprite();
             delete overlay;
             overlay = nullptr;
