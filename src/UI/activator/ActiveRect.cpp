@@ -57,7 +57,12 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
             lastInteraction=false;
             if ( nullptr != tapActivityCallback ) {
                 // launch the callback!
-                xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+                BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+                if ( res != pdTRUE ) {
+                    Serial.printf("ActiveRect: %p Unable to launch task!\n", this);
+                    Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                    Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                }
             }
         }
         return false;
