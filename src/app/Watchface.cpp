@@ -37,6 +37,10 @@
 #include <HTTPClient.h>
 #include <Arduino_JSON.h>
 
+
+NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
+NetworkTaskDescriptor * WatchfaceApplication::weatherTask = nullptr;
+
 double sphereRotation = 0;
 
 int demoCycle = 0;
@@ -125,7 +129,7 @@ void WatchfaceApplication::ParseWeatherData() {
         free(weatherMain);
         weatherMain = nullptr;
     }
-    weatherMain = (char *)malloc(strlen(weatherMainConst)+1);
+    weatherMain = (char *)ps_malloc(strlen(weatherMainConst)+1);
     strcpy(weatherMain, weatherMainConst);
 
     const char * weatherDescriptionConst = weatherBranch["description"];
@@ -133,7 +137,7 @@ void WatchfaceApplication::ParseWeatherData() {
         free(weatherDescription);
         weatherDescription = nullptr;
     }
-    weatherDescription = (char *)malloc(strlen(weatherDescriptionConst)+1);
+    weatherDescription = (char *)ps_malloc(strlen(weatherDescriptionConst)+1);
     strcpy(weatherDescription, weatherDescriptionConst);
 
     const char * weatherIconConst = weatherBranch["icon"];
@@ -141,7 +145,7 @@ void WatchfaceApplication::ParseWeatherData() {
         free(weatherIcon);
         weatherIcon = nullptr;
     }
-    weatherIcon = (char *)malloc(strlen(weatherIconConst)+1);
+    weatherIcon = (char *)ps_malloc(strlen(weatherIconConst)+1);
     strcpy(weatherIcon, weatherIconConst);
 
 
@@ -188,7 +192,7 @@ void WatchfaceApplication::GetSecureNetworkWeather() {
                             free(weatherReceivedData);
                             weatherReceivedData = nullptr;
                         }
-                        weatherReceivedData = (char*)malloc(payload.length()+1);
+                        weatherReceivedData = (char*)ps_malloc(payload.length()+1);
                         strcpy(weatherReceivedData,payload.c_str());
                         Serial.printf("Received:\n%s\n",weatherReceivedData);
                         //config.alreadySync = true;
@@ -248,7 +252,7 @@ WatchfaceApplication::WatchfaceApplication() {
     if ( nullptr == ntpTask ) {
         ntpTask = new NetworkTaskDescriptor();
         ntpTask->name = (char *)"NTP Watchface";
-        ntpTask->everyTimeMS = ((60*1000)*60)*24; // once a day
+        ntpTask->everyTimeMS = ((1000*60)*60)*24; // once a day
         ntpTask->payload = (void *)this;
         ntpTask->_lastCheck=millis();
         if ( false == ntpSyncDone ) { 
@@ -285,29 +289,25 @@ WatchfaceApplication::WatchfaceApplication() {
                     Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
                 }
                 Serial.println("NTP sync done!");
-                //@TODO esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-
                 ntpSyncDone = true;
             }
         };
-        bool added = AddNetworkTask(ntpTask);
-        Serial.printf("Watchface: WiFi task added: %s\n", (added?"true":"false"));
+        AddNetworkTask(ntpTask);
     }
 
     if ( nullptr == weatherTask ) {
         weatherTask = new NetworkTaskDescriptor();
         weatherTask->name = (char *)"OpenWeather Watchface";
-        weatherTask->everyTimeMS = (60*1000)*60; // every hour
+        weatherTask->everyTimeMS = (60*1000)*29;
         weatherTask->payload = (void *)this;
         weatherTask->_lastCheck=millis();
-        weatherTask->_nextTrigger=0; // launch NOW if no synched never again
+        weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         weatherTask->callback = [&,this]() {
             WatchfaceApplication::GetSecureNetworkWeather();
-            // @TODO parse online is not optimal and posible harmfull (remote attack)
+            // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
             WatchfaceApplication::ParseWeatherData();
         };
-        bool added = AddNetworkTask(weatherTask);
-        Serial.printf("Watchface: WiFi task added: %s\n", (added?"true":"false"));
+        AddNetworkTask(weatherTask);
     }
 
     bottomRightButton = new ActiveRect(172,172,70,50,[&, this]() {
@@ -319,17 +319,6 @@ WatchfaceApplication::WatchfaceApplication() {
 }
 WatchfaceApplication::~WatchfaceApplication() {
     Serial.printf("WatchfaceApplication: %p DELETE\n",this);
-    if (nullptr != weatherTask) {
-        RemoveNetworkTask(weatherTask);
-        delete weatherTask;
-        weatherTask = nullptr;
-    }
-
-    if (nullptr != ntpTask) {
-        RemoveNetworkTask(ntpTask);
-        delete ntpTask;
-        ntpTask = nullptr;
-    }
     if ( nullptr != watchFaceCanvas ) {
         delete watchFaceCanvas;
         watchFaceCanvas = nullptr;
@@ -338,7 +327,6 @@ WatchfaceApplication::~WatchfaceApplication() {
         delete bottomRightButton;
         bottomRightButton = nullptr;
     }
-    //if( NTPTaskHandler != NULL ) { vTaskDelete( NTPTaskHandler ); }
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived);
     if ( nullptr != backlightCanvas ) {
         delete backlightCanvas;
@@ -360,18 +348,7 @@ WatchfaceApplication::~WatchfaceApplication() {
         free(weatherReceivedData);
         weatherReceivedData = nullptr;
     }
-    if ( nullptr != weatherMain) {
-        free(weatherMain);
-        weatherMain = nullptr;
-    }
-    if ( nullptr != weatherDescription) {
-        free(weatherDescription);
-        weatherDescription = nullptr;
-    }
-    if ( nullptr != weatherIcon) {
-        free(weatherIcon);
-        weatherIcon = nullptr;
-    }
+
     if ( nullptr != hourClockHandCache ) {
         hourClockHandCache->deleteSprite();
         delete hourClockHandCache;

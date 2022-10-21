@@ -108,7 +108,7 @@ const float stepDistanceCm = userTall * MAN_STEP_PROPORTION;
 
 
 const unsigned long NetworkTimeout = 2*1000; // time until wifi is killed by timeout
-const unsigned long ReconnectPeriodMs = (60*1000)*15; // TEST // timed WiFi network connection (fetch data)
+const unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
 extern bool provisioned; // 
 
 #endif

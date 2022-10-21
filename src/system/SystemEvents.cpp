@@ -984,8 +984,12 @@ static void NetworkHandlerTask(void* args) {
             }
             if ( mustStart ) {
                 WiFi.begin();
+                WiFi.setAutoReconnect(false);
             } else {
                 Serial.println("Network: No tasks pending for this period... don't launch WiFi");
+                for (auto const& tsk : networkPendingTasks) {
+                    Serial.printf("NetworkTask: Task '%s' In: %d secs\n", tsk->name, (tsk->_nextTrigger-millis())/1000);
+                }
             }
             nextConnectMS = millis()+ReconnectPeriodMs;
             continue;
