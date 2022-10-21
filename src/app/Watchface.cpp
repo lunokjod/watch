@@ -21,6 +21,7 @@
 #include "../static/img_watchface0_marks.c"
 #include "../static/img_watchface0_usb.c"
 #include "../static/img_watchface0_backlight.c"
+#include "../static/img_watchface0_notification.c"
 
 #include "../static/img_weather_200.c"
 #include "../static/img_weather_300.c"
@@ -314,11 +315,18 @@ WatchfaceApplication::WatchfaceApplication() {
         LaunchApplication(new MainMenuApplication());
     });
 
+    topRightButton = new ActiveRect(172,0,70,50,[&, this]() {
+        pendingNotification=(!pendingNotification);
+        Serial.println("@TODO THIS IS A TEST");
+        // must show number of notifications pending
+
+        //LaunchApplication(new SOMEAPPTOREADNOTIFICATIONS_@TODO());
+    });
+
     nextWatchFaceFullRedraw = 0;
 
 }
 WatchfaceApplication::~WatchfaceApplication() {
-    Serial.printf("WatchfaceApplication: %p DELETE\n",this);
     if ( nullptr != watchFaceCanvas ) {
         delete watchFaceCanvas;
         watchFaceCanvas = nullptr;
@@ -326,6 +334,10 @@ WatchfaceApplication::~WatchfaceApplication() {
     if ( nullptr != bottomRightButton ) {
         delete bottomRightButton;
         bottomRightButton = nullptr;
+    }
+    if ( nullptr != topRightButton ) {
+        delete topRightButton;
+        topRightButton = nullptr;
     }
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived);
     if ( nullptr != backlightCanvas ) {
@@ -359,6 +371,7 @@ WatchfaceApplication::~WatchfaceApplication() {
         delete minuteClockHandCache;
         minuteClockHandCache = nullptr;
     }
+    Serial.printf("WatchfaceApplication: %p Ends here\n",this);
 }
 
 void WatchfaceApplication::PrepareDataLayer() {
@@ -561,6 +574,7 @@ bool SecondsCallback(int x, int y, int cx, int cy, double angle, int step, void 
 
 bool WatchfaceApplication::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY);
+    topRightButton->Interact(touched, touchX, touchY);
 
 
 /*
@@ -705,7 +719,10 @@ bool WatchfaceApplication::Tick() {
         } else {
            backgroundCanvas->canvas->pushRotated(watchFaceCanvas->canvas,0);
         }
-
+        // Show notification light in upper right button
+        if ( pendingNotification ) {
+            watchFaceCanvas->canvas->pushImage(topRightButton->x,topRightButton->y,img_watchface0_notification.width,img_watchface0_notification.height,(uint16_t*)img_watchface0_notification.pixel_data);
+        }
         // weather icon
         //watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
         if ( -1 != weatherId ) {

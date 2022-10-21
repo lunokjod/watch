@@ -38,7 +38,8 @@ class WatchfaceApplication: public LunokIoTApplication {
         CanvasWidget * minuteHandCanvas = nullptr;
         TFT_eSprite * minuteClockHandCache = nullptr;
         //CanvasWidget * secondHandCanvas;
-
+        bool pendingNotification = false;
+        ActiveRect * topRightButton = nullptr;
         ActiveRect * bottomRightButton = nullptr;
         ~WatchfaceApplication();
         WatchfaceApplication();
