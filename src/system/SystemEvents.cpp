@@ -248,10 +248,6 @@ void AXPIntHandler() {
     ttgo->power->clearIRQ();    
 }
 
-void TakeSamples() {
-    TakeBMPSample();
-    //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
-}
 void WakeUpReason() {
 
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -896,9 +892,9 @@ static void SystemLoopTask(void* args) {
 }
 void SystemEventsStart() {
 
-    // create the system event loop
+    // configure system event loop
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 10,
+        .queue_size = 20,
         .task_name = "lEvTask", // task will be created
         .task_priority = uxTaskPriorityGet(NULL),
         .task_stack_size = LUNOKIOT_TASK_STACK_SIZE,
@@ -928,19 +924,29 @@ void SystemEventsStart() {
     Serial.println("lunokIoT: System event loop running");
 }
 
+/*
+ * Eyecandy notification of boot end
+ */
 void SystemEventBootEnd() {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 }
 
-#include <WiFi.h>
+
+// Network scheduler list
 std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
 
+/*
+ * Stop desired task from network scheduler
+ */
 bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk) {
     Serial.printf("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
     networkPendingTasks.remove(oldTsk);
     return true;
 }
 
+/*
+ * Add a timed network task to the network scheduler
+ */
 bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     size_t offset = 0;
     for (auto const& tsk : networkPendingTasks) {
@@ -955,6 +961,12 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     return true;
 }
 
+
+/*
+ * The network scheduler loop
+ * Check all network tasks and determine if must be launched
+ * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
+ */
 static void NetworkHandlerTask(void* args) {
     delay(5000); // arbitrary wait before begin first connection
     unsigned long nextConnectMS = 0;
@@ -1053,6 +1065,14 @@ static void NetworkHandlerTask(void* args) {
     vTaskDelete(NULL); // never return
 }
 
+/*
+ * Create the task for network scheduler
+ * How it works?
+ * * Call NetworkHandler on setup()
+ * * Later on create a new NetworkTaskDescriptor() (in heap!)
+ * * Push to the scheduler using AddNetworkTask()
+ * * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
+ */
 bool NetworkHandler() {
     provisioned = (bool)NVS.getInt("provisioned"); // initial value load
 
@@ -1060,4 +1080,10 @@ bool NetworkHandler() {
 
     if ( provisioned ) { return true; }
     return false;
+}
+
+
+void TakeSamples() {
+    TakeBMPSample();
+    //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
 }

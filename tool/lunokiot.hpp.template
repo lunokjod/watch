@@ -1,6 +1,10 @@
 #ifndef ___LUNOKIOT__CONFIG__GENERATED__
 #define ___LUNOKIOT__CONFIG__GENERATED__
 
+/*
+ * DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE!!! USE .template instead
+ */
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
@@ -32,19 +36,22 @@ extern SemaphoreHandle_t UISemaphore;
 //#define LUNOKIOT_UNIQUEID "@@LUNOKIOT_UNIQUEID@@"
 //#define LUNOKIOT_OTA_HOST "@@LUNOKIOT_OTA_HOST@@"
 
-extern const unsigned long UITimeout;
+extern const unsigned long UITimeout; //
+
 #define LUNOKIOT_TASK_STACK_SIZE 1024*4
 #define LUNOKIOT_APP_STACK_SIZE 1024*8
 #define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32
 
-extern TTGOClass *ttgo;
-extern RTC_DATA_ATTR uint32_t bootCount;
+extern TTGOClass *ttgo; // ttgo lib
 
-extern bool systemSleep;
+extern RTC_DATA_ATTR uint32_t bootCount; // don't work? why?
+
+extern bool systemSleep; // turns true when system is in "gray state" (just after wakeup)
 extern unsigned long currentBootTime;
 
 extern esp_event_loop_handle_t systemEventloopHandler;
 
+// the foreground application running ptr
 extern LunokIoTApplication *currentApplication;
 
 extern uint8_t bmaRotation;
@@ -86,6 +93,11 @@ extern float degZ;
 extern int16_t accX;
 extern int16_t accY;
 extern int16_t accZ;
+
+
+/*
+ * UI shit
+ */
 extern uint32_t FPS;
 const uint32_t MAXFPS = 17;
 
@@ -97,14 +109,18 @@ extern double touchDragDistance; // get distance from last drag
 extern int16_t touchDragVectorX; // drag vectorX
 extern int16_t touchDragVectorY; // drag vectorY
 
+// Obtained by generateConfig.py from file: openWeatherKey.txt
 const String openWeatherMapApiKey = "@@OPENWEATHER_APIKEY@@";
 
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
-const uint8_t userTall = 197;
+const uint8_t userTall = 197; 
 //const uint8_t userTall = 166; // user tall in CM
+
+/* Median step by sex */
 const float MAN_STEP_PROPORTION = 0.415;
 const float WOMAN_STEP_PROPORTION = 0.413;
-const float stepDistanceCm = userTall * MAN_STEP_PROPORTION;
+
+const float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 
 
 const unsigned long NetworkTimeout = 2*1000; // time until wifi is killed by timeout

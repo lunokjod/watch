@@ -1,14 +1,17 @@
 #ifndef __LUNOKIOT__SYSTEM_EVENTS__
 #define __LUNOKIOT__SYSTEM_EVENTS__
 
-
 #include <Arduino.h>
 #include <esp_event_base.h>
 #include <list>
 #include <functional>
 
+/*
+ * Event loop for the system
+ */
 ESP_EVENT_DECLARE_BASE(SYSTEM_EVENTS);
 
+// Events for system loop
 enum {
     SYSTEM_EVENT_READY,
     SYSTEM_EVENT_TICK,
@@ -41,28 +44,46 @@ enum {
     BMA_EVENT_DIRECTION
 };
 
-
+/*
+ * Network timed callbacks
+ */
 class NetworkTaskDescriptor {
     public:
         char *name = nullptr; // task description
         unsigned long everyTimeMS = -1; // lapse in millis
-        unsigned long _nextTrigger = -1; // first launch in next time window or 0 for inmediate
-        unsigned long _lastCheck = -1;  // internal record
-        void * payload = nullptr;
-        std::function<void ()> callback = nullptr;
+        unsigned long _nextTrigger = -1; // -1 means first launch in next time window or 0 for inmediate
+        unsigned long _lastCheck = -1;  // reserved
+        void * payload = nullptr;   // @TODO this may be useless
+        std::function<void ()> callback = nullptr; // lambda power
 };
+// Install the network loop task scheduler
+bool NetworkHandler();
+// Remove desired task from network pooling
 bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk);
+// Add task to the network loop
 bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
 
+/*
+ * Interrupt handler installer
+ */
 void AXPIntHandler();
 void BMPIntHandler();
 void RTCIntHandler();
+
+// Force get samples from sensors
+void TakeSamples();
+
+// Build system loop
 void SystemEventsStart();
+// Announce the end of boot
 void SystemEventBootEnd();
+
+/*
+ * Low power related functions
+ */
 void ScreenSleep();
 void ScreenWake();
 void DoSleep();
-void TakeBMPSample();
-bool NetworkHandler();
 void SaveDataBeforeShutdown();
+
 #endif
