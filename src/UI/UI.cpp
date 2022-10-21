@@ -203,7 +203,7 @@ void UIStart() {
 
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 15,
+        .queue_size = 5,
         .task_name = "uiTask", // task will be created
         .task_priority = uxTaskPriorityGet(NULL),
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
