@@ -767,6 +767,7 @@ static void SystemLoopTask(void* args) {
         if ( millis() > nextIntTick ) {
             // check for AXP int's
             if (irqAxp) {
+                Serial.println("CHECK AXP");
                 ttgo->power->readIRQ();
                 irqAxp = false;
 
@@ -826,16 +827,16 @@ static void SystemLoopTask(void* args) {
                 } else if (ttgo->power->isPEKLongtPressIRQ()) {
                     ttgo->power->clearIRQ();
                     Serial.println("AXP202: Event PEK Button long press");
-                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else {
                     ttgo->power->clearIRQ();
                     Serial.println("@TODO unknown interrupt call from AXP202 ?...");
                 }
                 continue; // this makes go to begin of loop (and check for other interrupts inmediatly)
             }
-
             // check the BMA int's
             if (irqBMA) {
+                Serial.println("CHECK BMA");
                 irqBMA = false;
                 bool  rlst;
                 do {
@@ -844,7 +845,6 @@ static void SystemLoopTask(void* args) {
                     // need to wait for it to return to true before continuing
                     rlst =  ttgo->bma->readInterrupt();
                 } while (!rlst);
-
                 // Check if it is a step interrupt
                 if (ttgo->bma->isStepCounter()) {
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
@@ -879,7 +879,7 @@ static void SystemLoopTask(void* args) {
             }*/
 
 
-            nextIntTick = millis()+(1000/8);
+            nextIntTick = millis()+(1000/6);
         }
 
 
@@ -887,7 +887,7 @@ static void SystemLoopTask(void* args) {
         // system tick
         if ( millis() > nextSySTick ) {
             if ( true == ttgo->bl->isOn() ) {
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
             }
             nextSySTick = millis()+(1000/24);
         }
@@ -1028,7 +1028,7 @@ static void NetworkHandlerTask(void* args) {
                         tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
-                            Serial.printf("NetworkTask: Running pending task '%s'...\n", tsk->name);
+                            Serial.printf("NetworkTask: Running task '%s'...\n", tsk->name);
                             tsk->callback();
                             tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                             tsk->_lastCheck = millis();
@@ -1037,7 +1037,8 @@ static void NetworkHandlerTask(void* args) {
                     }
                     tsk->_lastCheck = millis();
                 }
-                Serial.printf("Network: WiFi connected due: %d sec\n", connectedMS/1000);
+                connectedMS = millis()-beginConnected;
+                Serial.printf("Network: WiFi connection: %d sec\n", connectedMS/1000);
             }
             continue;
         }

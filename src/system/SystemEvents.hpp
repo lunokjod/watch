@@ -46,7 +46,7 @@ class NetworkTaskDescriptor {
     public:
         char *name = nullptr; // task description
         unsigned long everyTimeMS = -1; // lapse in millis
-        unsigned long _nextTrigger = -1; // first launch in next time window
+        unsigned long _nextTrigger = -1; // first launch in next time window or 0 for inmediate
         unsigned long _lastCheck = -1;  // internal record
         void * payload = nullptr;
         std::function<void ()> callback = nullptr;

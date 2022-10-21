@@ -53,9 +53,11 @@ void LaunchApplicationTask(void * data) {
             if ( nullptr != ptrOldApp ) {
                 delete ptrOldApp;
             }
-            overlay->deleteSprite();
-            delete overlay;
-            overlay = nullptr;
+            if ( nullptr != overlay ) {
+                overlay->deleteSprite();
+                delete overlay;
+                overlay = nullptr;
+            }
         }
         if ( nullptr == data ) {
             Serial.println("Application: None");

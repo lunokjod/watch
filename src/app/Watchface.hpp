@@ -16,12 +16,13 @@
 
 class WatchfaceApplication: public LunokIoTApplication {
     public:
-        TaskHandle_t NTPTaskHandler = NULL;
+        //TaskHandle_t NTPTaskHandler = NULL;
         CanvasWidget * backlightCanvas = nullptr;
         CanvasWidget * backgroundCanvas = nullptr;
         CanvasWidget * marksCanvas = nullptr;
         //TFT_eSprite * marksCanvasCache = nullptr;
-        NetworkTaskDescriptor * myTask = nullptr;
+        NetworkTaskDescriptor * ntpTask = nullptr;
+        NetworkTaskDescriptor * weatherTask = nullptr;
         CanvasWidget * watchFaceCanvas;
         //CanvasWidget * dayNightCanvas;
         //CanvasWidget * dayNightCacheCanvas;

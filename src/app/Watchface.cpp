@@ -208,80 +208,6 @@ void WatchfaceApplication::GetSecureNetworkWeather() {
     }
 }
 
-void WatchfaceApplication::NTPSync(void * data) {
-    while(true) {
-        if ( ntpSyncDone ) {
-            delay(60*60*12*1000);
-            ntpSyncDone = false;
-        }
-        WiFi.begin();
-        Serial.println("NTP: Trying to bring up WiFi...");
-        size_t timeout = millis()+15000;
-        while ( WL_CONNECTED != WiFi.status()) {
-            if ( millis() > timeout ) { break; }
-            //Serial.println("WiFi: waiting for connection...");
-            delay(20);
-        }
-        if ( millis() > timeout ) {
-            Serial.println("NTP: Unable to connect to know WiFi... delayed sync!");
-            WiFi.disconnect(true);
-            delay(100);
-            WiFi.mode(WIFI_OFF);
-            delay(80*1000);
-            continue;
-        }
-        delay(100);
-        //init and get the time
-        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-        //timeClient.begin();
-        // Set offset time in seconds to adjust for your timezone, for example:
-        // GMT +1 = 3600
-        // GMT +8 = 28800
-        // GMT -1 = -3600
-        // GMT 0 = 0
-        /*
-        timeClient.setTimeOffset(0);
-        while(!timeClient.update()) {
-            yield();
-            timeClient.forceUpdate();
-        }
-        */
-        delay(100);
-        struct tm timeinfo;
-        if (getLocalTime(&timeinfo)) {
-            ttgo->rtc->syncToRtc(); // WTF? magic code now works? // old: why don't work as expect? (getLocalTime to RTC)
-            RTC_Date d = ttgo->rtc->getDateTime();
-            if (d.year != (timeinfo.tm_year + 1900) || d.month != timeinfo.tm_mon + 1
-                            || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
-                            || d.minute != timeinfo.tm_min) {
-                Serial.printf("Write RTC Fail: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
-            } else {
-                Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
-            }
-            Serial.println("NTP sync done!");
-            //@TODO esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-
-            ntpSyncDone = true;
-        }
-        WatchfaceApplication::GetSecureNetworkWeather();
-
-        WiFi.disconnect(true);
-        delay(100);
-        WiFi.mode(WIFI_OFF);
-
-        WatchfaceApplication::ParseWeatherData();
-
-        if ( false == ntpSyncDone ) {
-            Serial.println("NTP sync: Unable to get time from network... retrying in 1 minute");
-            delay(60*1000);
-        } else {
-            Serial.println("NTP sync: Next sync countdown T-12 hours...");
-            delay(60*60*12*1000);
-        }
-    }
-    vTaskDelete(NULL);
-}
-
 void WatchfaceApplication::FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     //Serial.printf("AWWW YEAHHHH event:'%s' id: '%d' \n",base, id);
     WatchfaceApplication *self = reinterpret_cast<WatchfaceApplication*>(handler_args);
@@ -319,16 +245,16 @@ WatchfaceApplication::WatchfaceApplication() {
 
     esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived,this);
 
-    if ( nullptr == myTask ) {
-        myTask = new NetworkTaskDescriptor();
-        myTask->name = (char *)"NTP Watchface";
-        myTask->everyTimeMS = ((60*1000)*60)*24; // once a day
-        myTask->payload = (void *)this;
-        myTask->_lastCheck=millis();
+    if ( nullptr == ntpTask ) {
+        ntpTask = new NetworkTaskDescriptor();
+        ntpTask->name = (char *)"NTP Watchface";
+        ntpTask->everyTimeMS = ((60*1000)*60)*24; // once a day
+        ntpTask->payload = (void *)this;
+        ntpTask->_lastCheck=millis();
         if ( false == ntpSyncDone ) { 
-            myTask->_nextTrigger=0; // launch NOW if no synched never again
+            ntpTask->_nextTrigger=0; // launch NOW if no synched never again
         }
-        myTask->callback = [&,this]() {
+        ntpTask->callback = [&,this]() {
             Serial.println("Watchface: Trying to sync NTP time...");
             delay(100);
             //init and get the time
@@ -364,22 +290,25 @@ WatchfaceApplication::WatchfaceApplication() {
                 ntpSyncDone = true;
             }
         };
-        bool added = AddNetworkTask(myTask);
+        bool added = AddNetworkTask(ntpTask);
         Serial.printf("Watchface: WiFi task added: %s\n", (added?"true":"false"));
     }
-/*
-    //xTaskCreate(WatchfaceApplication::NTPSync, "", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE,nullptr, uxTaskPriorityGet(NULL), &NTPTaskHandler);
-typedef struct {
-    const char *name = { 0 };
-    unsigned long everyTimeMS = -1;
-    unsigned long nextTrigger = -1;
-    unsigned long lastCheck = -1;
-    void * payload = nullptr;
-    std::function<void (void *)> callback = nullptr;
-} NetworkTaskDescriptor;
-bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
-*/
 
+    if ( nullptr == weatherTask ) {
+        weatherTask = new NetworkTaskDescriptor();
+        weatherTask->name = (char *)"OpenWeather Watchface";
+        weatherTask->everyTimeMS = (60*1000)*60; // every hour
+        weatherTask->payload = (void *)this;
+        weatherTask->_lastCheck=millis();
+        weatherTask->_nextTrigger=0; // launch NOW if no synched never again
+        weatherTask->callback = [&,this]() {
+            WatchfaceApplication::GetSecureNetworkWeather();
+            // @TODO parse online is not optimal and posible harmfull (remote attack)
+            WatchfaceApplication::ParseWeatherData();
+        };
+        bool added = AddNetworkTask(weatherTask);
+        Serial.printf("Watchface: WiFi task added: %s\n", (added?"true":"false"));
+    }
 
     bottomRightButton = new ActiveRect(172,172,70,50,[&, this]() {
         LaunchApplication(new MainMenuApplication());
@@ -390,10 +319,16 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
 }
 WatchfaceApplication::~WatchfaceApplication() {
     Serial.printf("WatchfaceApplication: %p DELETE\n",this);
-    if (nullptr != myTask) {
-        RemoveNetworkTask(myTask);
-        delete myTask;
-        myTask = nullptr;
+    if (nullptr != weatherTask) {
+        RemoveNetworkTask(weatherTask);
+        delete weatherTask;
+        weatherTask = nullptr;
+    }
+
+    if (nullptr != ntpTask) {
+        RemoveNetworkTask(ntpTask);
+        delete ntpTask;
+        ntpTask = nullptr;
     }
     if ( nullptr != watchFaceCanvas ) {
         delete watchFaceCanvas;
@@ -403,7 +338,7 @@ WatchfaceApplication::~WatchfaceApplication() {
         delete bottomRightButton;
         bottomRightButton = nullptr;
     }
-    if( NTPTaskHandler != NULL ) { vTaskDelete( NTPTaskHandler ); }
+    //if( NTPTaskHandler != NULL ) { vTaskDelete( NTPTaskHandler ); }
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived);
     if ( nullptr != backlightCanvas ) {
         delete backlightCanvas;
