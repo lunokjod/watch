@@ -6,8 +6,7 @@
 
 #include "../static/img_splash.c"
 
-void DrawSplash();
-void LaunchSplash();
-
-void DrawSplashStatus(const char *textBanner);
+void SplashAnnounce();
+//void LaunchSplash();
+//void DrawSplashStatus(const char *textBanner);
 #endif

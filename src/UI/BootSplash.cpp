@@ -64,6 +64,28 @@ void animLoadModule0() {
 }
 TFT_eSprite * splashBuffer = nullptr;
 
+#include "../static/img_lunokiot_logo.xbm"
+
+void SplashAnnounce() {
+    ttgo->tft->fillScreen(TFT_WHITE);
+    // coords from gimp :) manual centered
+    ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, TFT_DARKGREY);
+
+    ttgo->tft->setTextSize(1);
+    ttgo->tft->setFreeFont(&FreeMonoBold9pt7b);
+    ttgo->tft->setTextDatum(TR_DATUM);
+    ttgo->tft->setTextWrap(false,false);
+    int32_t posX = TFT_WIDTH-10;
+    int32_t posY = 10;
+    char buildNumberAsString[16] = { 0 };
+    sprintf(buildNumberAsString,"#%u", LUNOKIOT_BUILD_NUMBER );
+    ttgo->tft->setTextColor(TFT_BLACK);
+    ttgo->tft->drawString(buildNumberAsString, posX, posY);
+
+    ttgo->openBL();
+    ttgo->setBrightness(255);
+
+}
 void DrawSplash() {
     splashBuffer = new TFT_eSprite(ttgo->tft);
     splashBuffer->setColorDepth(16);

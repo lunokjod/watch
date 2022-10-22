@@ -41,7 +41,7 @@ void setup() {
   ttgo->tft->setRotation(0);  //  default correct position, the ttgo code sux
 
   Serial.println("lunokIoT: System initializing...");
-  DrawSplash(); // simple eyecandy
+  SplashAnnounce(); // simple eyecandy
 
   NVS.begin(); // need NVS to get the current configuration
 
@@ -51,10 +51,11 @@ void setup() {
   BMPIntHandler();
   //RTCIntHandler();
 
+  NetworkHandler(); // already provisioned?
+
   // Start the interface with the user via the screen and buttons!!! (born to serve xD)
   UIStart();
 
-  NetworkHandler(); // already provisioned?
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
   Serial.printf("lunokIoT: Boot time: %lu ms\n", currentBootTime);
