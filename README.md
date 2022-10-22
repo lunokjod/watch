@@ -7,14 +7,17 @@
 
 * Use button to wake/sleep the watch
 * When screen goes on, the watchface appears
+* Long button push for poweroff
 
 ## What does:
 * WiFi time sync once every 24h (using network time protocol NTP)
 * WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" before build) more info: https://openweathermap.org/
+* Wake up every 60 seconds to monitor the user pose (future sleep monitor)
+* Wake up every activity/stepcounter (future fitness monitor)
 
 ## Common problems:
 * Build failed: "-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD"
- * If you don't have a openweaher account get it one and generate a user key
+ * If you don't have a openweather account get it one and generate a user key
  * Put the key on "openWeatherKey.txt" (yes, camelCase)
  * Try to build again
 
