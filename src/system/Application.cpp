@@ -48,24 +48,23 @@ void LaunchApplicationTask(void * data) {
             Serial.printf("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
             LunokIoTApplication *ptrOldApp = currentApplication;
             currentApplication = nullptr;
-            if ( nullptr != ptrOldApp ) {
+            if ( nullptr != ptrOldApp ) { // @TODO if this delete is optional, can get some grade of "multi-app"
                 delete ptrOldApp;
             }
+            if ( nullptr != overlay ) { // destroy overlay content between apps is more cheap than regenerate-it?
+                overlay->fillSprite(CanvasWidget::MASK_COLOR);
             /*  Don't destroy overlay between apps (performance test)
-            if ( nullptr != overlay ) {
                 overlay->deleteSprite();
                 delete overlay;
                 overlay = nullptr;
-            }*/
-            if ( nullptr != overlay ) { // destroy overlay content between apps
-                overlay->fillSprite(CanvasWidget::MASK_COLOR);
+            */
             }
 
         }
         if ( nullptr == data ) {
             Serial.println("Application: None");
-            currentApplication = nullptr;
-            ttgo->tft->fillScreen(TFT_BLACK);
+            currentApplication = nullptr;     // no one driving now x'D
+            ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
         } else {
             Serial.printf("Application: %p launched!\n", instance);
             FPS=MAXFPS; // reset refresh rate
@@ -83,5 +82,6 @@ void LaunchApplication(LunokIoTApplication *instance) {
         Serial.printf("Application: %p Already running\n", currentApplication);
         return;
     }
+    // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
     xTaskCreate(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)instance, uxTaskPriorityGet(NULL), nullptr);
 }
