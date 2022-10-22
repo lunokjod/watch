@@ -18,4 +18,12 @@
  * Put the key on "openWeatherKey.txt" (yes, camelCase)
  * Try to build again
 
+## Warning:
+
+**Advice about usability:** This software is under heavy development and erlier development phase... many parts can be disfunctional, broken or buggy
+
+**Advise about privacy:** This software (as device does) can monitor your activities (for fitness applications purposes) and isn't shared outside
+
+**Advise about warranty:** Absolutely no warrant about nothing, use at your own risk
+
 ## Contact us: https://t.me/lunowatch
