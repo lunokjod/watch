@@ -14,21 +14,21 @@ LunokIoTApplication::LunokIoTApplication() {
     this->canvas->setColorDepth(16);
     this->canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
     this->canvas->fillSprite(CanvasWidget::MASK_COLOR);
-    Serial.println("App BEGIN");
+    Serial.printf("LunokIoTApplication: %p created\n", this);
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
-    Serial.printf("LunokIoTApplication: %p DELETE\n", this);
+    Serial.printf("LunokIoTApplication: %p destroyed\n", this);
     if ( nullptr != this->canvas ) {
         canvas->deleteSprite();
         delete this->canvas;
         this->canvas = nullptr;
     }
     if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 
-        Serial.printf("WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
+        Serial.printf("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
     }
     if ( this->lastApplicationPSRAMFree != ESP.getFreePsram()) { 
-        Serial.printf("WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
+        Serial.printf("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
     }
 }
 
@@ -40,11 +40,9 @@ bool LunokIoTApplication::Tick() { return false; }
 
 LunokIoTApplication *currentApplication = nullptr;
 
-
-
 void LaunchApplicationTask(void * data) {
     LunokIoTApplication *instance = (LunokIoTApplication *)data;
-    delay(20);
+    delay(10); // do a little delay to launch it (usefull to allow a bit of 'yeld()' )
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
         if ( nullptr != currentApplication ) {
             Serial.printf("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
@@ -59,6 +57,10 @@ void LaunchApplicationTask(void * data) {
                 delete overlay;
                 overlay = nullptr;
             }*/
+            if ( nullptr != overlay ) { // destroy overlay content between apps
+                overlay->fillSprite(CanvasWidget::MASK_COLOR);
+            }
+
         }
         if ( nullptr == data ) {
             Serial.println("Application: None");
