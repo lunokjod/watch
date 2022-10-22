@@ -112,6 +112,8 @@ extern int16_t touchDragVectorY; // drag vectorY
 // Obtained by generateConfig.py from file: openWeatherKey.txt
 const String openWeatherMapApiKey = "@@OPENWEATHER_APIKEY@@";
 
+const uint8_t BaseBackLightBrightness = 32; // minimal bright
+
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
 const uint8_t userTall = 197; 
 //const uint8_t userTall = 166; // user tall in CM
