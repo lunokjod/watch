@@ -645,18 +645,6 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
         TakeSamples();
         nextSensorsTick = millis()+(1000/8);
     }
-    
-    /*
-    static bool lastBLStatus = ttgo->bl->isOn();
-    bool thisSample = ttgo->bl->isOn();
-    if ( ( false == thisSample ) && ( true == lastBLStatus )) {
-        Serial.println("Screen is off, the ESP32 must be going to sleep accordly...");
-        lastBLStatus = thisSample;
-        DoSleep();
-        return;
-    }
-    lastBLStatus = thisSample;
-    */
 }
 
 static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {

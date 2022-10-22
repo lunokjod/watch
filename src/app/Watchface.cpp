@@ -316,7 +316,8 @@ WatchfaceApplication::WatchfaceApplication() {
     });
 
     topRightButton = new ActiveRect(172,0,70,50,[&, this]() {
-        pendingNotification=(!pendingNotification);
+        if ( pendingNotifications > 0 ) { pendingNotifications=0;}
+        else { pendingNotifications = random(1,10); }
         Serial.println("@TODO THIS IS A TEST");
         // must show number of notifications pending
 
@@ -720,8 +721,22 @@ bool WatchfaceApplication::Tick() {
            backgroundCanvas->canvas->pushRotated(watchFaceCanvas->canvas,0);
         }
         // Show notification light in upper right button
-        if ( pendingNotification ) {
+        if ( pendingNotifications > 0 ) {
             watchFaceCanvas->canvas->pushImage(topRightButton->x,topRightButton->y,img_watchface0_notification.width,img_watchface0_notification.height,(uint16_t*)img_watchface0_notification.pixel_data);
+            int x = TFT_WIDTH-5;
+            int y = 10;
+            char notifCnt[4] = { 0 };
+            if ( pendingNotifications > 9) {
+                sprintf(notifCnt,"9+");
+            } else {
+                sprintf(notifCnt,"%d",pendingNotifications);
+            }
+            watchFaceCanvas->canvas->setTextFont(0);
+            watchFaceCanvas->canvas->setTextSize(2);
+            watchFaceCanvas->canvas->setTextDatum(TR_DATUM);
+            watchFaceCanvas->canvas->setTextWrap(false,false);
+            watchFaceCanvas->canvas->setTextColor(TFT_BLACK);
+            watchFaceCanvas->canvas->drawString(notifCnt, x,y);
         }
         // weather icon
         //watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
