@@ -173,7 +173,9 @@ static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, 
         Serial.printf("UI: uiEventReady: received unknown id: %d discarding event\n", id);
         return;
     }
+#ifdef LUNOKIOT_DEBUG_UI
     Serial.println("lunokIoT: UI event loop running");
+#endif
     ttgo->setBrightness(255);
     //DrawSplashStatus("UI loaded");
 }

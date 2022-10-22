@@ -887,13 +887,14 @@ void SystemEventsStart() {
 
     // configure system event loop
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 20,
-        .task_name = "lEvTask", // task will be created
-        .task_priority = uxTaskPriorityGet(NULL),
-        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE,
-        .task_core_id = tskNO_AFFINITY
-    };
-    // Create the event loops
+        .queue_size = 20, // maybe so big
+        .task_name = "lEvTask", // lunokIoT Event Task
+        .task_priority = uxTaskPriorityGet(NULL), // when the freeRTOS wants
+        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
+        .task_core_id = tskNO_AFFINITY // bah, dontcare
+    }; // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
+
+    // Create my own event loop
     ESP_ERROR_CHECK(esp_event_loop_create(&lunokIoTSystemEventloopConfig, &systemEventloopHandler));
 
     // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
@@ -905,16 +906,19 @@ void SystemEventsStart() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter,nullptr, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity,nullptr, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity,nullptr, NULL));
+
     // Create the event source task with the same priority as the current task
     xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+#ifdef LUNOKIOT_DEBUG
     Serial.println("lunokIoT: User event loop running");
-
+#endif
 
     // get the freeRTOS event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived,NULL));
-
+#ifdef LUNOKIOT_DEBUG
     Serial.println("lunokIoT: System event loop running");
+#endif
 }
 
 /*
@@ -966,11 +970,13 @@ static void NetworkHandlerTask(void* args) {
     unsigned long beginConnected = -1;
     unsigned long beginIdle = -1;
     while(true) {
-        delay(1000);
-        if ( systemSleep ) { continue; }
+        delay(1000); // allow other tasks to do their chance :)
+
+        if ( systemSleep ) { continue; } // fuck off... giveup/sleep in progress... (shaded area)
         if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
         
         if ( millis() > nextConnectMS ) { // begin connection?
+        
             //check the pending tasks... if no one, don't connect
             Serial.println("Network: Timed WiFi connection procedure begin");
             bool mustStart = false;
@@ -1080,8 +1086,11 @@ bool NetworkHandler() {
     return false;
 }
 
-
+/*
+ * Get all samples possible
+ */
 void TakeSamples() {
+    //@TODO AXP, hall, and others must be collected
     TakeBMPSample();
     //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
 }
