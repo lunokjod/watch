@@ -15,6 +15,24 @@
 * Wake up every 60 seconds to monitor the user pose (future sleep monitor)
 * Wake up every activity/stepcounter (future fitness monitor)
 
+## Hardware support:
+ * BMA423 support (including during sleep)
+ * AXP202 support (including sleep)
+ * haptic and vibration support
+ * ST7789V support (lilygo TFT_eSPI)
+ * Partial RTC support (no alarm)
+
+### Pending to implement:
+* MAX98357A
+* PDM Mic
+* RTC (alarm)
+* IR
+* Bluetooth
+* espNow
+* Touch on sleep
+* Custom activities
+* feedbacked apps
+
 ## Common problems:
 * Build failed: "-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD"
  * If you don't have a openweather account get it one and generate a user key
