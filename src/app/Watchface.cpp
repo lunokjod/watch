@@ -99,29 +99,33 @@ void DrawRainDrops() {
     nextRaindropMS=millis()+random(3000,15000);
 }
 
-void WatchfaceApplication::ParseWeatherData() {
+bool WatchfaceApplication::ParseWeatherData() {
 
     if ( nullptr == weatherReceivedData ) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''");
-        return;
+        weatherSyncDone = false;
+        return false;
     }
     JSONVar myObject = JSON.parse(weatherReceivedData);
     if (JSON.typeof(myObject) == "undefined") {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON:");
         Serial.printf("%s\n",weatherReceivedData);
-        return;
+        weatherSyncDone = false;
+        return false;
     }
     if (false == myObject.hasOwnProperty("weather")) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found");
         Serial.printf("%s\n",weatherReceivedData);
-        return;
+        weatherSyncDone = false;
+        return false;
     }
     JSONVar weatherBranch = myObject["weather"][0];
 
     if (false == weatherBranch.hasOwnProperty("description")) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found");
         Serial.printf("%s\n",weatherReceivedData);
-        return;
+        weatherSyncDone = false;
+        return false;
     }
     weatherId = weatherBranch["id"];
     const char * weatherMainConst =  weatherBranch["main"];
@@ -154,15 +158,16 @@ void WatchfaceApplication::ParseWeatherData() {
     if (false == myObject.hasOwnProperty("main")) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found");
         Serial.printf("%s\n",weatherReceivedData);
-        return;
+        return false;
     }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
 
     weatherSyncDone = true;
+    return true;
 }
 
-void WatchfaceApplication::GetSecureNetworkWeather() {
+bool WatchfaceApplication::GetSecureNetworkWeather() {
     // @NOTE to get the PEM from remote server:
     // $ openssl s_client -connect api.openweathermap.org:443 -showcerts </dev/null | openssl x509 -outform pem > openweathermap_org.pem
     // $ echo "" | openssl s_client -showcerts -connect api.openweathermap.org:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >api_openweathermap_org.pem
@@ -203,14 +208,16 @@ void WatchfaceApplication::GetSecureNetworkWeather() {
                 }
                 https.end();
             } else {
-                Serial.println("http unable to connect");
+                Serial.println("Watchface: Weather: http unable to connect");
+                delete client;
+                return true;
             }
-        // End extra scoping block
         }
         delete client;
-    } else {
-        Serial.println("Unable to create WiFiClientSecure");
+        return true;
     }
+    Serial.println("Watchface: Weather: Unable to create WiFiClientSecure");
+    return false;
 }
 
 void WatchfaceApplication::FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -286,12 +293,15 @@ WatchfaceApplication::WatchfaceApplication() {
                                 || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
                                 || d.minute != timeinfo.tm_min) {
                     Serial.printf("Write RTC Fail: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
-                } else {
-                    Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                    ntpSyncDone = false;
+                    return false;
                 }
+                Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
                 Serial.println("NTP sync done!");
                 ntpSyncDone = true;
+                return true;
             }
+            return false;
         };
         AddNetworkTask(ntpTask);
     }
@@ -304,9 +314,13 @@ WatchfaceApplication::WatchfaceApplication() {
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         weatherTask->callback = [&,this]() {
-            WatchfaceApplication::GetSecureNetworkWeather();
+            bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
             // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
-            WatchfaceApplication::ParseWeatherData();
+            if ( getDone ) {
+                bool parseDone = WatchfaceApplication::ParseWeatherData();
+                return parseDone;
+            }
+            return getDone;
         };
         AddNetworkTask(weatherTask);
     }

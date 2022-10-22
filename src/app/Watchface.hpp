@@ -45,8 +45,8 @@ class WatchfaceApplication: public LunokIoTApplication {
         ~WatchfaceApplication();
         WatchfaceApplication();
         static void NTPSync(void * data);
-        static void GetSecureNetworkWeather();
-        static void ParseWeatherData();
+        static bool GetSecureNetworkWeather();
+        static bool ParseWeatherData();
         bool Tick();
         bool wifiEnabled = false;
         int cycleHour = 0;

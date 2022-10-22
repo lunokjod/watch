@@ -307,29 +307,31 @@ static void DoSleepTask(void* args) {
     Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
 
     Serial.printf("ESP32: DoSleep(%d) began!\n", doSleepThreads);
+    ScreenSleep();
     //Serial.printf("WIFI STATUS: %d\n", WiFi.status());
-    size_t retries = 3;
-    Serial.printf("WIFISTATUS: %d\n",WiFi.status());
+    const size_t MAXRETRIES = 3;
+    size_t retries = MAXRETRIES;
+    //Serial.printf("WIFISTATUS: %d\n",WiFi.status());
     //while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
     while ( WL_CONNECTED == WiFi.status()) {
-        Serial.printf("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for radio powerdown....\n", retries);
+        Serial.printf("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
         retries--;
         if ( 0 == retries ) {
-            Serial.println("ESP32: Forcing WiFI off due timeout");
+            Serial.println("ESP32: System don't end the connection. Forcing WiFI off due timeout");
             WiFi.disconnect(true);
-            delay(100);
+            delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
             break;
         }
     }
     WiFi.mode(WIFI_OFF);
-    delay(200);
-    Serial.println("ESP32: WiFi released, DoSleep continue...");
+    if ( retries < MAXRETRIES ) {
+        Serial.println("ESP32: WiFi released, DoSleep continue...");
+    }
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
     // bma interrupt gpio_39
-    ScreenSleep();
     esp_sleep_enable_ext0_wakeup( GPIO_NUM_35, 0);
     esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR*LUNOKIOT_WAKE_TIME_S);
     esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
@@ -1036,9 +1038,12 @@ static void NetworkHandlerTask(void* args) {
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
                             Serial.printf("NetworkTask: Running task '%s'...\n", tsk->name);
-                            tsk->callback();
-                            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
-                            tsk->_lastCheck = millis();
+                            bool res = tsk->callback();
+                            if ( res ) {
+                                tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                                tsk->_lastCheck = millis();
+                            } else { 
+                                Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);                        }
                             continue;
                         }
                     }

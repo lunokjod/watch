@@ -54,7 +54,7 @@ class NetworkTaskDescriptor {
         unsigned long _nextTrigger = -1; // -1 means first launch in next time window or 0 for inmediate
         unsigned long _lastCheck = -1;  // reserved
         void * payload = nullptr;   // @TODO this may be useless
-        std::function<void ()> callback = nullptr; // lambda power
+        std::function<bool ()> callback = nullptr; // lambda power
 };
 // Install the network loop task scheduler
 bool NetworkHandler();

@@ -44,7 +44,7 @@ extern const unsigned long UITimeout; // UI Timeout to ScreenSleep (ms)
 
 extern TTGOClass *ttgo; // ttgo lib
 
-extern RTC_DATA_ATTR uint32_t bootCount; // don't work? why?
+extern RTC_DATA_ATTR uint32_t bootCount; // @TODO don't work? why?
 
 extern bool systemSleep; // turns true when system is in "gray state" (just after wakeup)
 extern unsigned long currentBootTime;
