@@ -15,7 +15,7 @@
 ## Common problems:
 * Build failed: "-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD"
  * If you don't have a openweaher account get it one and generate a user key
- * Put the key on "openWeatherKey.txt" (yes, camel case)
+ * Put the key on "openWeatherKey.txt" (yes, camelCase)
  * Try to build again
 
 ## Contact us: https://t.me/lunowatch
