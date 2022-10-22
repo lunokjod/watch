@@ -4,6 +4,7 @@ import string
 import random
 import uuid
 import socket
+from os.path import exists
 
 h_name = socket.gethostname()
 IP_addres = socket.gethostbyname(h_name)
@@ -36,11 +37,26 @@ templateFilename = basePath + "/tool/lunokiot.hpp.template"
 counterFile = basePath + "/tool/.buildCount.txt"
 openWeatherFile = basePath + "/openWeatherKey.txt"
 
+# check files
+template_exists = exists(templateFilename)
+weatherkey_exists = exists(openWeatherFile)
+if False == template_exists:
+        print("")
+        print("-----------> NO template file found for generate header, ABORT BUILD")
+        print("")
+        exit(100)
+if False == weatherkey_exists:
+        print("")
+        print("-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD")
+        print("")
+        exit(100)
+
 templateFile = open(templateFilename, "r")
 templateData = templateFile.read() 
 templateFile.close()
 buildCount = 0
-openweatherKey = ""
+openweatherKey = "PLEASE_SET_OPENWEATHER KEY"
+
 if not os.path.exists(counterFile):
     with open(counterFile,'w') as f:
         f.write(buildCount)
