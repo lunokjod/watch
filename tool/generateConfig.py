@@ -52,7 +52,9 @@ with open(counterFile,'w') as f:
 with open(openWeatherFile,'r') as f:
     openweatherKey = f.read()
 
-outputData = templateData.replace("@@BUILD_NUMBER@@", str(buildCount))
+
+outputData = templateData.replace("@@LUNOKIOT_GENERATED_FILE_WARNING@@", str("DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE on build time USE .template instead"))
+outputData = outputData.replace("@@BUILD_NUMBER@@", str(buildCount))
 outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
 outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
 

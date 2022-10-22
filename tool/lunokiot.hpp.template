@@ -2,7 +2,7 @@
 #define ___LUNOKIOT__CONFIG__GENERATED__
 
 /*
- * DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE!!! USE .template instead
+ * @@LUNOKIOT_GENERATED_FILE_WARNING@@
  */
 
 #include <Arduino.h>
@@ -36,11 +36,11 @@ extern SemaphoreHandle_t UISemaphore;
 //#define LUNOKIOT_UNIQUEID "@@LUNOKIOT_UNIQUEID@@"
 //#define LUNOKIOT_OTA_HOST "@@LUNOKIOT_OTA_HOST@@"
 
-extern const unsigned long UITimeout; //
+extern const unsigned long UITimeout; // UI Timeout to ScreenSleep (ms)
 
-#define LUNOKIOT_TASK_STACK_SIZE 1024*4
-#define LUNOKIOT_APP_STACK_SIZE 1024*8
-#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32
+#define LUNOKIOT_TASK_STACK_SIZE 1024*4 // usual task
+#define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task
+#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32    // full TCP/IP Stacks
 
 extern TTGOClass *ttgo; // ttgo lib
 
