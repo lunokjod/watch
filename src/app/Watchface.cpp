@@ -104,6 +104,7 @@ bool WatchfaceApplication::ParseWeatherData() {
     if ( nullptr == weatherReceivedData ) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''");
         weatherSyncDone = false;
+        weatherId=-1;
         return false;
     }
     JSONVar myObject = JSON.parse(weatherReceivedData);
@@ -117,6 +118,7 @@ bool WatchfaceApplication::ParseWeatherData() {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found");
         Serial.printf("%s\n",weatherReceivedData);
         weatherSyncDone = false;
+        weatherId=-1;
         return false;
     }
     JSONVar weatherBranch = myObject["weather"][0];
@@ -125,6 +127,7 @@ bool WatchfaceApplication::ParseWeatherData() {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found");
         Serial.printf("%s\n",weatherReceivedData);
         weatherSyncDone = false;
+        weatherId=-1;
         return false;
     }
     weatherId = weatherBranch["id"];
@@ -268,7 +271,7 @@ WatchfaceApplication::WatchfaceApplication() {
         }
         ntpTask->callback = [&,this]() {
             Serial.println("Watchface: Trying to sync NTP time...");
-            delay(100);
+            //delay(100);
             //init and get the time
             configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
             //timeClient.begin();
@@ -728,7 +731,7 @@ bool WatchfaceApplication::Tick() {
             */
 
         // the sphere (eyecandy)
-        // @TODO this can be tunned by the user
+        // @TODO this must be tunned by the user (hours)
         if ( ( currentHour > 17 ) || ( currentHour < 9 ))  {
            backlightCanvas->canvas->pushRotated(watchFaceCanvas->canvas,0);
         } else {
