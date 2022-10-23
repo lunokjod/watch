@@ -7,6 +7,10 @@
 #include <functional>
 #include "../system/Application.hpp"
 
+
+/*
+ * Convenient uint32_t to R/G/B union
+ */
 union rgbColor {
     uint32_t u32;
     uint8_t rgb[3];
@@ -18,12 +22,14 @@ union rgbColor {
     } color;
 };
 
+// declare the UI loop (system independent)
 ESP_EVENT_DECLARE_BASE(UI_EVENTS);
 
+// UI Events
 enum {
-    UI_EVENT_READY,
-    UI_EVENT_TICK,
-    UI_EVENT_STOP,
+    UI_EVENT_READY, // when the UI becomes active
+    UI_EVENT_TICK,  // can be irregular, depending of the esp32 load
+    UI_EVENT_STOP,  // stop all UI events please
     UI_EVENT_ANCHOR2D_CHANGE,
     UI_EVENT_NOTIFICATION
 };

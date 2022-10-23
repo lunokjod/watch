@@ -5,7 +5,7 @@
  * UI Class ActiveRect
  * 
  * Declare invisible rectangular area on screen (used to handle touch events)
- * 
+ * Note: can be used as circular point using InRadius
  * 
  */
 

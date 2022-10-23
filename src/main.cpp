@@ -54,9 +54,11 @@ void setup() {
 
 #ifdef LILYGO_WATCH_2020_V3
   // haptic announce (@TODO user choice "silent boot")
+#ifndef LUNOKIOT_SILENT_BOOT
   ttgo->motor_begin();
   delay(10); // need to shake works
   ttgo->shake();
+#endif
 #endif
 
   NVS.begin(); // need NVS to get the current configuration

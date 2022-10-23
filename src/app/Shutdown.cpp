@@ -9,9 +9,11 @@
 
 ShutdownApplication::ShutdownApplication(bool restart): restart(restart) {
     SaveDataBeforeShutdown();
-
+#ifdef LILYGO_WATCH_2020_V3
+#ifndef LUNOKIOT_SILENT_BOOT
     ttgo->shake();
-
+#endif
+#endif
     nextRedraw=0;
     timeFromBegin=millis();
     Serial.flush();

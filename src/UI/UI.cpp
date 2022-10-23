@@ -90,7 +90,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     touched = newTouch;
     touchX = newTouchX;
     touchY = newTouchY;
-
+    // an app can choice destroy the overlay if want, the system generates new one
     if ( nullptr == overlay ) {
         overlay = new TFT_eSprite(ttgo->tft);
         overlay->setColorDepth(16);
@@ -98,15 +98,15 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         overlay->fillSprite(CanvasWidget::MASK_COLOR);
         Serial.printf("UI: new overlay generated %p\n", overlay);
     }
-
+    // try to get UI lock
     bool changes = false;
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         if ( nullptr != currentApplication ) {
             TFT_eSprite *appView = currentApplication->GetCanvas();
             if ( nullptr != appView ) {
-                // perform the call
+                // perform the call to the app logic
                 changes = currentApplication->Tick();
-                if ( changes ) {
+                if ( changes ) { // Tick() returned true
                     appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
                     if ( nullptr != overlay )  {
                         overlay->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
@@ -177,7 +177,6 @@ static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, 
     Serial.println("lunokIoT: UI event loop running");
 #endif
     ttgo->setBrightness(255);
-    //DrawSplashStatus("UI loaded");
 }
 
 static void UITickTask(void* args) {

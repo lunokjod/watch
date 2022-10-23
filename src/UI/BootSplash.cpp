@@ -17,6 +17,10 @@ extern const uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start"
 extern const uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
 void SplashFanfare() {
+#ifdef LUNOKIOT_SILENT_BOOT
+    Serial.println("Audio: Not initialized due Silent boot is enabled");
+    return;
+#endif
     // Audio fanfare x'D
     Serial.println("Audio: Initialize");
     ttgo->enableAudio();
