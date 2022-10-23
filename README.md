@@ -21,9 +21,10 @@
  * haptic and vibration support
  * ST7789V support (lilygo TFT_eSPI)
  * Partial RTC support (no alarm)
+ * MAX98357A (mp3 playback support)
+ * WiFi (via provisioning)
 
 ### Pending to implement:
-* MAX98357A
 * PDM Mic
 * RTC (alarm)
 * IR
