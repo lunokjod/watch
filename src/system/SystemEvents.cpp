@@ -307,6 +307,9 @@ static void DoSleepTask(void* args) {
     Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
 
     Serial.printf("ESP32: DoSleep(%d) began!\n", doSleepThreads);
+
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+
     ScreenSleep();
     //Serial.printf("WIFI STATUS: %d\n", WiFi.status());
     const size_t MAXRETRIES = 3;
@@ -342,6 +345,7 @@ static void DoSleepTask(void* args) {
     Serial.println("ESP32: -- Wake -- o_O'"); // good morning!!
     systemSleep = false;
     xSemaphoreGive( DoSleepTaskSemaphore );
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
     WakeUpReason();
 
@@ -445,6 +449,7 @@ void SaveDataBeforeShutdown() {
 static void AXPEventPEKLong(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     LaunchApplication(new ShutdownApplication());
     SaveDataBeforeShutdown();
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }  
 
 static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -620,7 +625,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
             int nowBatteryPercent = ttgo->power->getBattPercentage();
             if ( nowBatteryPercent != batteryPercent ) {
                 batteryPercent = nowBatteryPercent;
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC,nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
             }
             batteryPercent = nowBatteryPercent;
             
@@ -637,7 +642,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
         if ( nowAXPTemp != axpTemp ) {
             //Serial.printf("AXP202: Temperature: %.1fºC\n", axpTemp);
             axpTemp = nowAXPTemp;
-            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE,nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         }
 
         nextSlowSensorsTick = millis()+(1000/1);
@@ -784,11 +789,11 @@ static void SystemLoopTask(void* args) {
                 } else if (ttgo->power->isBattTempLowIRQ()) {
                     ttgo->power->clearIRQ();
                     Serial.println("AXP202: Battery temperature low");
-                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isBattTempHighIRQ()) {
                     ttgo->power->clearIRQ();
                     Serial.println("AXP202: Battery temperature high");
-                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isVbusPlugInIRQ()) {
                     //setCpuFrequencyMhz(240);
                     ttgo->power->clearIRQ();

@@ -21,16 +21,17 @@ class BatteryApplication: public LunokIoTApplication {
         // PMU_EVENT_BATT_PC
         EventKVO * BattPCEvent = nullptr;
 
-    /*PMU_EVENT_BATT_CHARGING,
-    PMU_EVENT_BATT_FULL,
-    PMU_EVENT_BATT_ACTIVE,
-    PMU_EVENT_BATT_FREE,
-    PMU_EVENT_BATT_PRESENT,
-    PMU_EVENT_BATT_REMOVED,
-    PMU_EVENT_BATT_TEMP_LOW,
-    PMU_EVENT_BATT_TEMP_HIGH,
-    PMU_EVENT_BATT_NOTFOUND,
-    */
+        /* @TODO monitor other events
+        PMU_EVENT_BATT_CHARGING,
+        PMU_EVENT_BATT_FULL,
+        PMU_EVENT_BATT_ACTIVE,
+        PMU_EVENT_BATT_FREE,
+        PMU_EVENT_BATT_PRESENT,
+        PMU_EVENT_BATT_REMOVED,
+        PMU_EVENT_BATT_TEMP_LOW,
+        PMU_EVENT_BATT_TEMP_HIGH,
+        PMU_EVENT_BATT_NOTFOUND,
+        */
 
         ButtonImageXBMWidget * btnBack = nullptr;
         BatteryApplication();
