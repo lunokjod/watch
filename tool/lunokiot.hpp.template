@@ -126,10 +126,10 @@ const float WOMAN_STEP_PROPORTION = 0.413;
 const float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 
 
-const unsigned long NetworkTimeout = 2*1000; // time until wifi is killed by timeout
+const unsigned long NetworkTimeout = 3*1000; // time until wifi is killed by timeout in milliseconds
 const unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
-extern bool provisioned; // 
+extern bool provisioned; // need to do advanced network tasks
 
-const char lastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt";
+const char lastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt"; // this number determine if update is available online
 
 #endif

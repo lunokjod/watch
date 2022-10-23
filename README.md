@@ -53,6 +53,11 @@
 ### Clock don't show nothing on screen
  * is a V3 device?
  * if are other model, edit platformio.ini and change "build_flags = -DLILYGO_WATCH_2020_V3" to fit with
+
+## Know problems
+ * Lower than 172Kb of free heap makes fail the sprite alloc, getting glitches or missinformation
+ * Some kind of leak on (almost) heap between system and watchface... long term use impossible, restarted by heap overflow occurs after many of uses (glitches can be seen before as advice system is running out of memory)
+
 ## Warning:
 
 **Advice about usability:** This software is under heavy development and erlier development phase... many parts can be disfunctional, broken or buggy
