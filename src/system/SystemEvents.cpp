@@ -469,10 +469,7 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
         } else {
             Serial.println("Event: user wants to get a screen");
             TakeSamples();
-            //delay(50);
-            LaunchApplication(new WatchfaceApplication());
             ScreenWake();
-            //delay(100);
         }
         /*
         lastPEK = millis()+50;
@@ -899,7 +896,8 @@ void SystemEventsStart() {
  * Eyecandy notification of boot end
  */
 void SystemEventBootEnd() {
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+    provisioned = NVS.getInt("provisioned");
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 
 
