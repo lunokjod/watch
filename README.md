@@ -33,7 +33,17 @@
 * espNow (locate other family watches)
 * Touch on sleep
 * Custom activities (hidden app availiable for testing)
+* OTA shit
 * feedbacked apps (what do you need?)
+
+## Important build flags
+ platform.ini file contains the build flags, the more relevant are:
+ * **-DLILYGO_WATCH_2020_V3** change with your version (at this time is lilygo library driven) please report issues :)
+* **-DLOG_LOCAL_LEVEL=ESP_LOG_VERBOSE** esp-idf debug shit
+* **-DLUNOKIOT_DEBUG** generic system debug messages
+* **-DLUNOKIOT_DEBUG_UI** UI specific debug messages
+* **-DLUNOKIOT_SILENT_BOOT** dont shake and no fanfare sound when start/stop
+* **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (@TODO)
 
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"
