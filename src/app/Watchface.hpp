@@ -1,18 +1,18 @@
 #ifndef __LUNOKIOT__WATCHFACE_APP__
 #define __LUNOKIOT__WATCHFACE_APP__
+#include "lunokiot_config.hpp"
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "lunokiot_config.hpp"
+
 #include "../system/Application.hpp"
+
+#include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
-#include "../UI/widgets/ButtonWidget.hpp"
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/NotificationWidget.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
-#include "../UI/representation/Point2D.hpp"
-#include "../UI/widgets/GraphWidget.hpp"
-#include "../UI/widgets/GaugeWidget.hpp"
+
 #include "../system/SystemEvents.hpp"
+#include "../system/Network.hpp"
+
 
 class WatchfaceApplication: public LunokIoTApplication {
     public:

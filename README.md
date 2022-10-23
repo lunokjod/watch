@@ -24,17 +24,18 @@
  * Partial RTC support (system sync)
  * MAX98357A (mp3 playback support)
  * WiFi (via provisioning)
+ * BLE (work in progress) issues while wifi is in use
 
 ### Pending to implement:
 * PDM Mic (voice assistant)
 * RTC (alarm)
 * IR (jokes with IR devices mostly x'D)
-* Bluetooth ( https://www.espruino.com/Gadgetbridge or something like )
 * espNow (locate other family watches)
 * Touch on sleep
 * Custom activities (hidden app availiable for testing)
 * OTA shit
 * feedbacked apps (what do you need?)
+* Web installer: https://espressif.github.io/esptool-js/
 
 ## Important build flags
  platform.ini file contains the build flags, the more relevant are:
@@ -43,7 +44,8 @@
 * **-DLUNOKIOT_DEBUG** generic system debug messages
 * **-DLUNOKIOT_DEBUG_UI** UI specific debug messages
 * **-DLUNOKIOT_SILENT_BOOT** dont shake and no fanfare sound when start/stop
-* **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (@TODO)
+* **-DLUNOKIOT_WIFI_ENABLED** start the wifi timed connection subsystem
+* **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA) requires: **-DLUNOKIOT_WIFI_ENABLED**
 
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"

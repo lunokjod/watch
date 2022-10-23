@@ -1,19 +1,26 @@
+#include "Watchface.hpp"
+
+#include "../lunokiot_config.hpp"
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "../lunokiot_config.hpp"
+
+#include <Arduino_JSON.h>
+#include <HTTPClient.h>
 
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-#include "Watchface.hpp"
 
 #include "../static/img_watchface0.c"
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
 #include "../static/img_seconds_hand.c"
 #include "../static/img_wifi_24.xbm"
+#include "../static/img_bluetooth_24.xbm"
+
 #include "../static/img_usb_24.xbm"
 
 #include "../static/img_daynightCycle.c"
@@ -33,10 +40,6 @@
 #include "../system/SystemEvents.hpp"
 #include "MainMenu.hpp"
 
-#include <WiFi.h>
-//#include "../UI/UI.hpp"
-#include <HTTPClient.h>
-#include <Arduino_JSON.h>
 
 
 NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
@@ -260,9 +263,9 @@ WatchfaceApplication::WatchfaceApplication() {
 
     marksCanvas = new CanvasWidget(TFT_HEIGHT,TFT_WIDTH);
     marksCanvas->canvas->fillSprite(CanvasWidget::MASK_COLOR);
-
+    // register always (monitor unwanted wifi usage)
     esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived,this);
-
+#ifdef LUNOKIOT_WIFI_ENABLED
     if ( nullptr == ntpTask ) {
         ntpTask = new NetworkTaskDescriptor();
         ntpTask->name = (char *)"NTP Watchface";
@@ -330,7 +333,7 @@ WatchfaceApplication::WatchfaceApplication() {
         };
         AddNetworkTask(weatherTask);
     }
-
+#endif
     bottomRightButton = new ActiveRect(172,172,70,50,[&, this]() {
         LaunchApplication(new MainMenuApplication());
     });
@@ -394,6 +397,7 @@ WatchfaceApplication::~WatchfaceApplication() {
     }
     Serial.printf("WatchfaceApplication: %p Ends here\n",this);
 }
+extern bool bleEnabled; //@TODO this is a crap!!!
 
 void WatchfaceApplication::PrepareDataLayer() {
 
@@ -404,6 +408,13 @@ void WatchfaceApplication::PrepareDataLayer() {
     if ( wifiEnabled ) {
         marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
         marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
+    }
+    if ( bleEnabled ) {
+        posX = 20;
+        posY = 126;
+        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
+        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_bluetooth_24_bits, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
+
     }
     if ( vbusPresent ) {
         posX=55;

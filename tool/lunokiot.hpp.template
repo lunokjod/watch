@@ -130,6 +130,6 @@ const unsigned long NetworkTimeout = 3*1000; // time until wifi is killed by tim
 const unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
 extern bool provisioned; // need to do advanced network tasks
 
-const char lastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt"; // this number determine if update is available online
+const char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt"; // this number determine if update is available online
 
 #endif

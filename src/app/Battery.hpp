@@ -8,6 +8,7 @@
 #include <LilyGoWatch.h>
 #include "../system/Datasources/kvo.hpp"
 
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../system/Application.hpp"
 #include "../static/img_back_32.xbm" // back buton image
 #include "Watchface.hpp"             // needed on LaunchApplication
