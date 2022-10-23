@@ -34,11 +34,53 @@ SemaphoreHandle_t UISemaphore = NULL;
 const unsigned long UITimeout = 20*1000;
 
 unsigned long UINextTimeout = 0;
+bool UIRunning = true;
+
 /* Event source task related definitions */
 ESP_EVENT_DEFINE_BASE(UI_EVENTS);
 
 // Event loops
 esp_event_loop_handle_t uiEventloopHandle;
+
+
+
+void ScreenWake() {
+    if ( false == ttgo->bl->isOn() ) {
+        //setCpuFrequencyMhz(240);
+        //delay(50);
+        //ttgo->rtc->syncToSystem();
+        ttgo->displayWakeup();
+        UINextTimeout = millis()+UITimeout;
+        ttgo->bl->on();
+        ttgo->touchWakup();
+        if ( ttgo->power->isVBUSPlug() ) {
+            ttgo->setBrightness(255);
+        } //else { ttgo->setBrightness(30); }
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        FPS = MAXFPS;
+        UINextTimeout = millis()+UITimeout;
+    }
+}
+
+void ScreenSleep() {
+    if ( true == ttgo->bl->isOn() ) {
+        ttgo->bl->off();
+        Serial.println("UI: Put screen to sleep now");
+        ttgo->displaySleep();
+        delay(50);
+        ttgo->touchToSleep();
+        Serial.flush();
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+
+        
+
+        //setCpuFrequencyMhz(80);
+        //ttgo->rtc->syncToSystem();
+        //delay(50);
+        //@TODO send hint for suspend main CPU via system user-defined event loop like LunokIoTEventloopTask
+    }
+}
+
 
 static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // @TODO recovered object contains uninitialized data ¿maybe a copy constructor?
@@ -52,7 +94,6 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
 }
 
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-
     // touch data handling
     static bool oldTouchState = false;
 
@@ -143,6 +184,13 @@ void AlertLedEnable(bool enabled, uint32_t ledColor, uint32_t x, uint32_t y) {
     lastAlarmLedStatus = enabled;
 }
 
+static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIRunning = false;
+}
+static void UIEventContinue(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIRunning = true;
+}
+
 static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // touch restart the timeout
     if ( touched ) {
@@ -183,6 +231,7 @@ static void UITickTask(void* args) {
     FPS = MAXFPS;
     while(true) {
         delay(1000/FPS);
+         if ( false == UIRunning ) { continue; }
         if ( systemSleep ) { continue; }
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
@@ -218,6 +267,10 @@ void UIStart() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL));
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL));
+
 
     // Create the event source task with the same priority as the current task
     xTaskCreate(UITickTask, "UITick", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);

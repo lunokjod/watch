@@ -27,11 +27,12 @@ ESP_EVENT_DECLARE_BASE(UI_EVENTS);
 
 // UI Events
 enum {
-    UI_EVENT_READY, // when the UI becomes active
-    UI_EVENT_TICK,  // can be irregular, depending of the esp32 load
-    UI_EVENT_STOP,  // stop all UI events please
-    UI_EVENT_ANCHOR2D_CHANGE,
-    UI_EVENT_NOTIFICATION
+    UI_EVENT_READY,     // when the UI becomes active
+    UI_EVENT_TICK,      // variable, depends of esp32 load
+    UI_EVENT_CONTINUE,  // resume UI events please (get tick)
+    UI_EVENT_STOP,      // stop all UI events please (stop tick)
+    UI_EVENT_NOTIFICATION, // @TODO
+    UI_EVENT_ANCHOR2D_CHANGE, //@TODO
 };
 
 // Event loops
@@ -66,4 +67,6 @@ typedef std::function<bool (int,int, int, int, int, int, void*)> DescribeCircleC
 // Implementing Mid-Point Circle Drawing Algorithm
 void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload);
 
+void ScreenSleep();
+void ScreenWake();
 #endif

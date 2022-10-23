@@ -24,6 +24,8 @@
 
 #include "../app/Watchface.hpp"
 
+#include <HTTPClient.h>
+
 bool systemSleep = false;
 // Event loops
 esp_event_loop_handle_t systemEventloopHandler;
@@ -478,39 +480,6 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
         Serial.println("Event: discarded PEK by: Too fast rule");
     }
     */
-}
-
-void ScreenWake() {
-    if ( false == ttgo->bl->isOn() ) {
-        //setCpuFrequencyMhz(240);
-        //delay(50);
-        //ttgo->rtc->syncToSystem();
-        ttgo->displayWakeup();
-        UINextTimeout = millis()+UITimeout;
-        ttgo->bl->on();
-        ttgo->touchWakup();
-        if ( ttgo->power->isVBUSPlug() ) {
-            ttgo->setBrightness(255);
-        } //else { ttgo->setBrightness(30); }
-        FPS = MAXFPS;
-        UINextTimeout = millis()+UITimeout;
-    }
-}
-
-void ScreenSleep() {
-    if ( true == ttgo->bl->isOn() ) {
-        ttgo->bl->off();
-        Serial.println("UI: Put screen to sleep now");
-        ttgo->displaySleep();
-        delay(50);
-        ttgo->touchToSleep();
-        Serial.flush();
-        delay(50);
-        //setCpuFrequencyMhz(80);
-        //ttgo->rtc->syncToSystem();
-        //delay(50);
-        //@TODO send hint for suspend main CPU via system user-defined event loop like LunokIoTEventloopTask
-    }
 }
 
 void TakeBMPSample() {
@@ -1074,6 +1043,97 @@ static void NetworkHandlerTask(void* args) {
     vTaskDelete(NULL); // never return
 }
 
+
+/*
+ * Get all samples possible
+ */
+void TakeSamples() {
+    //@TODO AXP, hall, and others must be collected
+    TakeBMPSample();
+    //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
+}
+
+/*
+ * Search for update system network task
+ */
+char * latestBuildFoundString = nullptr;
+
+void SystemUpdateAvailiable() {
+    Serial.println("@TODO notify user for update");
+    Serial.printf("@TODO availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+}
+
+extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
+extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+NetworkTaskDescriptor * SearchUpdateNetworkTask = nullptr;
+void SearchUpdateAsNetworkTask() {
+    if ( nullptr == SearchUpdateNetworkTask ) {
+        SearchUpdateNetworkTask = new NetworkTaskDescriptor();
+        SearchUpdateNetworkTask->name = (char *)"Check updates";
+        SearchUpdateNetworkTask->everyTimeMS = (((1000*60)*60)*24*7); // once a week x'D (continue dreaming!)
+        SearchUpdateNetworkTask->_lastCheck=millis();
+        SearchUpdateNetworkTask->_nextTrigger=0; // launch NOW if no synched never again
+        SearchUpdateNetworkTask->callback = [&]() {
+            // @NOTE to get the PEM from remote server:
+            // openssl s_client -connect raw.githubusercontent.com:443 -showcerts </dev/null | openssl x509 -outform pem > raw_githubusercontent_com.pem
+            // echo "" | openssl s_client -showcerts -connect raw.githubusercontent.com:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >raw_githubusercontent_com.pem
+            WiFiClientSecure *client = new WiFiClientSecure;
+            if (nullptr != client ) {
+                client->setCACert((const char*)githubPEM_start);
+                { // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
+                    HTTPClient https;
+                    https.setConnectTimeout(8*1000);
+                    https.setTimeout(8*1000);
+                    //https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+                    String serverPath = lastVersionURL;
+                    if (https.begin(*client, serverPath)) {
+                        // HTTPS
+                        Serial.printf("SearchUpdate: https get '%s'...\n", serverPath.c_str());
+                        // start connection and send HTTP header
+                        int httpCode = https.GET();
+
+                        // httpCode will be negative on error
+                        if (httpCode > 0) {
+                            // HTTP header has been send and Server response header has been handled
+                            Serial.printf("SearchUpdate: https get code: %d\n", httpCode);
+                            // file found at server
+                            if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+                                String payload = https.getString();
+                                if ( nullptr != latestBuildFoundString ) {
+                                    free(latestBuildFoundString);
+                                    latestBuildFoundString = nullptr;
+                                }
+                                latestBuildFoundString = (char*)ps_malloc(payload.length()+1);
+                                strcpy(latestBuildFoundString,payload.c_str());
+                                if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
+                                    Serial.printf("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+                                    SystemUpdateAvailiable();
+                                }
+                            }
+                        } else {
+                            Serial.printf("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                            https.end();
+                            delete client;
+                            return false;
+                        }
+                        https.end();
+                    } else {
+                        Serial.println("SearchUpdate: Unable to connect");
+                        delete client;
+                        return false;
+                    }
+                }
+                delete client;
+                return true;
+            }
+            Serial.println("Watchface: Weather: Unable to create WiFiClientSecure");
+            return false;
+        };
+        AddNetworkTask(SearchUpdateNetworkTask);
+    }
+}
+
+
 /*
  * Create the task for network scheduler
  * How it works?
@@ -1084,18 +1144,10 @@ static void NetworkHandlerTask(void* args) {
  */
 bool NetworkHandler() {
     provisioned = (bool)NVS.getInt("provisioned"); // initial value load
-
     xTaskCreate(NetworkHandlerTask, "nEt", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-
+#ifdef LUNOKIOT_UPDATES_ENABLED
+    SearchUpdateAsNetworkTask();
+#endif
     if ( provisioned ) { return true; }
     return false;
-}
-
-/*
- * Get all samples possible
- */
-void TakeSamples() {
-    //@TODO AXP, hall, and others must be collected
-    TakeBMPSample();
-    //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
 }

@@ -31,6 +31,7 @@ extern SemaphoreHandle_t UISemaphore;
 #define LUNOKIOT_UI_SHORT_WAIT 5
 
 #define LUNOKIOT_BUILD_NUMBER @@BUILD_NUMBER@@
+const char LUNOKIOT_BUILD_STRING[] = "@@BUILD_NUMBER@@";
 #define LUNOKIOT_KEY "@@LUNOKIOT_KEY@@"
 //#define LUNOKIOT_SERIAL "@@LUNOKIOT_SERIALNUMBER@@"
 //#define LUNOKIOT_UNIQUEID "@@LUNOKIOT_UNIQUEID@@"
@@ -128,5 +129,7 @@ const float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman
 const unsigned long NetworkTimeout = 2*1000; // time until wifi is killed by timeout
 const unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
 extern bool provisioned; // 
+
+const char lastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt";
 
 #endif

@@ -81,8 +81,6 @@ void SystemEventBootEnd();
 /*
  * Low power related functions
  */
-void ScreenSleep();
-void ScreenWake();
 void DoSleep();
 void SaveDataBeforeShutdown();
 

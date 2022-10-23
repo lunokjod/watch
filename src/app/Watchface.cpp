@@ -208,12 +208,15 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
                     }
                 } else {
                     Serial.printf("http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                    https.end();
+                    delete client;
+                    return false;
                 }
                 https.end();
             } else {
                 Serial.println("Watchface: Weather: http unable to connect");
                 delete client;
-                return true;
+                return false;
             }
         }
         delete client;
