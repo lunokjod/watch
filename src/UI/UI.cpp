@@ -46,17 +46,18 @@ esp_event_loop_handle_t uiEventloopHandle;
 
 void ScreenWake() {
     if ( false == ttgo->bl->isOn() ) {
-        //setCpuFrequencyMhz(240);
-        //delay(50);
         //ttgo->rtc->syncToSystem();
         ttgo->displayWakeup();
         UINextTimeout = millis()+UITimeout;
-        ttgo->bl->on();
         ttgo->touchWakup();
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        delay(1); // get time to queue digest ;)
+        SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
+        ttgo->bl->on();
         if ( ttgo->power->isVBUSPlug() ) {
             ttgo->setBrightness(255);
         } //else { ttgo->setBrightness(30); }
-        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+
         FPS = MAXFPS;
         UINextTimeout = millis()+UITimeout;
     }
