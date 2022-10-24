@@ -467,7 +467,7 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
             Serial.println("Event: user wants to put device to sleep");
             ScreenSleep();
             LaunchApplication(nullptr);
-            delay(100);
+            delay(20);
             DoSleep();
         } else {
             Serial.println("Event: user wants to get a screen");

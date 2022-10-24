@@ -419,8 +419,15 @@ void StopBLE() {
     pTxCharacteristic = nullptr;
     pService=nullptr;
     pServer=nullptr;
+    deviceConnected = false;
+    oldDeviceConnected = false;
+    bleEnabled = false;
+    blePeer = false;
+    bleServiceRunning=false;
+
 }
 void BLEStartTask(void * data) {
+
     delay(5000); // wait 5 seconds to enable it
     if ( bleEnabled ) { vTaskDelete(NULL); }
     Serial.println("BLE: Starting...");
@@ -471,14 +478,16 @@ void BLEStartTask(void * data) {
 
   pRxCharacteristic->setCallbacks(new MyCallbacks());
 
-    bleEnabled = true;
-    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
     // Start the service
     pService->start();
 
     // Start advertising
     pServer->getAdvertising()->start();
+
+    bleEnabled = true;
+    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+
     //Serial.println("Waiting a client connection to notify...");
     vTaskDelete(NULL);
 }
