@@ -257,7 +257,10 @@ void WakeUpReason() {
   wakeup_reason = esp_sleep_get_wakeup_cause();
   Serial.printf("ESP32 Wake up from: ");
   switch(wakeup_reason) {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Interrupt triggered on ext0 <-- (PMU) AXP202"); break;
+    case ESP_SLEEP_WAKEUP_EXT0 :
+        Serial.println("Interrupt triggered on ext0 <-- (PMU) AXP202");
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        break;
     case ESP_SLEEP_WAKEUP_EXT1 :
         {
             Serial.printf("Interrupt triggered on ext1 <-- ");
@@ -310,9 +313,10 @@ static void DoSleepTask(void* args) {
 
     Serial.printf("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
+    ScreenSleep();
+
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
-    ScreenSleep();
     //Serial.printf("WIFI STATUS: %d\n", WiFi.status());
     const size_t MAXRETRIES = 3;
     size_t retries = MAXRETRIES;
@@ -346,8 +350,8 @@ static void DoSleepTask(void* args) {
     esp_light_sleep_start(); // device sleeps now
     Serial.println("ESP32: -- Wake -- o_O'"); // good morning!!
     systemSleep = false;
+
     xSemaphoreGive( DoSleepTaskSemaphore );
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
     WakeUpReason();
 
