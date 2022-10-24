@@ -259,7 +259,6 @@ void WakeUpReason() {
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0 :
         Serial.println("Interrupt triggered on ext0 <-- (PMU) AXP202");
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         break;
     case ESP_SLEEP_WAKEUP_EXT1 :
         {
@@ -474,6 +473,7 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
             Serial.println("Event: user wants to get a screen");
             TakeSamples();
             ScreenWake();
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         }
         /*
         lastPEK = millis()+50;
