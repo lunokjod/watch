@@ -43,8 +43,8 @@
 #include <HTTPClient.h>
 
 BLEServer *pServer = nullptr;
-BLECharacteristic * pTxCharacteristic = nullptr;
 BLEService *pService = nullptr;
+BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
@@ -420,9 +420,9 @@ void StopBLE() {
     pService=nullptr;
     pServer=nullptr;
 }
-
-void StartBLE() {
-    if ( bleEnabled ) { return; }
+void BLEStartTask(void * data) {
+    delay(5000); // wait 5 seconds to enable it
+    if ( bleEnabled ) { vTaskDelete(NULL); }
     Serial.println("BLE: Starting...");
     uint8_t BLEAddress[6];
     esp_read_mac(BLEAddress,ESP_MAC_BT);
@@ -431,24 +431,27 @@ void StartBLE() {
 
     // Create the BLE Device
     BLEDevice::init(BTName);
+    if ( nullptr == pServer ) {
+        // Create the BLE Server
+        pServer = BLEDevice::createServer();
+        pServer->setCallbacks(new MyServerCallbacks());
+    }
+    // Create the BLE Service
+    if ( nullptr == pService ) {
+        pService = pServer->createService(SERVICE_UUID);
+    }
 
-  // Create the BLE Server
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-
-  // Create the BLE Service
-  pService = pServer->createService(SERVICE_UUID);
-
-  // Create a BLE Characteristic
-  pTxCharacteristic = pService->createCharacteristic(
-                                        CHARACTERISTIC_UUID_TX,
-                                    /******* Enum Type NIMBLE_PROPERTY now *******      
-                                        BLECharacteristic::PROPERTY_NOTIFY
-                                        );
-                                    **********************************************/  
-                                        NIMBLE_PROPERTY::NOTIFY
-                                       );
-                                    
+    if ( nullptr == pTxCharacteristic ) {
+        // Create a BLE Characteristic
+        pTxCharacteristic = pService->createCharacteristic(
+            CHARACTERISTIC_UUID_TX,
+            /******* Enum Type NIMBLE_PROPERTY now *******      
+            BLECharacteristic::PROPERTY_NOTIFY
+            );
+            **********************************************/  
+            NIMBLE_PROPERTY::NOTIFY
+        );
+    }
   /***************************************************   
    NOTE: DO NOT create a 2902 descriptor 
    it will be created automatically if notifications 
@@ -468,15 +471,19 @@ void StartBLE() {
 
   pRxCharacteristic->setCallbacks(new MyCallbacks());
 
+    bleEnabled = true;
+    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+
     // Start the service
     pService->start();
 
     // Start advertising
     pServer->getAdvertising()->start();
-    Serial.println("Waiting a client connection to notify...");
-
-    bleEnabled = true;
-    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-    
+    //Serial.println("Waiting a client connection to notify...");
+    vTaskDelete(NULL);
+}
+void StartBLE() {
+    if ( bleEnabled ) { return; }
+    xTaskCreate(BLEStartTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
 }

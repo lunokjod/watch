@@ -61,6 +61,7 @@
 ## Know problems
  * Lower than 172Kb of free heap makes fail the sprite alloc, getting glitches or missinformation
  * Some kind of leak on (almost) heap between system and watchface... long term use impossible, restarted by heap overflow occurs after many of uses (glitches can be seen before as advice system is running out of memory)
+ * BLE added a little bit of unstability (development in early stages...)
 
 ## Warning:
 
