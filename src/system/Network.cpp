@@ -346,8 +346,11 @@ void BLELoopTask(void * data) {
             oldDeviceConnected = deviceConnected;
         }
     }
-    Serial.println("BLE: Task ends here");
+    deviceConnected = false;
+    oldDeviceConnected = false;
     bleServiceRunning=false;
+    blePeer = false;
+    Serial.println("BLE: Task ends here");
     vTaskDelete(NULL);
 }
 
@@ -398,9 +401,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 // https://h2zero.github.io/NimBLE-Arduino/index.html
 // https://github.com/h2zero/NimBLE-Arduino
 void StopBLE() {
-    if ( false == bleEnabled ) {
-        return;
-    }
+    if ( false == bleEnabled ) { return; }
     Serial.println("BLE: Stopping...");
     /*
     pServer->removeService(pService,true);
@@ -415,21 +416,22 @@ void StopBLE() {
         Serial.println("BLE: Waiting service stops...");
         while(bleServiceRunning) { delay(1); }
     }
+    //pService->removeCharacteristic(pTxCharacteristic, true);
+    //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
+    /*
+    pServer = nullptr;
+    pService = nullptr;
     pTxCharacteristic = nullptr;
-    pService=nullptr;
-    pServer=nullptr;
-    deviceConnected = false;
-    oldDeviceConnected = false;
-    bleEnabled = false;
-    blePeer = false;
-    bleServiceRunning=false;
-
+    */
 }
-void BLEStartTask(void * data) {
 
-    delay(5000); // wait 5 seconds to enable it
+void StartBLE() {
+    if ( bleEnabled ) { return; }
+
+    delay(3000); // wait 3 seconds to enable it
     if ( bleEnabled ) { vTaskDelete(NULL); }
+    bleEnabled = true;
     Serial.println("BLE: Starting...");
     uint8_t BLEAddress[6];
     esp_read_mac(BLEAddress,ESP_MAC_BT);
@@ -438,17 +440,17 @@ void BLEStartTask(void * data) {
 
     // Create the BLE Device
     BLEDevice::init(BTName);
-    if ( nullptr == pServer ) {
+    //if ( nullptr == pServer ) {
         // Create the BLE Server
         pServer = BLEDevice::createServer();
         pServer->setCallbacks(new MyServerCallbacks());
-    }
+    //}
     // Create the BLE Service
-    if ( nullptr == pService ) {
+    //if ( nullptr == pService ) {
         pService = pServer->createService(SERVICE_UUID);
-    }
+    //}
 
-    if ( nullptr == pTxCharacteristic ) {
+    //if ( nullptr == pTxCharacteristic ) {
         // Create a BLE Characteristic
         pTxCharacteristic = pService->createCharacteristic(
             CHARACTERISTIC_UUID_TX,
@@ -458,16 +460,16 @@ void BLEStartTask(void * data) {
             **********************************************/  
             NIMBLE_PROPERTY::NOTIFY
         );
-    }
-  /***************************************************   
-   NOTE: DO NOT create a 2902 descriptor 
-   it will be created automatically if notifications 
-   or indications are enabled on a characteristic.
-   
-   pCharacteristic->addDescriptor(new BLE2902());
-  ****************************************************/                  
+    //}
+    /***************************************************   
+     NOTE: DO NOT create a 2902 descriptor 
+    it will be created automatically if notifications 
+    or indications are enabled on a characteristic.
 
-  BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
+    pCharacteristic->addDescriptor(new BLE2902());
+    ****************************************************/                  
+
+    BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
                                             CHARACTERISTIC_UUID_RX,
                                     /******* Enum Type NIMBLE_PROPERTY now *******       
                                             BLECharacteristic::PROPERTY_WRITE
@@ -476,8 +478,7 @@ void BLEStartTask(void * data) {
                                             NIMBLE_PROPERTY::WRITE
                                             );
 
-  pRxCharacteristic->setCallbacks(new MyCallbacks());
-
+    pRxCharacteristic->setCallbacks(new MyCallbacks());
 
     // Start the service
     pService->start();
@@ -485,14 +486,7 @@ void BLEStartTask(void * data) {
     // Start advertising
     pServer->getAdvertising()->start();
 
-    bleEnabled = true;
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
     //Serial.println("Waiting a client connection to notify...");
-    vTaskDelete(NULL);
-}
-void StartBLE() {
-    if ( bleEnabled ) { return; }
-    xTaskCreate(BLEStartTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-
 }
