@@ -783,16 +783,12 @@ static void SystemLoopTask(void* args) {
                     ttgo->power->clearIRQ();
                     Serial.println("AXP202: Event PEK Button short press");
                     Serial.flush();
-                    //delay(50); // forced delay for debounce
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                    //delay(50); // forced delay for debounce
                 } else if (ttgo->power->isPEKLongtPressIRQ()) {
                     ttgo->power->clearIRQ();
                     Serial.println("AXP202: Event PEK Button long press");
                     Serial.flush();
-                    //delay(50); // forced delay for debounce
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                    //delay(50); // forced delay for debounce
                 } else {
                     ttgo->power->clearIRQ();
                     Serial.println("@TODO unknown interrupt call from AXP202 ?...");

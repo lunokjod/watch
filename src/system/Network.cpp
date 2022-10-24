@@ -31,15 +31,20 @@
 #include "Network.hpp"
 
 #include "lunokiot_config.hpp"
+#include "SystemEvents.hpp"
+
 #include <NimBLEDevice.h>
+#include <NimBLELog.h>
+
 #include <WiFi.h>
 #include <ArduinoNvs.h> // persistent values
 #include <WiFi.h>
 
 #include <HTTPClient.h>
 
-BLEServer *pServer = NULL;
-BLECharacteristic * pTxCharacteristic;
+BLEServer *pServer = nullptr;
+BLECharacteristic * pTxCharacteristic = nullptr;
+BLEService *pService = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
@@ -51,8 +56,12 @@ uint8_t txValue = 0;
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
+extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 
 bool bleEnabled = false;
+bool bleServiceRunning = false;
+bool blePeer = false;
 
 
 // Network scheduler list
@@ -93,8 +102,7 @@ void SystemUpdateAvailiable() {
     Serial.printf("@TODO availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
 }
 
-extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
-extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+
 NetworkTaskDescriptor * SearchUpdateNetworkTask = nullptr;
 void SearchUpdateAsNetworkTask() {
     if ( nullptr == SearchUpdateNetworkTask ) {
@@ -291,22 +299,33 @@ bool NetworkHandler() {
     SearchUpdateAsNetworkTask();
 #endif
 #endif
-    SetupBLE();
+#ifdef LUNOKIOT_BLE_ENABLED
+    BLESetupHooks();
+#endif
+
     if ( provisioned ) { return true; }
     return false;
 }
 
+static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    StartBLE();
+}
 
+static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    StopBLE();
+}
+
+void BLESetupHooks() {
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, BLEWake, nullptr, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, BLEDown, nullptr, NULL));
+
+}
 void BLELoopTask(void * data) {
-    while(true) {
-        size_t clients = pServer->getConnectedCount();
-        if (clients  > 0 ) {
-            bleEnabled = true;
-        } else {
-            bleEnabled = false;
-        }
+    bleServiceRunning=true;
+    while(bleEnabled) {
         delay(100);
         if (deviceConnected) {
+            blePeer=true;
             pTxCharacteristic->setValue(&txValue, 1);
             pTxCharacteristic->notify();
             txValue++;
@@ -319,6 +338,7 @@ void BLELoopTask(void * data) {
             pServer->startAdvertising(); // restart advertising
             Serial.println("start advertising");
             oldDeviceConnected = deviceConnected;
+            blePeer=false;
         }
         // connecting
         if (deviceConnected && !oldDeviceConnected) {
@@ -326,8 +346,8 @@ void BLELoopTask(void * data) {
             oldDeviceConnected = deviceConnected;
         }
     }
-    BLEDevice::deinit(true);
-    bleEnabled = false;
+    Serial.println("BLE: Task ends here");
+    bleServiceRunning=false;
     vTaskDelete(NULL);
 }
 
@@ -377,21 +397,47 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 // https://h2zero.github.io/NimBLE-Arduino/index.html
 // https://github.com/h2zero/NimBLE-Arduino
-void SetupBLE() {
-  uint8_t BLEAddress[6];
-  esp_read_mac(BLEAddress,ESP_MAC_BT);
-  char BTName[30] = { 0 };
-  sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]);
+void StopBLE() {
+    if ( false == bleEnabled ) {
+        return;
+    }
+    Serial.println("BLE: Stopping...");
+    /*
+    pServer->removeService(pService,true);
+    pService = nullptr;
+    if ( nullptr != pTxCharacteristic ) {
+        delete pTxCharacteristic;
+        pTxCharacteristic=nullptr;
+    }
+    */
+    bleEnabled = false;
+    if ( bleServiceRunning ) {
+        Serial.println("BLE: Waiting service stops...");
+        while(bleServiceRunning) { delay(1); }
+    }
+    BLEDevice::deinit(true);
+    pTxCharacteristic = nullptr;
+    pService=nullptr;
+    pServer=nullptr;
+}
 
-  // Create the BLE Device
-  BLEDevice::init(BTName);
+void StartBLE() {
+    if ( bleEnabled ) { return; }
+    Serial.println("BLE: Starting...");
+    uint8_t BLEAddress[6];
+    esp_read_mac(BLEAddress,ESP_MAC_BT);
+    char BTName[30] = { 0 };
+    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]);
+
+    // Create the BLE Device
+    BLEDevice::init(BTName);
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
   // Create the BLE Service
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+  pService = pServer->createService(SERVICE_UUID);
 
   // Create a BLE Characteristic
   pTxCharacteristic = pService->createCharacteristic(
@@ -422,13 +468,15 @@ void SetupBLE() {
 
   pRxCharacteristic->setCallbacks(new MyCallbacks());
 
-  // Start the service
-  pService->start();
+    // Start the service
+    pService->start();
 
-  // Start advertising
-  pServer->getAdvertising()->start();
-  Serial.println("Waiting a client connection to notify...");
+    // Start advertising
+    pServer->getAdvertising()->start();
+    Serial.println("Waiting a client connection to notify...");
 
-  xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    bleEnabled = true;
+    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    
 
 }

@@ -20,7 +20,7 @@
 #include "../static/img_seconds_hand.c"
 #include "../static/img_wifi_24.xbm"
 #include "../static/img_bluetooth_24.xbm"
-
+#include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
 
 #include "../static/img_daynightCycle.c"
@@ -398,6 +398,8 @@ WatchfaceApplication::~WatchfaceApplication() {
     Serial.printf("WatchfaceApplication: %p Ends here\n",this);
 }
 extern bool bleEnabled; //@TODO this is a crap!!!
+extern bool bleServiceRunning; //@TODO this is a crap!!!
+extern bool blePeer;
 
 void WatchfaceApplication::PrepareDataLayer() {
 
@@ -412,9 +414,12 @@ void WatchfaceApplication::PrepareDataLayer() {
     if ( bleEnabled ) {
         posX = 20;
         posY = 126;
-        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
-        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_bluetooth_24_bits, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
-
+        uint32_t dotColor = TFT_DARKGREY;
+        if ( bleServiceRunning ) { dotColor = TFT_GREEN; }
+        marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
+        unsigned char * img = img_bluetooth_24_bits;
+        if ( blePeer ) { img = img_bluetooth_peer_24_bits; }
+        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
     }
     if ( vbusPresent ) {
         posX=55;

@@ -22,6 +22,8 @@ bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk);
 // Add task to the network loop
 bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
 
-void SetupBLE();
+void BLESetupHooks();
+void StartBLE();
+void StopBLE();
 
 #endif
