@@ -1,7 +1,8 @@
 # lilyGo TWatch 2020 lunokIoTWatch firmware
 
 ![wartchface0](/doc/watchface0.png)
-![provisioning app](/doc/playground3.png)
+![playground example0](/doc/playground0.png)
+![playground example3](/doc/playground3.png)
 ![set time app](/doc/settime.png)
 
 * Note: under heavy development (not ready for everyday use)
