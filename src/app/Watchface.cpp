@@ -22,6 +22,7 @@
 #include "../static/img_bluetooth_24.xbm"
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
+#include "../static/img_screenshoot_120.xbm"
 
 #include "../static/img_daynightCycle.c"
 #include "../static/img_batteryGauge106.c"
@@ -400,6 +401,8 @@ WatchfaceApplication::~WatchfaceApplication() {
 extern bool bleEnabled; //@TODO this is a crap!!!
 extern bool bleServiceRunning; //@TODO this is a crap!!!
 extern bool blePeer;
+extern bool screenShootInProgress;
+
 
 void WatchfaceApplication::PrepareDataLayer() {
 
@@ -431,7 +434,7 @@ void WatchfaceApplication::PrepareDataLayer() {
         marksCanvas->canvas->fillCircle(posX, posY, 5, color);
         marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
     }
-
+    
 
     char textBuffer[64] = { 0 };
     marksCanvas->canvas->setTextFont(0);
@@ -577,6 +580,13 @@ void WatchfaceApplication::PrepareDataLayer() {
         marksCanvas->canvas->drawString(weatherDescription, 122,62);
         marksCanvas->canvas->setTextColor(TFT_WHITE);
         marksCanvas->canvas->drawString(weatherDescription, 120,60);
+    }
+    
+    if ( screenShootInProgress ) {        
+        marksCanvas->canvas->drawXBitmap(
+            (TFT_WIDTH/2)-(img_screenshoot_120_width/2),
+            (TFT_HEIGHT/2)-(img_screenshoot_120_height/2),
+            img_screenshoot_120_bits, img_screenshoot_120_width, img_screenshoot_120_height, TFT_WHITE);
     }
 }
 

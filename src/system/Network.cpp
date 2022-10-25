@@ -39,7 +39,7 @@
 #include <WiFi.h>
 #include <ArduinoNvs.h> // persistent values
 #include <WiFi.h>
-
+#include "UI/UI.hpp" // for rgb unions
 #include <HTTPClient.h>
 
 BLEServer *pServer = nullptr;
@@ -47,7 +47,6 @@ BLEService *pService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-uint8_t txValue = 0;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -62,7 +61,7 @@ extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_co
 bool bleEnabled = false;
 bool bleServiceRunning = false;
 bool blePeer = false;
-
+bool BLESendScreenShootCommand = false;
 
 // Network scheduler list
 std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
@@ -320,32 +319,140 @@ void BLESetupHooks() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, BLEDown, nullptr, NULL));
 
 }
+extern TFT_eSprite *screenShootCanvas;    // the last screenshoot
+extern bool screenShootInProgress;        // Notify Watchface about send screenshoot
+size_t imageUploadSize=0;
+size_t realImageSize=0;
+rgb565 myLastColor = { .u16 = (uint16_t)TFT_TRANSPARENT }; // improbable color
+uint16_t lastRLECount = 0;
+
 void BLELoopTask(void * data) {
     bleServiceRunning=true;
-    while(bleEnabled) {
-        delay(100);
-        if (deviceConnected) {
-            blePeer=true;
-            pTxCharacteristic->setValue(&txValue, 1);
-            pTxCharacteristic->notify();
-            txValue++;
-            delay(10); // bluetooth stack will go into congestion, if too many packets are sent
-        }
 
+    union RLEPackage {
+        uint8_t bytes[5];
+        struct {
+            uint16_t color;
+            uint8_t repeat;
+            uint8_t x; // screen is 240x240, don't waste my time!
+            uint8_t y;
+        };
+    };
+
+    void *theScreenShotToSend=nullptr; // point to current screenshoot
+    // temp values
+    size_t imageX=0;
+    size_t imageY=0;
+    oldDeviceConnected = false;
+    deviceConnected = false;
+    while(bleEnabled) {
+        if ( blePeer ) {
+            if ( BLESendScreenShootCommand ) { // the client has sended "GETSCREENSHOOT" in the BLE UART
+                // first iteration
+                if ( false == screenShootInProgress ) {
+                    theScreenShotToSend = (void*)screenShootCanvas;
+                    screenShootInProgress = true;
+                    Serial.println("Network: begin sending screenshoot via BLE UART");
+                    imageY=0;
+                    imageX=0;
+                    lastRLECount=0;
+                } else { // in progress
+                    if ( nullptr != theScreenShotToSend) {
+                        rgb565 myColor;
+                        myColor.u16 = screenShootCanvas->readPixel(imageX,imageY);
+                        //Serial.printf("X: %d Y: %d VAL: 0x%x\n", imageX, imageY, myColor.u16);
+                        if ( myLastColor.u16 == myColor.u16 ) {
+                            lastRLECount++;
+                            if ( lastRLECount  > 254 ) { // byte full...must send
+                                RLEPackage valToSend = { .color = myLastColor.u16 };
+                                valToSend.repeat = 255;
+                                valToSend.x = imageX;
+                                valToSend.y = imageY;
+                                pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
+                                pTxCharacteristic->notify(true);
+                                delay(20);
+                                lastRLECount=0;
+                                myLastColor=myColor;
+                                continue;
+                            }                            
+                            //Serial.printf("REPEATED RLE: %d RGB565: 0x%x\n", lastRLECount,myLastColor.u16);
+                        } else if ( myLastColor.u16 != myColor.u16 ) {
+                            RLEPackage valToSend = { .color = myLastColor.u16 };
+                            valToSend.repeat = lastRLECount;
+                            valToSend.x = imageX;
+                            valToSend.y = imageY;
+                            //Serial.printf("RLEDATA: 0x%x\n", valToSend.rleData);
+                            pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
+                            pTxCharacteristic->notify(true);
+                            realImageSize +=(lastRLECount*2); // image is RGB565 (16bit per pixel)
+                            imageUploadSize+=sizeof(RLEPackage); // real packet data
+                            delay(20);
+                            lastRLECount=1;
+                            myLastColor=myColor;
+                            continue;
+                        }
+                       /*
+                        RLEPackage valToSend = { .color = myColor.u16 };
+                        valToSend.repeat = 1;
+                        pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(uint8_t)*3);
+                        pTxCharacteristic->notify(true);
+                        imageUploadSize+=sizeof(uint8_t)*3;
+                        delay(12);
+                        */
+
+
+                        myLastColor=myColor;
+                        imageX++;
+                        if ( imageX >= screenShootCanvas->width() ) {
+                            imageY++;
+                            imageX=0;
+                            //imageY = screenShootCanvas->height()+1;
+                        }
+                        if ( imageY >= screenShootCanvas->height() ) {
+                            realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
+                            Serial.printf("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
+                            theScreenShotToSend=nullptr;
+                            realImageSize=0;
+                            imageUploadSize=0;
+                            imageY=0;
+                            imageX=0;
+                            BLESendScreenShootCommand=false;
+                            screenShootInProgress = false;
+                            //DISCONNECT THE CLIENT
+                            std::vector<uint16_t> clients = pServer->getPeerDevices();
+                            for(uint16_t client : clients) {
+                                delay(100);
+                                Serial.printf("Network: BLE kicking out client %d\n",client);
+                                pServer->disconnect(client,0x13); // remote close
+                                pServer->disconnect(client,0x16); // localhost close
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            delay(100);
+        }
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
+            Serial.println("Network: BLE Device disconnected");
             delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
-            Serial.println("start advertising");
+            Serial.println("Network: Start BLE advertising");
             oldDeviceConnected = deviceConnected;
+            screenShootInProgress=false;
             blePeer=false;
         }
+
         // connecting
         if (deviceConnected && !oldDeviceConnected) {
             // do stuff here on connecting
-            oldDeviceConnected = deviceConnected;
+            blePeer=true;
+            Serial.println("Network: BLE Device connected");
+            oldDeviceConnected=deviceConnected;
         }
     }
+    screenShootInProgress=false;
     deviceConnected = false;
     oldDeviceConnected = false;
     bleServiceRunning=false;
@@ -385,15 +492,20 @@ class MyServerCallbacks: public BLEServerCallbacks {
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
-
       if (rxValue.length() > 0) {
-        Serial.println("*********");
-        Serial.print("Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++)
-          Serial.print(rxValue[i]);
+        const char * receivedCommand = rxValue.c_str();
+        const char * ScreenShootCommand = "GETSCREENSHOOT";
 
-        Serial.println();
-        Serial.println("*********");
+        if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
+            Serial.println("BLE: UART: 'GETSCREENSHOOT' command received");
+            BLESendScreenShootCommand = true;
+        } else {
+            Serial.printf("BLE: UART Received Value: ");
+            for (int i = 0; i < rxValue.length(); i++) {
+                Serial.printf("%c",rxValue[i]);
+            }
+            Serial.println("");
+        }
       }
     }
 };

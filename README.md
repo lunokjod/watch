@@ -1,5 +1,7 @@
 # lilyGo TWatch 2020 lunokIoTWatch firmware
 
+![GitHub Logo](/doc/watchface0.png)
+
 * Note: under heavy development (not ready for everyday use)
 * On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap
 
@@ -47,7 +49,7 @@
 * **-DLUNOKIOT_WIFI_ENABLED** start the wifi timed connection subsystem
 * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA) requires: **-DLUNOKIOT_WIFI_ENABLED**
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
-
+* **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
 
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"

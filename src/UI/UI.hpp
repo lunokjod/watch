@@ -22,6 +22,11 @@ union rgbColor {
     } color;
 };
 
+union rgb565 {
+    uint16_t u16;
+    uint8_t byte[2];
+};
+
 // declare the UI loop (system independent)
 ESP_EVENT_DECLARE_BASE(UI_EVENTS);
 
@@ -69,4 +74,6 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
 
 void ScreenSleep();
 void ScreenWake();
+void TakeScreenShootFrom(TFT_eSprite *view);
+
 #endif

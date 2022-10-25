@@ -23,6 +23,7 @@ double touchDragAngle=0;
 double touchDragDistance=0;
 int16_t touchDragVectorX=0;
 int16_t touchDragVectorY=0;
+unsigned long touchDownTimeMS=0;
 uint32_t FPS=0;
 //bool UIAlertLedEnabled = false;
 int16_t downTouchX=120;
@@ -93,6 +94,49 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
     anchor->GetDelta(deltaX,deltaY);
     Serial.printf("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
 }
+TFT_eSprite *screenShootCanvas = nullptr;
+bool screenShootInProgress = false; // @TODO watchface must show it
+
+void _ProcessScreenShoot(void * data) {
+    screenShootInProgress=true;
+    if ( nullptr == screenShootCanvas ) {
+        screenShootInProgress = false;
+        vTaskDelete(NULL);
+    }
+    // https://github.com/drj11/pypng/blob/main/code/kobo565topng
+    for(int16_t x=0;x<screenShootCanvas->height()-1;x++) {
+        for(int16_t y=0;y<screenShootCanvas->width()-2;y++) {
+            union rgb565 {
+                uint16_t color;
+                uint8_t byte[2];
+            };
+            rgb565 myColor;
+            myColor.color = screenShootCanvas->readPixel(x,y);
+            Serial.printf("%c%c", myColor.byte[0], myColor.byte[1]);
+            //delay(1);
+        }
+//        uint16_t color = screenShootCanvas->readPixel(x,screenShootCanvas->width()-1);
+//        Serial.printf("%u\n", color);
+        delay(5);
+    }
+
+    screenShootInProgress = false;
+    vTaskDelete(NULL);
+}
+
+void TakeScreenShootFrom(TFT_eSprite *view) {
+    if ( screenShootInProgress ) { return; }
+    //screenShootInProgress = true;
+    if ( nullptr != screenShootCanvas ) { screenShootCanvas->deleteSprite(); }
+
+    screenShootCanvas = new TFT_eSprite(ttgo->tft);
+    screenShootCanvas->setColorDepth(16);
+    screenShootCanvas->createSprite(view->width(),view->height());
+    screenShootCanvas->fillSprite(TFT_BLACK);
+    view->pushRotated(screenShootCanvas,0);
+    ttgo->tft->fillScreen(TFT_WHITE);
+    //xTaskCreate(_ProcessScreenShoot, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+}
 
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // touch data handling
@@ -105,6 +149,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         touchDragDistance = 0;
         touchDragVectorX=0;
         touchDragVectorY=0;
+        touchDownTimeMS = millis();
 
         downTouchX = newTouchX;
         downTouchY = newTouchY;
@@ -118,6 +163,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         double radAngle = atan2(touchDragVectorY, touchDragVectorX);
         touchDragAngle = radAngle * (180/3.14);
     } else {
+        touchDownTimeMS=0;
         /*
         touchDragAngle = 0;
         touchDragDistance = 0;
@@ -154,6 +200,15 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                         overlay->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
                         overlay->pushRotated(appView,0,CanvasWidget::MASK_COLOR);
                     }
+#ifdef LUNOKIOT_SCREENSHOOT_ENABLED
+                    if ( (touched ) && ( 0 != touchDownTimeMS ) ) {
+                        unsigned long pushedTime = millis()-touchDownTimeMS;
+                        if ( pushedTime > 2000 ) {
+                            touchDownTimeMS=0;
+                            TakeScreenShootFrom(appView);
+                        }
+                    }
+#endif
                     appView->pushSprite(0,0);
                 }
             }

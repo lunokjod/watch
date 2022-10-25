@@ -455,7 +455,7 @@ static void AXPEventPEKLong(void* handler_args, esp_event_base_t base, int32_t i
     LaunchApplication(new ShutdownApplication());
     SaveDataBeforeShutdown();
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-}  
+}
 void _SendEventWakeTask(void * data) {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     vTaskDelete(NULL);
@@ -475,7 +475,7 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
         } else {
             Serial.println("Event: user wants to get a screen");
             TakeSamples();
-            ScreenWake();            
+            ScreenWake();
             xTaskCreate(_SendEventWakeTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
         }
         /*
