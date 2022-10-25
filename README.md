@@ -1,7 +1,7 @@
 # lilyGo TWatch 2020 lunokIoTWatch firmware
 
 ![wartchface0](/doc/watchface0.png)
-![provisioning app](/doc/provisioning.png)
+![provisioning app](/doc/playground3.png)
 ![set time app](/doc/settime.png)
 
 * Note: under heavy development (not ready for everyday use)
@@ -19,6 +19,7 @@
 * WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" before build) more info: https://openweathermap.org/
 * Wake up every 60 seconds to monitor the user pose (future sleep monitor)
 * Wake up every activity/stepcounter (future fitness monitor)
+* Screen capture can be shared via BLE UART (see tools/getScreenshoot.py)
 
 ## Hardware support:
  * BMA423 support (including during sleep)
