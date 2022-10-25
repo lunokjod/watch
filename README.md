@@ -1,6 +1,8 @@
 # lilyGo TWatch 2020 lunokIoTWatch firmware
 
-![GitHub Logo](/doc/watchface0.png)
+![wartchface0](/doc/watchface0.png)
+![provisioning app](/doc/provisioning.png)
+![set time app](/doc/settime.png)
 
 * Note: under heavy development (not ready for everyday use)
 * On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap

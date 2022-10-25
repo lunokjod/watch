@@ -1,4 +1,5 @@
 #!/bin/python3
+
 from time import time
 import asyncio, logging
 from ble_serial.scan import main as scanner
@@ -6,15 +7,15 @@ from ble_serial.bluetooth.ble_interface import BLE_interface
 import numpy as np
 from PIL import Image
 
-rawRGB565 = []
 PIXELSIZE=240
-TIMEPROGRESS=15000
+TIMEPROGRESS=10000
 RGBData = [0]*3
 RGBData=[RGBData]*PIXELSIZE
 RGBData=[RGBData]*PIXELSIZE
 RGBData = np.array(RGBData, dtype=np.uint8)
 
 milliseconds = int(time() * 1000)+TIMEPROGRESS
+
 def GenerateImage():
     global RGBData
     new_image = Image.fromarray(RGBData,"RGB")
@@ -37,11 +38,11 @@ def receive_callback(valueByteArray: bytes):
     funkyShit.append(valueByteArray[0])
     funkyShit.append(valueByteArray[1])
     lower=bytearray(funkyShit)
-    repeatInt = int.from_bytes(upper, byteorder='little')
+    #repeatInt = int.from_bytes(upper, byteorder='little')
+    repeatInt = valueByteArray[2]
     rgb565Color = int.from_bytes(lower, byteorder='little')
     #invert byte order
     pixel = ((rgb565Color&0xFF)<<8)|(rgb565Color>>8)
-    #separa as cores
     R = pixel&0b1111100000000000
     G = pixel&0b0000011111100000
     B = pixel&0b0000000000011111
@@ -53,24 +54,27 @@ def receive_callback(valueByteArray: bytes):
     funkyShit.append(valueByteArray[4])
     upper=bytearray(funkyShit)
     coordX=int.from_bytes(upper, byteorder='little')
+    #coordX=ord(upper)
     funkyShit = bytearray()
     funkyShit.append(valueByteArray[3])
     upper=bytearray(funkyShit)
     coordY=int.from_bytes(upper, byteorder='little')
-    coordY-=repeatInt
+    #coordY=ord(upper)
+    #coordY-=repeatInt
+    originY = coordY
+    originX = coordX
     for i in range(repeatInt):
-        RGBData[coordX,coordY,0] = R
-        RGBData[coordX,coordY,1] = G
-        RGBData[coordX,coordY,2] = B
+        RGBData[originX,originY,0] = R
+        RGBData[originX,originY,1] = G
+        RGBData[originX,originY,2] = B
         totalReceived+=2
-        coordY+=1
-        if ( coordY > PIXELSIZE-1 ):
-            coordY=0
-            coordX+=1
-            if ( coordX > PIXELSIZE-1 ):
-                print("SOME ERROR HERE: repeat:",repeatInt,"X:",coordX,"Y:",coordY)
-                coordX=PIXELSIZE-1 # pathetic!
-    #rawRGB565.append(value)
+        originY-=1
+        if ( originY < 0 ):
+            originY=PIXELSIZE-1
+            originX-=1
+            if ( coordX < 0 ):
+                print("SOME ERROR HERE: repeat:",repeatInt,"X:",originX,"Y:",originY)
+                originX=0 # pathetic!
     now =int(time() * 1000) 
     if ( now > milliseconds):
         timeUsed = -1 # (now-timeBegindownload)
