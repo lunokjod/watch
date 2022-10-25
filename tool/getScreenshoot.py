@@ -20,7 +20,6 @@ def GenerateImage():
     global RGBData
     new_image = Image.fromarray(RGBData,"RGB")
     new_image.save('screenshoot.png')
-    #format='PNG')
 
 timeBegindownload = 0
 totalReceived=0
@@ -30,7 +29,6 @@ numberOfCalls=0
 def receive_callback(valueByteArray: bytes):
     global milliseconds,TIMEPROGRESS,totalReceived,timeBegindownload,numberOfCalls,downloadedData
     downloadedData+=5
-    #print(valueByteArray)
     funkyShit = bytearray()
     funkyShit.append(valueByteArray[2])
     upper=bytearray(funkyShit)
@@ -38,7 +36,6 @@ def receive_callback(valueByteArray: bytes):
     funkyShit.append(valueByteArray[0])
     funkyShit.append(valueByteArray[1])
     lower=bytearray(funkyShit)
-    #repeatInt = int.from_bytes(upper, byteorder='little')
     repeatInt = valueByteArray[2]
     rgb565Color = int.from_bytes(lower, byteorder='little')
     #invert byte order
@@ -54,13 +51,10 @@ def receive_callback(valueByteArray: bytes):
     funkyShit.append(valueByteArray[4])
     upper=bytearray(funkyShit)
     coordX=int.from_bytes(upper, byteorder='little')
-    #coordX=ord(upper)
     funkyShit = bytearray()
     funkyShit.append(valueByteArray[3])
     upper=bytearray(funkyShit)
     coordY=int.from_bytes(upper, byteorder='little')
-    #coordY=ord(upper)
-    #coordY-=repeatInt
     originY = coordY
     originX = coordX
     for i in range(repeatInt):
@@ -95,12 +89,6 @@ async def main():
     SERVICE_UUID = None # optional filtering
 
     devices = await scanner.scan(ADAPTER, SCAN_TIME, SERVICE_UUID)
-
-    #print() # newline
-    #scanner.print_list(devices)
-
-    # manual indexing
-    #print(devices[0].name, devices[0].address)
     found=False
     DEVICEBASENAME = "lunokIoT_"
     DEVICE = "DE:AD:BE:EF:FE:ED"
@@ -130,7 +118,6 @@ async def main():
             await asyncio.gather(ble.send_loop(), hello_sender(ble))
         finally:
             await ble.disconnect()
-        #GenerateRGB()
         GenerateImage()
         print("Downloaded data:",downloadedData," byte")
         print("Uncompressed data:",totalReceived," byte")

@@ -16,6 +16,17 @@
 
 #include "widgets/CanvasWidget.hpp"
 #include <functional>
+
+#ifdef LILYGO_WATCH_2020_V3
+#include <driver/i2s.h>
+#include "AudioFileSourcePROGMEM.h"
+#include "AudioFileSourceID3.h"
+#include "AudioGeneratorMP3.h"
+#include "AudioOutputI2S.h"
+#endif
+extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
+extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
+
 bool touched=false;
 int16_t touchX=0;
 int16_t touchY=0;
@@ -124,6 +135,49 @@ void _ProcessScreenShoot(void * data) {
     vTaskDelete(NULL);
 }
 
+
+void TakeScreenShootSound() {
+#ifdef LUNOKIOT_SILENT_BOOT
+    Serial.println("Audio: Not initialized due Silent boot is enabled");
+    return;
+#endif
+    // Audio fanfare x'D
+    Serial.println("Audio: Initialize");
+    ttgo->enableAudio();
+
+    // from https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library/blob/master/examples/UnitTest/HardwareTest/HardwareTest.ino
+    AudioGeneratorMP3 *mp3;
+    AudioFileSourcePROGMEM *file;
+    AudioOutputI2S *out;
+    AudioFileSourceID3 *id3;
+    // file = new AudioFileSourcePROGMEM(image, sizeof(image));
+    file = new AudioFileSourcePROGMEM(screenshoot_sound_start, (uint32_t)(screenshoot_sound_end-screenshoot_sound_start));
+    id3 = new AudioFileSourceID3(file);
+    out = new AudioOutputI2S();
+    out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
+    Serial.println("Audio: MP3 Screenshoot");
+    mp3 = new AudioGeneratorMP3();
+    mp3->begin(id3, out);
+    while (true) {
+        if (mp3->isRunning()) {
+            if (!mp3->loop()) {
+                mp3->stop();
+            }
+        } else {
+            Serial.println("Audio: MP3 done");
+            break;
+        }
+    }
+    delete file;
+    delete id3;
+    delete out;
+    delete mp3;
+
+    ttgo->disableAudio();
+
+    i2s_driver_uninstall(I2S_NUM_0);
+}
+
 void TakeScreenShootFrom(TFT_eSprite *view) {
     if ( screenShootInProgress ) { return; }
     //screenShootInProgress = true;
@@ -135,7 +189,7 @@ void TakeScreenShootFrom(TFT_eSprite *view) {
     screenShootCanvas->fillSprite(TFT_BLACK);
     view->pushRotated(screenShootCanvas,0);
     ttgo->tft->fillScreen(TFT_WHITE);
-    //xTaskCreate(_ProcessScreenShoot, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    TakeScreenShootSound();
 }
 
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
