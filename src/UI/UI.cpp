@@ -41,6 +41,8 @@ int16_t downTouchX=120;
 int16_t downTouchY=120;
 TFT_eSprite *overlay = nullptr;
 
+uint8_t pendingNotifications = 0;
+
 SemaphoreHandle_t UISemaphore = NULL;
 
 const unsigned long UITimeout = 20*1000;

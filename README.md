@@ -31,16 +31,17 @@
  * MAX98357A (mp3 playback support)
  * WiFi (via provisioning)
  * BLE (work in progress) issues while wifi is in use
+ * IR work, but only can send with this hardware (useless by now, I want to do jokes!)
 
 ### Pending to implement:
 * PDM Mic (voice assistant)
 * RTC (alarm)
-* IR (jokes with IR devices mostly x'D)
 * espNow (locate other family watches)
 * Touch on sleep
 * Custom activities (hidden app availiable for testing)
 * OTA shit
 * feedbacked apps (what do you need?)
+* LocalCloud, a support app for the watch (companion app or something)
 * Web installer: https://espressif.github.io/esptool-js/
 
 ## Important build flags

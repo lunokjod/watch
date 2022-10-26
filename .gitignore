@@ -6,3 +6,6 @@
 _img/
 src/lunokiot_config.hpp
 openWeatherKey.txt
+tool/site/sessions/*
+tool/site/devices/*
+tool/site/log/*

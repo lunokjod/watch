@@ -42,6 +42,10 @@
 #include "UI/UI.hpp" // for rgb unions
 #include <HTTPClient.h>
 
+#ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
+#include "LocalCloud.hpp"
+#endif
+
 BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
@@ -242,32 +246,34 @@ static void NetworkHandlerTask(void* args) {
                 beginConnected = millis();
             } else {
                 unsigned long connectedMS = millis()-beginConnected;
+                /*
                 if ( connectedMS > NetworkTimeout ) {
-                    Serial.printf("Network: WiFi TIMEOUT (connected) at %d sec of use\n", connectedMS/1000);
+                    Serial.println("Network: WiFi online TIMEOUT");
                     WiFi.disconnect(true);
                     delay(100);
                     WiFi.mode(WIFI_OFF);
                     beginConnected=-1;
                     continue;
-                }
+                }*/
                 //CHECK THE tasks
                 for (auto const& tsk : networkPendingTasks) {
                     if ( -1 == tsk->_nextTrigger ) {
                         tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
+                            delay(100);
                             Serial.printf("NetworkTask: Running task '%s'...\n", tsk->name);
                             bool res = tsk->callback();
                             if ( res ) {
                                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                 tsk->_lastCheck = millis();
                             } else { 
-                                Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);                        }
-                            continue;
+                                Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                            }
                         }
                     }
-                    tsk->_lastCheck = millis();
                 }
+                delay(100);
                 connectedMS = millis()-beginConnected;
                 Serial.printf("Network: WiFi connection: %d sec\n", connectedMS/1000);
                 WiFi.disconnect();
@@ -300,6 +306,10 @@ bool NetworkHandler() {
 #endif
 #ifdef LUNOKIOT_BLE_ENABLED
     BLESetupHooks();
+#endif
+
+#ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
+    StartLocalCloudClient();
 #endif
 
     if ( provisioned ) { return true; }

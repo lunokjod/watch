@@ -16,6 +16,7 @@
 
 #include "app/Watchface.hpp" // main app
 
+
 TTGOClass *ttgo; // ttgo library shit ;)
 
 RTC_DATA_ATTR uint32_t bootCount = 0; // @TODO useless...don't work, why?
@@ -82,6 +83,23 @@ void setup() {
   SplashAnnounceEnd();
   // Announce system boot end and begin the magic!!!
   SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
-}
 
+
+}
 void loop() { vTaskDelete( NULL ); } // don't need arduinofw loop, can free it if you want
+
+
+/* IR TEST
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+
+IRsend irLed(TWATCH_2020_IR_PIN);
+void shit() {
+  const uint16_t rawData[] = { 0, 65535, 0, 65535 };
+  irLed.begin();
+  while(true) {
+    irLed.sendRaw(rawData, 67, 38);  // Send a raw data capture at 38kHz.
+    delay(2000);
+  }
+}
+*/

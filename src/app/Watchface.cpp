@@ -12,7 +12,7 @@
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
-
+#include "../UI/UI.hpp"
 
 #include "../static/img_watchface0.c"
 #include "../static/img_hours_hand.c"

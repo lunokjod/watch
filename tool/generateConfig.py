@@ -73,6 +73,8 @@ outputData = templateData.replace("@@LUNOKIOT_GENERATED_FILE_WARNING@@", str("DO
 outputData = outputData.replace("@@BUILD_NUMBER@@", str(buildCount))
 outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
 outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
+outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", str(get_ip()))
+outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
 
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))

@@ -7,6 +7,8 @@
 #include <functional>
 #include "../system/Application.hpp"
 
+extern uint8_t pendingNotifications;
+
 
 /*
  * Convenient uint32_t to R/G/B union
