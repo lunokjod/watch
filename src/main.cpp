@@ -88,6 +88,9 @@ void setup() {
 }
 void loop() { vTaskDelete( NULL ); } // don't need arduinofw loop, can free it if you want
 
+// https://github.com/espressif/esp-idf/tree/cab6b6d1824e1a1bf4d965b747d75cb6a77f5151/examples/bluetooth/bluedroid/classic_bt/bt_hid_mouse_device
+
+
 
 /* IR TEST
 #include <IRremoteESP8266.h>

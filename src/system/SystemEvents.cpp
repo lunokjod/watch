@@ -299,8 +299,13 @@ uint16_t doSleepThreads=0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
 static void DoSleepTask(void* args) {
-
-    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS );
+    /*
+    if ( networkActivity ) {
+        Serial.println("ESP32: DoSleep DISCARDED due network activity");
+        vTaskDelete(NULL);
+    }*/
+    Serial.println("ESP32: DoSleep Trying to obtain the lock...");
+    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); // LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS );
     if ( false == done ) {
         Serial.println("ESP32: DoSleep DISCARDED: already in progress...");
         vTaskDelete(NULL);

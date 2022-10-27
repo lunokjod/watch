@@ -60,6 +60,7 @@ void SplashFanfare() {
 #endif
 
 void SplashAnnounce() {
+    ttgo->setBrightness(0);
     ttgo->tft->fillScreen(TFT_WHITE);
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you are read this!!! :)
     ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, TFT_DARKGREY);
@@ -77,8 +78,13 @@ void SplashAnnounce() {
     sprintf(buildNumberAsString,"#%u", LUNOKIOT_BUILD_NUMBER );
     ttgo->tft->setTextColor(TFT_DARKGREY);
     ttgo->tft->drawString(buildNumberAsString, posX, posY);
-    ttgo->setBrightness(BaseBackLightBrightness);
+    ttgo->setBrightness(0);
     ttgo->openBL(); // turn on the lights!
+    for(int i=0;i<255;i++) {
+        ttgo->setBrightness(i);
+        delay(5);
+    }
+    ttgo->setBrightness(BaseBackLightBrightness);
 }
 
 void SplashAnnounceEnd() {

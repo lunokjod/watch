@@ -43,7 +43,13 @@
 * feedbacked apps (what do you need?)
 * LocalCloud, a support app for the watch (companion app or something)
 * Web installer: https://espressif.github.io/esptool-js/
-
+* TFT low-power minimal service (no backligt+slow bus clock), only black and white, trying to simulate eINK
+ * TFT direct control: special applications uses graphics intensively and don't use system GUI... must provide some kind of mechanism of override the current system control (temporal inhibition) 
+ * User customizable night hours, during this time, the system don't allow to reply anything inmediatly(delayed send guarantees don't send stupid messages to others by accident)
+ * Menú must remember the last used or better, reorder the list with user preferences (app usage counters)
+ * viewport
+ * animations
+ * hive mode (wireless mesh, share info with other lunokIoT, without infrastructure)
 ## Important build flags
  platform.ini file contains the build flags, the more relevant are:
  * **-DLILYGO_WATCH_2020_V3** change with your version (lilygo library driven) please report issues :)
@@ -55,6 +61,7 @@
 * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA) requires: **-DLUNOKIOT_WIFI_ENABLED**
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
 * **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
+* **-DLUNOKIOT_TFT_ACCELERATION_ENABLED** Allow widgets to control the TFT interface directly
 
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"

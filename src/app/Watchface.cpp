@@ -12,6 +12,7 @@
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
 #include "../UI/UI.hpp"
 
 #include "../static/img_watchface0.c"
@@ -22,7 +23,7 @@
 #include "../static/img_bluetooth_24.xbm"
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
-#include "../static/img_screenshoot_120.xbm"
+//#include "../static/img_screenshoot_120.xbm"
 
 #include "../static/img_daynightCycle.c"
 #include "../static/img_batteryGauge106.c"
@@ -348,9 +349,13 @@ WatchfaceApplication::WatchfaceApplication() {
         //LaunchApplication(new SOMEAPPTOREADNOTIFICATIONS_@TODO());
     });
 
-    nextWatchFaceFullRedraw = 0;
 
+    //uploadMonitor = new GraphWidget(50,80,0,255,TFT_YELLOW, CanvasWidget::MASK_COLOR);
+    
+
+    nextWatchFaceFullRedraw = 0;
 }
+
 WatchfaceApplication::~WatchfaceApplication() {
     if ( nullptr != watchFaceCanvas ) {
         delete watchFaceCanvas;
@@ -403,6 +408,8 @@ extern bool bleServiceRunning; //@TODO this is a crap!!!
 extern bool blePeer;
 extern bool screenShootInProgress;
 
+int16_t screenShootActionAlpha = 0;
+extern uint16_t lastRLECount;
 
 void WatchfaceApplication::PrepareDataLayer() {
 
@@ -581,12 +588,80 @@ void WatchfaceApplication::PrepareDataLayer() {
         marksCanvas->canvas->setTextColor(TFT_WHITE);
         marksCanvas->canvas->drawString(weatherDescription, 120,60);
     }
-    
-    if ( screenShootInProgress ) {        
-        marksCanvas->canvas->drawXBitmap(
-            (TFT_WIDTH/2)-(img_screenshoot_120_width/2),
-            (TFT_HEIGHT/2)-(img_screenshoot_120_height/2),
-            img_screenshoot_120_bits, img_screenshoot_120_width, img_screenshoot_120_height, TFT_WHITE);
+
+    if ( screenShootInProgress ) {
+        const size_t totalPixels = TFT_HEIGHT*TFT_WIDTH;
+        size_t pixelsSended = screenShootCurrentImageX + (screenShootCurrentImageY*TFT_HEIGHT);
+        size_t percentSended= (pixelsSended*100)/totalPixels;
+        //Serial.printf("SENDING IMAGE: X: %d/240 Y: %d/240 sended: %d/%d   ---> PC: %d%%\n",screenShootCurrentImageX,screenShootCurrentImageY,pixelsSended,totalPixels,percentSended);
+
+        // SHOW PERCENTAGE
+        size_t percentScreen = (pixelsSended*176)/totalPixels;
+
+        {
+            int32_t x = 20;
+            int32_t y = 200;
+            int32_t h = 16;
+            int32_t w = 180;
+            /*
+            marksCanvas->canvas->fillRoundRect(x-2,y-2,w+4,h+4,7,canvas->color24to16(0x212121));
+            marksCanvas->canvas->fillRoundRect(x,y,w,h,5,canvas->color24to16(0x353e45));
+            marksCanvas->canvas->fillRoundRect(x+2,y+2,22+percentScreen,h-4,5,canvas->color24to16(0xfcb61d));
+
+            marksCanvas->canvas->fillRoundRect(x+3,y+3,23+(percentScreen*0.9),5,2,TFT_WHITE);
+            */
+
+            //bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
+            size_t degrees = (pixelsSended*360)/totalPixels;
+            int8_t stepColor=1;
+            DescribeCircle(120,120,95,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
+                if ( degrees > angle) {
+                    /*
+                   uint32_t mixColor0 = canvas->alphaBlend(screenShootActionAlpha,    TFT_BLUE, TFT_BLACK);
+                    uint32_t mixColor1 = canvas->alphaBlend(screenShootActionAlpha,    TFT_WHITE, TFT_SKYBLUE);
+                    uint32_t mixColor2 = canvas->alphaBlend(screenShootActionAlpha,    mixColor1, mixColor0);
+                    */
+                    uint32_t mixColor3 = canvas->alphaBlend(screenShootActionAlpha,    TFT_SKYBLUE, TFT_BLUE);
+
+                    marksCanvas->canvas->fillCircle(x,y,1,mixColor3);
+
+                    static int interleave =0;
+                    if ( 0 == ( interleave % 3 ) ) {
+                        screenShootActionAlpha+=stepColor;
+                    }
+                    interleave++;
+                    if ( ( screenShootActionAlpha > 255 ) || ( screenShootActionAlpha < 0 ) ) {
+                        stepColor=(stepColor*-1);
+                    }
+                } else if ( degrees == angle) {
+                    marksCanvas->canvas->fillCircle(x,y,8,TFT_BLACK);
+                    marksCanvas->canvas->fillCircle(x,y,7,TFT_WHITE);
+                    marksCanvas->canvas->fillCircle(x,y,5,TFT_SKYBLUE);
+                }
+                return true;
+            });
+
+            char pcText[6] = { 0 };
+            sprintf(pcText,"%3d%%",percentSended);
+
+            DescribeCircle(120,120,65,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
+                if ( degrees == angle) {
+                    marksCanvas->canvas->setTextFont(0);
+                    marksCanvas->canvas->setTextSize(2);
+                    marksCanvas->canvas->setTextWrap(false,false);
+                    marksCanvas->canvas->setTextDatum(CC_DATUM);
+                    marksCanvas->canvas->setTextColor(TFT_BLACK);
+                    marksCanvas->canvas->drawString(pcText, x+2,y-2);
+                    marksCanvas->canvas->drawString(pcText, x+2,y+2);
+                    marksCanvas->canvas->drawString(pcText, x-2,y-2);
+                    marksCanvas->canvas->drawString(pcText, x-2,y+2);
+                    marksCanvas->canvas->setTextColor(TFT_WHITE); //mixColor2);
+                    marksCanvas->canvas->drawString(pcText, x,y);
+                }
+                return true;
+            });
+
+        }
     }
 }
 
@@ -676,7 +751,13 @@ bool WatchfaceApplication::Tick() {
         overlay->pushRotated(watchFaceCanvas->canvas,0,CanvasWidget::MASK_COLOR);
         */
     }
-
+    
+    /*
+    if ( screenShootInProgress ) {
+        uploadMonitor->PushValue(lastRLECount);
+    }*/
+    
+    
     /*
         Serial.printf("ANGLE: %.3lf\n", touchDragAngle);
         Serial.printf("Distance: %.3lf\n", touchDragDistance);
@@ -806,6 +887,12 @@ bool WatchfaceApplication::Tick() {
         }
 
 
+
+
+        // UPLOAD MONITOR
+        //uploadMonitor->DrawTo(watchFaceCanvas->canvas,120-40,115);
+
+
         unsigned long localtimeMeasure= millis();
         
 
@@ -894,6 +981,7 @@ bool WatchfaceApplication::Tick() {
 
         marksCanvas->DrawTo(watchFaceCanvas->canvas);
         marksCanvas->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+
 
         watchFaceCanvas->DrawTo(canvas);
         //localtimeMeasure

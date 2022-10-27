@@ -9,22 +9,24 @@
 
 extern uint8_t pendingNotifications;
 
-
 /*
  * Convenient uint32_t to R/G/B union
  */
-union rgbColor {
+union rgbColor
+{
     uint32_t u32;
     uint8_t rgb[3];
     uint8_t rgba[4];
-    struct {
+    struct
+    {
         uint8_t G;
         uint8_t R;
         uint8_t B;
     } color;
 };
 
-union rgb565 {
+union rgb565
+{
     uint16_t u16;
     uint8_t byte[2];
 };
@@ -33,14 +35,18 @@ union rgb565 {
 ESP_EVENT_DECLARE_BASE(UI_EVENTS);
 
 // UI Events
-enum {
-    UI_EVENT_READY,     // when the UI becomes active
-    UI_EVENT_TICK,      // variable, depends of esp32 load
-    UI_EVENT_CONTINUE,  // resume UI events please (get tick)
-    UI_EVENT_STOP,      // stop all UI events please (stop tick)
-    UI_EVENT_NOTIFICATION, // @TODO
+enum
+{
+    UI_EVENT_READY,           // when the UI becomes active
+    UI_EVENT_TICK,            // variable, depends of esp32 load
+    UI_EVENT_CONTINUE,        // resume UI events please (get tick)
+    UI_EVENT_STOP,            // stop all UI events please (stop tick)
+    UI_EVENT_NOTIFICATION,    // @TODO
     UI_EVENT_ANCHOR2D_CHANGE, //@TODO
 };
+
+extern size_t screenShootCurrentImageX;
+extern size_t screenShootCurrentImageY;
 
 // Event loops
 
@@ -53,9 +59,8 @@ struct UICallbackData {
 };
 */
 
-
-void AlertLedEnable(bool enabled, uint32_t ledColor=TFT_RED, uint32_t x=120, uint32_t y=20 );
-
+void AlertLedEnable(bool enabled, uint32_t ledColor = TFT_RED, uint32_t x = 120, uint32_t y = 20);
+extern bool directDraw;
 extern unsigned long UINextTimeout;
 extern const unsigned long UITimeout;
 void UIStart();
@@ -68,14 +73,16 @@ void UIStart();
 #include "representation/Point2D.hpp"
 void _UINotifyPoint2DChange(Point2D *point);
 
-
-//bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
-typedef std::function<bool (int,int, int, int, int, int, void*)> DescribeCircleCallback;
+// bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
+typedef std::function<bool(int, int, int, int, int, int, void *)> DescribeCircleCallback;
 // Implementing Mid-Point Circle Drawing Algorithm
-void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload);
+void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload = nullptr);
 
 void ScreenSleep();
 void ScreenWake();
-void TakeScreenShootFrom(TFT_eSprite *view);
+
+TFT_eSprite *TakeScreenShoot();
+TFT_eSprite *DuplicateSprite(TFT_eSprite *view);
+TFT_eSprite *SimplifyScreenShootFrom(TFT_eSprite *view, float divisor = 0.5);
 
 #endif

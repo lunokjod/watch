@@ -3,6 +3,8 @@
 
 #include <functional>
 
+// notify to DoSleep they cannot poweroff the ESP
+extern bool networkActivity;
 /*
  * Network timed callbacks
  */
@@ -25,5 +27,6 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk);
 void BLESetupHooks();
 void StartBLE();
 void StopBLE();
+void BLEKickAllPeers();
 
 #endif

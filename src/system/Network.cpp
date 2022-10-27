@@ -66,6 +66,7 @@ bool bleEnabled = false;
 bool bleServiceRunning = false;
 bool blePeer = false;
 bool BLESendScreenShootCommand = false;
+// https://mynewt.apache.org/latest/network/ble_sec.html
 
 // Network scheduler list
 std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
@@ -182,7 +183,7 @@ void SearchUpdateAsNetworkTask() {
  * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
  */
 static void NetworkHandlerTask(void* args) {
-    delay(5000); // arbitrary wait before begin first connection
+    delay(8000); // arbitrary wait before begin first connection
     unsigned long nextConnectMS = 0;
     unsigned long beginConnected = -1;
     unsigned long beginIdle = -1;
@@ -211,8 +212,11 @@ static void NetworkHandlerTask(void* args) {
                 tsk->_lastCheck = millis();
             }
             if ( mustStart ) {
+                Serial.println("Network: BLE must be disabled to maximize WiFi effort");
+                if ( bleEnabled ) { StopBLE(); }
+                delay(100);
                 WiFi.begin();
-                WiFi.setAutoReconnect(false);
+                //WiFi.setAutoReconnect(false);
             } else {
                 Serial.println("Network: No tasks pending for this period... don't launch WiFi");
                 for (auto const& tsk : networkPendingTasks) {
@@ -256,28 +260,52 @@ static void NetworkHandlerTask(void* args) {
                     continue;
                 }*/
                 //CHECK THE tasks
+
+                std::list<NetworkTaskDescriptor *> failedTasks = {};
                 for (auto const& tsk : networkPendingTasks) {
                     if ( -1 == tsk->_nextTrigger ) {
                         tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
-                            delay(100);
+                            delay(150);
                             Serial.printf("NetworkTask: Running task '%s'...\n", tsk->name);
                             bool res = tsk->callback();
                             if ( res ) {
                                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                 tsk->_lastCheck = millis();
                             } else { 
-                                Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                                failedTasks.push_back(tsk);
+                                Serial.printf("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
                             }
                         }
                     }
                 }
+                if ( failedTasks.size() > 0 ) {
+                    Serial.println("NetworkTask: Retrying failed tasks...");
+                    delay(1000);
+                    for (auto const& tsk : failedTasks) {
+                        if ( -1 == tsk->_nextTrigger ) {
+                            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                        } else {
+                            if ( millis() > tsk->_nextTrigger ) {
+                                delay(250);
+                                Serial.printf("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
+                                bool res = tsk->callback();
+                                if ( res ) {
+                                    tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                                    tsk->_lastCheck = millis();
+                                } else { 
+                                    Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                                }
+                            }
+                        }
+                    }
+                }
+                WiFi.disconnect();
                 delay(100);
+                WiFi.mode(WIFI_OFF);
                 connectedMS = millis()-beginConnected;
                 Serial.printf("Network: WiFi connection: %d sec\n", connectedMS/1000);
-                WiFi.disconnect();
-                WiFi.mode(WIFI_OFF);
             }
             continue;
         }
@@ -329,6 +357,7 @@ void BLESetupHooks() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, BLEDown, nullptr, NULL));
 
 }
+bool networkActivity = false;
 extern TFT_eSprite *screenShootCanvas;    // the last screenshoot
 extern bool screenShootInProgress;        // Notify Watchface about send screenshoot
 size_t imageUploadSize=0;
@@ -351,8 +380,8 @@ void BLELoopTask(void * data) {
 
     void *theScreenShotToSend=nullptr; // point to current screenshoot
     // temp values
-    size_t imageX=0;
-    size_t imageY=0;
+    screenShootCurrentImageX=0;
+    screenShootCurrentImageY=0;
     oldDeviceConnected = false;
     deviceConnected = false;
     while(bleEnabled) {
@@ -363,21 +392,22 @@ void BLELoopTask(void * data) {
                     theScreenShotToSend = (void*)screenShootCanvas;
                     screenShootInProgress = true;
                     Serial.println("Network: begin sending screenshoot via BLE UART");
-                    imageY=0;
-                    imageX=0;
+                    screenShootCurrentImageY=0;
+                    screenShootCurrentImageX=0;
+                    networkActivity=true;
                     lastRLECount=0;
                 } else { // in progress
                     if ( nullptr != theScreenShotToSend) {
                         rgb565 myColor;
-                        myColor.u16 = screenShootCanvas->readPixel(imageX,imageY);
+                        myColor.u16 = screenShootCanvas->readPixel(screenShootCurrentImageX,screenShootCurrentImageY);
                         //Serial.printf("X: %d Y: %d VAL: 0x%x\n", imageX, imageY, myColor.u16);
                         if ( myLastColor.u16 == myColor.u16 ) {
                             lastRLECount++;
                             if ( lastRLECount  > 254 ) { // byte full...must send
                                 RLEPackage valToSend = { .color = myLastColor.u16 };
                                 valToSend.repeat = 255;
-                                valToSend.x = imageX;
-                                valToSend.y = imageY;
+                                valToSend.x = screenShootCurrentImageX;
+                                valToSend.y = screenShootCurrentImageY;
                                 pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
                                 pTxCharacteristic->notify(true);
                                 delay(20);
@@ -389,8 +419,8 @@ void BLELoopTask(void * data) {
                         } else if ( myLastColor.u16 != myColor.u16 ) {
                             RLEPackage valToSend = { .color = myLastColor.u16 };
                             valToSend.repeat = lastRLECount;
-                            valToSend.x = imageX;
-                            valToSend.y = imageY;
+                            valToSend.x = screenShootCurrentImageX;
+                            valToSend.y = screenShootCurrentImageY;
                             //Serial.printf("RLEDATA: 0x%x\n", valToSend.rleData);
                             pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
                             pTxCharacteristic->notify(true);
@@ -401,57 +431,46 @@ void BLELoopTask(void * data) {
                             myLastColor=myColor;
                             continue;
                         }
-                       /*
-                        RLEPackage valToSend = { .color = myColor.u16 };
-                        valToSend.repeat = 1;
-                        pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(uint8_t)*3);
-                        pTxCharacteristic->notify(true);
-                        imageUploadSize+=sizeof(uint8_t)*3;
-                        delay(12);
-                        */
-
 
                         myLastColor=myColor;
-                        imageX++;
-                        if ( imageX >= screenShootCanvas->width() ) {
-                            imageY++;
-                            imageX=0;
+                        screenShootCurrentImageX++;
+                        if ( screenShootCurrentImageX >= screenShootCanvas->width() ) {
+                            screenShootCurrentImageY++;
+                            screenShootCurrentImageX=0;
                             //imageY = screenShootCanvas->height()+1;
                         }
-                        if ( imageY >= screenShootCanvas->height() ) {
+                        if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
                             realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
                             Serial.printf("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
+                            delay(100);
                             theScreenShotToSend=nullptr;
                             realImageSize=0;
                             imageUploadSize=0;
-                            imageY=0;
-                            imageX=0;
+                            screenShootCurrentImageY=0;
+                            screenShootCurrentImageX=0;
                             BLESendScreenShootCommand=false;
                             screenShootInProgress = false;
                             //DISCONNECT THE CLIENT
-                            std::vector<uint16_t> clients = pServer->getPeerDevices();
-                            for(uint16_t client : clients) {
-                                delay(100);
-                                Serial.printf("Network: BLE kicking out client %d\n",client);
-                                pServer->disconnect(client,0x13); // remote close
-                                pServer->disconnect(client,0x16); // localhost close
-                            }
+                            BLEKickAllPeers();
+                            networkActivity=false;
                         }
                     }
                 }
             }
         } else {
+            networkActivity=false;
             delay(100);
         }
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
+            screenShootInProgress=false;
+            blePeer=false;
             Serial.println("Network: BLE Device disconnected");
             delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
             Serial.println("Network: Start BLE advertising");
             oldDeviceConnected = deviceConnected;
-            screenShootInProgress=false;
-            blePeer=false;
+            networkActivity=false;
         }
 
         // connecting
@@ -460,8 +479,10 @@ void BLELoopTask(void * data) {
             blePeer=true;
             Serial.println("Network: BLE Device connected");
             oldDeviceConnected=deviceConnected;
+            networkActivity=true;
         }
     }
+    networkActivity=false;
     screenShootInProgress=false;
     deviceConnected = false;
     oldDeviceConnected = false;
@@ -501,30 +522,45 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string rxValue = pCharacteristic->getValue();
-      if (rxValue.length() > 0) {
-        const char * receivedCommand = rxValue.c_str();
-        const char * ScreenShootCommand = "GETSCREENSHOOT";
+        std::string rxValue = pCharacteristic->getValue();
+        if (rxValue.length() > 0) {
+            const char * receivedCommand = rxValue.c_str();
+            const char * ScreenShootCommand = "GETSCREENSHOOT";
 
-        if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
-            Serial.println("BLE: UART: 'GETSCREENSHOOT' command received");
-            BLESendScreenShootCommand = true;
-        } else {
-            Serial.printf("BLE: UART Received Value: ");
-            for (int i = 0; i < rxValue.length(); i++) {
-                Serial.printf("%c",rxValue[i]);
+            if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
+                Serial.println("BLE: UART: 'GETSCREENSHOOT' command received");
+                BLESendScreenShootCommand = true;
+            } else {
+                BLESendScreenShootCommand=false;
+                Serial.printf("BLE: UART Received Value: %c",receivedCommand);
+                for (int i = 0; i < rxValue.length(); i++) {
+                    Serial.printf("%c",rxValue[i]);
+                }
+                Serial.println("");
             }
-            Serial.println("");
         }
-      }
     }
 };
+
+void BLEKickAllPeers() {
+    if ( false == bleEnabled ) { return; }
+    //DISCONNECT THE CLIENTS
+    std::vector<uint16_t> clients = pServer->getPeerDevices();
+    for(uint16_t client : clients) {
+        delay(100);
+        Serial.printf("Network: BLE kicking out client %d\n",client);
+        pServer->disconnect(client,0x13); // remote close
+        pServer->disconnect(client,0x16); // localhost close
+    }
+}
+
 
 // https://h2zero.github.io/NimBLE-Arduino/index.html
 // https://github.com/h2zero/NimBLE-Arduino
 void StopBLE() {
     if ( false == bleEnabled ) { return; }
     Serial.println("BLE: Stopping...");
+    BLEKickAllPeers();
     /*
     pServer->removeService(pService,true);
     pService = nullptr;

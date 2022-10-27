@@ -1,19 +1,20 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+#include "CanvasZWidget.hpp"
 #include "CanvasWidget.hpp"
 #include "../activator/ActiveRect.hpp"
 
 extern TFT_eSprite *overlay;
 
-CanvasWidget::CanvasWidget(int16_t h, int16_t w) {
+CanvasZWidget::CanvasZWidget(int16_t h, int16_t w, float z):z(z) {
     RebuildCanvas(h,w);
 }
 
-void CanvasWidget::RebuildCanvas(int16_t h, int16_t w) {
+void CanvasZWidget::RebuildCanvas(int16_t h, int16_t w) {
     if ( nullptr != canvas ) {
         canvas->deleteSprite();
         delete canvas;
-        canvas=nullptr;
+        canvas = nullptr;
     }
     canvas = new TFT_eSprite(ttgo->tft);
     canvas->setColorDepth(16);
@@ -21,10 +22,10 @@ void CanvasWidget::RebuildCanvas(int16_t h, int16_t w) {
     canvas->fillSprite(MASK_COLOR);
 }
 
-TFT_eSprite *CanvasWidget::GetCanvas() { return this->canvas; }
+TFT_eSprite *CanvasZWidget::GetCanvas() { return this->canvas; }
 
 
-CanvasWidget::~CanvasWidget() {
+CanvasZWidget::~CanvasZWidget() {
     if (nullptr != this->canvas ) {
         TFT_eSprite *tmp = this->canvas;
         this->canvas = nullptr;
@@ -34,14 +35,19 @@ CanvasWidget::~CanvasWidget() {
     }
 }
 
-void CanvasWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, int32_t maskColor) {
+void CanvasZWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, float z,int32_t maskColor) {
     if ( nullptr == endCanvas) { return; }
     if ( nullptr == canvas ){ return; }
+    TFT_eSprite * scaledCopy = SimplifyScreenShootFrom(canvas, z);
+    this->z=z;
+
     endCanvas->setPivot(x,y);
-    canvas->setPivot(0,0);
-    // DEBUG canvas->fillSprite(TFT_YELLOW);
-    canvas->pushRotated(endCanvas,0,maskColor);
-    canvas->setPivot(this->canvas->width()/2,this->canvas->height()/2);
+    scaledCopy->setPivot(x,y);
+    scaledCopy->pushRotated(endCanvas,0,maskColor);
+
+    scaledCopy->setPivot(x,y);
     endCanvas->setPivot(endCanvas->width()/2,endCanvas->height()/2);
-    //overlay->drawRect(x,y,this->canvas->width(),this->canvas->height(),TFT_YELLOW);
+
+    scaledCopy->deleteSprite();
+    delete scaledCopy;
 }

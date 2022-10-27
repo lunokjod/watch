@@ -3,10 +3,11 @@
 
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
-
+#include "../UI/UI.hpp"
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
 extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
+//TFT_eSprite * LunokIoTApplication::lastStateCanvas = TFT_eSprite::createSprite(TFT_HEIGHT,TFT_WIDTH);
 
 LunokIoTApplication::LunokIoTApplication() {
 #ifdef LUNOKIOT_DEBUG
@@ -24,14 +25,15 @@ LunokIoTApplication::LunokIoTApplication() {
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
-#ifdef LUNOKIOT_DEBUG_UI
-    Serial.printf("LunokIoTApplication: %p destroyed\n", this);
-#endif
-    if ( nullptr != this->canvas ) { // destroy TFTeSPI shit
+
+    if ( nullptr != this->canvas ) {
         canvas->deleteSprite();
-        delete this->canvas; // destroy my shit
+        delete canvas;
         this->canvas = nullptr;
     }
+#ifdef LUNOKIOT_DEBUG_UI
+    Serial.printf("LunokIoTApplication: %p deleted\n", this);
+#endif
 #ifdef LUNOKIOT_DEBUG
     // In multitask environment is complicated to automate this... but works as advice that something went wrong
     if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 

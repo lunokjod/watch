@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+#include "Application.hpp"
 
 /*
  * Basic application with UI

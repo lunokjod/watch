@@ -9,6 +9,7 @@
 
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
 
 #include "../system/SystemEvents.hpp"
 #include "../system/Network.hpp"
@@ -16,6 +17,7 @@
 
 class WatchfaceApplication: public LunokIoTApplication {
     public:
+        GraphWidget * uploadMonitor = nullptr;
         //TaskHandle_t NTPTaskHandler = NULL;
         CanvasWidget * backlightCanvas = nullptr;
         CanvasWidget * backgroundCanvas = nullptr;

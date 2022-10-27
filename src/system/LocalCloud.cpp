@@ -13,31 +13,33 @@
 
 NetworkTaskDescriptor * localCloudNetworkTask = nullptr;
 unsigned int localCloudNetworkTaskLastCheck = -1;
-JSONVar localCloudNetworkHome = nullptr;
+JSONVar localCloudNetworkHome;
 char localCloudNetworkID[32];
 
 void ParseLocalCloudHomeJSON() {
+    // get info from my own profile
     if (localCloudNetworkHome.hasOwnProperty("profile")) {
         JSONVar profileJSON = localCloudNetworkHome["profile"];
         if ( profileJSON.hasOwnProperty("sessionID") ) {
-            //Serial.printf("MY IDENTITY ON THIS SERVER IS: %s\n",(const char*)(profileJSON["sessionID"]));
+            Serial.printf("LocalCloud: Identity: '%s'\n",(const char*)(profileJSON["sessionID"]));
             String shitNVSStringerSux = NVS.getString("lcSession");
             if ( 0 == shitNVSStringerSux.length() ) {
-                Serial.printf("LocalCloud: SessionID '%s' saved on NVS\n",(const char*)(profileJSON["sessionID"]));
+                Serial.printf("LocalCloud: Identity '%s' saved on NVS\n",(const char*)(profileJSON["sessionID"]));
                 String sessionIDAsString = String((const char*)profileJSON["sessionID"]);
-                NVS.setString("lcSession",sessionIDAsString);
+                NVS.setString("lcSession",sessionIDAsString); // get a copy of my "session cookie"
             }
         }
     }
+    // get notifications from lunoKloud
     if ( localCloudNetworkHome.hasOwnProperty("notifications") ) {
         JSONVar notificationsJSON = localCloudNetworkHome["notifications"];
         pendingNotifications = notificationsJSON.length();
         Serial.printf("LocalCloud: Notifications received: %d\n",pendingNotifications);
     }
-
     Serial.println("");
-    Serial.println("LocalCloud: @TODO home json received!!!!");
-    localCloudNetworkHome.printTo(Serial);
+    Serial.println("Received:");
+    String jsonString = JSON.stringify(localCloudNetworkHome);
+    Serial.printf("\n'%s'\n", jsonString.c_str());
     Serial.println("");
 }
 
@@ -56,14 +58,14 @@ void StartLocalCloudClientTask(void * data) {
             esp_wifi_get_mac(WIFI_IF_AP, eth_mac);
             snprintf(localCloudNetworkID, 32, "%s%02X%02X%02X",
                     ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
-            char *urlBuffer = (char*)malloc(255);
+            char *urlBuffer = (char*)ps_malloc(255);
             sprintf(urlBuffer,"%s/lunokIoT/lcHome.cgi",LUNOKIOT_LOCAL_CLOUD_URL);
             Serial.printf("LocalCloud: Trying to reach lunokIoT Local Cloud at '%s'\n",urlBuffer);
             String shitNVSStringerSux = NVS.getString("lcSession");
             HTTPClient localCloudHTTPClient;
             localCloudHTTPClient.begin(urlBuffer);
             if ( 0 != shitNVSStringerSux.length() ) {
-                Serial.printf("LocalCloud: Reusing identity on this cloud...");
+                Serial.println("LocalCloud: Reusing NVS identity");
                 String moreSHit = "lunokWatchSession=" + shitNVSStringerSux;
                 localCloudHTTPClient.addHeader("Cookie",moreSHit);
             }
@@ -72,16 +74,18 @@ void StartLocalCloudClientTask(void * data) {
             free(urlBuffer);
             urlBuffer=nullptr;
             if(httpCode > 0) {
+                String IHateTheStrings;
                 if(httpCode == HTTP_CODE_OK) {
-                    String payload = localCloudHTTPClient.getString();
-                    localCloudNetworkHome = JSON.parse(payload);
+                    IHateTheStrings = localCloudHTTPClient.getString();
+                    //Serial.printf("DEBUUUG: '%s'\n",IHateTheStrings.c_str());
+                    localCloudNetworkHome = JSON.parse(IHateTheStrings);
                     if (JSON.typeof(localCloudNetworkHome) != "undefined") {
                         localCloudHTTPClient.end();
                         localCloudNetworkTaskLastCheck=millis();
                         ParseLocalCloudHomeJSON();
                         return true;
                     }
-                    Serial.printf("LocalCloud: Unable to parse JSON: '%s'\n", payload.c_str());
+                    Serial.printf("LocalCloud: Unable to parse JSON: '%s'\n", IHateTheStrings.c_str());
                 }
             } else {
                 Serial.printf("LocalCloud: [HTTP] GET... failed, error: '%s'\n", localCloudHTTPClient.errorToString(httpCode).c_str());

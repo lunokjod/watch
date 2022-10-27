@@ -35,11 +35,18 @@ double touchDragDistance=0;
 int16_t touchDragVectorX=0;
 int16_t touchDragVectorY=0;
 unsigned long touchDownTimeMS=0;
+bool directDraw =false;
 uint32_t FPS=0;
 //bool UIAlertLedEnabled = false;
 int16_t downTouchX=120;
 int16_t downTouchY=120;
 TFT_eSprite *overlay = nullptr;
+
+size_t screenShootCurrentImageX=0;
+size_t screenShootCurrentImageY=0;
+
+
+std::list<TFT_eSprite *>ScreenShots;
 
 uint8_t pendingNotifications = 0;
 
@@ -110,37 +117,10 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
 TFT_eSprite *screenShootCanvas = nullptr;
 bool screenShootInProgress = false; // @TODO watchface must show it
 
-void _ProcessScreenShoot(void * data) {
-    screenShootInProgress=true;
-    if ( nullptr == screenShootCanvas ) {
-        screenShootInProgress = false;
-        vTaskDelete(NULL);
-    }
-    // https://github.com/drj11/pypng/blob/main/code/kobo565topng
-    for(int16_t x=0;x<screenShootCanvas->height()-1;x++) {
-        for(int16_t y=0;y<screenShootCanvas->width()-2;y++) {
-            union rgb565 {
-                uint16_t color;
-                uint8_t byte[2];
-            };
-            rgb565 myColor;
-            myColor.color = screenShootCanvas->readPixel(x,y);
-            Serial.printf("%c%c", myColor.byte[0], myColor.byte[1]);
-            //delay(1);
-        }
-//        uint16_t color = screenShootCanvas->readPixel(x,screenShootCanvas->width()-1);
-//        Serial.printf("%u\n", color);
-        delay(5);
-    }
-
-    screenShootInProgress = false;
-    vTaskDelete(NULL);
-}
-
-
 void TakeScreenShootSound() {
 #ifdef LUNOKIOT_SILENT_BOOT
     Serial.println("Audio: Not initialized due Silent boot is enabled");
+    delay(150);
     return;
 #endif
     // Audio fanfare x'D
@@ -178,20 +158,64 @@ void TakeScreenShootSound() {
     ttgo->disableAudio();
 
     i2s_driver_uninstall(I2S_NUM_0);
+    delay(2);
+    ttgo->shake();
+
 }
 
-void TakeScreenShootFrom(TFT_eSprite *view) {
-    if ( screenShootInProgress ) { return; }
-    //screenShootInProgress = true;
-    if ( nullptr != screenShootCanvas ) { screenShootCanvas->deleteSprite(); }
+// reduce the number of colors for move images internally
 
-    screenShootCanvas = new TFT_eSprite(ttgo->tft);
-    screenShootCanvas->setColorDepth(16);
-    screenShootCanvas->createSprite(view->width(),view->height());
-    screenShootCanvas->fillSprite(TFT_BLACK);
-    view->pushRotated(screenShootCanvas,0);
+// reduce the size of image using float value (0.5=50%)
+TFT_eSprite * SimplifyScreenShootFrom(TFT_eSprite *view, float divisor) {
+    int16_t nh = view->height()*divisor; // calculate new size
+    int16_t nw = view->width()*divisor;
+
+    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    canvas->setColorDepth(view->getColorDepth());
+    canvas->createSprite(nw, nh);
+    canvas->fillSprite(CanvasWidget::MASK_COLOR);
+
+    //Serial.printf("SimplifyScreenShootFrom: H: %d W: %d (divisor: %f) Calculated H: %d W: %d\n",
+    // view->height(),view->width(), divisor, canvas->height(),canvas->width());
+
+    for(float y=0;y<nw;y++) {
+        int32_t ry = int32_t(y/divisor);
+        for(float x=0;x<nh;x++) {
+            int32_t rx = int32_t(x/divisor);
+
+            uint16_t originalColor = view->readPixel(rx,ry);
+            canvas->drawPixel(x,y,originalColor);
+            //Serial.printf("SimplifyScreenShootFrom: X: %f Y: %f cX: %d cY: %d COLOR: 0x%04x\n",x,y,rx,ry,originalColor);
+        }
+    }
+    return canvas;
+}
+
+TFT_eSprite *TakeScreenShoot() {
+    ttgo->setBrightness(0);
     ttgo->tft->fillScreen(TFT_WHITE);
+    ttgo->setBrightness(255);
     TakeScreenShootSound();
+    ttgo->shake();
+    TFT_eSprite *appView = currentApplication->GetCanvas();
+    TFT_eSprite *myCopy = DuplicateSprite(appView);
+    return myCopy;
+}
+
+TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
+    if ( screenShootInProgress ) { 
+        Serial.println("UI: DuplicateSprite screenshoot already in progress...");
+        return nullptr;
+    }
+    Serial.printf("UI: ScreenShoot %dx%dpx in progress...\n",TFT_HEIGHT,TFT_WIDTH);
+    if ( nullptr != screenShootCanvas ) { screenShootCanvas->deleteSprite(); }
+    screenShootCanvas = new TFT_eSprite(ttgo->tft);
+    screenShootCanvas->setColorDepth(view->getColorDepth());
+    screenShootCanvas->createSprite(view->width(),view->height());
+    screenShootCanvas->fillSprite(CanvasWidget::MASK_COLOR);
+    view->pushRotated(screenShootCanvas,0,CanvasWidget::MASK_COLOR);
+    Serial.println("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG");
+    return screenShootCanvas;
 }
 
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -250,22 +274,39 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             if ( nullptr != appView ) {
                 // perform the call to the app logic
                 changes = currentApplication->Tick();
+
+#ifdef LUNOKIOT_TFT_ACCELERATION_ENABLED
+                if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
+#else
+                    directDraw=false;
+#endif
+
                 if ( changes ) { // Tick() returned true
+
+                    // compose the final frame mixing the overlay & current app
                     appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
                     if ( nullptr != overlay )  {
                         overlay->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
+                        // this is awesome place to do effects on screen (alpha maybe)
                         overlay->pushRotated(appView,0,CanvasWidget::MASK_COLOR);
                     }
-#ifdef LUNOKIOT_SCREENSHOOT_ENABLED
-                    if ( (touched ) && ( 0 != touchDownTimeMS ) ) {
-                        unsigned long pushedTime = millis()-touchDownTimeMS;
-                        if ( pushedTime > 2000 ) {
-                            touchDownTimeMS=0;
-                            TakeScreenShootFrom(appView);
+
+                    // don't allow screenshoots meanwhile directDraw is enabled
+                    if ( false == directDraw ) {
+                        #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
+                        //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
+                        if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
+                        if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
+                            unsigned long pushedTime = millis()-touchDownTimeMS; 
+                            if ( pushedTime > 2300 ) {
+                                touchDownTimeMS=0;
+                                ScreenShots.push_back(TakeScreenShoot());
+                                Serial.printf("UI: Saved screenshoots: %d\n",ScreenShots.size());
+                            }
                         }
+                        #endif
+                        appView->pushSprite(0,0); // push appView to tft
                     }
-#endif
-                    appView->pushSprite(0,0);
                 }
             }
         }
