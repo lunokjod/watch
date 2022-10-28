@@ -307,7 +307,7 @@ bool Provisioning2Application::Tick() {
         ttgo->setBrightness(255);
         qrVisible = false;
     }
-    backBtn->enabled = provisioned;
+    //backBtn->enabled = provisioned;
     clearProvBtn->enabled = provisioned;
     backBtn->Interact(touched,touchX,touchY);
     clearProvBtn->Interact(touched,touchX,touchY);
