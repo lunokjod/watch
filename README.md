@@ -34,6 +34,8 @@
  * IR work, but only can send with this hardware (useless by now, I want to do jokes!)
 
 ### Pending to implement:
+* the mandatory wifi sync on first launc must be optional (Lohtse shar)
+* option for flip screen (Lohtse shar)
 * PDM Mic (voice assistant)
 * RTC (alarm)
 * espNow (locate other family watches)
