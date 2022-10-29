@@ -16,14 +16,22 @@ CanvasZWidget::~CanvasZWidget() {
         Serial.printf("Destroyed canvas: %p\n", this);
     }
 }
+TFT_eSprite * CanvasZWidget::GetScaledImageClipped(float scale,int16_t maxW, int16_t maxH) {
+    this->z=scale;
+    TFT_eSprite * scaledCopy = ScaleSpriteMAX(canvas, scale,maxW,maxH);
+    return scaledCopy;
+}
 
+TFT_eSprite * CanvasZWidget::GetScaledImage(float scale) {
+    this->z=scale;
+    TFT_eSprite * scaledCopy = ScaleSprite(canvas, scale);
+    return scaledCopy;
+}
 void CanvasZWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, float z, bool centered, int32_t maskColor) {
     if ( nullptr == endCanvas) { return; }
     if ( nullptr == canvas ){ return; }
-
-    TFT_eSprite * scaledCopy = ScaleSprite(canvas, z);
+    TFT_eSprite * scaledCopy = GetScaledImage(z);
     scaledCopy->setPivot(0,0);
-    this->z=z;
     if ( centered ) {
         x-=(scaledCopy->width()/2);
         y-=(scaledCopy->height()/2);

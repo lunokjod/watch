@@ -191,30 +191,64 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     return canvas;
 }
 
+TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int16_t maxH) {
+    int16_t nh = view->height()*divisor; // calculate new size
+    int16_t nw = view->width()*divisor;
+
+    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    canvas->setColorDepth(view->getColorDepth());
+    canvas->createSprite(nw, nh);
+    canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
+
+    //Serial.printf("ScaleSprite: H: %d W: %d (divisor: %f) Calculated H: %d W: %d\n",
+    //     view->height(),view->width(), divisor, canvas->height(),canvas->width());
+
+    for(float y=0;y<nh;y++) {
+        if ( y > maxH ) { break; }
+        int32_t ry = int32_t(y/divisor);
+        for(float x=0;x<nw;x++) {
+            if ( x > maxW ) { break; }
+            int32_t rx = int32_t(x/divisor);
+
+            uint16_t originalColor = view->readPixel(rx,ry);
+            canvas->drawPixel(x,y,originalColor);
+            //Serial.printf("ScaleSprite: X: %f Y: %f cX: %d cY: %d COLOR: 0x%04x\n",x,y,rx,ry,originalColor);
+        }
+    }
+    return canvas;
+}
 TFT_eSprite *TakeScreenShoot() {
     ttgo->setBrightness(0);
     ttgo->tft->fillScreen(TFT_WHITE);
     ttgo->setBrightness(255);
-    TakeScreenShootSound();
-    ttgo->shake();
     TFT_eSprite *appView = currentApplication->GetCanvas();
     TFT_eSprite *myCopy = DuplicateSprite(appView);
+    ttgo->tft->fillScreen(TFT_BLACK);
+    ttgo->setBrightness(0);
+    delay(10);
+    ttgo->tft->fillScreen(TFT_WHITE);
+    ttgo->setBrightness(255);
+    // show thumbnail centered on screen
+    TFT_eSprite *scaledImg = ScaleSprite(appView,0.8);
+    //TFT_eSprite *imgCopy = DuplicateSprite(scaledImg);
+    //scaledImg->pushSprite((TFT_WIDTH/2)-(imgCopy->width()/2),(TFT_HEIGHT/2)-(imgCopy->width()/2));
+    scaledImg->pushSprite((TFT_WIDTH/2)-(scaledImg->width()/2),(TFT_HEIGHT/2)-(scaledImg->width()/2));
+    scaledImg->deleteSprite();
+    delete scaledImg;
+    //imgCopy->deleteSprite();
+    //delete imgCopy;
+    delay(200);
+    TakeScreenShootSound();
+    ttgo->shake();
     return myCopy;
 }
 
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
-    if ( screenShootInProgress ) { 
-        Serial.println("UI: DuplicateSprite screenshoot already in progress...");
-        return nullptr;
-    }
-    Serial.printf("UI: ScreenShoot %dx%dpx in progress...\n",TFT_HEIGHT,TFT_WIDTH);
-    if ( nullptr != screenShootCanvas ) { screenShootCanvas->deleteSprite(); }
     screenShootCanvas = new TFT_eSprite(ttgo->tft);
     screenShootCanvas->setColorDepth(view->getColorDepth());
     screenShootCanvas->createSprite(view->width(),view->height());
     screenShootCanvas->fillSprite(CanvasWidget::MASK_COLOR);
     view->pushRotated(screenShootCanvas,0,CanvasWidget::MASK_COLOR);
-    Serial.println("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG");
     return screenShootCanvas;
 }
 
@@ -305,6 +339,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                             if ( pushedTime > 2300 ) {
                                 touchDownTimeMS=0;
                                 ScreenShots.push_back(TakeScreenShoot());
+                                Serial.println("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG");
                                 Serial.printf("UI: Saved screenshoots: %d\n",ScreenShots.size());
                             }
                         }

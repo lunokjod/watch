@@ -18,7 +18,6 @@ class PlaygroundApplication: public LunokIoTApplication {
         CanvasWidget *imageTest=nullptr;
         CanvasWidget *imageTest2=nullptr;
         CanvasWidget *imageTest3=nullptr;
-        CanvasZWidget *imageDeepTest=nullptr;
         PlaygroundApplication();
         ~PlaygroundApplication();
         bool Tick();

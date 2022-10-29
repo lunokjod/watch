@@ -7,17 +7,20 @@
 extern std::list<TFT_eSprite *>ScreenShots;
 
 PlaygroundApplication4::~PlaygroundApplication4() {
+    directDraw=false;
 }
 
 PlaygroundApplication4::PlaygroundApplication4() {
+    directDraw=true;
     testBackground = new CanvasWidget(100,100);
+    /*
     for(int y=0;y<100;y++){
         for(int x=0;x<100;x++){
             uint8_t tone = random(80,255);
             uint16_t color = canvas->color565(tone,tone,tone);
             testBackground->canvas->drawPixel(x,y,color);
         }
-    }
+    }*/
     test = new ScrollViewWidget(40,40, 240-80, 240-80, canvas->color24to16(0x212121),testBackground);
 
     for (auto const& capture : ScreenShots) {
@@ -35,7 +38,6 @@ bool PlaygroundApplication4::Tick() {
         thumb->pushRotated(canvas,0);
         x+=thumb->width()+10;
     }
-
     test->Interact(touched,touchX,touchY);
     test->DrawTo(this->canvas);
 

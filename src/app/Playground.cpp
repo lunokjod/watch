@@ -5,7 +5,6 @@
 #include "../static/img_sample2_120.c"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
-#include "../static/img_sample_400.c"
 
 
 PlaygroundApplication::~PlaygroundApplication() {
@@ -22,10 +21,6 @@ PlaygroundApplication::~PlaygroundApplication() {
     if ( nullptr != imageTest3 ) {
         delete imageTest3;
         imageTest3 = nullptr;
-    }
-    if ( nullptr != imageDeepTest) {
-        delete imageDeepTest;
-        imageDeepTest = nullptr;
     }
     if ( nullptr != buffer ) {
         delete buffer;
@@ -53,12 +48,6 @@ PlaygroundApplication::PlaygroundApplication() {
     imageTest3->canvas->setSwapBytes(false);
 
 
-// 400x216
-    imageDeepTest = new CanvasZWidget( //img_sample2_120.height, img_sample2_120.width);
-        img_sample_400.height, img_sample_400.width);
-    imageDeepTest->canvas->setSwapBytes(true);
-    imageDeepTest->canvas->pushImage(0,0,img_sample_400.width,img_sample_400.height,(uint16_t *)img_sample_400.pixel_data);
-    imageDeepTest->canvas->setSwapBytes(false);
 
 }
 

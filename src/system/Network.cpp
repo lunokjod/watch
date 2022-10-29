@@ -429,6 +429,7 @@ void BLELoopTask(void * data) {
                             delay(20);
                             lastRLECount=1;
                             myLastColor=myColor;
+                            UINextTimeout=millis()+UITimeout; // don't allow the UI stops
                             continue;
                         }
 

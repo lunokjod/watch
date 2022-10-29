@@ -19,6 +19,9 @@
 #include "Playground2.hpp"
 #include "Playground3.hpp"
 #include "Playground4.hpp"
+#include "Playground5.hpp"
+#include "Playground6.hpp"
+
 #include "../static/img_mainmenu_provisioning.xbm"
 //#include "Provisioning.hpp"
 #include "Provisioning2.hpp"
@@ -38,6 +41,8 @@ int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI
+    {"Playground6",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication6()); } },
+    {"Playground5",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication5()); } },
     {"Playground4",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication4()); } },
     {"Playground3",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication3()); } },
     {"Playground2",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication2()); } },

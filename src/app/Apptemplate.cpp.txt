@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "Apptemplate.hpp"
+#include "../UI/UI.hpp"
 
 MainMenuApplication::~MainMenuApplication() {
     
@@ -10,7 +11,8 @@ MainMenuApplication::MainMenuApplication() {
 }
 bool MainMenuApplication::Tick() {
     if (millis() > nextRedraw ) {
-        nextRedraw=millis()+(1000/2);
+        // draw code here
+        nextRedraw=millis()+(1000/2); // tune your required refresh
         return true;
     }
     return false;
