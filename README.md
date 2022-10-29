@@ -4,6 +4,9 @@
 ![playground example0](/doc/playground0.png)
 ![playground example3](/doc/playground3.png)
 ![set time app](/doc/settime.png)
+![battery app](/doc/battery.png)
+![provisioning menu](/doc/mainmenu_provisioning.png)
+![provisioning app](/doc/provisioning.png)
 
 * Note: under heavy development (not ready for everyday use)
 * On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap
@@ -17,7 +20,7 @@
 ## What does:
 
 * WiFi time sync once every 24h (using network time protocol NTP)
-* WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" before build) more info: https://openweathermap.org/
+* WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
 * Wake up every 60 seconds to monitor the user pose (future sleep monitor)
 * Wake up every activity/stepcounter (future fitness monitor)
 * Screen capture can be shared via BLE UART (see tools/getScreenshoot.py)
