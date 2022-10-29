@@ -21,7 +21,7 @@ PlaygroundApplication4::PlaygroundApplication4() {
     test = new ScrollViewWidget(40,40, 240-80, 240-80, canvas->color24to16(0x212121),testBackground);
 
     for (auto const& capture : ScreenShots) {
-        TFT_eSprite * reduced = SimplifyScreenShootFrom(capture,0.5);
+        TFT_eSprite * reduced = ScaleSprite(capture,0.5);
         Thumbnails.push_back(reduced);
     }
 }

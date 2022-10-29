@@ -9,7 +9,6 @@
 
 
 PlaygroundApplication::~PlaygroundApplication() {
-    
     directDraw = false;
 
     if ( nullptr != imageTest ) {
@@ -24,14 +23,22 @@ PlaygroundApplication::~PlaygroundApplication() {
         delete imageTest3;
         imageTest3 = nullptr;
     }
+    if ( nullptr != imageDeepTest) {
+        delete imageDeepTest;
+        imageDeepTest = nullptr;
+    }
     if ( nullptr != buffer ) {
         delete buffer;
         buffer = nullptr;
     }
 }
 PlaygroundApplication::PlaygroundApplication() {
+#ifdef LUNOKIOT_TFT_ACCELERATION_ENABLED
+    directDraw=true;
+#endif
     buffer = new CanvasWidget(TFT_HEIGHT,TFT_WIDTH);
     buffer->canvas->fillSprite(TFT_BLACK);
+    buffer->canvas->pushSprite(0,0); // directDraw allow to get control about SPI TFT dumps
 
     imageTest = new CanvasWidget(img_sample_120.height, img_sample_120.width);
     imageTest->canvas->setSwapBytes(true);
@@ -46,109 +53,102 @@ PlaygroundApplication::PlaygroundApplication() {
     imageTest3->canvas->setSwapBytes(false);
 
 
-    tft->setWindow(0,0,TFT_WIDTH,TFT_HEIGHT);
-    //tft->setAddrWindow(0,0,TFT_WIDTH,TFT_HEIGHT);
-    buffer->canvas->pushSprite(0,0);
-
-    buffer->canvas->fillSprite(TFT_BLACK);
-    tft->setWindow(100,50,80,TFT_HEIGHT);
-    //tft->setWindow(100,50,80,TFT_HEIGHT);
-    //uint16_t *colorBuffer=(uint16_t *)ps_calloc(100*100,sizeof(uint16_t));
-    //tft->pushRect(50,50,100,100,colorBuffer);
-    //free(colorBuffer);
-    //tft->setAddrWindow(100,100,80,128);
-    //buffer->canvas->pushSprite(0,0);
-
-
-    imageDeepTest = new CanvasZWidget(img_sample_400.height, img_sample_400.width,0.5);
+// 400x216
+    imageDeepTest = new CanvasZWidget( //img_sample2_120.height, img_sample2_120.width);
+        img_sample_400.height, img_sample_400.width);
     imageDeepTest->canvas->setSwapBytes(true);
     imageDeepTest->canvas->pushImage(0,0,img_sample_400.width,img_sample_400.height,(uint16_t *)img_sample_400.pixel_data);
     imageDeepTest->canvas->setSwapBytes(false);
 
 }
 
-// typedef std::function<bool (int,int, int, int, double, int, void*)> DescribeCircleCallback;
 int16_t carrousel = 0;
 bool GyroTest(int x,int y, int cx, int cy, int angle, int step, void* payload) {
     PlaygroundApplication * obj = (PlaygroundApplication * )payload;
-    
-    
-    if ( int(angle) == ((120+carrousel)%360) ) {
-        obj->buffer->canvas->fillRect(
-                            (x-(obj->imageTest->canvas->width()/2))-3,
-                            (y-(obj->imageTest->canvas->height()/2))-3,
-                            obj->imageTest->canvas->width()+6,
-                            obj->imageTest->canvas->height()+6,
-                            TFT_BLACK);
+    uint8_t border = 5;
 
-        obj->imageTest->DrawTo(obj->buffer->canvas,x-(obj->imageTest->canvas->width()/2), y-(obj->imageTest->canvas->height()/2));
-        //obj->buffer->canvas->fillCircle(x,y,5,TFT_BLACK);
+    if ( int(angle) == ((120+carrousel)%360) ) {
+        int32_t canx = x-(obj->imageTest->canvas->width()/2);
+        int32_t cany = y-(obj->imageTest->canvas->height()/2);
+        int32_t canh = obj->imageTest->canvas->height();
+        int32_t canw = obj->imageTest->canvas->width();
+        if ( directDraw ) {
+            obj->imageTest->canvas->pushSprite(canx, cany);
+            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+        } else {
+            obj->imageTest->DrawTo(obj->buffer->canvas,canx,cany);
+        }
     }
     if ( int(angle) == ((240+carrousel)%360) ) {
+        int32_t canx = x-(obj->imageTest2->canvas->width()/2);
+        int32_t cany = y-(obj->imageTest2->canvas->height()/2);
+        int32_t canh = obj->imageTest2->canvas->height();
+        int32_t canw = obj->imageTest2->canvas->width();
+        if ( directDraw ) {
+            obj->imageTest2->canvas->pushSprite(canx, cany);
+            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
 
-        obj->buffer->canvas->fillRect(
-                            (x-(obj->imageTest->canvas->width()/2))-3,
-                            (y-(obj->imageTest->canvas->height()/2))-3,
-                            obj->imageTest2->canvas->width()+6,
-                            obj->imageTest2->canvas->height()+6,
-                            TFT_BLACK);
-
-        obj->imageTest2->DrawTo(obj->buffer->canvas,x-(obj->imageTest->canvas->width()/2),y-(obj->imageTest->canvas->height()/2));
+        } else {
+            obj->imageTest2->DrawTo(obj->buffer->canvas,canx,cany);
+        }
     }
     if ( int(angle) == ((carrousel)%360)) {
+        int32_t canx = x-(obj->imageTest3->canvas->width()/2);
+        int32_t cany = y-(obj->imageTest3->canvas->height()/2);
+        int32_t canh = obj->imageTest3->canvas->height();
+        int32_t canw = obj->imageTest3->canvas->width();
+        if ( directDraw ) {
+            obj->imageTest3->canvas->pushSprite(canx, cany);
 
-        obj->buffer->canvas->fillRect(
-                            (x-(obj->imageTest->canvas->width()/2))-3,
-                            (y-(obj->imageTest->canvas->height()/2))-3,
-                            obj->imageTest3->canvas->width()+6,
-                            obj->imageTest3->canvas->height()+6,
-                            TFT_BLACK);
-
-        obj->imageTest3->DrawTo(obj->buffer->canvas,x-(obj->imageTest->canvas->width()/2),y-(obj->imageTest->canvas->height()/2));
+            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+        } else {
+            obj->imageTest3->DrawTo(obj->buffer->canvas,canx,cany);
+        }
     }
     return true;
 }
 bool PlaygroundApplication::Tick() {
-    if (millis() > nextRedraw ) {
-
-
-
-        float currZ = imageDeepTest->z+0.05;
-        if ( currZ > 1.5 ) { currZ = 0.05; buffer->canvas->fillSprite(TFT_BLACK); }
-        imageDeepTest->DrawTo(buffer->canvas,120-(imageTest->canvas->width()/2),120-(imageTest->canvas->height()/2));
-        //(imageDeepTest->canvas->width()),
-        //                            (imageDeepTest->canvas->height()),currZ);
-
-
-        unsigned long b4 = millis();
-        for (int x=0;x<img_sample_120.width;x++){
-            for (int y=0;y<img_sample_120.height;y++){
-                    uint16_t originalPixel16 = imageTest->canvas->readPixel(x,y);
-                    uint16_t originalPixel16_2 = imageTest3->canvas->readPixel(x,y);
-                    uint16_t color16 = canvas->alphaBlend(currentAlpha,originalPixel16,originalPixel16_2);
-                    imageTest2->canvas->drawPixel(x,y,color16);
-            }
-        }
-        //Serial.printf("Time: %d Alpha: %d\n", (millis()-b4),currentAlpha);
-        if ( alphaDirection ) { currentAlpha+=16; }
-        else { currentAlpha-=16; }
-        if ( currentAlpha > 255 ) {
-            currentAlpha = 255;
-            alphaDirection=(!alphaDirection);
-        } else if ( currentAlpha < 0 ) {
-            currentAlpha = 0;
-            alphaDirection=(!alphaDirection);
-        }
-        DescribeCircle(120,120,80,GyroTest,this);
-        carrousel=(carrousel+3)%360;
-        // dont want mask color
-        //imageTest2->DrawTo(buffer->canvas,60,100,-1);
-
-
-        buffer->DrawTo(canvas,0,0,-1);
-
-        nextRedraw=millis()+(1000/18);
-        return true;
+    unsigned long b4 = millis();
+    if ( false == directDraw ) {
+        buffer->canvas->fillSprite(TFT_BLACK);
     }
-    return false;
+    for (int x=0;x<img_sample_120.width;x++){
+        for (int y=0;y<img_sample_120.height;y++){
+                uint16_t originalPixel16 = imageTest->canvas->readPixel(x,y);
+                uint16_t originalPixel16_2 = imageTest3->canvas->readPixel(x,y);
+                uint16_t color16 = canvas->alphaBlend(currentAlpha,originalPixel16,originalPixel16_2);
+                imageTest2->canvas->drawPixel(x,y,color16);
+        }
+    }
+    
+    if ( alphaDirection ) { currentAlpha+=16; }
+    else { currentAlpha-=16; }
+    if ( currentAlpha > 255 ) {
+        currentAlpha = 255;
+        alphaDirection=(!alphaDirection);
+    } else if ( currentAlpha < 0 ) {
+        currentAlpha = 0;
+        alphaDirection=(!alphaDirection);
+    }        
+    
+    DescribeCircle(120,120,80,GyroTest,this);
+    carrousel=(carrousel+3)%360;
+
+    if ( directDraw ) {
+        unsigned long delta=millis()-b4;
+        unsigned long fps = 1000/delta;
+        //Serial.printf("FPS: %u\n",fps);
+    } else {
+        buffer->DrawTo(canvas,0,0,-1);
+    }
+    return true;
 }

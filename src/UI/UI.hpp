@@ -83,6 +83,6 @@ void ScreenWake();
 
 TFT_eSprite *TakeScreenShoot();
 TFT_eSprite *DuplicateSprite(TFT_eSprite *view);
-TFT_eSprite *SimplifyScreenShootFrom(TFT_eSprite *view, float divisor = 0.5);
+TFT_eSprite *ScaleSprite(TFT_eSprite *view, float divisor = 0.5);
 
 #endif

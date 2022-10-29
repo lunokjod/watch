@@ -166,26 +166,26 @@ void TakeScreenShootSound() {
 // reduce the number of colors for move images internally
 
 // reduce the size of image using float value (0.5=50%)
-TFT_eSprite * SimplifyScreenShootFrom(TFT_eSprite *view, float divisor) {
+TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
     TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
     canvas->setColorDepth(view->getColorDepth());
     canvas->createSprite(nw, nh);
-    canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
 
-    //Serial.printf("SimplifyScreenShootFrom: H: %d W: %d (divisor: %f) Calculated H: %d W: %d\n",
-    // view->height(),view->width(), divisor, canvas->height(),canvas->width());
+    //Serial.printf("ScaleSprite: H: %d W: %d (divisor: %f) Calculated H: %d W: %d\n",
+    //     view->height(),view->width(), divisor, canvas->height(),canvas->width());
 
-    for(float y=0;y<nw;y++) {
+    for(float y=0;y<nh;y++) {
         int32_t ry = int32_t(y/divisor);
-        for(float x=0;x<nh;x++) {
+        for(float x=0;x<nw;x++) {
             int32_t rx = int32_t(x/divisor);
 
             uint16_t originalColor = view->readPixel(rx,ry);
             canvas->drawPixel(x,y,originalColor);
-            //Serial.printf("SimplifyScreenShootFrom: X: %f Y: %f cX: %d cY: %d COLOR: 0x%04x\n",x,y,rx,ry,originalColor);
+            //Serial.printf("ScaleSprite: X: %f Y: %f cX: %d cY: %d COLOR: 0x%04x\n",x,y,rx,ry,originalColor);
         }
     }
     return canvas;
