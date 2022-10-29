@@ -336,11 +336,11 @@ WatchfaceApplication::WatchfaceApplication() {
         AddNetworkTask(weatherTask);
     }
 #endif
-    bottomRightButton = new ActiveRect(172,172,70,50,[&, this]() {
+    bottomRightButton = new ActiveRect(160,160,80,80,[&, this]() {
         LaunchApplication(new MainMenuApplication());
     });
 
-    topRightButton = new ActiveRect(172,0,70,50,[&, this]() {
+    topRightButton = new ActiveRect(160,0,80,80,[&, this]() {
         if ( pendingNotifications > 0 ) { pendingNotifications=0;}
         else { pendingNotifications = random(1,10); }
         Serial.println("@TODO THIS IS A TEST");
@@ -697,7 +697,8 @@ bool SecondsCallback(int x, int y, int cx, int cy, double angle, int step, void 
 bool WatchfaceApplication::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY);
     topRightButton->Interact(touched, touchX, touchY);
-
+    //overlay->drawRect(bottomRightButton->x,bottomRightButton->y,bottomRightButton->w,bottomRightButton->h,TFT_GREEN);
+    //overlay->drawRect(topRightButton->x,topRightButton->y,topRightButton->w,topRightButton->h,TFT_GREEN);
 
 /*
     // draw turnable sphere counter
@@ -849,7 +850,7 @@ bool WatchfaceApplication::Tick() {
         }
         // Show notification light in upper right button
         if ( pendingNotifications > 0 ) {
-            watchFaceCanvas->canvas->pushImage(topRightButton->x,topRightButton->y,img_watchface0_notification.width,img_watchface0_notification.height,(uint16_t*)img_watchface0_notification.pixel_data);
+            watchFaceCanvas->canvas->pushImage(TFT_WIDTH-img_watchface0_notification.width,0,img_watchface0_notification.width,img_watchface0_notification.height,(uint16_t*)img_watchface0_notification.pixel_data);
             int x = TFT_WIDTH-5;
             int y = 10;
             char notifCnt[4] = { 0 };

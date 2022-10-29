@@ -52,6 +52,33 @@ void ActiveRect::SetEnabled(bool state) {
 bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
     if ( false == enabled ) { return false; }
 
+    bool collision = ActiveRect::InRect(tx,ty,this->x,this->y,this->h,this->w);
+    if ( touch ) {
+        lastInteraction = false;
+        if ( collision ) { lastInteraction = true; }
+    } else {
+        if ( lastInteraction ) {
+            lastInteraction = false;
+            if ( collision ) {
+                //Serial.printf("DEBUG Activerect: %s X: %d Y: %d\n",(touched?"true":"false"),tx,ty);
+                lastInteraction = false;
+                if ( nullptr != tapActivityCallback ) {
+                    // launch the callback!
+                    BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+                    if ( res != pdTRUE ) {
+                        Serial.printf("ActiveRect: %p Unable to launch task!\n", this);
+                        Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                        Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+
+
+
     if ( false == touch ) {
         if ( lastInteraction ) {
             lastInteraction=false;
@@ -70,7 +97,7 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
     if ( nullptr == tapActivityCallback ) { return false; }
     if ( lastInteraction ) { return false; }
     //Serial.printf("ActiveArea::Interact(%s, %d, %d) on %p",(touch?"True":"False"),tx,ty, this);
-    bool collision = ActiveRect::InRect(tx,ty,this->x,this->y,this->h,this->w);
+    //bool collision = ActiveRect::InRect(tx,ty,this->x,this->y,this->h,this->w);
     if ( false == collision ) { return false; }
     lastTapTime = millis();
     lastInteraction = true;

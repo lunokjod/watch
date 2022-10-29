@@ -224,6 +224,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
 
     int16_t newTouchX,newTouchY;
     bool newTouch = ttgo->getTouch(newTouchX,newTouchY);
+    bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
         touchDragAngle = 0;
         touchDragDistance = 0;
@@ -244,6 +245,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         touchDragAngle = radAngle * (180/3.14);
     } else {
         touchDownTimeMS=0;
+        updateCoords=false;
         /*
         touchDragAngle = 0;
         touchDragDistance = 0;
@@ -256,8 +258,10 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     oldTouchState = touched;
     // make public the touch current data
     touched = newTouch;
-    touchX = newTouchX;
-    touchY = newTouchY;
+    if ( updateCoords ) {
+        touchX = newTouchX;
+        touchY = newTouchY;
+    }
     // an app can choice destroy the overlay if want, the system generates new one
     if ( nullptr == overlay ) {
         overlay = new TFT_eSprite(ttgo->tft);
