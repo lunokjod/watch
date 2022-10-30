@@ -35,7 +35,6 @@ bool BatteryApplication::Tick() {
         if (millis() > nextRedraw ) {
             canvas->fillSprite(TFT_BLACK);
             canvas->pushImage(TFT_WIDTH-90,40,img_battery_empty_160.width,img_battery_empty_160.height, (uint16_t *)img_battery_empty_160.pixel_data);
-
             if ( -1 != batteryPercent ) {
                 uint32_t battColor = TFT_DARKGREY;
                 if ( vbusPresent ) {
@@ -44,8 +43,9 @@ bool BatteryApplication::Tick() {
                         battColor = TFT_RED;
                 } else if ( batteryPercent < 35 ) { battColor = TFT_YELLOW; }
                 else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
-                int16_t calculatedBattCanvasHeight = (batteryPercent*140/100);
-                int16_t restBattCanvasHeight = 140 - calculatedBattCanvasHeight;
+                const int16_t battHeight = 133;
+                int16_t calculatedBattCanvasHeight = (batteryPercent*battHeight/100);
+                int16_t restBattCanvasHeight = battHeight - calculatedBattCanvasHeight;
                 canvas->fillRect(TFT_WIDTH-80,58+restBattCanvasHeight,69,calculatedBattCanvasHeight,battColor);
 
                 char textBuffer[24] = { 0 };
@@ -54,7 +54,9 @@ bool BatteryApplication::Tick() {
                 canvas->setTextSize(1);
                 canvas->setTextDatum(TC_DATUM);
                 canvas->setTextColor(TFT_WHITE);
-                canvas->drawString(textBuffer, 75, 58+restBattCanvasHeight);
+                int16_t battTextHeight =  58+restBattCanvasHeight;
+                if ( battTextHeight > 140 ) { battTextHeight = 140; }
+                canvas->drawString(textBuffer, 75, battTextHeight);
             }
             if ( ttgo->power->isChargeing() ) {
                 canvas->drawXBitmap(TFT_WIDTH-80+17+1,58+33+1,img_power_64_bits, img_power_64_width, img_power_64_height, TFT_BLACK);

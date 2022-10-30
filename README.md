@@ -9,7 +9,7 @@
 ![provisioning app](/doc/provisioning.png)
 
 * Note: under heavy development (not ready for everyday use)
-* On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap
+* On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap you can bypass disabling -DLUNOKIOT_WIFI_ENABLED if don't want wifi features (NTP+weather+localcloud)
 
 ## Basic usage:
 
