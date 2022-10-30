@@ -5,6 +5,7 @@
 ![playground example3](/doc/playground3.png)
 ![set time app](/doc/settime.png)
 ![battery app](/doc/battery.png)
+![ble upload](/doc/ble_upload.png)
 ![provisioning menu](/doc/mainmenu_provisioning.png)
 ![provisioning app](/doc/provisioning.png)
 
