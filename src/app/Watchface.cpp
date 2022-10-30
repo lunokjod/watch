@@ -58,8 +58,8 @@ extern TFT_eSprite *overlay;
 // NTP sync data
 const char *ntpServer       = "es.pool.ntp.org";
 const long  gmtOffset_sec   = 3600;
-//const int   daylightOffset_sec = 0; // winter
-const int   daylightOffset_sec = 3600; // summer
+const int   daylightOffset_sec = 0; // winter
+//const int   daylightOffset_sec = 3600; // summer
 
 bool ntpSyncDone = false;
 bool weatherSyncDone = false;
@@ -412,18 +412,76 @@ int16_t screenShootActionAlpha = 0;
 extern uint16_t lastRLECount;
 
 void WatchfaceApplication::PrepareDataLayer() {
+    char textBuffer[64] = { 0 };
 
-    int32_t posX = 40;
-    int32_t posY = 170;
+    int32_t posX = 0;
+    int32_t posY = 0;
 
-    // connectivity notifications
-    if ( wifiEnabled ) {
-        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
-        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
+    marksCanvas->canvas->setTextFont(0);
+    marksCanvas->canvas->setTextSize(2);
+    marksCanvas->canvas->setTextDatum(TL_DATUM);
+    marksCanvas->canvas->setTextWrap(false,false);
+
+    // batt pc
+    if ( batteryPercent > -1 ) {
+        uint32_t battColor = TFT_DARKGREY;
+        posX = 26;
+        posY = 149;
+        bool battActivity= false; 
+        if ( vbusPresent ) {
+            battColor = TFT_GREEN;
+            battActivity = true;
+        } else if ( batteryPercent < 10 ) {
+                battActivity = true;
+                battColor = TFT_RED;
+        } else if ( batteryPercent < 35 ) { battColor = TFT_YELLOW; }
+        //else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
+        marksCanvas->canvas->setTextColor(battColor);
+        int battFiltered = batteryPercent;
+        if ( battFiltered > 99 ) { battFiltered=99; }
+        sprintf(textBuffer,"%2d%%", battFiltered);
+        marksCanvas->canvas->setTextDatum(CL_DATUM);
+        marksCanvas->canvas->drawString(textBuffer, posX+10, posY+1);
+        marksCanvas->canvas->fillCircle(posX, posY, 5, battColor); // Alarm: red dot
+
+        /*
+        if ( batteryPercent < lastBattPC ) { 
+            unsigned long timeLastBatteryStepdown = millis()-lastBattPCTimeMs;
+            remainingBattTimeS = (timeLastBatteryStepdown*batteryPercent)/1000;
+        }
+        if ( false == vbusPresent ) {
+            uint16_t s = remainingBattTimeS % 60;
+            uint16_t t = (remainingBattTimeS - s)/60;
+            uint16_t m = t % 60;
+            t = (t - m)/60;
+            uint16_t h = t;
+
+            if ( remainingBattTimeS/60 > 60 ) {
+                sprintf(textBuffer,"%02dh %02dm",h , m);
+            } else {
+                sprintf(textBuffer,"%02dm %02ds", m, s);
+            }
+            lastBattPCTimeMs = millis();
+            dataLayer->setTextColor(TFT_WHITE);
+            dataLayer->setTextDatum(TL_DATUM);
+            dataLayer->setTextSize(1);
+            dataLayer->drawString(textBuffer, 36,162);
+        }
+
+        */
+    } else {
+        uint32_t battColor = TFT_DARKGREY;
+        posX = 26;
+        posY = 149;
+        marksCanvas->canvas->setTextColor(battColor);
+        marksCanvas->canvas->setTextDatum(CL_DATUM);
+        marksCanvas->canvas->drawString("No batt", posX+10, posY+1);
+        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_RED); // Alarm: red dot
     }
+
     if ( bleEnabled ) {
-        posX = 20;
-        posY = 126;
+        posX = 36;
+        posY = 171;
         uint32_t dotColor = TFT_DARKGREY;
         if ( bleServiceRunning ) { dotColor = TFT_GREEN; }
         marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
@@ -431,9 +489,17 @@ void WatchfaceApplication::PrepareDataLayer() {
         if ( blePeer ) { img = img_bluetooth_peer_24_bits; }
         marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
     }
+
+    // connectivity notifications
+    if ( wifiEnabled ) {
+        posX = 51;
+        posY = 189;
+        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
+        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
+    }
     if ( vbusPresent ) {
-        posX=55;
-        posY=190;
+        posX=69; // 60;
+        posY=203; // 190;
         uint32_t color = TFT_DARKGREY;
         if ( ttgo->power->isChargeing() ) {
             color = TFT_GREEN;
@@ -443,11 +509,6 @@ void WatchfaceApplication::PrepareDataLayer() {
     }
     
 
-    char textBuffer[64] = { 0 };
-    marksCanvas->canvas->setTextFont(0);
-    marksCanvas->canvas->setTextSize(2);
-    marksCanvas->canvas->setTextDatum(TL_DATUM);
-    marksCanvas->canvas->setTextWrap(false,false);
 
     // weekday/day/month/year
     if ( ntpSyncDone ) {
@@ -520,55 +581,6 @@ void WatchfaceApplication::PrepareDataLayer() {
     sprintf(textBuffer,"%d", stepCount);
     marksCanvas->canvas->drawString(textBuffer, posX, posY);
 
-    // batt pc
-    if ( batteryPercent > -1 ) {
-        uint32_t battColor = TFT_DARKGREY;
-        posX = 40;
-        posY = 150;
-        bool battActivity= false; 
-        if ( vbusPresent ) {
-            battColor = TFT_GREEN;
-            battActivity = true;
-        } else if ( batteryPercent < 10 ) {
-                battActivity = true;
-                battColor = TFT_RED;
-        } else if ( batteryPercent < 35 ) { battColor = TFT_YELLOW; }
-        //else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
-        marksCanvas->canvas->setTextColor(battColor);
-        int battFiltered = batteryPercent;
-        if ( battFiltered > 99 ) { battFiltered=99; }
-        sprintf(textBuffer,"%2d%%", battFiltered);
-        marksCanvas->canvas->setTextDatum(CL_DATUM);
-        marksCanvas->canvas->drawString(textBuffer, posX, posY);
-        marksCanvas->canvas->fillCircle(posX-10, posY-1, 5, battColor); // Alarm: red dot
-
-        /*
-        if ( batteryPercent < lastBattPC ) { 
-            unsigned long timeLastBatteryStepdown = millis()-lastBattPCTimeMs;
-            remainingBattTimeS = (timeLastBatteryStepdown*batteryPercent)/1000;
-        }
-        if ( false == vbusPresent ) {
-            uint16_t s = remainingBattTimeS % 60;
-            uint16_t t = (remainingBattTimeS - s)/60;
-            uint16_t m = t % 60;
-            t = (t - m)/60;
-            uint16_t h = t;
-
-            if ( remainingBattTimeS/60 > 60 ) {
-                sprintf(textBuffer,"%02dh %02dm",h , m);
-            } else {
-                sprintf(textBuffer,"%02dm %02ds", m, s);
-            }
-            lastBattPCTimeMs = millis();
-            dataLayer->setTextColor(TFT_WHITE);
-            dataLayer->setTextDatum(TL_DATUM);
-            dataLayer->setTextSize(1);
-            dataLayer->drawString(textBuffer, 36,162);
-        }
-
-        */
-    }
-
     if ( nullptr != weatherMain ) {
         marksCanvas->canvas->setTextFont(0);
         marksCanvas->canvas->setTextSize(2);
@@ -614,7 +626,7 @@ void WatchfaceApplication::PrepareDataLayer() {
             //bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
             size_t degrees = (pixelsSended*360)/totalPixels;
             int8_t stepColor=1;
-            DescribeCircle(120,120,95,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
+            DescribeCircle(120,120,105,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
                 if ( degrees > angle) {
                     /*
                    uint32_t mixColor0 = canvas->alphaBlend(screenShootActionAlpha,    TFT_BLUE, TFT_BLACK);
@@ -623,7 +635,7 @@ void WatchfaceApplication::PrepareDataLayer() {
                     */
                     uint32_t mixColor3 = canvas->alphaBlend(screenShootActionAlpha,    TFT_SKYBLUE, TFT_BLUE);
 
-                    marksCanvas->canvas->fillCircle(x,y,1,mixColor3);
+                    marksCanvas->canvas->fillCircle(x,y,2,mixColor3);
 
                     static int interleave =0;
                     if ( 0 == ( interleave % 3 ) ) {
@@ -644,8 +656,12 @@ void WatchfaceApplication::PrepareDataLayer() {
             char pcText[6] = { 0 };
             sprintf(pcText,"%3d%%",percentSended);
 
-            DescribeCircle(120,120,65,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
+            DescribeCircle(120,120,69,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
+                if ( ( angle < 270 ) && ( angle > 180 ) ) { return true; } // dont draw here
+                
+
                 if ( degrees == angle) {
+                    Serial.printf("ANGLE: %d\n", angle);
                     marksCanvas->canvas->setTextFont(0);
                     marksCanvas->canvas->setTextSize(2);
                     marksCanvas->canvas->setTextWrap(false,false);
