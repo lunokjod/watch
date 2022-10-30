@@ -18,11 +18,11 @@ static void StaticKVOCallback(void* handler_args, esp_event_base_t base, int32_t
 }
 
 EventKVO::EventKVO(KVOCallback callback, int SystemEvent) : callback(callback), event(SystemEvent) {
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, event, StaticKVOCallback, (void *)this, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, event, StaticKVOCallback, (void *)this, &instance);
     Serial.printf("KVO: 0x%p attaching to event: %d\n",this,event);
 }
 
 EventKVO::~EventKVO() {
-    esp_event_handler_instance_unregister_with(systemEventloopHandler,SYSTEM_EVENTS, event,systemEventloopHandler);
+    esp_event_handler_instance_unregister_with(systemEventloopHandler,SYSTEM_EVENTS, event,instance);
     Serial.printf("KVO: 0x%p stop watching event: %d\n",this,event);
 }
