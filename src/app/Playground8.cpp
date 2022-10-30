@@ -3,6 +3,8 @@
 #include "Playground8.hpp"
 #include "../UI/UI.hpp"
 // -s 240x240
+
+// ffmpeg -i rick.gif -filter:v fps=10 -vcodec rawvideo -f rawvideo -ss 2 -pix_fmt rgb565be test.raw
 // ffmpeg -i rick.gif -filter:v fps=10 -vcodec rawvideo -f rawvideo -pix_fmt rgb565be test.raw
 /*
 IO... rgb565be               3            16 <== good one

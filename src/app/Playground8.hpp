@@ -7,7 +7,7 @@
 
 class PlaygroundApplication8: public LunokIoTApplication {
     public:
-        const size_t TOTALPIXELS = 175*135;
+        const size_t TOTALPIXELS = 175*135; // video size
         uint16_t *colorBuffer = nullptr;
         uint16_t *videoPtr = nullptr;
         PlaygroundApplication8();
