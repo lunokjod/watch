@@ -15,6 +15,7 @@ class SetTimeApplication: public LunokIoTApplication {
         unsigned long nextRedraw=0;
         ValueSelector * hour = nullptr;
         ValueSelector * minute = nullptr;
+        ButtonImageXBMWidget * showDateButton = nullptr;
         ButtonImageXBMWidget * setTimeButton = nullptr;
         ButtonImageXBMWidget * backButton = nullptr;
     public:

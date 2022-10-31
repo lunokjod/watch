@@ -75,6 +75,8 @@ extern void AlertLedEnable(bool enabled);
 int currentSec=random(0,60);
 int currentMin=random(0,60);
 int currentHour=random(0,24);
+int currentDay=random(1,30);
+int currentMonth=random(0,11);
 
 int weatherId = -1;
 char * weatherMain = nullptr;
@@ -798,6 +800,8 @@ bool WatchfaceApplication::Tick() {
             currentSec=timeinfo.tm_sec;
             currentMin=timeinfo.tm_min;
             currentHour=timeinfo.tm_hour;
+            currentDay=timeinfo.tm_mday;
+            currentMonth=timeinfo.tm_mon;
 
             /*
             if (getLocalTime(&timeinfo,10)) {

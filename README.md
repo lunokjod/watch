@@ -27,6 +27,10 @@
 * Wake up every activity/stepcounter (future fitness monitor)
 * Screen capture can be shared via BLE UART (see tools/getScreenshoot.py)
 
+## Full application list:
+
+[See App gallery](src/app/README.md)
+
 ## Hardware support:
  * BMA423 support (including during sleep)
  * AXP202 support (including sleep)
@@ -66,7 +70,7 @@
 * **-DLUNOKIOT_DEBUG_UI** UI specific debug messages
 * **-DLUNOKIOT_SILENT_BOOT** dont shake and no fanfare sound when start/stop
 * **-DLUNOKIOT_WIFI_ENABLED** start the wifi timed connection subsystem
-* **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA) requires: **-DLUNOKIOT_WIFI_ENABLED**
+  * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA)
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
 * **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
 
