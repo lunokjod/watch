@@ -327,10 +327,17 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                         // this is awesome place to do effects on screen (alpha maybe)
                         overlay->pushRotated(appView,0,CanvasWidget::MASK_COLOR);
                     }
+                    if ( false == directDraw ) {
+                        // dump the current ap to the TFT
+                        appView->pushSprite(0,0); // push appView to tft
+                    }
+                } else {
+                    
+                    // no changes in this frame
 
+                    #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
                     // don't allow screenshoots meanwhile directDraw is enabled
                     if ( false == directDraw ) {
-                        #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
                         //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
                         if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
                         if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
@@ -342,10 +349,8 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                                 Serial.printf("UI: Saved screenshoots: %d\n",ScreenShots.size());
                             }
                         }
-                        #endif
-                        // dump the current ap to the TFT
-                        appView->pushSprite(0,0); // push appView to tft
-                    }
+                    }                    
+                    #endif
                 }
             }
         }
