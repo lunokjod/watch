@@ -46,7 +46,8 @@ void setup() {
   // lilygo Twatch library dependencies
   ttgo = TTGOClass::getWatch();
   ttgo->begin();
-  ttgo->tft->setRotation(0);  //  default correct position, the ttgo code sux
+  NVS.begin(); // need NVS to get the current configuration
+  ttgo->tft->setRotation(NVS.getInt("ScreenRot"));  //  default correct position, the ttgo code sux
 
 #ifdef LUNOKIOT_DEBUG
   Serial.println("lunokIoT: System initializing...");
@@ -62,7 +63,6 @@ void setup() {
 #endif
 #endif
 
-  NVS.begin(); // need NVS to get the current configuration
 
   // begin system communications with applications and itself (lunokIoT system bus)
   SystemEventsStart();

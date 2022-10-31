@@ -13,6 +13,15 @@
 #include "Notifications.hpp"
 #include "../static/img_mainmenu_notifications.xbm"
 
+#include "Rotation.hpp"
+#include "../static/img_rotate_120.xbm"
+
+#include "Provisioning2.hpp"
+#include "../static/img_mainmenu_provisioning.xbm"
+
+#include "SetTime.hpp"
+#include "../static/img_mainmenu_settime.xbm"
+
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
 #include "Playground0.hpp"
@@ -27,11 +36,6 @@
 #include "Playground9.hpp"
 #endif
 
-#include "../static/img_mainmenu_provisioning.xbm"
-//#include "Provisioning.hpp"
-#include "Provisioning2.hpp"
-#include "SetTime.hpp"
-#include "../static/img_mainmenu_settime.xbm"
 
 typedef struct {
     const char *name;
@@ -63,6 +67,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, []() { LaunchApplication(new SetTimeApplication()); } },
+    {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, []() { LaunchApplication(new RotationApplication()); } },
 };
 int MaxAppOffset = sizeof(AllApps) / sizeof(AllApps[0])-1;
 
