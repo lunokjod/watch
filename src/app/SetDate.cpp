@@ -22,7 +22,8 @@ extern int currentMonth;
 SetDateApplication::SetDateApplication() {
     day = new MujiValue(0,0,165,120,1,31,TFT_BLACK);
     month = new ValueSelector(120,0,165,120,1,12,TFT_BLACK);
-    day->selectedValue = currentDay+1;
+    Serial.printf("currentDay: %d currentMonth: %d\n",currentDay,currentMonth);
+    day->selectedValue = currentDay;
     month->selectedValue = currentMonth+1;
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
@@ -30,10 +31,13 @@ SetDateApplication::SetDateApplication() {
     setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
         Serial.println("SetTime: RTC and localtime sync");
         RTC_Date test;
-        test.day = day->selectedValue-1;
-        test.month = month->selectedValue-1;
+        test.day = day->selectedValue;
+        test.month = month->selectedValue;
         ttgo->rtc->setDateTime(test);
         ttgo->rtc->syncToSystem();
+        currentDay = day->selectedValue;
+        currentMonth = month->selectedValue -1;
+
     },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
     showTimeButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new SetTimeApplication());

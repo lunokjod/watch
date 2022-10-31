@@ -22,6 +22,7 @@ extern int currentHour;
 SetTimeApplication::SetTimeApplication() {
     hour = new MujiValue(0,0,165,120,0,23,TFT_BLACK);
     minute = new ValueSelector(120,0,165,120,0,59,TFT_BLACK);
+    Serial.printf("currentMin: %d currentHour: %d\n",currentMin,currentHour);
     hour->selectedValue = currentHour;
     minute->selectedValue = currentMin;
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
@@ -35,6 +36,9 @@ SetTimeApplication::SetTimeApplication() {
         ttgo->rtc->setDateTime(test);
         //ttgo->rtc->syncToRtc();
         ttgo->rtc->syncToSystem();
+        currentHour = hour->selectedValue;
+        currentMin = minute->selectedValue;
+
     },img_settime_32_bits,img_settime_32_height,img_settime_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
     showDateButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new SetDateApplication());
@@ -43,6 +47,7 @@ SetTimeApplication::SetTimeApplication() {
 
 }
 bool SetTimeApplication::Tick() {
+    bool change=false;
     showDateButton->Interact(touched, touchX, touchY);
     setTimeButton->Interact(touched, touchX, touchY);
     backButton->Interact(touched, touchX, touchY);
