@@ -525,18 +525,17 @@ void WatchfaceApplication::PrepareDataLayer() {
     
 
 
-    // weekday/day/month/year
-    if ( ntpSyncDone ) {
-        sprintf(textBuffer,"%02d/%02d", timeinfo.tm_mday,timeinfo.tm_mon+1);
-        posX = 150;
-        posY = 94;
-        marksCanvas->canvas->setTextColor(TFT_BLACK);
-        marksCanvas->canvas->drawString(textBuffer, posX+2, posY+2);
-        marksCanvas->canvas->drawString(textBuffer, posX-2, posY-2);
-        marksCanvas->canvas->setTextColor(TFT_WHITE);
-        marksCanvas->canvas->drawString(textBuffer, posX, posY);
-    }
-    if ( weatherSyncDone ) { // tilt with the arm makes date grows and glow
+    // day/month
+    sprintf(textBuffer,"%02d/%02d", currentDay,currentMonth+1);
+    posX = 150;
+    posY = 94;
+    marksCanvas->canvas->setTextColor(TFT_BLACK);
+    marksCanvas->canvas->drawString(textBuffer, posX+2, posY+2);
+    marksCanvas->canvas->drawString(textBuffer, posX-2, posY-2);
+    marksCanvas->canvas->setTextColor(TFT_WHITE);
+    marksCanvas->canvas->drawString(textBuffer, posX, posY);
+
+    if ( weatherSyncDone ) {
 
 
         /*
