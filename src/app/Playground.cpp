@@ -28,9 +28,7 @@ PlaygroundApplication::~PlaygroundApplication() {
     }
 }
 PlaygroundApplication::PlaygroundApplication() {
-#ifdef LUNOKIOT_TFT_ACCELERATION_ENABLED
     directDraw=true;
-#endif
     buffer = new CanvasWidget(TFT_HEIGHT,TFT_WIDTH);
     buffer->canvas->fillSprite(TFT_BLACK);
     buffer->canvas->pushSprite(0,0); // directDraw allow to get control about SPI TFT dumps

@@ -317,12 +317,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 // perform the call to the app logic
                 changes = currentApplication->Tick();
 
-#ifdef LUNOKIOT_TFT_ACCELERATION_ENABLED
                 if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
-#else
-                    directDraw=false;
-#endif
-
                 if ( changes ) { // Tick() returned true
 
                     // compose the final frame mixing the overlay & current app
@@ -348,6 +343,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                             }
                         }
                         #endif
+                        // dump the current ap to the TFT
                         appView->pushSprite(0,0); // push appView to tft
                     }
                 }

@@ -69,7 +69,6 @@
 * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA) requires: **-DLUNOKIOT_WIFI_ENABLED**
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
 * **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
-* **-DLUNOKIOT_TFT_ACCELERATION_ENABLED** Allow widgets to control the TFT interface directly
 
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"
