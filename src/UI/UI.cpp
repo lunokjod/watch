@@ -241,7 +241,9 @@ TFT_eSprite *TakeScreenShoot() {
     //delete imgCopy;
     delay(200);
     TakeScreenShootSound();
+#ifdef LILYGO_WATCH_2020_V3
     ttgo->shake();
+#endif
     return myCopy;
 }
 
