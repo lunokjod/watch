@@ -27,6 +27,10 @@ bool ValueSelector::Interact(bool touch, int16_t tx,int16_t ty) {
             else if ( selectedValue < valMin ) { selectedValue = valMin; }
             return true;
         }
+    } else {
+        // check the value limits anyway
+        if ( selectedValue > valMax ) { selectedValue = valMax; }
+        else if ( selectedValue < valMin ) { selectedValue = valMin; }
     }
     return false;
 }
