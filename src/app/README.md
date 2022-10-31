@@ -17,10 +17,15 @@
 ![provisioning QR](../../doc/img_provisioning1.png)
 
 ## Screen orientation
-
  * Rotate whole screen
 
 ![menu orientaton](../../doc/img_menu_screenrotation.png)
 ![screen orientaton](../../doc/img_screenrotation0.png)
 
-* @TODO battery screenshoots
+## Battery
+ * Show battery health
+
+![menu battery](../../doc/img_menu_battery.png)
+![battery0](../../doc/battery.png)
+
+* @TODO 
