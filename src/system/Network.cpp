@@ -36,7 +36,6 @@
 #include <NimBLEDevice.h>
 #include <NimBLELog.h>
 
-#include <WiFi.h>
 #include <ArduinoNvs.h> // persistent values
 #include <WiFi.h>
 #include "UI/UI.hpp" // for rgb unions
@@ -194,7 +193,10 @@ static void NetworkHandlerTask(void* args) {
         if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
         
         if ( millis() > nextConnectMS ) { // begin connection?
-        
+            if ( false == NVS.getInt("WifiEnabled") ) {
+                nextConnectMS = millis()+ReconnectPeriodMs;
+                continue;
+            }
             //check the pending tasks... if no one, don't connect
             Serial.println("Network: Timed WiFi connection procedure begin");
             bool mustStart = false;
