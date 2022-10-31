@@ -28,4 +28,11 @@
 ![menu battery](../../doc/img_menu_battery.png)
 ![battery0](../../doc/battery.png)
 
+
+## Settings
+ * Enable disable features
+
+![menu battery](../../doc/img_menu_settings.png)
+![battery0](../../doc/img_settings0.png)
+
 * @TODO 
