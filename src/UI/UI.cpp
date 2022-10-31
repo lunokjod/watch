@@ -338,6 +338,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
                     // don't allow screenshoots meanwhile directDraw is enabled
                     if ( false == directDraw ) {
+                        if ( false == touched ) { touchDownTimeMS=0; }
                         //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
                         if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
                         if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
