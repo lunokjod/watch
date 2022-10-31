@@ -56,9 +56,8 @@
 * LocalCloud, a support app for the watch (companion app or something)
 * Web installer: https://espressif.github.io/esptool-js/
 * TFT low-power minimal service (no backligt+slow bus clock), only black and white, trying to simulate eINK (playground7)
- * TFT direct control: special applications uses graphics intensively and don't use system GUI... must provide some kind of mechanism of override the current system control (temporal inhibition) 
  * User customizable night hours, during this time, the system don't allow to reply anything inmediatly(delayed send guarantees don't send stupid messages to others by accident)
- * Menú must remember the last used or better, reorder the list with user preferences (app usage counters)
+ * Menú must remember the last used or better: reorder the list with user preferences (app usage counters)
  * viewport
  * animations
  * hive mode (wireless mesh, share info with other lunokIoT, without infrastructure)

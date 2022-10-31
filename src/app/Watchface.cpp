@@ -15,6 +15,8 @@
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../UI/UI.hpp"
 
+#include <ArduinoNvs.h>
+
 #include "../static/img_watchface0.c"
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
@@ -280,6 +282,11 @@ WatchfaceApplication::WatchfaceApplication() {
             ntpTask->_nextTrigger=0; // launch NOW if no synched never again
         }
         ntpTask->callback = [&,this]() {
+            if ( false == NVS.getInt("NTPEnabled")) {
+                Serial.println("Watchface: NTP Sync disabled");
+                return true;
+            }
+
             Serial.println("Watchface: Trying to sync NTP time...");
             //delay(100);
             //init and get the time
@@ -316,6 +323,7 @@ WatchfaceApplication::WatchfaceApplication() {
             }
             return false;
         };
+        ntpTask->enabled = NVS.getInt("NTPEnabled");
         AddNetworkTask(ntpTask);
     }
 
@@ -327,6 +335,10 @@ WatchfaceApplication::WatchfaceApplication() {
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         weatherTask->callback = [&,this]() {
+            if ( false == NVS.getInt("OWeatherEnabled")) {
+                Serial.println("Watchface: Openweather Sync disabled");
+                return true;
+            }
             bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
             // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
             if ( getDone ) {
@@ -335,6 +347,7 @@ WatchfaceApplication::WatchfaceApplication() {
             }
             return getDone;
         };
+        weatherTask->enabled = NVS.getInt("OWeatherEnabled");
         AddNetworkTask(weatherTask);
     }
 #endif

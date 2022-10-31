@@ -10,6 +10,7 @@ extern bool networkActivity;
  */
 class NetworkTaskDescriptor {
     public:
+        bool enabled=true;
         char *name = nullptr; // task description
         unsigned long everyTimeMS = -1; // lapse in millis
         unsigned long _nextTrigger = -1; // -1 means first launch in next time window or 0 for inmediate

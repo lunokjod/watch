@@ -204,10 +204,12 @@ static void NetworkHandlerTask(void* args) {
                 if ( -1 == tsk->_nextTrigger ) {
                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                 } else {
-                    if ( millis() > tsk->_nextTrigger ) {
-                        Serial.printf("NetworkTask: Pending task '%s'\n", tsk->name);
-                        mustStart = true;
-                    }
+                    if ( tsk->enabled ) {
+                        if ( millis() > tsk->_nextTrigger ) {
+                            Serial.printf("NetworkTask: Pending task '%s'\n", tsk->name);
+                            mustStart = true;
+                        }
+                    } 
                 }
                 tsk->_lastCheck = millis();
             }
@@ -345,7 +347,10 @@ bool NetworkHandler() {
 }
 
 static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    StartBLE();
+    bool enabled = NVS.getInt("BLEEnabled");
+    if ( enabled ) {
+        StartBLE();
+    }
 }
 
 static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {

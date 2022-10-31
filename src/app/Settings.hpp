@@ -13,7 +13,10 @@ class SettingsApplication: public LunokIoTApplication {
         unsigned long nextRedraw=0;
     public:
         ButtonImageXBMWidget * btnBack = nullptr;
-        SwitchWidget * test = nullptr;
+        SwitchWidget * ntpCheck = nullptr;
+        SwitchWidget * openweatherCheck = nullptr;
+        SwitchWidget * wifiCheck = nullptr;
+        SwitchWidget * bleCheck = nullptr;
         SettingsApplication();
         ~SettingsApplication();
         bool Tick();
