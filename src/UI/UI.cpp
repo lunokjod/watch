@@ -123,6 +123,7 @@ void TakeScreenShootSound() {
     delay(150);
     return;
 #endif
+#ifdef LILYGO_WATCH_2020_V3
     // Audio fanfare x'D
     Serial.println("Audio: Initialize");
     ttgo->enableAudio();
@@ -160,6 +161,7 @@ void TakeScreenShootSound() {
     i2s_driver_uninstall(I2S_NUM_0);
     delay(2);
     ttgo->shake();
+#endif
 
 }
 
