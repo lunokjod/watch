@@ -2,6 +2,7 @@
 
 ![wartchface0](/doc/watchface0.png)
 ![wartchface0_day](/doc/day_watchface0.png)
+![wartchface0](/doc/watchface0_0.png)
 ![playground example0](/doc/playground0.png)
 ![playground example3](/doc/playground3.png)
 ![set time app](/doc/settime.png)
