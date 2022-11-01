@@ -339,9 +339,11 @@ WatchfaceApplication::WatchfaceApplication() {
                 Serial.println("Watchface: Openweather Sync disabled");
                 return true;
             }
+            delay(10);
             bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
             // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
             if ( getDone ) {
+                delay(10);
                 bool parseDone = WatchfaceApplication::ParseWeatherData();
                 return parseDone;
             }
@@ -488,9 +490,11 @@ void WatchfaceApplication::PrepareDataLayer() {
         uint32_t battColor = TFT_DARKGREY;
         posX = 26;
         posY = 149;
-        marksCanvas->canvas->setTextColor(battColor);
-        marksCanvas->canvas->setTextDatum(CL_DATUM);
-        marksCanvas->canvas->drawString("No batt", posX+10, posY+1);
+        overlay->setTextFont(0);
+        overlay->setTextSize(2);
+        overlay->setTextColor(battColor);
+        overlay->setTextDatum(CL_DATUM);
+        overlay->drawString("No batt", posX+10, posY+1);
         marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_RED); // Alarm: red dot
     }
 
@@ -502,7 +506,7 @@ void WatchfaceApplication::PrepareDataLayer() {
         marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
         unsigned char * img = img_bluetooth_24_bits;
         if ( blePeer ) { img = img_bluetooth_peer_24_bits; }
-        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
+        overlay->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
     }
 
     // connectivity notifications
@@ -510,7 +514,7 @@ void WatchfaceApplication::PrepareDataLayer() {
         posX = 51;
         posY = 189;
         marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
-        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
+        overlay->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
     }
     if ( vbusPresent ) {
         posX=69; // 60;
@@ -520,7 +524,8 @@ void WatchfaceApplication::PrepareDataLayer() {
             color = TFT_GREEN;
         }
         marksCanvas->canvas->fillCircle(posX, posY, 5, color);
-        marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
+        //marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
+        overlay->drawXBitmap(posX+10,posY-12,img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
     }
     
 
@@ -566,8 +571,8 @@ void WatchfaceApplication::PrepareDataLayer() {
             sprintf(textBuffer,"%2.1fc", weatherTemp);
             posX = 150;
             posY = 74;
-            marksCanvas->canvas->setTextColor(TFT_WHITE);
-            marksCanvas->canvas->drawString(textBuffer,posX, posY);//, 185, 96);
+            overlay->setTextColor(TFT_WHITE);
+            overlay->drawString(textBuffer,posX, posY);//, 185, 96);
         }
     }
     // steps
@@ -605,14 +610,14 @@ void WatchfaceApplication::PrepareDataLayer() {
     }
     
     if ( nullptr != weatherDescription ) {
-        marksCanvas->canvas->setTextFont(0);
-        marksCanvas->canvas->setTextSize(1);
-        marksCanvas->canvas->setTextDatum(CC_DATUM);
-        marksCanvas->canvas->setTextWrap(false,false);
-        marksCanvas->canvas->setTextColor(TFT_BLACK);
-        marksCanvas->canvas->drawString(weatherDescription, 122,62);
-        marksCanvas->canvas->setTextColor(TFT_WHITE);
-        marksCanvas->canvas->drawString(weatherDescription, 120,60);
+        overlay->setTextFont(0);
+        overlay->setTextSize(1);
+        overlay->setTextDatum(CC_DATUM);
+        overlay->setTextWrap(false,false);
+        overlay->setTextColor(TFT_BLACK);
+        overlay->drawString(weatherDescription, 122,62);
+        overlay->setTextColor(TFT_WHITE);
+        overlay->drawString(weatherDescription, 120,60);
     }
 
     if ( screenShootInProgress ) {
@@ -675,7 +680,7 @@ void WatchfaceApplication::PrepareDataLayer() {
                 
 
                 if ( degrees == angle) {
-                    Serial.printf("ANGLE: %d\n", angle);
+                    //Serial.printf("ANGLE: %d\n", angle);
                     marksCanvas->canvas->setTextFont(0);
                     marksCanvas->canvas->setTextSize(2);
                     marksCanvas->canvas->setTextWrap(false,false);
@@ -725,8 +730,13 @@ bool SecondsCallback(int x, int y, int cx, int cy, double angle, int step, void 
 }
 
 bool WatchfaceApplication::Tick() {
-    bottomRightButton->Interact(touched, touchX, touchY);
-    topRightButton->Interact(touched, touchX, touchY);
+    bool interacted=false;
+    bool ret;
+    ret = bottomRightButton->Interact(touched, touchX, touchY);
+    if ( ret ) { interacted=true; }
+    ret = topRightButton->Interact(touched, touchX, touchY);
+    if ( ret ) { interacted=true; }
+
     //overlay->drawRect(bottomRightButton->x,bottomRightButton->y,bottomRightButton->w,bottomRightButton->h,TFT_GREEN);
     //overlay->drawRect(topRightButton->x,topRightButton->y,topRightButton->w,topRightButton->h,TFT_GREEN);
 
@@ -798,7 +808,7 @@ bool WatchfaceApplication::Tick() {
         unsigned long delta = millis();
         // clean the buffer
         watchFaceCanvas->canvas->fillSprite(TFT_BLACK);
-
+        overlay->fillSprite(TFT_TRANSPARENT);
         const float ROTATION = (360/24);
         // already NTP sync done?
         //if ( ntpSyncDone ) {
@@ -1017,6 +1027,11 @@ bool WatchfaceApplication::Tick() {
 
 
         watchFaceCanvas->DrawTo(canvas);
+
+        if ( ( false == interacted ) && ( touched ) ) { showOverlay=(!showOverlay); }
+        if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
+
+
         //localtimeMeasure
         unsigned long deltaMS = millis()-localtimeMeasure;
         //Serial.printf("CLOCK ROTATION TIME: %d ms\n", deltaMS);
@@ -1088,7 +1103,6 @@ bool WatchfaceApplication::Tick() {
         lastSec=currentSec;
         lastMin=currentMin;
         lastHour=currentHour;
-
 
         nextWatchFaceFullRedraw = millis()+(1000);
         return true;

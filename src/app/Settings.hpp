@@ -11,7 +11,9 @@
 class SettingsApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
+        bool showOverlay=false;
     public:
+        ButtonImageXBMWidget * btnHelp = nullptr;
         ButtonImageXBMWidget * btnBack = nullptr;
         SwitchWidget * ntpCheck = nullptr;
         SwitchWidget * openweatherCheck = nullptr;

@@ -22,6 +22,7 @@ LunokIoTApplication::LunokIoTApplication() {
 #ifdef LUNOKIOT_DEBUG_UI
     Serial.printf("LunokIoTApplication: %p created\n", this);
 #endif
+    overlay->fillSprite(TFT_TRANSPARENT);
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
@@ -63,11 +64,6 @@ void LaunchApplicationTask(void * data) {
             currentApplication = nullptr;
             if ( nullptr != ptrOldApp ) { // @TODO if this delete is optional, can get some grade of "multi-app"
                 delete ptrOldApp;
-            }
-
-            // UI overlay higiene
-            if ( nullptr != overlay ) { // destroy overlay content between apps is more cheap than regenerate-it?
-                overlay->fillSprite(CanvasWidget::MASK_COLOR);
             }
         }
 

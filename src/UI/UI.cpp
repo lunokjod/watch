@@ -42,6 +42,7 @@ int16_t downTouchX=120;
 int16_t downTouchY=120;
 TFT_eSprite *overlay = nullptr;
 
+
 size_t screenShootCurrentImageX=0;
 size_t screenShootCurrentImageY=0;
 
@@ -303,9 +304,10 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     // an app can choice destroy the overlay if want, the system generates new one
     if ( nullptr == overlay ) {
         overlay = new TFT_eSprite(ttgo->tft);
-        overlay->setColorDepth(16);
+        overlay->setColorDepth(8);
         overlay->createSprite(TFT_WIDTH, TFT_HEIGHT);
-        overlay->fillSprite(CanvasWidget::MASK_COLOR);
+        // http://i.stack.imgur.com/5fcX6.png
+        overlay->fillSprite(TFT_TRANSPARENT);
         Serial.printf("UI: new overlay generated %p\n", overlay);
     }
     // try to get UI lock
@@ -316,17 +318,9 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             if ( nullptr != appView ) {
                 // perform the call to the app logic
                 changes = currentApplication->Tick();
-
                 if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
                 if ( changes ) { // Tick() returned true
-
-                    // compose the final frame mixing the overlay & current app
                     appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-                    if ( nullptr != overlay )  {
-                        overlay->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-                        // this is awesome place to do effects on screen (alpha maybe)
-                        overlay->pushRotated(appView,0,CanvasWidget::MASK_COLOR);
-                    }
                     if ( false == directDraw ) {
                         // dump the current ap to the TFT
                         appView->pushSprite(0,0); // push appView to tft
@@ -363,7 +357,7 @@ bool lastAlarmLedStatus = false;
 uint32_t alarmLedColor = TFT_RED;
 
 void AlertLedEnable(bool enabled, uint32_t ledColor, uint32_t x, uint32_t y) {
-    
+    return;
     alarmLedColor = ledColor;
     if ( false == enabled ) { alarmLedColor = overlay->color24to16(0x2c0000); }
 

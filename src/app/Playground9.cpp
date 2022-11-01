@@ -62,6 +62,7 @@ bool PlaygroundApplication9::Tick() {
             if(off>15) { off=0; }
         }
         nextRedraw=millis()+(1000/8); // tune your required refresh
+        return true;
     }
-    return true;
+    return false;
 }

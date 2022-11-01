@@ -17,6 +17,7 @@
 
 class WatchfaceApplication: public LunokIoTApplication {
     public:
+        bool showOverlay=false;
         GraphWidget * uploadMonitor = nullptr;
         //TaskHandle_t NTPTaskHandler = NULL;
         CanvasWidget * backlightCanvas = nullptr;

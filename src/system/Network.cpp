@@ -249,6 +249,7 @@ static void NetworkHandlerTask(void* args) {
             }
             continue;
         } else */
+        delay(10);
         if ( WL_CONNECTED == currStat) {
             if ( -1 == beginConnected ) {
                 beginConnected = millis();
