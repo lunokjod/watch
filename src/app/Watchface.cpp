@@ -389,6 +389,9 @@ WatchfaceApplication::~WatchfaceApplication() {
         delete topRightButton;
         topRightButton = nullptr;
     }
+    if ( nullptr != marksCanvas ) {
+        delete marksCanvas;
+    }
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived);
     if ( nullptr != backlightCanvas ) {
         delete backlightCanvas;
