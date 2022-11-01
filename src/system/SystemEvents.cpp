@@ -869,7 +869,7 @@ static void SystemLoopTask(void* args) {
 }
 void SystemEventsStart() {
 
-    // configure system event loop
+    // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 20, // maybe so big
         .task_name = "lEvTask", // lunokIoT Event Task

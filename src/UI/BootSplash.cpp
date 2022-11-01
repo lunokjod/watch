@@ -63,7 +63,7 @@ void SplashFanfare() {
 #endif
 
 void SplashAnnounce() {
-    ttgo->setBrightness(0);
+    ttgo->setBrightness(0); // low brightness
     ttgo->tft->fillScreen(TFT_WHITE);
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you are read this!!! :)
     ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, TFT_DARKGREY);
@@ -77,7 +77,7 @@ void SplashAnnounce() {
     int32_t posY = 10;
     // more than needed buffer (in stack for guarantee their destruction)
     char buildNumberAsString[16] = { 0 };
-    // dump my shit t string buffer
+    // dump my shit string buffer
     sprintf(buildNumberAsString,"#%u", LUNOKIOT_BUILD_NUMBER );
     ttgo->tft->setTextColor(TFT_DARKGREY);
     ttgo->tft->drawString(buildNumberAsString, posX, posY);
@@ -87,7 +87,7 @@ void SplashAnnounce() {
         ttgo->setBrightness(i);
         delay(5);
     }
-    ttgo->setBrightness(BaseBackLightBrightness);
+    ttgo->setBrightness(BaseBackLightBrightness); // default brightness
 }
 
 void SplashAnnounceEnd() {
@@ -101,6 +101,6 @@ void SplashAnnounceEnd() {
         ttgo->setBrightness(bright);
     }
 #ifdef LILYGO_WATCH_2020_V3
-    SplashFanfare();
+    SplashFanfare(); // sound and shake
 #endif
 }
