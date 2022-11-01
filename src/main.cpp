@@ -47,7 +47,9 @@ void setup() {
   ttgo = TTGOClass::getWatch();
   ttgo->begin();
   NVS.begin(); // need NVS to get the current configuration
-  ttgo->tft->setRotation(NVS.getInt("ScreenRot"));  //  default correct position, the ttgo code sux
+  uint8_t rotation = NVS.getInt("ScreenRot");
+  Serial.printf("lunokIoT: User screen rotation: %d\n", rotation);
+  ttgo->tft->setRotation(rotation);  //  default correct position, the ttgo code sux
 
 #ifdef LUNOKIOT_DEBUG
   Serial.println("lunokIoT: System initializing...");

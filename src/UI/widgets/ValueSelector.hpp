@@ -10,6 +10,7 @@
 
 class ValueSelector: public ActiveRect, public CanvasWidget {
     public:
+        bool showsign;
         int16_t x;
         int16_t y;
         int32_t valMin;
@@ -20,7 +21,7 @@ class ValueSelector: public ActiveRect, public CanvasWidget {
         CanvasWidget * buffer=nullptr;
         virtual ~ValueSelector();
         bool Interact(bool touch, int16_t tx,int16_t ty);
-        ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin=0,int32_t valMax=100,uint32_t backgroundColor=ttgo->tft->color24to16(0x212121));
+        ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin=0,int32_t valMax=100,uint32_t backgroundColor=ttgo->tft->color24to16(0x212121),bool showsign=false);
         void DrawTo(TFT_eSprite * endCanvas);
 };
 typedef class ValueSelector MujiValue; // thanks man! :-*

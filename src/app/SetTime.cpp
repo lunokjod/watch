@@ -29,7 +29,7 @@ SetTimeApplication::SetTimeApplication() {
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setTimeButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
-        Serial.println("SetTime: RTC and localtime sync");
+        //Serial.println("SetTime: RTC and localtime sync");
         RTC_Date test;
         test.hour = hour->selectedValue;
         test.minute = minute->selectedValue;

@@ -22,6 +22,10 @@
 #include "SetTime.hpp"
 #include "../static/img_mainmenu_settime.xbm"
 
+#include "SetTimeZone.hpp"
+#include "../static/img_timezone_120.xbm"
+
+
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
 #include "Playground0.hpp"
@@ -49,6 +53,9 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+    {"Timezone",img_timezone_120_bits, img_timezone_120_height, img_timezone_120_width, []() { LaunchApplication(new SetTimeZoneApplication()); } },
+
+
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },

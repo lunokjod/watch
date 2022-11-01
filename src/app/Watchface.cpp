@@ -188,8 +188,8 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
         client->setCACert((const char*)openweatherPEM_start);
         { // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
             HTTPClient https;
-            https.setConnectTimeout(8*1000);
-            https.setTimeout(8*1000);
+            https.setConnectTimeout(2*1000);
+            https.setTimeout(2*1000);
             //https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
             //    https://api.openweathermap.org/data/2.5/weather?q=Barcelona,ES&units=metric&APPID=b228d64ad499d78d86419fe10a131241
             String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String("Barcelona")+"," + String("ES")  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
@@ -290,7 +290,11 @@ WatchfaceApplication::WatchfaceApplication() {
             Serial.println("Watchface: Trying to sync NTP time...");
             //delay(100);
             //init and get the time
-            configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+            int daylight = NVS.getInt("summerTime");
+            long timezone = NVS.getInt("timezoneTime");
+            Serial.printf("Watchface: Summer time: %s\n",(daylight?"true":"false"));
+            Serial.printf("Watchface: GMT: %d\n",timezone);
+            configTime(timezone*3600, daylight*3600, ntpServer);
             //timeClient.begin();
             // Set offset time in seconds to adjust for your timezone, for example:
             // GMT +1 = 3600
@@ -328,6 +332,9 @@ WatchfaceApplication::WatchfaceApplication() {
     }
 
     if ( nullptr == weatherTask ) {
+        if ( false == NVS.getInt("OWeatherEnabled")) {
+            Serial.println("Watchface: Openweather Sync disabled by user");
+        }
         weatherTask = new NetworkTaskDescriptor();
         weatherTask->name = (char *)"OpenWeather Watchface";
         weatherTask->everyTimeMS = (60*1000)*29;

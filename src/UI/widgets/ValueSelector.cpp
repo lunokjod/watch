@@ -7,10 +7,10 @@ ValueSelector::~ValueSelector() {
 
 }
 
-ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor):
+ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor, bool showsign):
             CanvasWidget(h,w),x(x),y(y),
             ActiveRect(x,y,h,w),
-            valMin(valMin),valMax(valMax),backgroundColor(backgroundColor) {
+            valMin(valMin),valMax(valMax),backgroundColor(backgroundColor),showsign(showsign) {
     buffer = new CanvasWidget(h,w);
 }
 
@@ -52,7 +52,9 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     int32_t currVal = selectedValue-1;
     while ( posY > 25 ) {
         if ( currVal < valMin ) { break; }
-        sprintf(textBuffer,"%d", currVal);
+        char * showsignString = (char *)"";
+        if ( showsign ) { if ( currVal > 0 ) { showsignString=(char *)"+"; } }        
+        sprintf(textBuffer,"%s%d", showsignString, currVal);
         buffer->canvas->drawString(textBuffer, posX, posY);
         currVal--;
         posY-=25;
@@ -64,7 +66,9 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     currVal = selectedValue+1;
     while ( posY < canvas->height()-25 ) {
         if ( currVal > valMax ) { break; }
-        sprintf(textBuffer,"%d", currVal);
+        char * showsignString = (char *)"";
+        if ( showsign ) { if ( currVal > 0 ) { showsignString=(char *)"+"; } }
+        sprintf(textBuffer,"%s%d", showsignString, currVal);
         buffer->canvas->drawString(textBuffer, posX, posY);
         currVal++;
         posY+=25;
@@ -100,7 +104,10 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     posY = buffer->canvas->height()/2;
     buffer->canvas->setTextSize(4);
     buffer->canvas->setTextDatum(CC_DATUM);
-    sprintf(textBuffer,"%d", selectedValue);
+    char * showsignString = (char *)"";
+    if ( showsign ) { if ( selectedValue > 0 ) { showsignString=(char *)"+"; } }
+    sprintf(textBuffer,"%s%d", showsignString, selectedValue);
+    //sprintf(textBuffer,"%d", selectedValue);
     buffer->canvas->setTextColor(TFT_BLACK);
     buffer->canvas->drawString(textBuffer, posX+2, posY+2);
 

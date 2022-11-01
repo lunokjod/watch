@@ -7,6 +7,12 @@
 ![settime time](../../doc/img_settime_0.png)
 ![settime date](../../doc/img_settime_1.png)
 
+## Timezone
+ * this app allow set system timezone
+
+![menu timezone](../../doc/img_menu_timezone.png)
+![timezone0](../../doc/img_timezone0.png)
+
 ## Provisioning
  * this app allow connect watch to internet via privisioning with a official ESP32 provisionning app from espressif
    * Android: https://play.google.com/store/apps/details?id=com.espressif.provsoftap 
