@@ -335,6 +335,7 @@ WatchfaceApplication::WatchfaceApplication() {
         ntpTask->enabled = NVS.getInt("NTPEnabled");
         AddNetworkTask(ntpTask);
     }
+    bool oweatherValue = NVS.getInt("OWeatherEnabled");
     if ( nullptr == geoIPTask ) {
         geoIPTask = new NetworkTaskDescriptor();
         geoIPTask->name = (char *)"GeoIP Watchface";
@@ -343,6 +344,11 @@ WatchfaceApplication::WatchfaceApplication() {
         geoIPTask->_lastCheck=millis();
         geoIPTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         geoIPTask->callback = [&,this]() {
+            bool oweatherValue = NVS.getInt("OWeatherEnabled");
+            if ( false == oweatherValue) {
+                Serial.println("Watchface: Openweather Sync disabled (geoip is futile)");
+                return true;
+            }
             const char url[]="http://www.geoplugin.net/json.gp";
             //geoplugin_city
             //geoplugin_countryCode
@@ -350,7 +356,7 @@ WatchfaceApplication::WatchfaceApplication() {
             geoIPClient.begin(url);
             int httpResponseCode = geoIPClient.GET();
             if (httpResponseCode>0) {
-                Serial.print("Watchface: ERROR: geoIP HTTP Response code: ");
+                Serial.print("Watchface: geoIP HTTP Response code: ");
                 Serial.println(httpResponseCode);
                 String payload = geoIPClient.getString();
                 Serial.println(payload);
@@ -413,8 +419,8 @@ WatchfaceApplication::WatchfaceApplication() {
         weatherTask->payload = (void *)this;
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
-        bool oweatherValue = NVS.getInt("OWeatherEnabled");
         weatherTask->callback = [&,this]() {
+            bool oweatherValue = NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
                 Serial.println("Watchface: Openweather Sync disabled");
                 return true;
