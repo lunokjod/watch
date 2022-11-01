@@ -188,8 +188,8 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
         client->setCACert((const char*)openweatherPEM_start);
         { // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
             HTTPClient https;
-            https.setConnectTimeout(2*1000);
-            https.setTimeout(2*1000);
+            https.setConnectTimeout(8*1000);
+            https.setTimeout(8*1000);
             //https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
             //    https://api.openweathermap.org/data/2.5/weather?q=Barcelona,ES&units=metric&APPID=b228d64ad499d78d86419fe10a131241
             String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String("Barcelona")+"," + String("ES")  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
@@ -332,31 +332,27 @@ WatchfaceApplication::WatchfaceApplication() {
     }
 
     if ( nullptr == weatherTask ) {
-        if ( false == NVS.getInt("OWeatherEnabled")) {
-            Serial.println("Watchface: Openweather Sync disabled by user");
-        }
         weatherTask = new NetworkTaskDescriptor();
         weatherTask->name = (char *)"OpenWeather Watchface";
         weatherTask->everyTimeMS = (60*1000)*29;
         weatherTask->payload = (void *)this;
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
+        bool oweatherValue = NVS.getInt("OWeatherEnabled");
         weatherTask->callback = [&,this]() {
-            if ( false == NVS.getInt("OWeatherEnabled")) {
+            if ( false == oweatherValue) {
                 Serial.println("Watchface: Openweather Sync disabled");
                 return true;
             }
-            delay(10);
             bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
             // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
             if ( getDone ) {
-                delay(10);
                 bool parseDone = WatchfaceApplication::ParseWeatherData();
                 return parseDone;
             }
             return getDone;
         };
-        weatherTask->enabled = NVS.getInt("OWeatherEnabled");
+        weatherTask->enabled = oweatherValue;
         AddNetworkTask(weatherTask);
     }
 #endif
