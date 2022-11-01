@@ -30,7 +30,7 @@ SetTimeApplication::SetTimeApplication() {
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setTimeButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
         //Serial.println("SetTime: RTC and localtime sync");
-        RTC_Date test;
+        RTC_Date test = ttgo->rtc->getDateTime();
         test.hour = hour->selectedValue;
         test.minute = minute->selectedValue;
         ttgo->rtc->setDateTime(test);
@@ -55,10 +55,13 @@ bool SetTimeApplication::Tick() {
         blinkTime=(!blinkTime);
         nextBlinkTime=millis()+1000;
     }
-    if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+    if (millis() > nextSelectorTick ) {
         hour->Interact(touched, touchX, touchY);
         minute->Interact(touched, touchX, touchY);
+        nextSelectorTick=millis()+(1000/4);
+    }
+    if (millis() > nextRedraw ) {
+        canvas->fillSprite(canvas->color24to16(0x212121));
         hour->DrawTo(canvas);
         minute->DrawTo(canvas);
         setTimeButton->DrawTo(canvas);

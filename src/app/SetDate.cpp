@@ -30,7 +30,7 @@ SetDateApplication::SetDateApplication() {
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
         Serial.println("SetTime: RTC and localtime sync");
-        RTC_Date test;
+        RTC_Date test = ttgo->rtc->getDateTime();
         test.day = day->selectedValue;
         test.month = month->selectedValue;
         ttgo->rtc->setDateTime(test);
@@ -47,11 +47,14 @@ bool SetDateApplication::Tick() {
     showTimeButton->Interact(touched, touchX, touchY);
     setDateButton->Interact(touched, touchX, touchY);
     backButton->Interact(touched, touchX, touchY);
+    if (millis() > nextSelectorTick ) {
+        day->Interact(touched,touchX,touchY);
+        month->Interact(touched,touchX,touchY);
+        nextSelectorTick=millis()+(1000/4);
+    }
 
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
-        day->Interact(touched, touchX, touchY);
-        month->Interact(touched, touchX, touchY);
         day->DrawTo(canvas);
         month->DrawTo(canvas);
         setDateButton->DrawTo(canvas);
