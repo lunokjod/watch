@@ -48,6 +48,7 @@
 
 NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::weatherTask = nullptr;
+NetworkTaskDescriptor * WatchfaceApplication::geoIPTask = nullptr;
 
 double sphereRotation = 0;
 
@@ -89,7 +90,11 @@ double weatherTemp = -1000;
 extern const uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
 extern const uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
 
+char * geoIPReceivedData = nullptr;
 char * weatherReceivedData = nullptr;
+
+char * weatherCity = nullptr;
+char * weatherCountry = nullptr;
 
 unsigned long nextRaindropMS = 0;
 
@@ -192,7 +197,7 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
             https.setTimeout(8*1000);
             //https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
             //    https://api.openweathermap.org/data/2.5/weather?q=Barcelona,ES&units=metric&APPID=b228d64ad499d78d86419fe10a131241
-            String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String("Barcelona")+"," + String("ES")  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
+            String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String(weatherCity)+"," + String(weatherCountry)  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
             if (https.begin(*client, serverPath)) {
                 // HTTPS
                 Serial.printf("https get '%s'...\n", serverPath.c_str());
@@ -329,6 +334,76 @@ WatchfaceApplication::WatchfaceApplication() {
         };
         ntpTask->enabled = NVS.getInt("NTPEnabled");
         AddNetworkTask(ntpTask);
+    }
+    if ( nullptr == geoIPTask ) {
+        geoIPTask = new NetworkTaskDescriptor();
+        geoIPTask->name = (char *)"GeoIP Watchface";
+        geoIPTask->everyTimeMS = (60*1000)*29;
+        geoIPTask->payload = (void *)this;
+        geoIPTask->_lastCheck=millis();
+        geoIPTask->_nextTrigger=0; // launch NOW (as soon as system wants)
+        geoIPTask->callback = [&,this]() {
+            const char url[]="http://www.geoplugin.net/json.gp";
+            //geoplugin_city
+            //geoplugin_countryCode
+            HTTPClient geoIPClient;
+            geoIPClient.begin(url);
+            int httpResponseCode = geoIPClient.GET();
+            if (httpResponseCode>0) {
+                Serial.print("Watchface: ERROR: geoIP HTTP Response code: ");
+                Serial.println(httpResponseCode);
+                String payload = geoIPClient.getString();
+                Serial.println(payload);
+                if ( nullptr != geoIPReceivedData ) {
+                    free(geoIPReceivedData);
+                    geoIPReceivedData = nullptr;
+                }
+                if (nullptr == geoIPReceivedData ) {
+                    geoIPReceivedData = (char*)ps_malloc(payload.length()+1);
+                    strcpy(geoIPReceivedData, payload.c_str());
+                }
+                JSONVar myObject = JSON.parse(geoIPReceivedData);
+                if (JSON.typeof(myObject) == "undefined") {
+                    Serial.println("Watchface: ERROR: geoIP JSON parsing: malformed JSON:");
+                    Serial.printf("%s\n",geoIPReceivedData);
+                    return false;
+                }
+                if (false == myObject.hasOwnProperty("geoplugin_city")) {
+                    Serial.println("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city':");
+                    Serial.printf("%s\n",geoIPReceivedData);
+                    return false;
+                }
+                if (false == myObject.hasOwnProperty("geoplugin_countryCode")) {
+                    Serial.println("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode':");
+                    Serial.printf("%s\n",geoIPReceivedData);
+                    return false;
+                }
+                JSONVar cityVar = myObject["geoplugin_city"];
+                JSONVar countryVar = myObject["geoplugin_countryCode"];
+                const char * cityString = cityVar;
+                const char * countryString = countryVar;
+                if ( nullptr != weatherCountry ) {
+                    free(weatherCountry);
+                    weatherCountry = nullptr;
+                }
+                if ( nullptr != weatherCity ) {
+                    free(weatherCity);
+                    weatherCity = nullptr;
+                }
+                if ( nullptr == weatherCity ) { weatherCity = (char*)ps_malloc(strlen(cityString)+1); }
+                if ( nullptr == weatherCountry ) { weatherCountry = (char*)ps_malloc(strlen(countryString)+1); }
+                strcpy(weatherCountry,countryString);
+                strcpy(weatherCity,cityString);
+            } else {
+                Serial.print("Watchface: ERROR: geoIP Error code: ");
+                Serial.println(httpResponseCode);
+                return false;
+            }
+            // Free resources
+            geoIPClient.end();
+            return true;
+        };
+        AddNetworkTask(geoIPTask);
     }
 
     if ( nullptr == weatherTask ) {

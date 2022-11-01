@@ -25,6 +25,7 @@ class WatchfaceApplication: public LunokIoTApplication {
         CanvasWidget * marksCanvas = nullptr;
         //TFT_eSprite * marksCanvasCache = nullptr;
         static NetworkTaskDescriptor * ntpTask;
+        static NetworkTaskDescriptor * geoIPTask;
         static NetworkTaskDescriptor * weatherTask;
         CanvasWidget * watchFaceCanvas;
         //CanvasWidget * dayNightCanvas;
