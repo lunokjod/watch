@@ -287,7 +287,7 @@ WatchfaceApplication::WatchfaceApplication() {
             ntpTask->_nextTrigger=0; // launch NOW if no synched never again
         }
         ntpTask->callback = [&,this]() {
-            if ( false == NVS.getInt("NTPEnabled")) {
+            if ( false == (bool)NVS.getInt("NTPEnabled")) {
                 Serial.println("Watchface: NTP Sync disabled");
                 return true;
             }
@@ -332,10 +332,10 @@ WatchfaceApplication::WatchfaceApplication() {
             }
             return false;
         };
-        ntpTask->enabled = NVS.getInt("NTPEnabled");
+        ntpTask->enabled = (bool)NVS.getInt("NTPEnabled");
         AddNetworkTask(ntpTask);
     }
-    bool oweatherValue = NVS.getInt("OWeatherEnabled");
+    bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
     if ( nullptr == geoIPTask ) {
         geoIPTask = new NetworkTaskDescriptor();
         geoIPTask->name = (char *)"GeoIP Watchface";
@@ -344,7 +344,7 @@ WatchfaceApplication::WatchfaceApplication() {
         geoIPTask->_lastCheck=millis();
         geoIPTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         geoIPTask->callback = [&,this]() {
-            bool oweatherValue = NVS.getInt("OWeatherEnabled");
+            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
                 Serial.println("Watchface: Openweather Sync disabled (geoip is futile)");
                 return true;
@@ -409,6 +409,7 @@ WatchfaceApplication::WatchfaceApplication() {
             geoIPClient.end();
             return true;
         };
+        geoIPTask->enabled = oweatherValue;
         AddNetworkTask(geoIPTask);
     }
 
@@ -420,7 +421,7 @@ WatchfaceApplication::WatchfaceApplication() {
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         weatherTask->callback = [&,this]() {
-            bool oweatherValue = NVS.getInt("OWeatherEnabled");
+            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
                 Serial.println("Watchface: Openweather Sync disabled");
                 return true;

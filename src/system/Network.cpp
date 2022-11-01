@@ -332,7 +332,7 @@ static void NetworkHandlerTask(void* args) {
 bool NetworkHandler() {
     provisioned = (bool)NVS.getInt("provisioned"); // initial value load
 #ifdef LUNOKIOT_WIFI_ENABLED
-    xTaskCreate(NetworkHandlerTask, "wifi", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreate(NetworkHandlerTask, "lwifi", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 #ifdef LUNOKIOT_UPDATES_ENABLED
     SearchUpdateAsNetworkTask();
 #endif
