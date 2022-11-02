@@ -635,6 +635,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
 static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     
     Serial.println("lunokIoT: System event: up and running...");
+/*
 #ifdef LUNOKIOT_WIFI_ENABLED
     if ( provisioned ) {
         Serial.println("lunokIoT: Device provisioned: Launching 'WatchfaceApplication'...");
@@ -644,9 +645,10 @@ static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t 
     Serial.println("lunokIoT: Device not provisioned: Launching 'Provisioning2Application'...");
     LaunchApplication(new Provisioning2Application());
 #else
+*/
     Serial.println("lunokIoT: Launching 'WatchfaceApplication'...");
     LaunchApplication(new WatchfaceApplication());
-#endif
+//#endif
 
 }
 

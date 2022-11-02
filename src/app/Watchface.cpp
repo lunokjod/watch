@@ -25,7 +25,6 @@
 #include "../static/img_bluetooth_24.xbm"
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
-//#include "../static/img_screenshoot_120.xbm"
 
 #include "../static/img_daynightCycle.c"
 #include "../static/img_batteryGauge106.c"
@@ -44,8 +43,6 @@
 #include "../system/SystemEvents.hpp"
 #include "MainMenu.hpp"
 
-
-
 NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::weatherTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::geoIPTask = nullptr;
@@ -60,8 +57,8 @@ extern TFT_eSprite *overlay;
 
 // NTP sync data
 const char *ntpServer       = "es.pool.ntp.org";
-const long  gmtOffset_sec   = 3600;
-const int   daylightOffset_sec = 0; // winter
+//const long  gmtOffset_sec   = 3600;
+//const int   daylightOffset_sec = 0; // winter
 //const int   daylightOffset_sec = 3600; // summer
 
 bool ntpSyncDone = false;
@@ -459,53 +456,24 @@ WatchfaceApplication::WatchfaceApplication() {
 }
 
 WatchfaceApplication::~WatchfaceApplication() {
-    if ( nullptr != watchFaceCanvas ) {
-        delete watchFaceCanvas;
-        watchFaceCanvas = nullptr;
-    }
-    if ( nullptr != bottomRightButton ) {
-        delete bottomRightButton;
-        bottomRightButton = nullptr;
-    }
-    if ( nullptr != topRightButton ) {
-        delete topRightButton;
-        topRightButton = nullptr;
-    }
-    if ( nullptr != marksCanvas ) {
-        delete marksCanvas;
-    }
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceApplication::FreeRTOSEventReceived);
-    if ( nullptr != backlightCanvas ) {
-        delete backlightCanvas;
-        backlightCanvas = nullptr;
-    }
-    if ( nullptr != minuteHandCanvas ) {
-        delete minuteHandCanvas;
-        minuteHandCanvas = nullptr;
-    }
-    if ( nullptr != hourHandCanvas ) {
-        delete hourHandCanvas;
-        hourHandCanvas = nullptr;
-    }
-    if ( nullptr != backgroundCanvas ) {
-        delete backgroundCanvas;
-        backgroundCanvas = nullptr;
-    }
-    if ( nullptr != weatherReceivedData ) {
-        free(weatherReceivedData);
-        weatherReceivedData = nullptr;
-    }
-
+    if ( nullptr != watchFaceCanvas ) { delete watchFaceCanvas; }
+    if ( nullptr != bottomRightButton ) { delete bottomRightButton; }
+    if ( nullptr != topRightButton ) { delete topRightButton; }
+    if ( nullptr != marksCanvas ) { delete marksCanvas; }
+    if ( nullptr != backlightCanvas ) { delete backlightCanvas; }
+    if ( nullptr != minuteHandCanvas ) { delete minuteHandCanvas; }
+    if ( nullptr != hourHandCanvas ) { delete hourHandCanvas; }
+    if ( nullptr != backgroundCanvas ) { delete backgroundCanvas; }
     if ( nullptr != hourClockHandCache ) {
         hourClockHandCache->deleteSprite();
         delete hourClockHandCache;
-        hourClockHandCache = nullptr;
     }
     if ( nullptr != minuteClockHandCache ) {
         minuteClockHandCache->deleteSprite();
         delete minuteClockHandCache;
-        minuteClockHandCache = nullptr;
     }
+
     Serial.printf("WatchfaceApplication: %p Ends here\n",this);
 }
 extern bool bleEnabled; //@TODO this is a crap!!!
@@ -895,8 +863,13 @@ bool WatchfaceApplication::Tick() {
     if ( millis() > nextWatchFaceFullRedraw ) {
         unsigned long delta = millis();
         // clean the buffer
-        watchFaceCanvas->canvas->fillSprite(TFT_BLACK);
         overlay->fillSprite(TFT_TRANSPARENT);
+        for(int y=0;y<TFT_HEIGHT;y++) {
+            for(int x=0;x<TFT_WIDTH;x+=2) {
+                overlay->drawPixel(x,y,TFT_BLACK);
+            }
+        }
+        watchFaceCanvas->canvas->fillSprite(TFT_BLACK);
         const float ROTATION = (360/24);
         // already NTP sync done?
         //if ( ntpSyncDone ) {
