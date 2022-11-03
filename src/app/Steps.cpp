@@ -1,0 +1,119 @@
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+#include "Settings.hpp"
+#include "../static/img_back_32.xbm"
+#include "../static/img_step_32.xbm"
+#include "../static/img_distance_32.xbm"
+#include "../static/img_setup_32.xbm"
+#include "Steps.hpp"
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/SwitchWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
+
+#include "StepsSetup.hpp"
+
+uint32_t weekSteps[7] = { 0 };
+
+StepsApplication::~StepsApplication() {
+    if ( nullptr != btnBack ) { delete btnBack; }
+    if ( nullptr != weekGraph ) { delete weekGraph; }
+    if ( nullptr != btnSetup ) { delete btnSetup; }
+}
+void StepsApplication::CreateStats() {
+    int32_t maxVal = 0;
+    int32_t minVal = 0;
+    for(int a=0;a<7;a++) {
+        if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
+        if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
+    }
+
+    // rebuild new graph with min/max of the week
+    if ( nullptr != weekGraph ) { delete weekGraph; }
+    weekGraph = new GraphWidget(50,180,minVal,maxVal,canvas->color24to16(0x56818a), canvas->color24to16(0x212121));
+    
+    // push values from weekSteps
+    int t=0;
+    while (t<7) {
+        int c=25; // this draws a bar on GraphWidget (repeat value X times draws a bar)
+        while (c>0) {
+            weekGraph->PushValue(weekSteps[t]);
+            c--;
+        }
+        weekGraph->PushValue(0); // separator of 1 pixel
+        t++;
+    }
+}
+StepsApplication::StepsApplication() {
+    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+        LaunchApplication(new WatchfaceApplication());
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+
+    btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+        LaunchApplication(new StepsSetupApplication());
+    },img_setup_32_bits,img_setup_32_height,img_setup_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+
+    // intentionally don't create the graph here for test
+    for(int a=0;a<7;a++) { // RANDOM DATA
+        weekSteps[a] = random(0,3000);
+    }
+    stepCount=random(0,8000); // fake
+    
+    CreateStats();
+}
+
+bool StepsApplication::Tick() {
+    btnBack->Interact(touched,touchX, touchY);
+    btnSetup->Interact(touched,touchX, touchY);
+    if (millis() > nextRedraw ) {
+        canvas->fillSprite(canvas->color24to16(0x212121));
+        btnBack->DrawTo(canvas);
+        btnSetup->DrawTo(canvas);
+        weekGraph->DrawTo(canvas,30,30);
+
+        canvas->setTextFont(0);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TL_DATUM);
+        canvas->setTextWrap(false,false);
+        canvas->setTextColor(TFT_WHITE);
+        canvas->drawString("Mo.", 34,90);
+        canvas->drawString("Tu.", 60,90);
+        canvas->drawString("We.", 86,90);
+        canvas->drawString("Th.", 114,90);
+        canvas->drawString("Fr.", 140,90);
+        canvas->drawString("Sa.", 166,90);
+        canvas->drawString("Su.", 192,90);
+
+        canvas->drawXBitmap(30,120,img_step_32_bits,img_step_32_width,img_step_32_height,TFT_WHITE);
+        canvas->drawXBitmap(130,120,img_distance_32_bits,img_distance_32_width,img_distance_32_height,TFT_WHITE);
+
+        char bufferText[32] = {0};
+        canvas->setTextSize(2);
+        sprintf(bufferText,"%d",stepCount);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString(bufferText, 60,140);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TL_DATUM);
+        canvas->drawString("steps", 60,140);
+
+        canvas->setTextSize(2);
+        canvas->setTextDatum(BL_DATUM);
+        float distance = (stepCount*stepDistanceCm)/100;
+        if ( distance > 1000 ) {
+            sprintf(bufferText,"%.2f",distance/1000);
+        } else {
+            sprintf(bufferText,"%.2f",distance);
+        }
+        canvas->drawString(bufferText, 170,140);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TL_DATUM);
+        if ( distance > 1000 ) {
+            canvas->drawString("Km", 170,140);
+        } else {
+            canvas->drawString("mts.", 170,140);
+        }
+
+        nextRedraw=millis()+(1000/8);
+        return true;
+    }
+    return false;
+}

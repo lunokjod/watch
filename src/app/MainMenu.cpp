@@ -25,6 +25,12 @@
 #include "SetTimeZone.hpp"
 #include "../static/img_timezone_120.xbm"
 
+#include "About.hpp"
+#include "../static/img_mainmenu_about.xbm"
+
+#include "Steps.hpp"
+#include "../static/img_mainmenu_steps.xbm"
+
 
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
@@ -53,6 +59,7 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+    {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, []() { LaunchApplication(new SetTimeApplication()); } },
@@ -60,6 +67,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
     {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, []() { LaunchApplication(new RotationApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
+    {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, []() { LaunchApplication(new AboutApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI
     {"Playground9",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication9()); } },
     {"Playground8",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication8()); } },
