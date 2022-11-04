@@ -418,6 +418,7 @@ WatchfaceApplication::WatchfaceApplication() {
         weatherTask->_lastCheck=millis();
         weatherTask->_nextTrigger=0; // launch NOW (as soon as system wants)
         weatherTask->callback = [&,this]() {
+            weatherSyncDone = false;
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
                 Serial.println("Watchface: Openweather Sync disabled");
