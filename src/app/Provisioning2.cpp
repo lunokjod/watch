@@ -296,7 +296,7 @@ bool Provisioning2Application::Tick() {
         if ( nullptr != currentQRRendered ) {
             if ( false == qrVisible ) {
                 currentQRRendered->pushRotated(canvas,0);
-                ttgo->setBrightness(40);
+                //ttgo->setBrightness(40);
                 qrVisible = true;
                 return true;
             }
@@ -304,7 +304,7 @@ bool Provisioning2Application::Tick() {
         return false;
     }
     if ( qrVisible ) {
-        ttgo->setBrightness(255);
+        //ttgo->setBrightness(255);
         qrVisible = false;
     }
     //backBtn->enabled = provisioned;
