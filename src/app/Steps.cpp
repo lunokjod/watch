@@ -34,7 +34,7 @@ void InstallStepManager() {
 
         stepsManager = new TimedTaskDescriptor();
         stepsManager->name = (char *)"Stepcounter manager";
-        stepsManager->everyTimeMS = (60*1000)*1; // DEBUG every 10 minutes
+        stepsManager->everyTimeMS = (60*1000)*40; // every 40 minutes
         stepsManager->_lastCheck=millis();
         stepsManager->_nextTrigger=0; // launch NOW (as soon as system wants)
         stepsManager->callback = [&]() {
@@ -45,7 +45,7 @@ void InstallStepManager() {
             // the last register is from yesterday?
             if ( lastStepsDay != tmpTime->tm_wday ) {
                 // run beyond the midnight
-                if ( tmpTime->tm_hour >= 0 ) {
+                if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
                     Serial.printf("%s: Rotating stepcounter\n",stepsManager->name);
                     
                     // my weeks begins on monday not sunday
@@ -169,6 +169,17 @@ bool StepsApplication::Tick() {
         } else {
             canvas->drawString("mts.", 170,140);
         }
+
+
+        time_t now;
+        struct tm * tmpTime;
+        time(&now);
+        tmpTime = localtime(&now);
+        // my weeks begins on monday not sunday
+        int correctedDay = tmpTime->tm_wday-1;
+        if ( -1 == correctedDay ) { correctedDay=6; }
+        canvas->fillRect(25,100,25,5,TFT_WHITE);
+
 
         nextRedraw=millis()+(1000/6);
         return true;
