@@ -135,9 +135,12 @@ void BMPIntHandler() {
     Serial.printf("BMA423: NVS: Last session stepsBMAActivityNone = %d\n",stepsBMAActivityNone);
     Serial.printf("BMA423: NVS: Last session timeBMAActivityNone = %lu\n",timeBMAActivityNone);
 
-    if ( false != tempStepCount ) {
+    Serial.printf("BMA423: NVS: Last session tempStepCount: %d\n",tempStepCount);
+    
+    if ( 0 != tempStepCount ) {
         lastBootStepCount = tempStepCount;
         stepCount = lastBootStepCount;
+        Serial.printf("BMA423: NVS: Last session stepCount: %d\n",stepCount);
     }
 
     if ( false != tempAccXMax ) { accXMax=tempAccXMax; }
@@ -450,15 +453,19 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("tBMAAInvalid",(int64_t)timeBMAActivityInvalid,false);
     NVS.setInt("sBMAANone",stepsBMAActivityNone,false);
     NVS.setInt("tBMAANone",(int64_t)timeBMAActivityNone,false);
-
+    Serial.printf("DEBUG stepCount: %d\n",stepCount);
     NVS.setInt("stepCount",stepCount,false);
-    NVS.commit();
+    delay(50);
+    bool saved = NVS.commit();
+    if ( false == saved ) { Serial.println("NVS: Unable to commit!! (data lost!)"); }
     NVS.close();
+    Serial.println("NVS: Closed");
+    Serial.flush();
 }
 
 static void AXPEventPEKLong(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     LaunchApplication(new ShutdownApplication());
-    SaveDataBeforeShutdown();
+    //SaveDataBeforeShutdown();
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 void _SendEventWakeTask(void * data) {
