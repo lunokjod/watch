@@ -30,6 +30,7 @@ void InstallStepManager() {
             weekSteps[a] = NVS.getInt(keyName);
             Serial.printf("LOADING: %s %d\n",keyName,weekSteps[a]);
         }
+        lastStepsDay = NVS.getInt("lstWeekStp");
 
         stepsManager = new TimedTaskDescriptor();
         stepsManager->name = (char *)"Stepcounter manager";
@@ -63,6 +64,7 @@ void InstallStepManager() {
                         Serial.printf("SAVING: %s %d\n",keyName,weekSteps[a]);
                         NVS.setInt(keyName,weekSteps[a],false);
                     }
+                    NVS.setInt("lstWeekStp",lastStepsDay,false);
                 }
             }
 
