@@ -14,6 +14,13 @@ StepsSetupApplication::~StepsSetupApplication() {
     NVS.setInt("UserTall",userTall, false);
     userMaleFemale = genderSelect->switchEnabled;
     NVS.setInt("UserSex",userMaleFemale, false);
+    if ( true == userMaleFemale ) { // duplicated code on main
+        // FEMALE PROPS
+        stepDistanceCm = userTall * WOMAN_STEP_PROPORTION;
+    } else {
+        stepDistanceCm = userTall * MAN_STEP_PROPORTION;
+
+    }
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != genderSelect ) { delete genderSelect; }
     if ( nullptr != tallValue ) { delete tallValue; }
