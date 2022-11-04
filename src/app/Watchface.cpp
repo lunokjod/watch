@@ -656,25 +656,28 @@ void WatchfaceApplication::PrepareDataLayer() {
     sprintf(textBuffer,"%d", stepCount);
     marksCanvas->canvas->drawString(textBuffer, posX, posY);
 
-    if ( nullptr != weatherMain ) {
-        marksCanvas->canvas->setTextFont(0);
-        marksCanvas->canvas->setTextSize(2);
-        marksCanvas->canvas->setTextDatum(CC_DATUM);
-        marksCanvas->canvas->setTextWrap(false,false);
-        marksCanvas->canvas->setTextColor(TFT_WHITE);
-        marksCanvas->canvas->drawString(weatherMain, 120,40);
+    if ( weatherSyncDone ) {
+        if ( nullptr != weatherMain ) {
+            marksCanvas->canvas->setTextFont(0);
+            marksCanvas->canvas->setTextSize(2);
+            marksCanvas->canvas->setTextDatum(CC_DATUM);
+            marksCanvas->canvas->setTextWrap(false,false);
+            marksCanvas->canvas->setTextColor(TFT_WHITE);
+            marksCanvas->canvas->drawString(weatherMain, 120,40);
+        }
+        
+        if ( nullptr != weatherDescription ) {
+            overlay->setTextFont(0);
+            overlay->setTextSize(1);
+            overlay->setTextDatum(CC_DATUM);
+            overlay->setTextWrap(false,false);
+            overlay->setTextColor(TFT_BLACK);
+            overlay->drawString(weatherDescription, 122,62);
+            overlay->setTextColor(TFT_WHITE);
+            overlay->drawString(weatherDescription, 120,60);
+        }
     }
-    
-    if ( nullptr != weatherDescription ) {
-        overlay->setTextFont(0);
-        overlay->setTextSize(1);
-        overlay->setTextDatum(CC_DATUM);
-        overlay->setTextWrap(false,false);
-        overlay->setTextColor(TFT_BLACK);
-        overlay->drawString(weatherDescription, 122,62);
-        overlay->setTextColor(TFT_WHITE);
-        overlay->drawString(weatherDescription, 120,60);
-    }
+
 
     if ( screenShootInProgress ) {
         const size_t totalPixels = TFT_HEIGHT*TFT_WIDTH;
