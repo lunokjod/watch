@@ -114,7 +114,6 @@ bool WatchfaceApplication::ParseWeatherData() {
 
     if ( nullptr == weatherReceivedData ) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''");
-        weatherSyncDone = false;
         weatherId=-1;
         return false;
     }
@@ -122,13 +121,11 @@ bool WatchfaceApplication::ParseWeatherData() {
     if (JSON.typeof(myObject) == "undefined") {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON:");
         Serial.printf("%s\n",weatherReceivedData);
-        weatherSyncDone = false;
         return false;
     }
     if (false == myObject.hasOwnProperty("weather")) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found");
         Serial.printf("%s\n",weatherReceivedData);
-        weatherSyncDone = false;
         weatherId=-1;
         return false;
     }
@@ -137,7 +134,6 @@ bool WatchfaceApplication::ParseWeatherData() {
     if (false == weatherBranch.hasOwnProperty("description")) {
         Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found");
         Serial.printf("%s\n",weatherReceivedData);
-        weatherSyncDone = false;
         weatherId=-1;
         return false;
     }
@@ -176,8 +172,6 @@ bool WatchfaceApplication::ParseWeatherData() {
     }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
-
-    weatherSyncDone = true;
     return true;
 }
 
@@ -428,6 +422,7 @@ WatchfaceApplication::WatchfaceApplication() {
             // @TODO parse online is not optimal and posible harmfull (remote attack using parser bug)
             if ( getDone ) {
                 bool parseDone = WatchfaceApplication::ParseWeatherData();
+                weatherSyncDone = parseDone;
                 return parseDone;
             }
             return getDone;
@@ -973,26 +968,29 @@ bool WatchfaceApplication::Tick() {
             watchFaceCanvas->canvas->setTextColor(TFT_BLACK);
             watchFaceCanvas->canvas->drawString(notifCnt, x,y);
         }
-        // weather icon
-        //watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
-        if ( -1 != weatherId ) {
-            if ( ( 200 <= weatherId ) && ( 300 > weatherId ) ) {
-                watchFaceCanvas->canvas->pushImage(120 - (img_weather_200.width/2),52,img_weather_200.width,img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
-            } else if ( ( 300 <= weatherId ) && ( 400 > weatherId ) ) {
-                watchFaceCanvas->canvas->pushImage(120 - (img_weather_300.width/2),52,img_weather_300.width,img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
-            } else if ( ( 500 <= weatherId ) && ( 600 > weatherId ) ) {
-                watchFaceCanvas->canvas->pushImage(120 - (img_weather_500.width/2),52,img_weather_500.width,img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
-            } else if ( ( 600 <= weatherId ) && ( 700 > weatherId ) ) {
-                watchFaceCanvas->canvas->pushImage(120 - (img_weather_600.width/2),52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-            } else if ( ( 700 <= weatherId ) && ( 800 > weatherId ) ) {
-                Serial.println("@TODO Watchface: openweather 700 condition code");
-                //watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-               watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2),52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-                //watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-            } else if ( ( 800 <= weatherId ) && ( 900 > weatherId ) ) {
-                watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+        if ( weatherSyncDone ) {
+            // weather icon
+            //watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
+            if ( -1 != weatherId ) {
+                if ( ( 200 <= weatherId ) && ( 300 > weatherId ) ) {
+                    watchFaceCanvas->canvas->pushImage(120 - (img_weather_200.width/2),52,img_weather_200.width,img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
+                } else if ( ( 300 <= weatherId ) && ( 400 > weatherId ) ) {
+                    watchFaceCanvas->canvas->pushImage(120 - (img_weather_300.width/2),52,img_weather_300.width,img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
+                } else if ( ( 500 <= weatherId ) && ( 600 > weatherId ) ) {
+                    watchFaceCanvas->canvas->pushImage(120 - (img_weather_500.width/2),52,img_weather_500.width,img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
+                } else if ( ( 600 <= weatherId ) && ( 700 > weatherId ) ) {
+                    watchFaceCanvas->canvas->pushImage(120 - (img_weather_600.width/2),52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+                } else if ( ( 700 <= weatherId ) && ( 800 > weatherId ) ) {
+                    Serial.println("@TODO Watchface: openweather 700 condition code");
+                    //watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+                watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2),52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+                    //watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+                } else if ( ( 800 <= weatherId ) && ( 900 > weatherId ) ) {
+                    watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+                }
             }
         }
+
 
 
 
