@@ -28,6 +28,7 @@ void InstallStepManager() {
             char keyName[16] = {0};
             sprintf(keyName,"lWSteps_%d",a);
             weekSteps[a] = NVS.getInt(keyName);
+            Serial.printf("LOADING: %s %d\n",keyName,weekSteps[a]);
         }
 
         stepsManager = new TimedTaskDescriptor();
@@ -45,21 +46,28 @@ void InstallStepManager() {
                 // run beyond the midnight
                 if ( tmpTime->tm_hour >= 0 ) {
                     Serial.printf("%s: Rotating stepcounter\n",stepsManager->name);
-                    weekSteps[tmpTime->tm_wday] = stepCount;
+                    
+                    // my weeks begins on monday not sunday
+                    int correctedDay = tmpTime->tm_wday-1;
+                    if ( -1 == correctedDay ) { correctedDay=6; }
+
+                    weekSteps[correctedDay] = stepCount;
                     stepCount = 0;
                     lastBootStepCount = 0;
                     NVS.setInt("stepCount",0,false);
-                    lastStepsDay = tmpTime->tm_wday; // set the last register is today
+                    lastStepsDay = tmpTime->tm_wday; // set the last register is today in raw
+
                     for(int a=0;a<7;a++) { // Obtain the last days steps
                         char keyName[16] = {0};
                         sprintf(keyName,"lWSteps_%d",a);
+                        Serial.printf("SAVING: %s %d\n",keyName,weekSteps[a]);
                         NVS.setInt(keyName,weekSteps[a],false);
                     }
                 }
             }
 
-            RTC_Date d = ttgo->rtc->getDateTime();
-            Serial.printf("CURRENT WEEKDAY: %d HOUR: %d\n",tmpTime->tm_wday,tmpTime->tm_hour);
+            //RTC_Date d = ttgo->rtc->getDateTime();
+            //Serial.printf("CURRENT WEEKDAY: %d HOUR: %d\n",tmpTime->tm_wday,tmpTime->tm_hour);
             return true;
         };
         AddTimedTask(stepsManager);
