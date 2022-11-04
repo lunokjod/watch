@@ -178,6 +178,8 @@ bool StepsApplication::Tick() {
         // my weeks begins on monday not sunday
         int correctedDay = tmpTime->tm_wday-1;
         if ( -1 == correctedDay ) { correctedDay=6; }
+
+        //@TODO drawrect under the current week day
         canvas->fillRect(25,100,25,5,TFT_WHITE);
 
 

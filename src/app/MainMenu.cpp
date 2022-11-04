@@ -31,6 +31,9 @@
 #include "Steps.hpp"
 #include "../static/img_mainmenu_steps.xbm"
 
+#include "Brightness.hpp"
+#include "../static/img_mainmenu_bright.xbm"
+
 
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
@@ -59,6 +62,9 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+
+    {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
+
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },

@@ -41,4 +41,18 @@
 ![menu battery](../../doc/img_menu_settings.png)
 ![battery0](../../doc/img_settings0.png)
 
+## Brightness
+ * Set default screen brightness
+
+![menu bright](../../doc/img_mainmenu_brightness.png)
+![bright0](../../doc/img_bright0.png)
+
+
+## Steps
+ * Week activity stats 
+
+![menu steps](../../doc/img_mainmenu_steps.png)
+![steps0](../../doc/img_steps0.png)
+![steps1](../../doc/img_steps1.png)
+
 * @TODO 

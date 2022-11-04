@@ -4,6 +4,8 @@
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
+#include <ArduinoNvs.h>
+
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
 extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
@@ -75,6 +77,8 @@ void LaunchApplicationTask(void * data) {
             Serial.printf("Application: %p goes to front\n", instance);
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance;
+            uint8_t userBright = NVS.getInt("lBright");
+            if ( userBright != 0 ) { ttgo->setBrightness(userBright); }
         }
         xSemaphoreGive( UISemaphore );
     } else {
