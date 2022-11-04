@@ -26,7 +26,8 @@ bool GraphWidget::PushValue(int64_t value) {
     if ( maxValue == canvas->height() ) {
         pcValue = value;
     } else {
-        pcValue = value * canvas->height() /maxValue;
+        if ( 0 == maxValue ) { pcValue = 0; }
+        else { pcValue = value * canvas->height() /maxValue; }
     }
     //Serial.printf("pc: %d val: %lld max: %lld canvas: %d\n",pcValue,value,maxValue,canvas->height());
     // bottom to top
