@@ -18,6 +18,7 @@ SetDateApplication::~SetDateApplication() {
 
 extern int currentDay;
 extern int currentMonth;
+extern bool ntpSyncDone;
 
 SetDateApplication::SetDateApplication() {
     day = new MujiValue(0,0,165,120,1,31,TFT_BLACK);
@@ -37,6 +38,7 @@ SetDateApplication::SetDateApplication() {
         ttgo->rtc->syncToSystem();
         currentDay = day->selectedValue;
         currentMonth = month->selectedValue -1;
+        ntpSyncDone=true;
 
     },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
     showTimeButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){

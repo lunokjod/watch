@@ -9,6 +9,8 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
+#include "../system/Tasks.hpp"
+#include <ArduinoNvs.h>
 
 #include "StepsSetup.hpp"
 
@@ -16,6 +18,53 @@ uint8_t userTall = 197;
 uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
 float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
+TimedTaskDescriptor * stepsManager = nullptr;
+uint8_t lastStepsDay = 7; // impossible day to force next trigger (0~6)
+extern uint32_t lastBootStepCount;
+
+void InstallStepManager() {
+    if ( nullptr == stepsManager ) {
+        for(int a=0;a<7;a++) { // Obtain the last days steps
+            char keyName[16] = {0};
+            sprintf(keyName,"lWSteps_%d",a);
+            weekSteps[a] = NVS.getInt(keyName);
+        }
+
+        stepsManager = new TimedTaskDescriptor();
+        stepsManager->name = (char *)"Stepcounter manager";
+        stepsManager->everyTimeMS = (60*1000)*1; // DEBUG every 10 minutes
+        stepsManager->_lastCheck=millis();
+        stepsManager->_nextTrigger=0; // launch NOW (as soon as system wants)
+        stepsManager->callback = [&]() {
+            time_t now;
+            struct tm * tmpTime;
+            time(&now);
+            tmpTime = localtime(&now);
+            // the last register is from yesterday?
+            if ( lastStepsDay != tmpTime->tm_wday ) {
+                // run beyond the midnight
+                if ( tmpTime->tm_hour >= 0 ) {
+                    Serial.printf("%s: Rotating stepcounter\n",stepsManager->name);
+                    weekSteps[tmpTime->tm_wday] = stepCount;
+                    stepCount = 0;
+                    lastBootStepCount = 0;
+                    NVS.setInt("stepCount",0,false);
+                    lastStepsDay = tmpTime->tm_wday; // set the last register is today
+                    for(int a=0;a<7;a++) { // Obtain the last days steps
+                        char keyName[16] = {0};
+                        sprintf(keyName,"lWSteps_%d",a);
+                        NVS.setInt(keyName,weekSteps[a],false);
+                    }
+                }
+            }
+
+            RTC_Date d = ttgo->rtc->getDateTime();
+            Serial.printf("CURRENT WEEKDAY: %d HOUR: %d\n",tmpTime->tm_wday,tmpTime->tm_hour);
+            return true;
+        };
+        AddTimedTask(stepsManager);
+    } 
+}
 
 StepsApplication::~StepsApplication() {
 
@@ -56,11 +105,6 @@ StepsApplication::StepsApplication() {
     btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
-
-    for(int a=0;a<7;a++) { // RANDOM DATA TEST
-        weekSteps[a] = (a+1)*1000; // random(0,8000);
-    }
-    stepCount=random(0,8000); // fake
     
     CreateStats();
 }

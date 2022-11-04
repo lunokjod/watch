@@ -9,12 +9,14 @@
 
 #include "system/SystemEvents.hpp" // the "heart"
 #include "UI/UI.hpp" // UI optional stuff for user interaction
+#include "system/Tasks.hpp"
 
 #include "UI/BootSplash.hpp" // convenient hardcoded, quick and dirty splash screen
 
 #include "system/Application.hpp" // UI App definitions
 
 #include "app/Watchface.hpp" // main app
+#include "app/Steps.hpp" // Step manager
 
 
 TTGOClass *ttgo; // ttgo library shit ;)
@@ -82,15 +84,20 @@ void setup() {
   BMPIntHandler();
   //RTCIntHandler();
 
+  TimedTaskkHandler();
+
   NetworkHandler(); // already provisioned? start the network timed tasks loop
 
   UIStart();  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
+
+  InstallStepManager();
 
 #ifdef LUNOKIOT_DEBUG
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
   Serial.printf("lunokIoT: Boot time: %lu ms\n", currentBootTime);
 #endif
+
   SplashAnnounceEnd();
   // Announce system boot end and begin the magic!!!
   SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)

@@ -8,6 +8,8 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 
+void InstallStepManager();
+
 class StepsApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;

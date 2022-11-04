@@ -18,6 +18,7 @@ SetTimeApplication::~SetTimeApplication() {
 
 extern int currentMin;
 extern int currentHour;
+extern bool ntpSyncDone;
 
 SetTimeApplication::SetTimeApplication() {
     hour = new MujiValue(0,0,165,120,0,23,TFT_BLACK);
@@ -38,6 +39,7 @@ SetTimeApplication::SetTimeApplication() {
         ttgo->rtc->syncToSystem();
         currentHour = hour->selectedValue;
         currentMin = minute->selectedValue;
+        ntpSyncDone = true;
 
     },img_settime_32_bits,img_settime_32_height,img_settime_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
     showDateButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
