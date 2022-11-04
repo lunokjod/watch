@@ -50,7 +50,16 @@ void setup() {
   uint8_t rotation = NVS.getInt("ScreenRot");
   Serial.printf("lunokIoT: User screen rotation: %d\n", rotation);
   ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
+  userTall= NVS.getInt("UserTall");
+  if ( 0 == userTall ) { userTall = 120; }
+  userMaleFemale = NVS.getInt("UserSex");
+  if ( true == userMaleFemale ) {
+    // FEMALE PROPS
+    stepDistanceCm = userTall * WOMAN_STEP_PROPORTION;
+  } else {
+    stepDistanceCm = userTall * MAN_STEP_PROPORTION;
 
+  }
 #ifdef LUNOKIOT_DEBUG
   Serial.println("lunokIoT: System initializing...");
 #endif

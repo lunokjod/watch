@@ -2,12 +2,18 @@
 #include <LilyGoWatch.h>
 #include "Settings.hpp"
 #include "../static/img_back_32.xbm"
-
+#include <ArduinoNvs.h>
+#include "Steps.hpp"
 #include "StepsSetup.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
+#include "../lunokiot_config.hpp"
 
 StepsSetupApplication::~StepsSetupApplication() {
+    userTall = tallValue->selectedValue;
+    NVS.setInt("UserTall",userTall, false);
+    userMaleFemale = genderSelect->switchEnabled;
+    NVS.setInt("UserSex",userMaleFemale, false);
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != genderSelect ) { delete genderSelect; }
     if ( nullptr != tallValue ) { delete tallValue; }
@@ -15,12 +21,12 @@ StepsSetupApplication::~StepsSetupApplication() {
 
 StepsSetupApplication::StepsSetupApplication() {
     btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchApplication(new StepsApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
-    genderSelect = new SwitchWidget(142,20,[&,this](){
-
-    });
+    genderSelect = new SwitchWidget(142,20,[&,this](){ });
     tallValue = new ValueSelector(10,10,220,110,120,220,canvas->color24to16(0x212121));
+    tallValue->selectedValue = userTall;
+    genderSelect->switchEnabled = userMaleFemale;
 }
 
 bool StepsSetupApplication::Tick() {

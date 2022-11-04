@@ -117,14 +117,15 @@ const String openWeatherMapApiKey = "@@OPENWEATHER_APIKEY@@";
 const uint8_t BaseBackLightBrightness = 32; // minimal bright
 
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
-const uint8_t userTall = 197; 
+extern uint8_t userTall; 
+extern bool userMaleFemale;
+extern float stepDistanceCm;
 //const uint8_t userTall = 166; // user tall in CM
 
 /* Median step by sex */
 const float MAN_STEP_PROPORTION = 0.415;
 const float WOMAN_STEP_PROPORTION = 0.413;
 
-const float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 
 
 const unsigned long NetworkTimeout = 3*1000; // time until wifi is killed by timeout in milliseconds

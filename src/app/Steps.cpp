@@ -12,12 +12,17 @@
 
 #include "StepsSetup.hpp"
 
-uint32_t weekSteps[7] = { 0 };
+uint8_t userTall = 197;
+uint32_t weekSteps[7] = { 0 }; // 0~6
+bool userMaleFemale = false;
+float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 
 StepsApplication::~StepsApplication() {
+
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != weekGraph ) { delete weekGraph; }
     if ( nullptr != btnSetup ) { delete btnSetup; }
+
 }
 void StepsApplication::CreateStats() {
     int32_t maxVal = 0;
@@ -32,15 +37,15 @@ void StepsApplication::CreateStats() {
     weekGraph = new GraphWidget(50,180,minVal,maxVal,canvas->color24to16(0x56818a), canvas->color24to16(0x212121));
     
     // push values from weekSteps
-    int t=0;
-    while (t<7) {
+    int t=6;
+    while (t>=0) {
         int c=25; // this draws a bar on GraphWidget (repeat value X times draws a bar)
         while (c>0) {
             weekGraph->PushValue(weekSteps[t]);
             c--;
         }
         weekGraph->PushValue(0); // separator of 1 pixel
-        t++;
+        t--;
     }
 }
 StepsApplication::StepsApplication() {
@@ -52,9 +57,8 @@ StepsApplication::StepsApplication() {
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
 
-    // intentionally don't create the graph here for test
-    for(int a=0;a<7;a++) { // RANDOM DATA
-        weekSteps[a] = random(0,3000);
+    for(int a=0;a<7;a++) { // RANDOM DATA TEST
+        weekSteps[a] = (a+1)*1000; // random(0,8000);
     }
     stepCount=random(0,8000); // fake
     
@@ -112,7 +116,7 @@ bool StepsApplication::Tick() {
             canvas->drawString("mts.", 170,140);
         }
 
-        nextRedraw=millis()+(1000/8);
+        nextRedraw=millis()+(1000/6);
         return true;
     }
     return false;
