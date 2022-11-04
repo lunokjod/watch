@@ -19,7 +19,7 @@ uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
 float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 TimedTaskDescriptor * stepsManager = nullptr;
-uint8_t lastStepsDay = 7; // impossible day to force next trigger (0~6)
+uint8_t lastStepsDay = 0; // impossible day to force next trigger (0~6)
 extern uint32_t lastBootStepCount;
 
 void InstallStepManager() {
@@ -45,11 +45,11 @@ void InstallStepManager() {
             // the last register is from yesterday?
             if ( lastStepsDay != tmpTime->tm_wday ) {
                 // run beyond the midnight
-                if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
+                //if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
                     Serial.printf("%s: Rotating stepcounter\n",stepsManager->name);
                     
                     // my weeks begins on monday not sunday
-                    int correctedDay = tmpTime->tm_wday-1;
+                    int correctedDay = lastStepsDay-1; // use the last day recorded to save on it
                     if ( -1 == correctedDay ) { correctedDay=6; }
 
                     weekSteps[correctedDay] = stepCount;
@@ -58,6 +58,23 @@ void InstallStepManager() {
                     NVS.setInt("stepCount",0,false);
                     lastStepsDay = tmpTime->tm_wday; // set the last register is today in raw
 
+
+                    // reset all counters
+                    
+                    beginStepsBMAActivity=0; // sorry current activity is discarded
+                    beginBMAActivity=0;
+                    
+                    stepsBMAActivityStationary = 0; // clean all
+                    timeBMAActivityStationary = 0;
+                    stepsBMAActivityWalking = 0;
+                    timeBMAActivityWalking = 0;
+                    stepsBMAActivityRunning = 0;
+                    timeBMAActivityRunning = 0;
+                    stepsBMAActivityInvalid = 0;
+                    timeBMAActivityInvalid = 0;
+                    stepsBMAActivityNone = 0;
+                    timeBMAActivityNone = 0;
+
                     for(int a=0;a<7;a++) { // Obtain the last days steps
                         char keyName[16] = {0};
                         sprintf(keyName,"lWSteps_%d",a);
@@ -65,7 +82,7 @@ void InstallStepManager() {
                         NVS.setInt(keyName,weekSteps[a],false);
                     }
                     NVS.setInt("lstWeekStp",lastStepsDay,false);
-                }
+                //}
             }
 
             //RTC_Date d = ttgo->rtc->getDateTime();
@@ -176,12 +193,45 @@ bool StepsApplication::Tick() {
         time(&now);
         tmpTime = localtime(&now);
         // my weeks begins on monday not sunday
-        int correctedDay = tmpTime->tm_wday-1;
-        if ( -1 == correctedDay ) { correctedDay=6; }
+        int correctedDay = tmpTime->tm_wday;
+        //if ( -1 == correctedDay ) { correctedDay=6; }
+        //drawrect under the current week day
+        canvas->fillRect(10+(25*correctedDay),100,25,5,TFT_WHITE);
 
-        //@TODO drawrect under the current week day
-        canvas->fillRect(25,100,25,5,TFT_WHITE);
 
+        uint32_t totalStepsValues = stepsBMAActivityStationary
+                +stepsBMAActivityWalking+stepsBMAActivityRunning
+                +stepsBMAActivityInvalid+stepsBMAActivityNone;
+        uint32_t barWidth = 220;
+
+        canvas->fillRect(8,165,barWidth+4,9,canvas->color24to16(0x353e45));
+        canvas->fillRect(10,167,barWidth,5,TFT_RED);
+
+        if ( totalStepsValues > 0 ) {
+            //Serial.printf("Steps: TotalSteps: %d\n", totalStepsValues);
+            uint32_t pcOther=(stepsBMAActivityStationary*barWidth)/totalStepsValues;
+            //Serial.printf("-------> pcOther: %d\n", pcOther);
+            uint32_t pcWalking=(stepsBMAActivityWalking*barWidth)/totalStepsValues;
+            //Serial.printf("-------> stepsBMAActivityWalking: %d\n", pcWalking);
+            uint32_t pcRunning=(stepsBMAActivityRunning*barWidth)/totalStepsValues;
+            //Serial.printf("-------> stepsBMAActivityRunning: %d\n", pcRunning);
+            canvas->fillRect(10,167,pcWalking,5,TFT_GREEN);
+            canvas->fillRect(10+pcWalking,167,pcRunning,5,TFT_YELLOW);
+        }
+
+
+/*
+                    stepsBMAActivityStationary = 0;
+                    timeBMAActivityStationary = 0;
+                    stepsBMAActivityWalking = 0;
+                    timeBMAActivityWalking = 0;
+                    stepsBMAActivityRunning = 0;
+                    timeBMAActivityRunning = 0;
+                    stepsBMAActivityInvalid = 0;
+                    timeBMAActivityInvalid = 0;
+                    stepsBMAActivityNone = 0;
+                    timeBMAActivityNone = 0;
+*/
 
         nextRedraw=millis()+(1000/6);
         return true;
