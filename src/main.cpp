@@ -18,6 +18,7 @@
 #include "app/Watchface.hpp" // main app
 #include "app/Steps.hpp" // Step manager
 
+#include "app/LogView.hpp" // adds lLog(...)
 
 TTGOClass *ttgo; // ttgo library shit ;)
 
@@ -31,26 +32,24 @@ void setup() {
   // for monitoring uptime
   unsigned long setupBeginTime = millis();
 
-  // do you want debug?
   Serial.begin(115200);
+  // do you want debug?
   #ifdef LUNOKIOT_DEBUG
-      Serial.setDebugOutput(true);
-      esp_log_level_set("*", ESP_LOG_VERBOSE);
+    Serial.setDebugOutput(true);
+    esp_log_level_set("*", ESP_LOG_VERBOSE);
   #endif
 
   // announe myself with build information
-  Serial.printf("lunokIoT: 'компаньон' #%d//%s// (boot number %u)\n", LUNOKIOT_BUILD_NUMBER, LUNOKIOT_KEY, bootCount);
-  bootCount++;
-
 #ifdef LUNOKIOT_DEBUG
-  Serial.println("lunokIoT: Init lilyGo TWatch2020 hardware...");
+  Serial.printf("lunokIoT: 'компаньон' #%d//%s// (boot number %u)\n", LUNOKIOT_BUILD_NUMBER, LUNOKIOT_KEY, bootCount);
 #endif
+  bootCount++;
   // lilygo Twatch library dependencies
   ttgo = TTGOClass::getWatch();
-  ttgo->begin();
+  ttgo->begin(); //lLog functions become possible beyond here (TFT init)
   NVS.begin(); // need NVS to get the current configuration
-  uint8_t rotation = NVS.getInt("ScreenRot");
-  Serial.printf("lunokIoT: User screen rotation: %d\n", rotation);
+  uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
+  lLog("lunokIoT: User screen rotation: %d\n", rotation);
   ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
   userTall= NVS.getInt("UserTall");
   if ( 0 == userTall ) { userTall = 120; }
@@ -63,7 +62,7 @@ void setup() {
 
   }
 #ifdef LUNOKIOT_DEBUG
-  Serial.println("lunokIoT: System initializing...");
+  lLog("lunokIoT: System initializing...\n");
 #endif
   SplashAnnounce(); // simple eyecandy meanwhile boot
 
@@ -95,7 +94,7 @@ void setup() {
 #ifdef LUNOKIOT_DEBUG
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
-  Serial.printf("lunokIoT: Boot time: %lu ms\n", currentBootTime);
+  lLog("lunokIoT: Boot time: %lu ms\n", currentBootTime);
 #endif
 
   SplashAnnounceEnd();

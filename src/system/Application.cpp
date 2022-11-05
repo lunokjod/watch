@@ -5,6 +5,7 @@
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 #include <ArduinoNvs.h>
+#include "../app/LogView.hpp"
 
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
@@ -22,7 +23,7 @@ LunokIoTApplication::LunokIoTApplication() {
     this->canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
     this->canvas->fillSprite(CanvasWidget::MASK_COLOR);
 #ifdef LUNOKIOT_DEBUG_UI
-    Serial.printf("LunokIoTApplication: %p created\n", this);
+    lLog("LunokIoTApplication: %p created\n", this);
 #endif
     overlay->fillSprite(TFT_TRANSPARENT);
 }
@@ -35,15 +36,15 @@ LunokIoTApplication::~LunokIoTApplication() {
         this->canvas = nullptr;
     }
 #ifdef LUNOKIOT_DEBUG_UI
-    Serial.printf("LunokIoTApplication: %p deleted\n", this);
+    lLog("LunokIoTApplication: %p deleted\n", this);
 #endif
 #ifdef LUNOKIOT_DEBUG
     // In multitask environment is complicated to automate this... but works as advice that something went wrong
     if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 
-        Serial.printf("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
+        lLog("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
     }
     if ( this->lastApplicationPSRAMFree != ESP.getFreePsram()) { 
-        Serial.printf("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
+        lLog("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
     }
 #endif
 }
@@ -61,7 +62,7 @@ void LaunchApplicationTask(void * data) {
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
 
         if ( nullptr != currentApplication ) {
-            Serial.printf("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
+            lLog("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
             LunokIoTApplication *ptrOldApp = currentApplication;
             currentApplication = nullptr;
             if ( nullptr != ptrOldApp ) { // @TODO if this delete is optional, can get some grade of "multi-app"
@@ -70,11 +71,11 @@ void LaunchApplicationTask(void * data) {
         }
 
         if ( nullptr == data ) { // this situation is indeed as prior to screen sleep
-            Serial.println("Application: None");
+            lLog("Application: None");
             currentApplication = nullptr;     // no one driving now x'D
             ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
         } else {
-            Serial.printf("Application: %p goes to front\n", instance);
+           lLog("Application: %p goes to front\n", instance);
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance;
             uint8_t userBright = NVS.getInt("lBright");
@@ -82,14 +83,14 @@ void LaunchApplicationTask(void * data) {
         }
         xSemaphoreGive( UISemaphore );
     } else {
-        Serial.println("Application: ERROR: Unable to get application semaphore, stop launch");
+        lLog("Application: ERROR: Unable to get application semaphore, stop launch\n");
     }
     vTaskDelete(NULL); // get out of my cicken!!!
 }
 
 void LaunchApplication(LunokIoTApplication *instance) {
     if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
-        Serial.printf("Application: %p Already running, stop launch\n", currentApplication);
+        lLog("Application: %p Already running, stop launch\n", currentApplication);
         return;
     }
     // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)

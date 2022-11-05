@@ -8,9 +8,14 @@
 #include "../static/img_activity_walking.xbm"
 #include "../static/img_activity_stay.xbm"
 
+ActivitiesApplication::~ActivitiesApplication() {
+    if ( nullptr != giroLog ) {
+        giroLog->deleteSprite();
+        delete giroLog;
+    }
+}
 
 ActivitiesApplication::ActivitiesApplication() {
-    LunokIoTApplication();
     counter = 0;
     giroLog = new TFT_eSprite(ttgo->tft);
     giroLog->setColorDepth(16);

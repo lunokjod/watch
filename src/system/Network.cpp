@@ -45,6 +45,8 @@
 #include "LocalCloud.hpp"
 #endif
 
+#include "../app/LogView.hpp"
+
 BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
@@ -74,7 +76,7 @@ std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
  * Stop desired task from network scheduler
  */
 bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk) {
-    Serial.printf("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
+    lLog("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
     networkPendingTasks.remove(oldTsk);
     return true;
 }
@@ -86,13 +88,13 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     size_t offset = 0;
     for (auto const& tsk : networkPendingTasks) {
         if ( tsk == nuTsk ) {
-            Serial.printf("AddNetworkTask: Task %p '%s' already on the list (offset: %d)\n", tsk,tsk->name, offset);
+            lLog("AddNetworkTask: Task %p '%s' already on the list (offset: %d)\n", tsk,tsk->name, offset);
             return false;
         }
         offset++;
     }
     networkPendingTasks.push_back(nuTsk);
-    Serial.printf("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
+    lLog("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
     return true;
 }
 /*
@@ -101,8 +103,8 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
 char * latestBuildFoundString = nullptr;
 
 void SystemUpdateAvailiable() {
-    Serial.println("@TODO notify user for update");
-    Serial.printf("@TODO availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+    lLog("@TODO notify user for update\n");
+    lLog("@TODO availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
 }
 
 
@@ -129,14 +131,14 @@ void SearchUpdateAsNetworkTask() {
                     String serverPath = LastVersionURL;
                     if (https.begin(*client, serverPath)) {
                         // HTTPS
-                        Serial.printf("SearchUpdate: https get '%s'...\n", serverPath.c_str());
+                        lLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
                         // start connection and send HTTP header
                         int httpCode = https.GET();
 
                         // httpCode will be negative on error
                         if (httpCode > 0) {
                             // HTTP header has been send and Server response header has been handled
-                            Serial.printf("SearchUpdate: https get code: %d\n", httpCode);
+                            lLog("SearchUpdate: https get code: %d\n", httpCode);
                             // file found at server
                             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
                                 String payload = https.getString();
@@ -147,19 +149,19 @@ void SearchUpdateAsNetworkTask() {
                                 latestBuildFoundString = (char*)ps_malloc(payload.length()+1);
                                 strcpy(latestBuildFoundString,payload.c_str());
                                 if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
-                                    Serial.printf("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+                                    lLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
                                     SystemUpdateAvailiable();
                                 }
                             }
                         } else {
-                            Serial.printf("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                            lLog("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
                             https.end();
                             delete client;
                             return false;
                         }
                         https.end();
                     } else {
-                        Serial.println("SearchUpdate: Unable to connect");
+                        lLog("SearchUpdate: Unable to connect\n");
                         delete client;
                         return false;
                     }
@@ -167,7 +169,7 @@ void SearchUpdateAsNetworkTask() {
                 delete client;
                 return true;
             }
-            Serial.println("Watchface: Weather: Unable to create WiFiClientSecure");
+            lLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
             return false;
         };
         AddNetworkTask(SearchUpdateNetworkTask);
@@ -198,7 +200,7 @@ static void NetworkHandlerTask(void* args) {
                 continue;
             }
             //check the pending tasks... if no one, don't connect
-            Serial.println("Network: Timed WiFi connection procedure begin");
+            lLog("Network: Timed WiFi connection procedure begin\n");
             bool mustStart = false;
 
             for (auto const& tsk : networkPendingTasks) {
@@ -208,7 +210,7 @@ static void NetworkHandlerTask(void* args) {
                 } else {
                     if ( tsk->enabled ) {
                         if ( millis() > tsk->_nextTrigger ) {
-                            Serial.printf("NetworkTask: Pending task '%s'\n", tsk->name);
+                            lLog("NetworkTask: Pending task '%s'\n", tsk->name);
                             mustStart = true;
                         }
                     } 
@@ -216,15 +218,15 @@ static void NetworkHandlerTask(void* args) {
                 tsk->_lastCheck = millis();
             }
             if ( mustStart ) {
-                Serial.println("Network: BLE must be disabled to maximize WiFi effort");
+                lLog("Network: BLE must be disabled to maximize WiFi effort\n");
                 if ( bleEnabled ) { StopBLE(); }
                 delay(100);
                 WiFi.begin();
                 //WiFi.setAutoReconnect(false);
             } else {
-                Serial.println("Network: No tasks pending for this period... don't launch WiFi");
+                lLog("Network: No tasks pending for this period... don't launch WiFi\n");
                 for (auto const& tsk : networkPendingTasks) {
-                    Serial.printf("NetworkTask: Task '%s' In: %d secs\n", tsk->name, (tsk->_nextTrigger-millis())/1000);
+                    lLog("NetworkTask: Task '%s' In: %d secs\n", tsk->name, (tsk->_nextTrigger-millis())/1000);
                 }
             }
             nextConnectMS = millis()+ReconnectPeriodMs;
@@ -273,20 +275,20 @@ static void NetworkHandlerTask(void* args) {
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
                             delay(150);
-                            Serial.printf("NetworkTask: Running task '%s'...\n", tsk->name);
+                            lLog("NetworkTask: Running task '%s'...\n", tsk->name);
                             bool res = tsk->callback();
                             if ( res ) {
                                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                 tsk->_lastCheck = millis();
                             } else { 
                                 failedTasks.push_back(tsk);
-                                Serial.printf("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
+                                lLog("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
                             }
                         }
                     }
                 }
                 if ( failedTasks.size() > 0 ) {
-                    Serial.println("NetworkTask: Retrying failed tasks...");
+                    lLog("NetworkTask: Retrying failed tasks...\n");
                     delay(1000);
                     for (auto const& tsk : failedTasks) {
                         if ( -1 == tsk->_nextTrigger ) {
@@ -294,13 +296,13 @@ static void NetworkHandlerTask(void* args) {
                         } else {
                             if ( millis() > tsk->_nextTrigger ) {
                                 delay(250);
-                                Serial.printf("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
+                                lLog("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
                                 bool res = tsk->callback();
                                 if ( res ) {
                                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                     tsk->_lastCheck = millis();
                                 } else { 
-                                    Serial.printf("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                                    lLog("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
                                 }
                             }
                         }
@@ -310,7 +312,7 @@ static void NetworkHandlerTask(void* args) {
                 delay(100);
                 WiFi.mode(WIFI_OFF);
                 connectedMS = millis()-beginConnected;
-                Serial.printf("Network: WiFi connection: %d sec\n", connectedMS/1000);
+                lLog("Network: WiFi connection: %d sec\n", connectedMS/1000);
             }
             continue;
         }
@@ -399,7 +401,7 @@ void BLELoopTask(void * data) {
                 if ( false == screenShootInProgress ) {
                     theScreenShotToSend = (void*)screenShootCanvas;
                     screenShootInProgress = true;
-                    Serial.println("Network: begin sending screenshoot via BLE UART");
+                    lLog("Network: begin sending screenshoot via BLE UART\n");
                     screenShootCurrentImageY=0;
                     screenShootCurrentImageX=0;
                     networkActivity=true;
@@ -450,7 +452,7 @@ void BLELoopTask(void * data) {
                         }
                         if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
                             realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
-                            Serial.printf("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
+                            lLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
                             delay(100);
                             theScreenShotToSend=nullptr;
                             realImageSize=0;
@@ -474,10 +476,10 @@ void BLELoopTask(void * data) {
         if (!deviceConnected && oldDeviceConnected) {
             screenShootInProgress=false;
             blePeer=false;
-            Serial.println("Network: BLE Device disconnected");
+            lLog("Network: BLE Device disconnected\n");
             delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
-            Serial.println("Network: Start BLE advertising");
+            lLog("Network: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
             networkActivity=false;
         }
@@ -486,7 +488,7 @@ void BLELoopTask(void * data) {
         if (deviceConnected && !oldDeviceConnected) {
             // do stuff here on connecting
             blePeer=true;
-            Serial.println("Network: BLE Device connected");
+            lLog("Network: BLE Device connected\n");
             oldDeviceConnected=deviceConnected;
             networkActivity=true;
         }
@@ -497,7 +499,7 @@ void BLELoopTask(void * data) {
     oldDeviceConnected = false;
     bleServiceRunning=false;
     blePeer = false;
-    Serial.println("BLE: Task ends here");
+    lLog("BLE: Task ends here\n");
     vTaskDelete(NULL);
 }
 
@@ -514,17 +516,17 @@ class MyServerCallbacks: public BLEServerCallbacks {
   /***************** New - Security handled here ********************
   ****** Note: these are the same return values as defaults ********/
     uint32_t onPassKeyRequest(){
-      Serial.println("Server PassKeyRequest");
+      lLog("Server PassKeyRequest\n");
       return 123456; 
     }
 
     bool onConfirmPIN(uint32_t pass_key){
-      Serial.print("The passkey YES/NO number: ");Serial.println(pass_key);
+      lLog("The passkey YES/NO number: %s\n",pass_key);
       return true; 
     }
 
     void onAuthenticationComplete(ble_gap_conn_desc desc){
-      Serial.println("Starting BLE work!");
+      lLog("Starting BLE work!\n");
     }
   /*******************************************************************/
 };
@@ -537,15 +539,15 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             const char * ScreenShootCommand = "GETSCREENSHOOT";
 
             if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
-                Serial.println("BLE: UART: 'GETSCREENSHOOT' command received");
+                lLog("BLE: UART: 'GETSCREENSHOOT' command received\n");
                 BLESendScreenShootCommand = true;
             } else {
                 BLESendScreenShootCommand=false;
-                Serial.printf("BLE: UART Received Value: %c",receivedCommand);
+                lLog("BLE: UART Received Value: %c",receivedCommand);
                 for (int i = 0; i < rxValue.length(); i++) {
-                    Serial.printf("%c",rxValue[i]);
+                    lLog("%c",rxValue[i]);
                 }
-                Serial.println("");
+                lLog("\n");
             }
         }
     }
@@ -557,7 +559,7 @@ void BLEKickAllPeers() {
     std::vector<uint16_t> clients = pServer->getPeerDevices();
     for(uint16_t client : clients) {
         delay(100);
-        Serial.printf("Network: BLE kicking out client %d\n",client);
+        lLog("Network: BLE kicking out client %d\n",client);
         pServer->disconnect(client,0x13); // remote close
         pServer->disconnect(client,0x16); // localhost close
     }
@@ -568,7 +570,7 @@ void BLEKickAllPeers() {
 // https://github.com/h2zero/NimBLE-Arduino
 void StopBLE() {
     if ( false == bleEnabled ) { return; }
-    Serial.println("BLE: Stopping...");
+    lLog("BLE: Stopping...\n");
     BLEKickAllPeers();
     /*
     pServer->removeService(pService,true);
@@ -580,7 +582,7 @@ void StopBLE() {
     */
     bleEnabled = false;
     if ( bleServiceRunning ) {
-        Serial.println("BLE: Waiting service stops...");
+        lLog("BLE: Waiting service stops...\n");
         while(bleServiceRunning) { delay(1); }
     }
     //pService->removeCharacteristic(pTxCharacteristic, true);
@@ -599,7 +601,7 @@ void StartBLE() {
     delay(3000); // wait 3 seconds to enable it
     if ( bleEnabled ) { vTaskDelete(NULL); }
     bleEnabled = true;
-    Serial.println("BLE: Starting...");
+    lLog("BLE: Starting...\n");
     uint8_t BLEAddress[6];
     esp_read_mac(BLEAddress,ESP_MAC_BT);
     char BTName[30] = { 0 };

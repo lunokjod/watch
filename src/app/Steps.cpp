@@ -28,7 +28,7 @@ void InstallStepManager() {
             char keyName[16] = {0};
             sprintf(keyName,"lWSteps_%d",a);
             weekSteps[a] = NVS.getInt(keyName);
-            Serial.printf("LOADING: %s %d\n",keyName,weekSteps[a]);
+            Serial.printf("Steps: Weekday %d stats '%s'=%d\n",a,keyName,weekSteps[a]);
         }
         lastStepsDay = NVS.getInt("lstWeekStp");
 

@@ -26,6 +26,8 @@
 
 #include <HTTPClient.h>
 
+#include "../app/LogView.hpp"
+
 bool systemSleep = false;
 // Event loops
 esp_event_loop_handle_t systemEventloopHandler;
@@ -99,7 +101,7 @@ void RTCIntHandler() {
 }
 */
 void BMPIntHandler() {
-    Serial.println("BMA423: NVS: Loading last session values...");
+    lLog("BMA423: NVS: Loading last session values...\n");
 
     int32_t tempStepCount = NVS.getInt("stepCount");
 
@@ -114,33 +116,33 @@ void BMPIntHandler() {
     unsigned long tempTimeBMAActivityStationary = NVS.getInt("tBMAASta");
     if ( false != tempStepsBMAActivityStationary ) { stepsBMAActivityStationary=tempStepsBMAActivityStationary; }
     if ( false != tempTimeBMAActivityStationary ) { timeBMAActivityStationary=tempTimeBMAActivityStationary; }
-    Serial.printf("BMA423: NVS: Last session stepsBMAActivityStationary = %d\n",stepsBMAActivityStationary);
-    Serial.printf("BMA423: NVS: Last session timeBMAActivityStationary = %lu\n",timeBMAActivityStationary);
+    lLog("BMA423: NVS: Last session stepsBMAActivityStationary = %d\n",stepsBMAActivityStationary);
+    lLog("BMA423: NVS: Last session timeBMAActivityStationary = %lu\n",timeBMAActivityStationary);
     uint32_t tempStepsBMAActivityWalking = NVS.getInt("sBMAAWalk");
     unsigned long tempTimeBMAActivityWalking = NVS.getInt("tBMAAWalk");
     if ( false != tempStepsBMAActivityWalking ) { stepsBMAActivityWalking=tempStepsBMAActivityWalking; }
     if ( false != tempTimeBMAActivityWalking ) { timeBMAActivityWalking=tempTimeBMAActivityWalking; }
-    Serial.printf("BMA423: NVS: Last session stepsBMAActivityWalking = %d\n",stepsBMAActivityWalking);
-    Serial.printf("BMA423: NVS: Last session timeBMAActivityWalking = %lu\n",timeBMAActivityWalking);
+    lLog("BMA423: NVS: Last session stepsBMAActivityWalking = %d\n",stepsBMAActivityWalking);
+    lLog("BMA423: NVS: Last session timeBMAActivityWalking = %lu\n",timeBMAActivityWalking);
     uint32_t tempStepsBMAActivityRunning = NVS.getInt("sBMAARun");
     unsigned long tempTimeBMAActivityRunning = NVS.getInt("tBMAARun");
     if ( false != tempStepsBMAActivityRunning ) { stepsBMAActivityRunning=tempStepsBMAActivityRunning; }
     if ( false != tempTimeBMAActivityRunning ) { timeBMAActivityRunning=tempTimeBMAActivityRunning; }
-    Serial.printf("BMA423: NVS: Last session stepsBMAActivityRunning = %d\n",stepsBMAActivityRunning);
-    Serial.printf("BMA423: NVS: Last session timeBMAActivityRunning = %lu\n",timeBMAActivityRunning);
+    lLog("BMA423: NVS: Last session stepsBMAActivityRunning = %d\n",stepsBMAActivityRunning);
+    lLog("BMA423: NVS: Last session timeBMAActivityRunning = %lu\n",timeBMAActivityRunning);
     uint32_t tempStepsBMAActivityNone = NVS.getInt("sBMAANone");
     unsigned long tempTimeBMAActivityNone = NVS.getInt("tBMAANone");
     if ( false != tempStepsBMAActivityNone ) { stepsBMAActivityNone=tempStepsBMAActivityNone; }
     if ( false != tempTimeBMAActivityNone ) { timeBMAActivityNone=tempTimeBMAActivityNone; }
-    Serial.printf("BMA423: NVS: Last session stepsBMAActivityNone = %d\n",stepsBMAActivityNone);
-    Serial.printf("BMA423: NVS: Last session timeBMAActivityNone = %lu\n",timeBMAActivityNone);
+    lLog("BMA423: NVS: Last session stepsBMAActivityNone = %d\n",stepsBMAActivityNone);
+    lLog("BMA423: NVS: Last session timeBMAActivityNone = %lu\n",timeBMAActivityNone);
 
-    Serial.printf("BMA423: NVS: Last session tempStepCount: %d\n",tempStepCount);
+    lLog("BMA423: NVS: Last session tempStepCount: %d\n",tempStepCount);
     
     if ( 0 != tempStepCount ) {
         lastBootStepCount = tempStepCount;
         stepCount = lastBootStepCount;
-        Serial.printf("BMA423: NVS: Last session stepCount: %d\n",stepCount);
+        lLog("BMA423: NVS: Last session stepCount: %d\n",stepCount);
     }
 
     if ( false != tempAccXMax ) { accXMax=tempAccXMax; }
@@ -150,11 +152,11 @@ void BMPIntHandler() {
     if ( false != tempAccZMax ) { accZMax=tempAccZMax; }
     if ( false != tempAccZMin ) { accZMin=tempAccZMin; }
 
-    Serial.printf("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
+    lLog("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
 
-    Serial.printf("BMA423: NVS: X(%d/%d) ",accXMax,accXMin);
-    Serial.printf("Y(%d/%d) ",accYMax,accYMin);
-    Serial.printf("Z(%d/%d)\n",accZMax,accZMin);
+    lLog("BMA423: NVS: X(%d/%d) ",accXMax,accXMin);
+    lLog("Y(%d/%d) ",accYMax,accYMin);
+    lLog("Z(%d/%d)\n",accZMax,accZMin);
     // Accel parameter structure
     Acfg cfg;
     /*!
@@ -258,22 +260,22 @@ void WakeUpReason() {
   esp_sleep_wakeup_cause_t wakeup_reason;
 
   wakeup_reason = esp_sleep_get_wakeup_cause();
-  Serial.printf("ESP32 Wake up from: ");
+  lLog("ESP32 Wake up from: ");
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0 :
-        Serial.println("Interrupt triggered on ext0 <-- (PMU) AXP202");
+        lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
         break;
     case ESP_SLEEP_WAKEUP_EXT1 :
         {
-            Serial.printf("Interrupt triggered on ext1 <-- ");
+            lLog("Interrupt triggered on ext1 <-- ");
             uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-            if ( GPIO_SEL_37 == GPIO_reason) { Serial.println("(RTC) PCF8563"); }
-            else if ( GPIO_SEL_38 == GPIO_reason) { Serial.println("(TOUCH) FocalTech"); }
-            else if ( GPIO_SEL_39 == GPIO_reason) { Serial.println("(ACCEL) BMA423"); }
+            if ( GPIO_SEL_37 == GPIO_reason) { lLog("(RTC) PCF8563\n"); }
+            else if ( GPIO_SEL_38 == GPIO_reason) { lLog("(TOUCH) FocalTech\n"); }
+            else if ( GPIO_SEL_39 == GPIO_reason) { lLog("(ACCEL) BMA423\n"); }
             else {
                 //Serial.printf("unexpected (?) GPIO %d reason: %u\n", impliedGPIO, GPIO_reason);
-                Serial.print("WARNING: Unexpected: GPIO ");
-                Serial.println((log(GPIO_reason))/log(2), 0);
+                lLog("WARNING: Unexpected: GPIO\n");
+                //lLog((log(GPIO_reason))/log(2), 0);
             }
             /*
             uint64_t impliedGPIO = (log(GPIO_reason))/log(2);
@@ -288,14 +290,15 @@ void WakeUpReason() {
             */
         }
         break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer");
-        Serial.printf("Event: Forced sample due no user activity for a while (%ds timeout)\n", LUNOKIOT_WAKE_TIME_S);
+    case ESP_SLEEP_WAKEUP_TIMER :
+        lLog("Wakeup caused by timer\n");
+        lLog("Event: Forced sample due no user activity for a while (%ds timeout)\n", LUNOKIOT_WAKE_TIME_S);
         TakeSamples();
         DoSleep();
         break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : lLog("Wakeup caused by touchpad\n"); break;
+    case ESP_SLEEP_WAKEUP_ULP : lLog("Wakeup caused by ULP program\n"); break;
+    default : lLog("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
   }
 }
 uint16_t doSleepThreads=0;
@@ -307,18 +310,18 @@ static void DoSleepTask(void* args) {
         Serial.println("ESP32: DoSleep DISCARDED due network activity");
         vTaskDelete(NULL);
     }*/
-    Serial.println("ESP32: DoSleep Trying to obtain the lock...");
+    lLog("ESP32: DoSleep Trying to obtain the lock...\n");
     bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); // LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS );
     if ( false == done ) {
-        Serial.println("ESP32: DoSleep DISCARDED: already in progress...");
+        lLog("ESP32: DoSleep DISCARDED: already in progress...\n");
         vTaskDelete(NULL);
     }
 
     doSleepThreads++;
-    Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-    Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+    lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+    lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
 
-    Serial.printf("ESP32: DoSleep(%d) began!\n", doSleepThreads);
+    lLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
     ScreenSleep();
 
@@ -330,11 +333,11 @@ static void DoSleepTask(void* args) {
     //Serial.printf("WIFISTATUS: %d\n",WiFi.status());
     //while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
     while ( WL_CONNECTED == WiFi.status()) {
-        Serial.printf("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
+        lLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
         retries--;
         if ( 0 == retries ) {
-            Serial.println("ESP32: System don't end the connection. Forcing WiFI off due timeout");
+            lLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
             WiFi.disconnect(true);
             delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
             break;
@@ -342,7 +345,7 @@ static void DoSleepTask(void* args) {
     }
     WiFi.mode(WIFI_OFF);
     if ( retries < MAXRETRIES ) {
-        Serial.println("ESP32: WiFi released, DoSleep continue...");
+        lLog("ESP32: WiFi released, DoSleep continue...\n");
     }
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
@@ -351,18 +354,18 @@ static void DoSleepTask(void* args) {
     esp_sleep_enable_ext0_wakeup( GPIO_NUM_35, 0);
     esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR*LUNOKIOT_WAKE_TIME_S);
     esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
-    Serial.println("ESP32: -- ZZz --");
+    lLog("ESP32: -- ZZz --\n");
     Serial.flush();
     delay(100);
     esp_light_sleep_start(); // device sleeps now
-    Serial.println("ESP32: -- Wake -- o_O'"); // good morning!!
+    lLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
     systemSleep = false;
 
     xSemaphoreGive( DoSleepTaskSemaphore );
 
     WakeUpReason();
 
-    Serial.printf("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
+    lLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
 
 
     vTaskDelete(NULL);
@@ -397,14 +400,14 @@ static void BMAEventActivity(void* handler_args, esp_event_base_t base, int32_t 
             stepsBMAActivityNone+=totalStepsBMAActivity;
             timeBMAActivityNone += totalBMAActivity;
         }
-        Serial.printf("BMA423: Event: Last actity: %s\n",currentActivity);
-        Serial.printf("BMA423: Event: Current actity: %s\n",nowActivity);
-        Serial.printf("BMA423: Timers:\n");
-        Serial.printf("BMA423:        Stationary: %lu secs (%u steps)\n",timeBMAActivityStationary/1000, stepsBMAActivityStationary );
-        Serial.printf("BMA423:           Walking: %lu secs (%u steps)\n",timeBMAActivityWalking/1000, stepsBMAActivityWalking );
-        Serial.printf("BMA423:           Running: %lu secs (%u steps)\n",timeBMAActivityRunning/1000, stepsBMAActivityRunning );
-        Serial.printf("BMA423:           Invalid: %lu secs (%u steps)\n",timeBMAActivityInvalid/1000, stepsBMAActivityInvalid );
-        Serial.printf("BMA423:              None: %lu secs (%u steps)\n",timeBMAActivityNone/1000, stepsBMAActivityNone );
+        lLog("BMA423: Event: Last actity: %s\n",currentActivity);
+        lLog("BMA423: Event: Current actity: %s\n",nowActivity);
+        lLog("BMA423: Timers:\n");
+        lLog("BMA423:        Stationary: %lu secs (%u steps)\n",timeBMAActivityStationary/1000, stepsBMAActivityStationary );
+        lLog("BMA423:           Walking: %lu secs (%u steps)\n",timeBMAActivityWalking/1000, stepsBMAActivityWalking );
+        lLog("BMA423:           Running: %lu secs (%u steps)\n",timeBMAActivityRunning/1000, stepsBMAActivityRunning );
+        lLog("BMA423:           Invalid: %lu secs (%u steps)\n",timeBMAActivityInvalid/1000, stepsBMAActivityInvalid );
+        lLog("BMA423:              None: %lu secs (%u steps)\n",timeBMAActivityNone/1000, stepsBMAActivityNone );
 
         beginBMAActivity = millis();
         beginStepsBMAActivity = stepCount;
@@ -415,7 +418,7 @@ static void BMAEventActivity(void* handler_args, esp_event_base_t base, int32_t 
     }
 }
 static void BMAEventNoActivity(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    Serial.println("BMA423: Event: No actity");
+    lLog("BMA423: Event: No actity");
     if ( false == ttgo->bl->isOn() ) {
         DoSleep();
     }
@@ -426,7 +429,7 @@ static void BMAEventStepCounter(void* handler_args, esp_event_base_t base, int32
     uint32_t nowSteps = ttgo->bma->getCounter();
     if (nowSteps != (stepCount - lastBootStepCount) ) {
         stepCount = nowSteps + lastBootStepCount;
-        Serial.printf("BMA423: Event: Steps: %d\n",stepCount);
+        lLog("BMA423: Event: Steps: %d\n",stepCount);
     }
     if ( false == ttgo->bl->isOn() ) {
         DoSleep();
@@ -453,13 +456,13 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("tBMAAInvalid",(int64_t)timeBMAActivityInvalid,false);
     NVS.setInt("sBMAANone",stepsBMAActivityNone,false);
     NVS.setInt("tBMAANone",(int64_t)timeBMAActivityNone,false);
-    Serial.printf("DEBUG stepCount: %d\n",stepCount);
+    lLog("DEBUG stepCount: %d\n",stepCount);
     NVS.setInt("stepCount",stepCount,false);
     delay(50);
     bool saved = NVS.commit();
-    if ( false == saved ) { Serial.println("NVS: Unable to commit!! (data lost!)"); }
+    if ( false == saved ) { lLog("NVS: Unable to commit!! (data lost!)\n"); }
     NVS.close();
-    Serial.println("NVS: Closed");
+    lLog("NVS: Closed\n");
     Serial.flush();
 }
 
@@ -479,13 +482,13 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
     if ( millis() > lastPEK ) {
         */
         if ( ttgo->bl->isOn() ) {
-            Serial.println("Event: user wants to put device to sleep");
+            lLog("Event: user wants to put device to sleep\n");
             ScreenSleep();
             LaunchApplication(nullptr);
             delay(20);
             DoSleep();
         } else {
-            Serial.println("Event: user wants to get a screen");
+            lLog("Event: user wants to get a screen\n");
             TakeSamples();
             ScreenWake();
             xTaskCreate(_SendEventWakeTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
@@ -641,7 +644,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
 
 static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     
-    Serial.println("lunokIoT: System event: up and running...");
+    lLog("lunokIoT: System event: up and running...\n");
 /*
 #ifdef LUNOKIOT_WIFI_ENABLED
     if ( provisioned ) {
@@ -653,7 +656,7 @@ static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t 
     LaunchApplication(new Provisioning2Application());
 #else
 */
-    Serial.println("lunokIoT: Launching 'WatchfaceApplication'...");
+    lLog("lunokIoT: Launching 'WatchfaceApplication'...\n");
     LaunchApplication(new WatchfaceApplication());
 //#endif
 
@@ -664,81 +667,81 @@ static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int
     bool identified=false;
     if ( WIFI_PROV_EVENT == base) {
         if ( WIFI_PROV_INIT == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Initialized\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Initialized\n",base);
             identified=true;
         } else if ( WIFI_PROV_START == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Started\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Started\n",base);
             identified=true;
         } else if ( WIFI_PROV_CRED_RECV == id ) {
             wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)event_data;
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n",base,(const char *) wifi_sta_cfg->ssid,(const char *) wifi_sta_cfg->password);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n",base,(const char *) wifi_sta_cfg->ssid,(const char *) wifi_sta_cfg->password);
             identified=true;
         } else if ( WIFI_PROV_CRED_FAIL == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n",base);
             identified=true;
         } else if ( WIFI_PROV_CRED_SUCCESS == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n",base);
             identified=true;
         } else if ( WIFI_PROV_END == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: End\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: End\n",base);
             identified=true;
         } else if ( WIFI_PROV_DEINIT == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi provisioning: Deinit\n",base);
+            lLog("FreeRTOS event:'%s' WiFi provisioning: Deinit\n",base);
             identified=true;
         }
     } else if ( WIFI_EVENT == base) {
         if ( WIFI_EVENT_SCAN_DONE == id ) {
             wifi_event_sta_scan_done_t *scanData = (wifi_event_sta_scan_done_t *)event_data;
             const char * scanDoneStr = (scanData->status?"failed":"done");
-            Serial.printf("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n",base,scanData->scan_id,scanDoneStr,scanData->number);
+            lLog("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n",base,scanData->scan_id,scanDoneStr,scanData->number);
             identified=true;
         } else if ( WIFI_EVENT_STA_START == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi STA: Start\n",base);
+            lLog("FreeRTOS event:'%s' WiFi STA: Start\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_STOP == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi STA: Stop\n",base);
+            lLog("FreeRTOS event:'%s' WiFi STA: Stop\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_CONNECTED == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi STA: Connected\n",base);
+            lLog("FreeRTOS event:'%s' WiFi STA: Connected\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_DISCONNECTED == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi STA: Disconnected\n",base);
+            lLog("FreeRTOS event:'%s' WiFi STA: Disconnected\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_START == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi AP: Start\n",base);
+            lLog("FreeRTOS event:'%s' WiFi AP: Start\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_STOP == id ) {
-            Serial.printf("FreeRTOS event:'%s' WiFi AP: Stop\n",base);
+            lLog("FreeRTOS event:'%s' WiFi AP: Stop\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_STACONNECTED == id ) {
             wifi_event_ap_staconnected_t *apStaData = (wifi_event_ap_staconnected_t *)event_data;
-            Serial.printf("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            lLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
             identified=true;
         } else if ( WIFI_EVENT_AP_STADISCONNECTED == id ) {
             wifi_event_ap_stadisconnected_t *apStaData = (wifi_event_ap_stadisconnected_t *)event_data;
-            Serial.printf("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            lLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
             identified=true;
         }
     } else if ( IP_EVENT == base) {
         if ( IP_EVENT_STA_GOT_IP == id ) {
-            Serial.printf("FreeRTOS event:'%s' Network: IP Obtained\n",base);
+            lLog("FreeRTOS event:'%s' Network: IP Obtained\n",base);
             identified=true;
         } else if ( IP_EVENT_STA_LOST_IP == id ) {
-            Serial.printf("FreeRTOS event:'%s' Network: IP Lost\n",base);
+            lLog("FreeRTOS event:'%s' Network: IP Lost\n",base);
             identified=true;
         } else if ( IP_EVENT_AP_STAIPASSIGNED == id ) {
             ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
             esp_ip4_addr_t newIP = assignedIP->ip;
             unsigned char octet[4]  = {0,0,0,0};
             for (int i=0; i<4; i++) { octet[i] = ( newIP.addr >> (i*8) ) & 0xFF; }
-            Serial.printf("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n",base,octet[0],octet[1],octet[2],octet[3]);
+            lLog("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n",base,octet[0],octet[1],octet[2],octet[3]);
             identified=true;
         }
         
     }
 
     if (false == identified ) {
-        Serial.printf("@TODO lunokIoT: unamanged FreeRTOS event:'%s' id: '%d' \n",base, id);
+        lLog("@TODO lunokIoT: unamanged FreeRTOS event:'%s' id: '%d' \n",base, id);
     }
 }
 
@@ -750,75 +753,75 @@ static void SystemLoopTask(void* args) {
         if ( millis() > nextIntTick ) {
             // check for AXP int's
             if (irqAxp) {
-                Serial.println("CHECK AXP");
+                lLog("CHECK AXP\n");
                 ttgo->power->readIRQ();
                 irqAxp = false;
 
                 if (ttgo->power->isChargingIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery charging");
+                    lLog("AXP202: Battery charging\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isChargingDoneIRQ()){
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery fully charged");
+                    lLog("AXP202: Battery fully charged\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattEnterActivateIRQ()){
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery active");
+                    lLog("AXP202: Battery active\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattExitActivateIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery free");
+                    lLog("AXP202: Battery free\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattPlugInIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery present");
+                    lLog("AXP202: Battery present\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattRemoveIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery removed");
+                    lLog("AXP202: Battery removed\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattTempLowIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery temperature low");
+                    lLog("AXP202: Battery temperature low\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isBattTempHighIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Battery temperature high");
+                    lLog("AXP202: Battery temperature high\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isVbusPlugInIRQ()) {
                     //setCpuFrequencyMhz(240);
                     ttgo->power->clearIRQ();
                     vbusPresent = true;
                     if ( ttgo->bl->isOn() ) { ttgo->setBrightness(255); }
-                    Serial.println("AXP202: Power source");
+                    lLog("AXP202: Power source\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isVbusRemoveIRQ()) {
                     //setCpuFrequencyMhz(80);
                     ttgo->power->clearIRQ();
                     vbusPresent = false;
                     //if ( ttgo->bl->isOn() ) { ttgo->setBrightness(30); }
-                    Serial.println("AXP202: No power");
+                    lLog("AXP202: No power\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isPEKShortPressIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Event PEK Button short press");
+                    lLog("AXP202: Event PEK Button short press\n");
                     Serial.flush();
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isPEKLongtPressIRQ()) {
                     ttgo->power->clearIRQ();
-                    Serial.println("AXP202: Event PEK Button long press");
+                    lLog("AXP202: Event PEK Button long press\n");
                     Serial.flush();
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else {
                     ttgo->power->clearIRQ();
-                    Serial.println("@TODO unknown interrupt call from AXP202 ?...");
+                    lLog("@TODO unknown interrupt call from AXP202 ?...\n");
                 }
                 continue; // this makes go to begin of loop (and check for other interrupts inmediatly)
             }
             // check the BMA int's
             if (irqBMA) {
-                Serial.println("CHECK BMA");
+                lLog("CHECK BMA\n");
                 irqBMA = false;
                 bool  rlst;
                 do {
@@ -835,7 +838,7 @@ static void SystemLoopTask(void* args) {
                 } else if (ttgo->bma->isAnyNoMotion()) {
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else {
-                    Serial.println("@TODO unknown interrupt call from BMA423 ?...");
+                    lLog("@TODO unknown interrupt call from BMA423 ?...\n");
                 }
                 continue; // this makes go to begin of loop (and check for other interrupts inmediatly)
             }
@@ -902,16 +905,12 @@ void SystemEventsStart() {
 
     // Create the event source task with the same priority as the current task
     xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-#ifdef LUNOKIOT_DEBUG
-    Serial.println("lunokIoT: User event loop running");
-#endif
+    lLog("lunokIoT: User event loop running\n");
 
     // get the freeRTOS event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived,NULL));
-#ifdef LUNOKIOT_DEBUG
-    Serial.println("lunokIoT: System event loop running");
-#endif
+    lLog("lunokIoT: System event loop running\n");
 }
 
 /*

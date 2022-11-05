@@ -7,6 +7,7 @@
 #include "../UI.hpp"
 #include "ActiveRect.hpp"
 
+#include "../../app/LogView.hpp"
 
 ActiveRect::ActiveRect(int16_t x,int16_t y, int16_t h, int16_t w, std::function<void ()> tapCallback):
                                     x(x),y(y),h(h),w(w),tapActivityCallback(tapCallback) {
@@ -66,9 +67,9 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
                     // launch the callback!
                     BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
                     if ( res != pdTRUE ) {
-                        Serial.printf("ActiveRect: %p Unable to launch task!\n", this);
-                        Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                        Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                        lLog("ActiveRect: %p Unable to launch task!\n", this);
+                        lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                        lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
                     }
                 }
                 return true;
@@ -86,9 +87,9 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
                 // launch the callback!
                 BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
                 if ( res != pdTRUE ) {
-                    Serial.printf("ActiveRect: %p Unable to launch task!\n", this);
-                    Serial.printf("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                    Serial.printf("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                    lLog("ActiveRect: %p Unable to launch task!\n", this);
+                    lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                    lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
                 }
             }
         }

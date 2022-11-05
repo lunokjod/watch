@@ -7,8 +7,10 @@
 
 #include "../static/img_poweroff_fullscreen.c"
 
-ShutdownApplication::ShutdownApplication(bool restart): restart(restart) {
-    SaveDataBeforeShutdown();
+ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(restart), savedata(savedata) {
+    if ( savedata ) {
+        SaveDataBeforeShutdown();
+    }
 #ifdef LILYGO_WATCH_2020_V3
     ttgo->shake();
 #endif

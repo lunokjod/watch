@@ -12,6 +12,7 @@ class ActivitiesApplication: public LunokIoTApplication {
         int16_t angle;
     public:
         ActivitiesApplication();
+        ~ActivitiesApplication();
         bool Tick();
 };
 
