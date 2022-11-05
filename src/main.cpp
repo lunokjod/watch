@@ -74,7 +74,7 @@ void setup() {
   ttgo->shake();
 #endif
 #endif
-
+  ttgo->rtc->syncToSystem();
 
   // begin system communications with applications and itself (lunokIoT system bus)
   SystemEventsStart();
