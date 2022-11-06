@@ -9,7 +9,7 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_provisioning_48.xbm"
 #include "../static/img_trash_48.xbm"
-#include "../static/img_bluetooh_32.xbm"
+#include "../static/img_bluetooth_32.xbm"
 #include "../static/img_wifi_32.xbm"
 
 #include "WiFiProv.h"
@@ -327,7 +327,7 @@ bool Provisioning2Application::Tick() {
             wifiColor = TFT_DARKGREY; 
             bleColor = TFT_WHITE; 
         }
-        canvas->drawXBitmap(200,26,img_bluetooh_32_bits, img_bluetooh_32_width, img_bluetooh_32_height, bleColor);
+        canvas->drawXBitmap(200,26,img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, bleColor);
         canvas->drawXBitmap(90,30,img_wifi_32_bits, img_wifi_32_width, img_wifi_32_height, wifiColor);
 
         nextRedraw=millis()+(1000/8);

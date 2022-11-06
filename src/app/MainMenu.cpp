@@ -40,6 +40,9 @@
 #include "Activities.hpp"
 #include "../static/img_mainmenu_activity.xbm"
 
+#include "BLEMonitor.hpp"
+
+
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
 #include "Playground0.hpp"
@@ -67,6 +70,7 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+{"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new BLEMonitorApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
     {"Activity",img_mainmenu_activity_bits, img_mainmenu_activity_height, img_mainmenu_activity_width, []() { LaunchApplication(new ActivitiesApplication()); } },

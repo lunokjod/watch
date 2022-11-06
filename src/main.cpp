@@ -26,6 +26,7 @@ TTGOClass *ttgo; // ttgo library shit ;)
 unsigned long currentBootTime = 0; // debug-freak info
 #endif
 extern bool ntpSyncDone;
+extern const char *ntpServer;
 void setup() {
   // for monitoring uptime
   unsigned long setupBeginTime = millis();
@@ -69,6 +70,13 @@ void setup() {
   ttgo->shake();
 #endif
 #endif
+
+    int daylight = NVS.getInt("summerTime");
+    long timezone = NVS.getInt("timezoneTime");
+    lLog("Watchface: Summer time: %s\n",(daylight?"true":"false"));
+    lLog("Watchface: GMT: %d\n",timezone);
+    configTime(timezone*3600, daylight*3600, ntpServer);
+
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) {
       lLog("RTC: The timedate seems valid\n");

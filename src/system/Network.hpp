@@ -2,6 +2,8 @@
 #define __LUNOKIOT__ESP32_NETWORK__SUPPPORT___
 
 #include <functional>
+#include <list>
+#include <NimBLEDevice.h>
 
 // notify to DoSleep they cannot poweroff the ESP
 extern bool networkActivity;
@@ -18,6 +20,19 @@ class NetworkTaskDescriptor {
         void * payload = nullptr;   // @TODO this may be useless
         std::function<bool ()> callback = nullptr; // lambda power
 };
+
+// represent BLE remote devices
+class lBLEDevice {
+    public:
+        NimBLEAddress addr;
+        char * devName = nullptr;
+        unsigned long firstSeen = 0; // @TODO use time_t instead
+        unsigned long lastSeen = 0;
+        size_t seenCount = 0;
+        ~lBLEDevice() { if ( nullptr != devName ) { free(devName); } }
+};
+extern std::list <lBLEDevice*>BLEKnowDevices;
+
 // Install the network loop task scheduler
 bool NetworkHandler();
 // Remove desired task from network pooling

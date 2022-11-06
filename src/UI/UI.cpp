@@ -565,8 +565,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
     
     // When radius is zero only a single
     // point will be printed
-    if (r > 0)
-    {
+    if (r > 0) {
         {
             int curx = x + x_centre;
             int cury = -y + y_centre;

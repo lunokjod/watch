@@ -62,6 +62,8 @@ LogViewApplication::LogViewApplication() {
 }
 
 bool LogViewApplication::Tick() {
+    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
+
     btnBack->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);

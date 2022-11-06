@@ -30,11 +30,12 @@
 ***********************/
 #include "Network.hpp"
 
+#include <functional>
+#include <list>
+#include <NimBLEDevice.h>
+
 #include "lunokiot_config.hpp"
 #include "SystemEvents.hpp"
-
-#include <NimBLEDevice.h>
-#include <NimBLELog.h>
 
 #include <ArduinoNvs.h> // persistent values
 #include <WiFi.h>
@@ -47,11 +48,16 @@
 
 #include "../app/LogView.hpp"
 
+BLEScan *pBLEScan = nullptr;
+int BLEscanTime = 5; //In seconds
+unsigned long BLENextscanTime = 0;
 BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+
+std::list <lBLEDevice*>BLEKnowDevices;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -469,8 +475,18 @@ void BLELoopTask(void * data) {
                 }
             }
         } else {
+            // launch when idle
+            if ( ( false == networkActivity ) && ( BLENextscanTime < millis() )) {
+                if ( false == pBLEScan->isScanning() ) {
+                    //lLog("BLE: Scan...\n");
+                    BLEScanResults foundDevices = pBLEScan->start(BLEscanTime, true);
+                    //lLog("BLE: Devices found: %d\n",foundDevices.getCount());
+                    pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+                }
+                BLENextscanTime=millis()+(BLEscanTime*1000);
+            }
             networkActivity=false;
-            delay(100);
+            //delay(2000);
         }
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
@@ -516,19 +532,54 @@ class MyServerCallbacks: public BLEServerCallbacks {
   /***************** New - Security handled here ********************
   ****** Note: these are the same return values as defaults ********/
     uint32_t onPassKeyRequest(){
-      lLog("Server PassKeyRequest\n");
+      lLog("BLE: Server PassKeyRequest\n");
       return 123456; 
     }
 
     bool onConfirmPIN(uint32_t pass_key){
-      lLog("The passkey YES/NO number: %s\n",pass_key);
+      lLog("BLE: The passkey YES/NO number: '%s'\n",pass_key);
       return true; 
     }
 
     void onAuthenticationComplete(ble_gap_conn_desc desc){
-      lLog("Starting BLE work!\n");
+      lLog("BLE: Starting BLE work!\n");
     }
   /*******************************************************************/
+};
+
+
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice* advertisedDevice) {
+        /* lLog("BLE: '%s' '%s'\n", 
+            advertisedDevice->getAddress().toString().c_str(),
+            advertisedDevice->getName().c_str()
+        ); */
+        bool alreadyKnown = false;
+        for (auto const& dev : BLEKnowDevices) {
+            if ( dev->addr == advertisedDevice->getAddress() ) {
+                lLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times)\n",
+                                        dev->devName,dev->addr.toString().c_str(),
+                                        ((millis()-dev->firstSeen)/1000),
+                                        ((millis()-dev->lastSeen)/1000),
+                                        dev->seenCount);
+                dev->lastSeen = millis();
+                dev->seenCount++;
+                alreadyKnown=true;
+            }
+        }
+
+        if ( false == alreadyKnown ) {
+            lBLEDevice * newDev = new lBLEDevice();
+            newDev->addr =  advertisedDevice->getAddress();
+            newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
+            sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
+            lLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
+            newDev->firstSeen = millis();
+            newDev->lastSeen = newDev->firstSeen;
+            BLEKnowDevices.push_back(newDev);
+        }
+        lLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
+    }
 };
 
 class MyCallbacks: public BLECharacteristicCallbacks {
@@ -537,9 +588,12 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         if (rxValue.length() > 0) {
             const char * receivedCommand = rxValue.c_str();
             const char * ScreenShootCommand = "GETSCREENSHOOT";
+            const char * PushMessageCommand = "PUSHMSG";
 
-            if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
-                lLog("BLE: UART: 'GETSCREENSHOOT' command received\n");
+            if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(ScreenShootCommand))) {
+                lLog("BLE: UART: '%s' command received\n",PushMessageCommand);
+            } else if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
+                lLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
                 BLESendScreenShootCommand = true;
             } else {
                 BLESendScreenShootCommand=false;
@@ -580,11 +634,19 @@ void StopBLE() {
         pTxCharacteristic=nullptr;
     }
     */
+
     bleEnabled = false;
     if ( bleServiceRunning ) {
         lLog("BLE: Waiting service stops...\n");
         while(bleServiceRunning) { delay(1); }
     }
+    if ( nullptr != pBLEScan ) {
+        pBLEScan->stop();
+        //delete pBLEScan;
+        //pBLEScan = nullptr;
+    }
+
+
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
@@ -606,7 +668,7 @@ void StartBLE() {
     esp_read_mac(BLEAddress,ESP_MAC_BT);
     char BTName[30] = { 0 };
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]);
-
+    
     // Create the BLE Device
     BLEDevice::init(BTName);
     //if ( nullptr == pServer ) {
@@ -654,6 +716,14 @@ void StartBLE() {
 
     // Start advertising
     pServer->getAdvertising()->start();
+
+    pBLEScan = BLEDevice::getScan(); //create new scan
+    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+    pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
+    pBLEScan->setInterval(300);
+    pBLEScan->setWindow(299);  // less or equal setInterval value
+
+
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
