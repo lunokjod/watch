@@ -57,7 +57,7 @@ unsigned long nextWatchFaceFullRedraw = 0;
 extern TFT_eSprite *overlay;
 
 // NTP sync data
-const char *ntpServer       = "es.pool.ntp.org";
+const char *ntpServer       = "pool.ntp.org";
 //const long  gmtOffset_sec   = 3600;
 //const int   daylightOffset_sec = 0; // winter
 //const int   daylightOffset_sec = 3600; // summer
@@ -114,27 +114,33 @@ void DrawRainDrops() {
 bool WatchfaceApplication::ParseWeatherData() {
 
     if ( nullptr == weatherReceivedData ) {
-        Serial.println("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''");
+        lLog("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''\n");
         weatherId=-1;
         return false;
     }
     JSONVar myObject = JSON.parse(weatherReceivedData);
     if (JSON.typeof(myObject) == "undefined") {
-        Serial.println("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON:");
+        lLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON");
+#ifdef LUNOKIOT_DEBUG
         Serial.printf("%s\n",weatherReceivedData);
+#endif
         return false;
     }
     if (false == myObject.hasOwnProperty("weather")) {
-        Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found");
+        lLog("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found\n");
+#ifdef LUNOKIOT_DEBUG
         Serial.printf("%s\n",weatherReceivedData);
+#endif
         weatherId=-1;
         return false;
     }
     JSONVar weatherBranch = myObject["weather"][0];
 
     if (false == weatherBranch.hasOwnProperty("description")) {
-        Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found");
+        lLog("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found\n");
+#ifdef LUNOKIOT_DEBUG
         Serial.printf("%s\n",weatherReceivedData);
+#endif
         weatherId=-1;
         return false;
     }
@@ -167,8 +173,10 @@ bool WatchfaceApplication::ParseWeatherData() {
 
 
     if (false == myObject.hasOwnProperty("main")) {
-        Serial.println("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found");
+        lLog("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found\n");
+#ifdef LUNOKIOT_DEBUG
         Serial.printf("%s\n",weatherReceivedData);
+#endif
         return false;
     }
     JSONVar mainBranch = myObject["main"];
@@ -192,14 +200,14 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
             String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String(weatherCity)+"," + String(weatherCountry)  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
             if (https.begin(*client, serverPath)) {
                 // HTTPS
-                Serial.printf("https get '%s'...\n", serverPath.c_str());
+                lLog("https get '%s'...\n", serverPath.c_str());
                 // start connection and send HTTP header
                 int httpCode = https.GET();
 
                 // httpCode will be negative on error
                 if (httpCode > 0) {
                     // HTTP header has been send and Server response header has been handled
-                    Serial.printf("https get code: %d\n", httpCode);
+                    lLog("https get code: %d\n", httpCode);
                     // file found at server
                     if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
                         String payload = https.getString();
@@ -209,18 +217,18 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
                         }
                         weatherReceivedData = (char*)ps_malloc(payload.length()+1);
                         strcpy(weatherReceivedData,payload.c_str());
-                        Serial.printf("Received:\n%s\n",weatherReceivedData);
+                        lLog("Received:\n%s\n",weatherReceivedData);
                         //config.alreadySync = true;
                     }
                 } else {
-                    Serial.printf("http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                    lLog("http get failed, error: %s\n", https.errorToString(httpCode).c_str());
                     https.end();
                     delete client;
                     return false;
                 }
                 https.end();
             } else {
-                Serial.println("Watchface: Weather: http unable to connect");
+                lLog("Watchface: Weather: http unable to connect\n");
                 delete client;
                 return false;
             }
@@ -228,7 +236,7 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
         delete client;
         return true;
     }
-    Serial.println("Watchface: Weather: Unable to create WiFiClientSecure");
+    lLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
     return false;
 }
 
@@ -349,7 +357,9 @@ WatchfaceApplication::WatchfaceApplication() {
             if (httpResponseCode>0) {
                 lLog("Watchface: geoIP HTTP Response code: %d\n",httpResponseCode);
                 String payload = geoIPClient.getString();
+#ifdef LUNOKIOT_DEBUG
                 Serial.println(payload);
+#endif
                 if ( nullptr != geoIPReceivedData ) {
                     free(geoIPReceivedData);
                     geoIPReceivedData = nullptr;
@@ -361,17 +371,23 @@ WatchfaceApplication::WatchfaceApplication() {
                 JSONVar myObject = JSON.parse(geoIPReceivedData);
                 if (JSON.typeof(myObject) == "undefined") {
                     lLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
+#ifdef LUNOKIOT_DEBUG
                     Serial.printf("%s\n",geoIPReceivedData);
+#endif
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_city")) {
                     lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
+#ifdef LUNOKIOT_DEBUG
                     Serial.printf("%s\n",geoIPReceivedData);
+#endif
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_countryCode")) {
                     lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode'\n");
+#ifdef LUNOKIOT_DEBUG
                     Serial.printf("%s\n",geoIPReceivedData);
+#endif
                     return false;
                 }
                 JSONVar cityVar = myObject["geoplugin_city"];

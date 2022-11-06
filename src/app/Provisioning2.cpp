@@ -30,6 +30,8 @@
 #include "esp_system.h"
 #include <ArduinoNvs.h>
 
+#include "LogView.hpp"
+
 // https://github.com/ricmoo/QRCode
 #include <qrcode.h>
 //#define QRVERSION 28  //129x129
@@ -56,7 +58,7 @@ void Provisioning2DestroyNVS() {
     esp_err_t erased = wifi_prov_mgr_reset_provisioning();
     WiFi.mode(WIFI_OFF);
     if ( ESP_OK == erased ) {
-        Serial.println("Provisioning: NVS: Provisioning data destroyed");
+        lLog("Provisioning: NVS: Provisioning data destroyed\n");
         NVS.setInt("provisioned",0);
         provisioned=false;
         LaunchApplication(new ShutdownApplication(true));
@@ -83,23 +85,23 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             //Serial.println(IPAddress(sys_event->event_info.got_ip.ip_info.ip.addr));
             break;
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            Serial.println("Provisioning: Disconnected. Connecting to the AP again... ");
+            lLog("Provisioning: Disconnected. Connecting to the AP again... \n");
             break;
         case ARDUINO_EVENT_PROV_START:
-            Serial.println("Provisioning: Up and ready! use ESP provisining app");
+            lLog("Provisioning: Up and ready! use ESP provisining app\n");
             break;
         case ARDUINO_EVENT_PROV_CRED_RECV: { 
-            Serial.printf("Provisioning: Received Wi-Fi credentials: ");
-            Serial.printf("SSID: '%s' ",(const char *) sys_event->event_info.prov_cred_recv.ssid);
-            Serial.printf("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
+            lLog("Provisioning: Received Wi-Fi credentials:\n");
+            lLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
+            lLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {
-            Serial.printf("Provisioning: Failed, reason: ");
+            lLog("Provisioning: Failed, reason:\n");
             if(sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR) {
-                Serial.println("Wi-Fi AP password incorrect");
+                lLog("Wi-Fi AP password incorrect\n");
             } else {
-                Serial.println("Wi-Fi AP not found");
+                lLog("Wi-Fi AP not found\n");
             }
             Provisioning2DestroyNVS();
             NVS.setInt("provisioned",0);
@@ -108,7 +110,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-            Serial.println("Provisioning Successful");
+            lLog("Provisioning Successful\n");
             if ( nullptr != lastProvisioning2Instance ) {
                 lastProvisioning2Instance->provisioningStarted = false;
                 NVS.setInt("provisioned",1, true);
@@ -116,7 +118,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             }
             break;
         case ARDUINO_EVENT_PROV_END:
-            Serial.println("Provisioning Ends");
+            lLog("Provisioning Ends\n");
             LaunchApplication(new WatchfaceApplication());
             break;
         default:
@@ -157,7 +159,7 @@ void Provisioning2Application::GenerateQRCode() {
     snprintf(wifiCredentials, sizeof(wifiCredentials), "{\"ver\":\"%s\",\"name\":\"%s\"" \
                 ",\"pop\":\"%s\",\"transport\":\"%s\",\"password\":\"%s\"}",
                 PROV_QR_VERSION, service_name, pop, "softap", service_key);
-    Serial.printf("Provisioning: QR: Generated with: '%s' (size: %d)\n",wifiCredentials,strlen(wifiCredentials));
+    lLog("Provisioning: QR: Generated with: '%s' (size: %d)\n",wifiCredentials,strlen(wifiCredentials));
     qrcode_initText(&currentQR, currentQRData, QRVERSION, ECC_LOW, wifiCredentials);
 // ECC_QUARTILE
     for (uint8_t y=0; y < currentQR.size; y++) {
@@ -182,14 +184,14 @@ void Provisioning2Application::GenerateQRCode() {
     // icon
     //currentQRRendered->drawXBitmap((currentQRRendered->width()/2)-(img_provisioning_48_width/2),(currentQRRendered->height()/2)-(img_provisioning_48_height/2), img_provisioning_48_bits, img_provisioning_48_width, img_provisioning_48_height,iconColor); // BRG
 
-   Serial.printf("Provisioning: QR: Version: %d Side: %d Pixelscale: %d\n", QRVERSION, SIDELEN, PIXELSIZE);
+   lLog("Provisioning: QR: Version: %d Side: %d Pixelscale: %d\n", QRVERSION, SIDELEN, PIXELSIZE);
 
 }
 
 Provisioning2Application::~Provisioning2Application() {
     lastProvisioning2Instance = nullptr;
     if ( provisioningStarted ) {
-        Serial.println("Provisioning: Stopping the provisioning...");
+        lLog("Provisioning: Stopping the provisioning...\n");
         Provisioning2Deinit();
     }
     if (nullptr != pop ) { free(pop); pop=nullptr; }
@@ -264,23 +266,23 @@ Provisioning2Application::Provisioning2Application() {
         // https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFiProv/examples/WiFiProv
 
         if ( provisioningStarted ) {
-            Serial.printf("Provisioning: %p: Rejected (already runing)\n",this);
+            lLog("Provisioning: %p: Rejected (already runing)\n",this);
             return;
         }
-        Serial.printf("Provisioning: %p: Starting provisioning procedure...\n",this);
+        lLog("Provisioning: %p: Starting provisioning procedure...\n",this);
         GenerateCredentials();
         GenerateQRCode();
         provisioningStarted = true;
-        Serial.printf("Provisioning: SSID: '%s' PASSWORD: '%s' POP: '%s'\n", service_name, service_key, pop);
+        lLog("Provisioning: SSID: '%s' PASSWORD: '%s' POP: '%s'\n", service_name, service_key, pop);
         if ( useBluetooth ) {
-            Serial.println("Provisioning: Using Bluetooth...");
+            lLog("Provisioning: Using Bluetooth...\n");
 
             // https://github.com/espressif/esp-idf/blob/master/examples/provisioning/wifi_prov_mgr/main/app_main.c#L240
             WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BTDM, WIFI_PROV_SECURITY_1,pop,service_name,service_key);
         } else {
             // SoftAP provisioning
             //WiFi.begin();
-            Serial.println("Provisioning: Using WiFi...");
+            lLog("Provisioning: Using WiFi...\n");
             WiFiProv.beginProvision(WIFI_PROV_SCHEME_SOFTAP, WIFI_PROV_SCHEME_HANDLER_NONE, WIFI_PROV_SECURITY_1,pop,service_name,service_key);
         }
         WiFi.onEvent(Provisioning2_SysProvEvent);

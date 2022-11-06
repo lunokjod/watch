@@ -139,7 +139,7 @@ bool AboutApplication::Tick() {
             //uint16_t percent = (y*100)/perspectiveTextBuffer->canvas->height();
             uint8_t bytepc = ((y*255)/perspectiveTextBuffer->canvas->height());
             float divisor = 1.0+(bytepc/255.0);
-            //Serial.printf("Divisor: %f byte: %d\n", divisor,bytepc);
+            //lLog("Divisor: %f byte: %d\n", divisor,bytepc);
 
             uint16_t dcolor = canvas->alphaBlend(bytepc,TFT_YELLOW,TFT_BLACK); // darken with distance
             for(int32_t x=0;x<perspectiveTextBuffer->canvas->width();x++) {

@@ -7,6 +7,7 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_settime_32.xbm"
 #include "Watchface.hpp"
+#include "LogView.hpp"
 
 SetDateApplication::~SetDateApplication() {
     if ( nullptr != day) { delete day; }
@@ -23,14 +24,14 @@ extern bool ntpSyncDone;
 SetDateApplication::SetDateApplication() {
     day = new MujiValue(0,0,165,120,1,31,TFT_BLACK);
     month = new ValueSelector(120,0,165,120,1,12,TFT_BLACK);
-    Serial.printf("currentDay: %d currentMonth: %d\n",currentDay,currentMonth);
+    lLog("currentDay: %d currentMonth: %d\n",currentDay,currentMonth);
     day->selectedValue = currentDay;
     month->selectedValue = currentMonth+1;
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
-        Serial.println("SetTime: RTC and localtime sync");
+        lLog("SetTime: RTC and localtime sync\n");
         RTC_Date test = ttgo->rtc->getDateTime();
         test.day = day->selectedValue;
         test.month = month->selectedValue;

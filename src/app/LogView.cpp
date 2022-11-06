@@ -44,7 +44,7 @@ void lLog(const char *fmt, ...) {
         xSemaphoreGive( lLogSemaphore );
     } else {
         #ifdef LUNOKIOT_DEBUG
-            Serial.println("UI: last message wasn't included on visual log");
+            Serial.println("UI: last message wasn't included on visual log due draw timeout");
         #endif
     }
     va_end(args);

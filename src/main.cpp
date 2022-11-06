@@ -22,8 +22,6 @@
 
 TTGOClass *ttgo; // ttgo library shit ;)
 
-RTC_DATA_ATTR uint32_t bootCount = 0; // @TODO useless...don't work, why?
-
 #ifdef LUNOKIOT_DEBUG
 unsigned long currentBootTime = 0; // debug-freak info
 #endif
@@ -32,18 +30,15 @@ void setup() {
   // for monitoring uptime
   unsigned long setupBeginTime = millis();
 
-  Serial.begin(115200);
   // do you want debug?
-  #ifdef LUNOKIOT_DEBUG
+  #ifdef LUNOKIOT_SERIAL
+    Serial.begin(115200);
     Serial.setDebugOutput(true);
     esp_log_level_set("*", ESP_LOG_VERBOSE);
   #endif
 
   // announe myself with build information
-#ifdef LUNOKIOT_DEBUG
-  Serial.printf("lunokIoT: 'компаньон' #%d//%s// (boot number %u)\n", LUNOKIOT_BUILD_NUMBER, LUNOKIOT_KEY, bootCount);
-#endif
-  bootCount++;
+  Serial.printf("lunokIoT: 'компаньон' #%d//%s//\n", LUNOKIOT_BUILD_NUMBER, LUNOKIOT_KEY);
   // lilygo Twatch library dependencies
   ttgo = TTGOClass::getWatch();
   ttgo->begin(); //lLog functions become possible beyond here (TFT init)

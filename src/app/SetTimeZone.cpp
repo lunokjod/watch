@@ -7,6 +7,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include <ArduinoNvs.h>
+#include "LogView.hpp"
 
 SetTimeZoneApplication::~SetTimeZoneApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }
@@ -23,8 +24,8 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
     switchDaylight=new SwitchWidget(10,10, [&,this]() { }, canvas->color24to16(0x555f68));
 
     btnSetGMT=new ButtonImageXBMWidget(70,TFT_HEIGHT-69,64,110,[&,this](){
-        Serial.printf("Summer time: %s\n",(switchDaylight->switchEnabled?"true":"false"));
-        Serial.printf("GMT: %d\n",timezoneGMTSelector->selectedValue);
+        lLog("Summer time: %s\n",(switchDaylight->switchEnabled?"true":"false"));
+        lLog("GMT: %d\n",timezoneGMTSelector->selectedValue);
 
         NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
         NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
@@ -36,8 +37,8 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
 
     int daylight = NVS.getInt("summerTime");
     long timezone = NVS.getInt("timezoneTime");
-    Serial.printf("Summer time: %s\n",(daylight?"true":"false"));
-    Serial.printf("GMT: %d\n",timezone);
+    lLog("Summer time: %s\n",(daylight?"true":"false"));
+    lLog("GMT: %d\n",timezone);
     timezoneGMTSelector->selectedValue=timezone;
     switchDaylight->switchEnabled=daylight;
 }

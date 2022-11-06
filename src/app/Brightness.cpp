@@ -29,7 +29,7 @@ bool BrightnessApplication::Tick() {
     bool change = brightGauge->Interact(touched,touchX, touchY);
     if ( change ) {
         uint8_t currentValue = ((360.0/255)*brightGauge->selectedAngle);
-        //Serial.printf("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
+        //lLog("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
         ttgo->setBrightness(currentValue);
     }
     if (millis() > nextRedraw ) {

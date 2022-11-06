@@ -72,7 +72,7 @@
   * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA)
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
 * **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
-
+* **-DLUNOKIOT_SERIAL** Enable serial comms via UART 115200bps (output log)
 ## Common problems:
 ### Build failed: "NO WEATHER KEY FILE FOUND, ABORT BUILD"
  * If you don't have a openweather account get it one and generate a user key
