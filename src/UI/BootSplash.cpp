@@ -18,7 +18,7 @@ extern const uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT
-    lLog("Audio: Not initialized due Silent boot is enabled");
+    lLog("Audio: Not initialized due Silent boot is enabled\n");
     return;
 #endif
 

@@ -11,7 +11,7 @@
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../system/Tasks.hpp"
 #include <ArduinoNvs.h>
-
+#include "LogView.hpp"
 #include "StepsSetup.hpp"
 
 uint8_t userTall = 197;
@@ -28,7 +28,7 @@ void InstallStepManager() {
             char keyName[16] = {0};
             sprintf(keyName,"lWSteps_%d",a);
             weekSteps[a] = NVS.getInt(keyName);
-            Serial.printf("Steps: Weekday %d stats '%s'=%d\n",a,keyName,weekSteps[a]);
+            lLog("Steps: Weekday %d stats '%s'=%d\n",a,keyName,weekSteps[a]);
         }
         lastStepsDay = NVS.getInt("lstWeekStp");
 
@@ -46,10 +46,10 @@ void InstallStepManager() {
             if ( lastStepsDay != tmpTime->tm_wday ) {
                 // run beyond the midnight
                 //if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
-                    Serial.printf("%s: Rotating stepcounter\n",stepsManager->name);
+                    lLog("%s: Rotating stepcounter\n",stepsManager->name);
                     
                     // my weeks begins on monday not sunday
-                    int correctedDay = lastStepsDay-1; // use the last day recorded to save on it
+                    int correctedDay = lastStepsDay; // use the last day recorded to save on it
                     if ( -1 == correctedDay ) { correctedDay=6; }
 
                     weekSteps[correctedDay] = stepCount;
@@ -78,7 +78,7 @@ void InstallStepManager() {
                     for(int a=0;a<7;a++) { // Obtain the last days steps
                         char keyName[16] = {0};
                         sprintf(keyName,"lWSteps_%d",a);
-                        Serial.printf("SAVING: %s %d\n",keyName,weekSteps[a]);
+                        lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
                         NVS.setInt(keyName,weekSteps[a],false);
                     }
                     NVS.setInt("lstWeekStp",lastStepsDay,false);
@@ -193,10 +193,11 @@ bool StepsApplication::Tick() {
         time(&now);
         tmpTime = localtime(&now);
         // my weeks begins on monday not sunday
-        int correctedDay = tmpTime->tm_wday;
-        //if ( -1 == correctedDay ) { correctedDay=6; }
+        int correctedDay = tmpTime->tm_wday-1;
+        //lLog("Steps: WeekDay: %d\n",correctedDay);
+        if ( -1 == correctedDay ) { correctedDay=6; }
         //drawrect under the current week day
-        canvas->fillRect(10+(25*correctedDay),100,25,5,TFT_WHITE);
+        canvas->fillRect(35+(25*correctedDay),100,25,5,TFT_WHITE);
 
 
         uint32_t totalStepsValues = stepsBMAActivityStationary

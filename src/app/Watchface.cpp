@@ -42,6 +42,7 @@
 
 #include "../system/SystemEvents.hpp"
 #include "MainMenu.hpp"
+#include "LogView.hpp"
 
 NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::weatherTask = nullptr;
@@ -274,50 +275,49 @@ WatchfaceApplication::WatchfaceApplication() {
         ntpTask->everyTimeMS = ((1000*60)*60)*24; // once a day
         ntpTask->payload = (void *)this;
         ntpTask->_lastCheck=millis();
-        if ( false == ntpSyncDone ) { 
+        //if ( false == ntpSyncDone ) { 
             ntpTask->_nextTrigger=0; // launch NOW if no synched never again
-        }
+        //}
         ntpTask->callback = [&,this]() {
             if ( false == (bool)NVS.getInt("NTPEnabled")) {
-                Serial.println("Watchface: NTP Sync disabled");
+                lLog("Watchface: NTP Sync disabled");
                 return true;
             }
+            struct tm timeinfo;
+            if (getLocalTime(&timeinfo)) {
+            lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+            }
 
-            Serial.println("Watchface: Trying to sync NTP time...");
+            lLog("Watchface: Trying to sync NTP time...\n");
             //delay(100);
             //init and get the time
             int daylight = NVS.getInt("summerTime");
             long timezone = NVS.getInt("timezoneTime");
-            Serial.printf("Watchface: Summer time: %s\n",(daylight?"true":"false"));
-            Serial.printf("Watchface: GMT: %d\n",timezone);
+            lLog("Watchface: Summer time: %s\n",(daylight?"true":"false"));
+            lLog("Watchface: GMT: %d\n",timezone);
             configTime(timezone*3600, daylight*3600, ntpServer);
-            //timeClient.begin();
             // Set offset time in seconds to adjust for your timezone, for example:
             // GMT +1 = 3600
             // GMT +8 = 28800
             // GMT -1 = -3600
             // GMT 0 = 0
-            /*
-            timeClient.setTimeOffset(0);
-            while(!timeClient.update()) {
-                yield();
-                timeClient.forceUpdate();
-            }
-            */
-            delay(100);
-            struct tm timeinfo;
+            while( false == getLocalTime(&timeinfo,100) ){ delay(100); }
+            lLog("Watchface: NTP Received\n");
             if (getLocalTime(&timeinfo)) {
-                ttgo->rtc->syncToRtc(); // WTF? magic code now works? // old: why don't work as expect? (getLocalTime to RTC)
+                lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+                ttgo->rtc->syncToRtc();
                 RTC_Date d = ttgo->rtc->getDateTime();
+                lLog("RTC: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                /*
                 if (d.year != (timeinfo.tm_year + 1900) || d.month != timeinfo.tm_mon + 1
                                 || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
                                 || d.minute != timeinfo.tm_min) {
-                    Serial.printf("Write RTC Fail: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                    lLog("RTC: Write Fail: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
                     ntpSyncDone = false;
                     return false;
                 }
-                Serial.printf("Write RTC PASS: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
-                Serial.println("NTP sync done!");
+                */
+                lLog("NTP sync done!\n");
                 ntpSyncDone = true;
                 return true;
             }
@@ -337,7 +337,7 @@ WatchfaceApplication::WatchfaceApplication() {
         geoIPTask->callback = [&,this]() {
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
-                Serial.println("Watchface: Openweather Sync disabled (geoip is futile)");
+                lLog("Watchface: Openweather Sync disabled (geoip is futile)\n");
                 return true;
             }
             const char url[]="http://www.geoplugin.net/json.gp";
@@ -347,8 +347,7 @@ WatchfaceApplication::WatchfaceApplication() {
             geoIPClient.begin(url);
             int httpResponseCode = geoIPClient.GET();
             if (httpResponseCode>0) {
-                Serial.print("Watchface: geoIP HTTP Response code: ");
-                Serial.println(httpResponseCode);
+                lLog("Watchface: geoIP HTTP Response code: %d\n",httpResponseCode);
                 String payload = geoIPClient.getString();
                 Serial.println(payload);
                 if ( nullptr != geoIPReceivedData ) {
@@ -361,17 +360,17 @@ WatchfaceApplication::WatchfaceApplication() {
                 }
                 JSONVar myObject = JSON.parse(geoIPReceivedData);
                 if (JSON.typeof(myObject) == "undefined") {
-                    Serial.println("Watchface: ERROR: geoIP JSON parsing: malformed JSON:");
+                    lLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
                     Serial.printf("%s\n",geoIPReceivedData);
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_city")) {
-                    Serial.println("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city':");
+                    lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
                     Serial.printf("%s\n",geoIPReceivedData);
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_countryCode")) {
-                    Serial.println("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode':");
+                    lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode'\n");
                     Serial.printf("%s\n",geoIPReceivedData);
                     return false;
                 }
@@ -392,8 +391,7 @@ WatchfaceApplication::WatchfaceApplication() {
                 strcpy(weatherCountry,countryString);
                 strcpy(weatherCity,cityString);
             } else {
-                Serial.print("Watchface: ERROR: geoIP Error code: ");
-                Serial.println(httpResponseCode);
+                lLog("Watchface: ERROR: geoIP Error code: %d\n",httpResponseCode);
                 return false;
             }
             // Free resources
@@ -415,7 +413,7 @@ WatchfaceApplication::WatchfaceApplication() {
             weatherSyncDone = false;
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
-                Serial.println("Watchface: Openweather Sync disabled");
+                lLog("Watchface: Openweather Sync disabled\n");
                 return true;
             }
             bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
@@ -438,7 +436,7 @@ WatchfaceApplication::WatchfaceApplication() {
     topRightButton = new ActiveRect(160,0,80,80,[&, this]() {
         if ( pendingNotifications > 0 ) { pendingNotifications=0;}
         else { pendingNotifications = random(1,10); }
-        Serial.println("@TODO THIS IS A TEST");
+        lLog("Watchface: pushed area @TODO THIS IS A TEST");
         // must show number of notifications pending
 
         //LaunchApplication(new SOMEAPPTOREADNOTIFICATIONS_@TODO());
@@ -469,8 +467,7 @@ WatchfaceApplication::~WatchfaceApplication() {
         minuteClockHandCache->deleteSprite();
         delete minuteClockHandCache;
     }
-
-    Serial.printf("WatchfaceApplication: %p Ends here\n",this);
+    lLog("WatchfaceApplication: %p Ends here\n",this);
 }
 extern bool bleEnabled; //@TODO this is a crap!!!
 extern bool bleServiceRunning; //@TODO this is a crap!!!
@@ -870,20 +867,19 @@ bool WatchfaceApplication::Tick() {
         }
         watchFaceCanvas->canvas->fillSprite(TFT_BLACK);
         const float ROTATION = (360/24);
-        // already NTP sync done?
-        //if ( ntpSyncDone ) {
-            // get current timedate
-            time_t now;
-            struct tm * tmpTime;
-            time(&now);
-            tmpTime = localtime(&now);
-            memcpy(&timeinfo,tmpTime, sizeof(struct tm));
-            cycleHour = ROTATION*(timeinfo.tm_hour);
-            currentSec=timeinfo.tm_sec;
-            currentMin=timeinfo.tm_min;
-            currentHour=timeinfo.tm_hour;
-            currentDay=timeinfo.tm_mday;
-            currentMonth=timeinfo.tm_mon;
+        // @TODO this code is a crap!!!
+        // get current timedate
+        time_t now;
+        struct tm * tmpTime;
+        time(&now);
+        tmpTime = localtime(&now);
+        memcpy(&timeinfo,tmpTime, sizeof(struct tm));
+        cycleHour = ROTATION*(timeinfo.tm_hour);
+        currentSec=timeinfo.tm_sec;
+        currentMin=timeinfo.tm_min;
+        currentHour=timeinfo.tm_hour;
+        currentDay=timeinfo.tm_mday;
+        currentMonth=timeinfo.tm_mon;
 
             /*
             if (getLocalTime(&timeinfo,10)) {
@@ -892,8 +888,6 @@ bool WatchfaceApplication::Tick() {
                 currentMin=timeinfo.tm_min;
                 currentHour=timeinfo.tm_hour;
             }*/
-
-        //}
 
 
 

@@ -3,6 +3,8 @@
 #include "CanvasWidget.hpp"
 #include "../activator/ActiveRect.hpp"
 
+#include "../../app/LogView.hpp"
+
 extern TFT_eSprite *overlay;
 
 CanvasWidget::CanvasWidget(int16_t h, int16_t w) {
@@ -30,7 +32,7 @@ CanvasWidget::~CanvasWidget() {
         this->canvas = nullptr;
         tmp->deleteSprite();
         delete tmp;
-        Serial.printf("Destroyed canvas: %p\n", this);
+        lLog("Destroyed canvas: %p\n", this);
     }
 }
 

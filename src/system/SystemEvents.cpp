@@ -359,9 +359,6 @@ static void DoSleepTask(void* args) {
     delay(100);
     esp_light_sleep_start(); // device sleeps now
     lLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
-    if ( ttgo->rtc->isValid() ) {
-        ttgo->rtc->syncToSystem();
-    }
     systemSleep = false;
 
     xSemaphoreGive( DoSleepTaskSemaphore );

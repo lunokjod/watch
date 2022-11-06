@@ -35,7 +35,6 @@ SetTimeApplication::SetTimeApplication() {
         test.hour = hour->selectedValue;
         test.minute = minute->selectedValue;
         ttgo->rtc->setDateTime(test);
-        //ttgo->rtc->syncToRtc();
         ttgo->rtc->syncToSystem();
         currentHour = hour->selectedValue;
         currentMin = minute->selectedValue;

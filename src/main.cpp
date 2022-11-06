@@ -27,7 +27,7 @@ RTC_DATA_ATTR uint32_t bootCount = 0; // @TODO useless...don't work, why?
 #ifdef LUNOKIOT_DEBUG
 unsigned long currentBootTime = 0; // debug-freak info
 #endif
-
+extern bool ntpSyncDone;
 void setup() {
   // for monitoring uptime
   unsigned long setupBeginTime = millis();
@@ -74,10 +74,16 @@ void setup() {
   ttgo->shake();
 #endif
 #endif
+    struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) {
-        ttgo->rtc->syncToSystem();
+      lLog("RTC: The timedate seems valid\n");
+      RTC_Date r = ttgo->rtc->getDateTime();
+      lLog("RTC: time: %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
+      ttgo->rtc->syncToSystem();
+      if (getLocalTime(&timeinfo)) {
+        lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+      }
     }
-
   // begin system communications with applications and itself (lunokIoT system bus)
   SystemEventsStart();
 

@@ -2,6 +2,7 @@
 #include <LilyGoWatch.h>
 #include "CanvasZWidget.hpp"
 #include "../UI.hpp"
+#include "../../app/LogView.hpp"
 
 CanvasZWidget::CanvasZWidget(int16_t h, int16_t w, float z): CanvasWidget(h,w),z(z){
     // parent do all the work
@@ -13,7 +14,7 @@ CanvasZWidget::~CanvasZWidget() {
         this->canvas = nullptr;
         tmp->deleteSprite();
         delete tmp;
-        Serial.printf("Destroyed canvas: %p\n", this);
+        lLog("Destroyed canvas: %p\n", this);
     }
 }
 TFT_eSprite * CanvasZWidget::GetScaledImageClipped(float scale,int16_t maxW, int16_t maxH) {
