@@ -82,7 +82,7 @@ std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
  * Stop desired task from network scheduler
  */
 bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk) {
-    lLog("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
+    lNetLog("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
     networkPendingTasks.remove(oldTsk);
     return true;
 }
@@ -94,13 +94,13 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     size_t offset = 0;
     for (auto const& tsk : networkPendingTasks) {
         if ( tsk == nuTsk ) {
-            lLog("AddNetworkTask: Task %p '%s' already on the list (offset: %d)\n", tsk,tsk->name, offset);
+            lNetLog("AddNetworkTask: Task %p '%s' already on the list (offset: %d)\n", tsk,tsk->name, offset);
             return false;
         }
         offset++;
     }
     networkPendingTasks.push_back(nuTsk);
-    lLog("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
+    lNetLog("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
     return true;
 }
 /*
@@ -137,14 +137,14 @@ void SearchUpdateAsNetworkTask() {
                     String serverPath = LastVersionURL;
                     if (https.begin(*client, serverPath)) {
                         // HTTPS
-                        lLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
+                        lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
                         // start connection and send HTTP header
                         int httpCode = https.GET();
 
                         // httpCode will be negative on error
                         if (httpCode > 0) {
                             // HTTP header has been send and Server response header has been handled
-                            lLog("SearchUpdate: https get code: %d\n", httpCode);
+                            lNetLog("SearchUpdate: https get code: %d\n", httpCode);
                             // file found at server
                             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
                                 String payload = https.getString();
@@ -155,19 +155,19 @@ void SearchUpdateAsNetworkTask() {
                                 latestBuildFoundString = (char*)ps_malloc(payload.length()+1);
                                 strcpy(latestBuildFoundString,payload.c_str());
                                 if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
-                                    lLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+                                    lNetLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
                                     SystemUpdateAvailiable();
                                 }
                             }
                         } else {
-                            lLog("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                            lNetLog("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
                             https.end();
                             delete client;
                             return false;
                         }
                         https.end();
                     } else {
-                        lLog("SearchUpdate: Unable to connect\n");
+                        lNetLog("SearchUpdate: Unable to connect\n");
                         delete client;
                         return false;
                     }
@@ -175,7 +175,7 @@ void SearchUpdateAsNetworkTask() {
                 delete client;
                 return true;
             }
-            lLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
+            lNetLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
             return false;
         };
         AddNetworkTask(SearchUpdateNetworkTask);
@@ -206,7 +206,7 @@ static void NetworkHandlerTask(void* args) {
                 continue;
             }
             //check the pending tasks... if no one, don't connect
-            lLog("Network: Timed WiFi connection procedure begin\n");
+            lNetLog("Network: Timed WiFi connection procedure begin\n");
             bool mustStart = false;
 
             for (auto const& tsk : networkPendingTasks) {
@@ -216,7 +216,7 @@ static void NetworkHandlerTask(void* args) {
                 } else {
                     if ( tsk->enabled ) {
                         if ( millis() > tsk->_nextTrigger ) {
-                            lLog("NetworkTask: Pending task '%s'\n", tsk->name);
+                            lNetLog("NetworkTask: Pending task '%s'\n", tsk->name);
                             mustStart = true;
                         }
                     } 
@@ -224,15 +224,15 @@ static void NetworkHandlerTask(void* args) {
                 tsk->_lastCheck = millis();
             }
             if ( mustStart ) {
-                lLog("Network: BLE must be disabled to maximize WiFi effort\n");
+                lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
                 if ( bleEnabled ) { StopBLE(); }
                 delay(100);
                 WiFi.begin();
                 //WiFi.setAutoReconnect(false);
             } else {
-                lLog("Network: No tasks pending for this period... don't launch WiFi\n");
+                lNetLog("Network: No tasks pending for this period... don't launch WiFi\n");
                 for (auto const& tsk : networkPendingTasks) {
-                    lLog("NetworkTask: Task '%s' In: %d secs\n", tsk->name, (tsk->_nextTrigger-millis())/1000);
+                    lNetLog("NetworkTask: Task '%s' In: %d secs\n", tsk->name, (tsk->_nextTrigger-millis())/1000);
                 }
             }
             nextConnectMS = millis()+ReconnectPeriodMs;
@@ -281,20 +281,20 @@ static void NetworkHandlerTask(void* args) {
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
                             delay(150);
-                            lLog("NetworkTask: Running task '%s'...\n", tsk->name);
+                            lNetLog("NetworkTask: Running task '%s'...\n", tsk->name);
                             bool res = tsk->callback();
                             if ( res ) {
                                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                 tsk->_lastCheck = millis();
                             } else { 
                                 failedTasks.push_back(tsk);
-                                lLog("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
+                                lNetLog("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
                             }
                         }
                     }
                 }
                 if ( failedTasks.size() > 0 ) {
-                    lLog("NetworkTask: Retrying failed tasks...\n");
+                    lNetLog("NetworkTask: Retrying failed tasks...\n");
                     delay(1000);
                     for (auto const& tsk : failedTasks) {
                         if ( -1 == tsk->_nextTrigger ) {
@@ -302,13 +302,13 @@ static void NetworkHandlerTask(void* args) {
                         } else {
                             if ( millis() > tsk->_nextTrigger ) {
                                 delay(250);
-                                lLog("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
+                                lNetLog("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
                                 bool res = tsk->callback();
                                 if ( res ) {
                                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                     tsk->_lastCheck = millis();
                                 } else { 
-                                    lLog("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                                    lNetLog("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
                                 }
                             }
                         }
@@ -318,7 +318,7 @@ static void NetworkHandlerTask(void* args) {
                 delay(100);
                 WiFi.mode(WIFI_OFF);
                 connectedMS = millis()-beginConnected;
-                lLog("Network: WiFi connection: %d sec\n", connectedMS/1000);
+                lNetLog("Network: WiFi connection: %d sec\n", connectedMS/1000);
             }
             continue;
         }
@@ -407,7 +407,7 @@ void BLELoopTask(void * data) {
                 if ( false == screenShootInProgress ) {
                     theScreenShotToSend = (void*)screenShootCanvas;
                     screenShootInProgress = true;
-                    lLog("Network: begin sending screenshoot via BLE UART\n");
+                    lNetLog("Network: begin sending screenshoot via BLE UART\n");
                     screenShootCurrentImageY=0;
                     screenShootCurrentImageX=0;
                     networkActivity=true;
@@ -458,7 +458,7 @@ void BLELoopTask(void * data) {
                         }
                         if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
                             realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
-                            lLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
+                            lNetLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
                             delay(100);
                             theScreenShotToSend=nullptr;
                             realImageSize=0;
@@ -479,10 +479,10 @@ void BLELoopTask(void * data) {
         if (!deviceConnected && oldDeviceConnected) {
             screenShootInProgress=false;
             blePeer=false;
-            lLog("Network: BLE Device disconnected\n");
+            lNetLog("Network: BLE Device disconnected\n");
             delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
-            lLog("Network: Start BLE advertising\n");
+            lNetLog("Network: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
             networkActivity=false;
         }
@@ -491,7 +491,7 @@ void BLELoopTask(void * data) {
         if (deviceConnected && !oldDeviceConnected) {
             // do stuff here on connecting
             blePeer=true;
-            lLog("Network: BLE Device connected\n");
+            lNetLog("Network: BLE Device connected\n");
             oldDeviceConnected=deviceConnected;
             networkActivity=true;
         }
@@ -502,7 +502,7 @@ void BLELoopTask(void * data) {
     oldDeviceConnected = false;
     bleServiceRunning=false;
     blePeer = false;
-    lLog("BLE: Task ends here\n");
+    lNetLog("BLE: Task ends here\n");
     vTaskDelete(NULL);
 }
 
@@ -519,17 +519,17 @@ class MyServerCallbacks: public BLEServerCallbacks {
   /***************** New - Security handled here ********************
   ****** Note: these are the same return values as defaults ********/
     uint32_t onPassKeyRequest(){
-      lLog("BLE: Server PassKeyRequest\n");
+      lNetLog("BLE: Server PassKeyRequest\n");
       return 123456; 
     }
 
     bool onConfirmPIN(uint32_t pass_key){
-      lLog("BLE: The passkey YES/NO number: '%s'\n",pass_key);
+      lNetLog("BLE: The passkey YES/NO number: '%s'\n",pass_key);
       return true; 
     }
 
     void onAuthenticationComplete(ble_gap_conn_desc desc){
-      lLog("BLE: Starting BLE work!\n");
+      lNetLog("BLE: Starting BLE work!\n");
     }
   /*******************************************************************/
 };
@@ -544,7 +544,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         bool alreadyKnown = false;
         for (auto const& dev : BLEKnowDevices) {
             if ( dev->addr == advertisedDevice->getAddress() ) {
-                lLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times)\n",
+                lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times)\n",
                                         dev->devName,dev->addr.toString().c_str(),
                                         ((millis()-dev->firstSeen)/1000),
                                         ((millis()-dev->lastSeen)/1000),
@@ -561,13 +561,13 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
             newDev->addr =  advertisedDevice->getAddress();
             newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
             sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
-            lLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
+            lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
             newDev->rssi = advertisedDevice->getRSSI();
             newDev->firstSeen = millis();
             newDev->lastSeen = newDev->firstSeen;
             BLEKnowDevices.push_back(newDev);
         }
-        lLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
+        lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
     }
 };
 
@@ -580,17 +580,17 @@ class MyCallbacks: public BLECharacteristicCallbacks {
             const char * PushMessageCommand = "PUSHMSG";
 
             if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(ScreenShootCommand))) {
-                lLog("BLE: UART: '%s' command received\n",PushMessageCommand);
+                lNetLog("BLE: UART: '%s' command received\n",PushMessageCommand);
             } else if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
-                lLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
+                lNetLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
                 BLESendScreenShootCommand = true;
             } else {
                 BLESendScreenShootCommand=false;
-                lLog("BLE: UART Received Value: %c",receivedCommand);
+                lNetLog("BLE: UART Received Value: %c",receivedCommand);
                 for (int i = 0; i < rxValue.length(); i++) {
-                    lLog("%c",rxValue[i]);
+                    lNetLog("%c",rxValue[i]);
                 }
-                lLog("\n");
+                lNetLog("\n");
             }
         }
     }
@@ -602,7 +602,7 @@ void BLEKickAllPeers() {
     std::vector<uint16_t> clients = pServer->getPeerDevices();
     for(uint16_t client : clients) {
         delay(100);
-        lLog("Network: BLE kicking out client %d\n",client);
+        lNetLog("Network: BLE kicking out client %d\n",client);
         pServer->disconnect(client,0x13); // remote close
         pServer->disconnect(client,0x16); // localhost close
     }
@@ -613,7 +613,7 @@ void BLEKickAllPeers() {
 // https://github.com/h2zero/NimBLE-Arduino
 void StopBLE() {
     if ( false == bleEnabled ) { return; }
-    lLog("BLE: Stopping...\n");
+    lNetLog("BLE: Stopping...\n");
     BLEKickAllPeers();
     /*
     pServer->removeService(pService,true);
@@ -624,7 +624,7 @@ void StopBLE() {
     }
     */
     if ( ( nullptr != pBLEScan ) && (pBLEScan->isScanning())) {
-        lLog("BLE: Waiting scan stops...\n");
+        lNetLog("BLE: Waiting scan stops...\n");
         pBLEScan->stop();
         pBLEScan->clearResults();
         delay(100);
@@ -632,7 +632,7 @@ void StopBLE() {
 
     bleEnabled = false;
     if ( bleServiceRunning ) {
-        lLog("BLE: Waiting service stops...\n");
+        lNetLog("BLE: Waiting service stops...\n");
         while(bleServiceRunning) { delay(1); }
     }
 
@@ -654,7 +654,7 @@ void StartBLE() {
     delay(3000); // wait 3 seconds to enable it
     //if ( bleEnabled ) { vTaskDelete(NULL); }
     bleEnabled = true;
-    lLog("BLE: Starting...\n");
+    lNetLog("BLE: Starting...\n");
     uint8_t BLEAddress[6];
     esp_read_mac(BLEAddress,ESP_MAC_BT);
     char BTName[30] = { 0 };
@@ -713,8 +713,7 @@ void StartBLE() {
     pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
     pBLEScan->setInterval(300);
     pBLEScan->setWindow(290);  // less or equal setInterval value
-
-
+    pBLEScan->setMaxResults(8);
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 

@@ -66,7 +66,10 @@
  * **-DLILYGO_WATCH_2020_V3** change with your version (lilygo library driven) please report issues :)
 * **-DLOG_LOCAL_LEVEL=ESP_LOG_VERBOSE** esp-idf debug shit
 * **-DLUNOKIOT_DEBUG** generic system debug messages
+* **-DLUNOKIOT_DEBUG_APPLICATION** allow use of lAppLog()
+* **-DLUNOKIOT_DEBUG_EVENTS** System events specific debug messages
 * **-DLUNOKIOT_DEBUG_UI** UI specific debug messages
+* **-DLUNOKIOT_DEBUG_NETWORK** Network specific debug messages
 * **-DLUNOKIOT_SILENT_BOOT** dont shake and no fanfare sound when start/stop
 * **-DLUNOKIOT_WIFI_ENABLED** start the wifi timed connection subsystem
   * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA)

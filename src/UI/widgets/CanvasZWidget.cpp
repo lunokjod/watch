@@ -14,7 +14,7 @@ CanvasZWidget::~CanvasZWidget() {
         this->canvas = nullptr;
         tmp->deleteSprite();
         delete tmp;
-        lLog("Destroyed canvas: %p\n", this);
+        lUILog("Destroyed canvas: %p\n", this);
     }
 }
 TFT_eSprite * CanvasZWidget::GetScaledImageClipped(float scale,int16_t maxW, int16_t maxH) {

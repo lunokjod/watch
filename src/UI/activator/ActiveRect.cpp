@@ -67,9 +67,9 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
                     // launch the callback!
                     BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
                     if ( res != pdTRUE ) {
-                        lLog("ActiveRect: %p Unable to launch task!\n", this);
-                        lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                        lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                        lUILog("ActiveRect: %p Unable to launch task!\n", this);
+                        lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                        lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
                     }
                 }
                 return true;
@@ -87,9 +87,9 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
                 // launch the callback!
                 BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
                 if ( res != pdTRUE ) {
-                    lLog("ActiveRect: %p Unable to launch task!\n", this);
-                    lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                    lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+                    lUILog("ActiveRect: %p Unable to launch task!\n", this);
+                    lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                    lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
                 }
             }
         }

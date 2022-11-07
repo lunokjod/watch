@@ -114,21 +114,21 @@ void DrawRainDrops() {
 bool WatchfaceApplication::ParseWeatherData() {
 
     if ( nullptr == weatherReceivedData ) {
-        lLog("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''\n");
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''\n");
         weatherId=-1;
         return false;
     }
     JSONVar myObject = JSON.parse(weatherReceivedData);
     if (JSON.typeof(myObject) == "undefined") {
-        lLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON");
-#ifdef LUNOKIOT_DEBUG
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON");
+#ifdef LUNOKIOT_DEBUG_NETWORK
         Serial.printf("%s\n",weatherReceivedData);
 #endif
         return false;
     }
     if (false == myObject.hasOwnProperty("weather")) {
-        lLog("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found\n");
-#ifdef LUNOKIOT_DEBUG
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found\n");
+#ifdef LUNOKIOT_DEBUG_NETWORK
         Serial.printf("%s\n",weatherReceivedData);
 #endif
         weatherId=-1;
@@ -137,8 +137,8 @@ bool WatchfaceApplication::ParseWeatherData() {
     JSONVar weatherBranch = myObject["weather"][0];
 
     if (false == weatherBranch.hasOwnProperty("description")) {
-        lLog("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found\n");
-#ifdef LUNOKIOT_DEBUG
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found\n");
+#ifdef LUNOKIOT_DEBUG_NETWORK
         Serial.printf("%s\n",weatherReceivedData);
 #endif
         weatherId=-1;
@@ -173,7 +173,7 @@ bool WatchfaceApplication::ParseWeatherData() {
 
 
     if (false == myObject.hasOwnProperty("main")) {
-        lLog("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found\n");
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found\n");
 #ifdef LUNOKIOT_DEBUG
         Serial.printf("%s\n",weatherReceivedData);
 #endif
@@ -200,14 +200,14 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
             String serverPath = "https://api.openweathermap.org/data/2.5/weather?q="+String(weatherCity)+"," + String(weatherCountry)  + String("&units=metric") + String("&APPID=") + String(openWeatherMapApiKey); // + String("&lang=") + String("ca");
             if (https.begin(*client, serverPath)) {
                 // HTTPS
-                lLog("https get '%s'...\n", serverPath.c_str());
+                lNetLog("https get '%s'...\n", serverPath.c_str());
                 // start connection and send HTTP header
                 int httpCode = https.GET();
 
                 // httpCode will be negative on error
                 if (httpCode > 0) {
                     // HTTP header has been send and Server response header has been handled
-                    lLog("https get code: %d\n", httpCode);
+                    lNetLog("https get code: %d\n", httpCode);
                     // file found at server
                     if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
                         String payload = https.getString();
@@ -217,18 +217,18 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
                         }
                         weatherReceivedData = (char*)ps_malloc(payload.length()+1);
                         strcpy(weatherReceivedData,payload.c_str());
-                        lLog("Received:\n%s\n",weatherReceivedData);
+                        lNetLog("Received:\n%s\n",weatherReceivedData);
                         //config.alreadySync = true;
                     }
                 } else {
-                    lLog("http get failed, error: %s\n", https.errorToString(httpCode).c_str());
+                    lNetLog("http get failed, error: %s\n", https.errorToString(httpCode).c_str());
                     https.end();
                     delete client;
                     return false;
                 }
                 https.end();
             } else {
-                lLog("Watchface: Weather: http unable to connect\n");
+                lNetLog("Watchface: Weather: http unable to connect\n");
                 delete client;
                 return false;
             }
@@ -236,7 +236,7 @@ bool WatchfaceApplication::GetSecureNetworkWeather() {
         delete client;
         return true;
     }
-    lLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
+    lNetLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
     return false;
 }
 
@@ -288,21 +288,21 @@ WatchfaceApplication::WatchfaceApplication() {
         //}
         ntpTask->callback = [&,this]() {
             if ( false == (bool)NVS.getInt("NTPEnabled")) {
-                lLog("Watchface: NTP Sync disabled");
+                lEvLog("Watchface: NTP Sync disabled");
                 return true;
             }
             struct tm timeinfo;
             if (getLocalTime(&timeinfo)) {
-            lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+            lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
             }
 
-            lLog("Watchface: Trying to sync NTP time...\n");
+            lNetLog("Watchface: Trying to sync NTP time...\n");
             //delay(100);
             //init and get the time
             int daylight = NVS.getInt("summerTime");
             long timezone = NVS.getInt("timezoneTime");
-            lLog("Watchface: Summer time: %s\n",(daylight?"true":"false"));
-            lLog("Watchface: GMT: %d\n",timezone);
+            lEvLog("Watchface: Summer time: %s\n",(daylight?"true":"false"));
+            lEvLog("Watchface: GMT: %d\n",timezone);
             configTime(timezone*3600, daylight*3600, ntpServer);
             // Set offset time in seconds to adjust for your timezone, for example:
             // GMT +1 = 3600
@@ -310,12 +310,12 @@ WatchfaceApplication::WatchfaceApplication() {
             // GMT -1 = -3600
             // GMT 0 = 0
             while( false == getLocalTime(&timeinfo,100) ){ delay(100); }
-            lLog("Watchface: NTP Received\n");
+            lNetLog("Watchface: NTP Received\n");
             if (getLocalTime(&timeinfo)) {
-                lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+                lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
                 ttgo->rtc->syncToRtc();
                 RTC_Date d = ttgo->rtc->getDateTime();
-                lLog("RTC: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                lEvLog("RTC: Read RTC: '%s'\n",ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
                 /*
                 if (d.year != (timeinfo.tm_year + 1900) || d.month != timeinfo.tm_mon + 1
                                 || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
@@ -325,7 +325,7 @@ WatchfaceApplication::WatchfaceApplication() {
                     return false;
                 }
                 */
-                lLog("NTP sync done!\n");
+                lNetLog("NTP sync done!\n");
                 ntpSyncDone = true;
                 return true;
             }
@@ -345,7 +345,7 @@ WatchfaceApplication::WatchfaceApplication() {
         geoIPTask->callback = [&,this]() {
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
-                lLog("Watchface: Openweather Sync disabled (geoip is futile)\n");
+                lNetLog("Watchface: Openweather Sync disabled (geoip is futile)\n");
                 return true;
             }
             const char url[]="http://www.geoplugin.net/json.gp";
@@ -355,9 +355,9 @@ WatchfaceApplication::WatchfaceApplication() {
             geoIPClient.begin(url);
             int httpResponseCode = geoIPClient.GET();
             if (httpResponseCode>0) {
-                lLog("Watchface: geoIP HTTP Response code: %d\n",httpResponseCode);
+                lNetLog("Watchface: geoIP HTTP Response code: %d\n",httpResponseCode);
                 String payload = geoIPClient.getString();
-#ifdef LUNOKIOT_DEBUG
+#ifdef LUNOKIOT_DEBUG_NETWORK
                 Serial.println(payload);
 #endif
                 if ( nullptr != geoIPReceivedData ) {
@@ -370,22 +370,22 @@ WatchfaceApplication::WatchfaceApplication() {
                 }
                 JSONVar myObject = JSON.parse(geoIPReceivedData);
                 if (JSON.typeof(myObject) == "undefined") {
-                    lLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
-#ifdef LUNOKIOT_DEBUG
+                    lNetLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
+#ifdef LUNOKIOT_DEBUG_NETWORK
                     Serial.printf("%s\n",geoIPReceivedData);
 #endif
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_city")) {
-                    lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
-#ifdef LUNOKIOT_DEBUG
+                    lNetLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
+#ifdef LUNOKIOT_DEBUG_NETWORK
                     Serial.printf("%s\n",geoIPReceivedData);
 #endif
                     return false;
                 }
                 if (false == myObject.hasOwnProperty("geoplugin_countryCode")) {
-                    lLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode'\n");
-#ifdef LUNOKIOT_DEBUG
+                    lNetLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode'\n");
+#ifdef LUNOKIOT_DEBUG_NETWORK
                     Serial.printf("%s\n",geoIPReceivedData);
 #endif
                     return false;
@@ -407,7 +407,7 @@ WatchfaceApplication::WatchfaceApplication() {
                 strcpy(weatherCountry,countryString);
                 strcpy(weatherCity,cityString);
             } else {
-                lLog("Watchface: ERROR: geoIP Error code: %d\n",httpResponseCode);
+                lNetLog("Watchface: ERROR: geoIP Error code: %d\n",httpResponseCode);
                 return false;
             }
             // Free resources
@@ -429,7 +429,7 @@ WatchfaceApplication::WatchfaceApplication() {
             weatherSyncDone = false;
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if ( false == oweatherValue) {
-                lLog("Watchface: Openweather Sync disabled\n");
+                lNetLog("Watchface: Openweather Sync disabled\n");
                 return true;
             }
             bool getDone = WatchfaceApplication::GetSecureNetworkWeather();
@@ -452,7 +452,7 @@ WatchfaceApplication::WatchfaceApplication() {
     topRightButton = new ActiveRect(160,0,80,80,[&, this]() {
         if ( pendingNotifications > 0 ) { pendingNotifications=0;}
         else { pendingNotifications = random(1,10); }
-        lLog("Watchface: pushed area @TODO THIS IS A TEST");
+        lAppLog("Watchface: pushed area @TODO THIS IS A TEST");
         // must show number of notifications pending
 
         //LaunchApplication(new SOMEAPPTOREADNOTIFICATIONS_@TODO());
@@ -483,7 +483,7 @@ WatchfaceApplication::~WatchfaceApplication() {
         minuteClockHandCache->deleteSprite();
         delete minuteClockHandCache;
     }
-    lLog("WatchfaceApplication: %p Ends here\n",this);
+    //lLog("WatchfaceApplication: %p Ends here\n",this);
 }
 extern bool bleEnabled; //@TODO this is a crap!!!
 extern bool bleServiceRunning; //@TODO this is a crap!!!

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
+#include "../../app/LogView.hpp"
 
 #include "NotificationWidget.hpp"
 NotificationWidget::NotificationWidget(std::function<void ()> notifyTo, char *message, uint32_t color)
@@ -16,7 +17,7 @@ void NotificationWidget::Show() {
         this->ctime=millis()+ShowTime;
         //xSemaphoreGive( changeData );
     //}
-    Serial.printf("Notification: %p show\n",this);
+    lUILog("Notification: %p show\n",this);
     //Serial.printf("OOOOOOOOOOOO CTIME: %lu DTIME: %lu\n",this->ctime,this->dtime);
 }
 NotificationWidget::~NotificationWidget() {
@@ -61,14 +62,14 @@ void NotificationWidget::DrawTo(TFT_eSprite * endCanvas) {
         //Serial.printf("CTIME: %lu DTIME: %lu\n",this->ctime,this->dtime);
         if ( 0 != this->ctime ) {
             if ( millis() > this->ctime ) {
-                Serial.printf("Notification: %p begans dissolve...\n",this);
+                lUILog("Notification: %p begans dissolve...\n",this);
                 this->dtime=millis()+DissolveTime;
                 this->ctime = 0;
             }
         } else { // ctime is 0
             if ( 0 == this->dtime ) { return; } // nothing to do, get out!
             if ( millis() > this->dtime ) {
-                Serial.printf("Notification: %p Ends here\n",this);
+                lUILog("Notification: %p Ends here\n",this);
                 this->dtime  = 0;
                 //xSemaphoreGive( changeData );
                 return;

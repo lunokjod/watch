@@ -5,6 +5,7 @@
 #include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
+
 TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
 
@@ -22,6 +23,7 @@ void lLogCreate() {
     }
     if ( NULL == lLogSemaphore ) { lLogSemaphore = xSemaphoreCreateMutex(); }
 }
+
 void lLog(const char *fmt, ...) {
     lLogCreate();
     va_list args;
@@ -43,8 +45,8 @@ void lLog(const char *fmt, ...) {
         }
         xSemaphoreGive( lLogSemaphore );
     } else {
-        #ifdef LUNOKIOT_DEBUG
-            Serial.println("UI: last message wasn't included on visual log due draw timeout");
+        #ifdef LUNOKIOT_DEBUG_UI
+            Serial.println("[UI] Timeout! last message wasn't included on visual log due draw timeout");
         #endif
     }
     va_end(args);

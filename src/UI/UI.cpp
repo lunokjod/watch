@@ -19,6 +19,7 @@
 
 #include "../app/LogView.hpp"
 
+
 #ifdef LILYGO_WATCH_2020_V3
 #include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
@@ -90,7 +91,7 @@ void ScreenWake() {
 void ScreenSleep() {
     if ( true == ttgo->bl->isOn() ) {
         ttgo->bl->off();
-        lLog("UI: Put screen to sleep now\n");
+        lUILog("UI: Put screen to sleep now\n");
         ttgo->displaySleep();
         delay(50);
         ttgo->touchToSleep();
@@ -115,20 +116,20 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
     int16_t deltaX = 0;
     int16_t deltaY = 0;
     anchor->GetDelta(deltaX,deltaY);
-    lLog("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
+    lUILog("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
 }
 TFT_eSprite *screenShootCanvas = nullptr;
 bool screenShootInProgress = false; // @TODO watchface must show it
 
 void TakeScreenShootSound() {
 #ifdef LUNOKIOT_SILENT_BOOT
-    lLog("Audio: Not initialized due Silent boot is enabled\n");
+    lUILog("Audio: Not initialized due Silent boot is enabled\n");
     delay(150);
     return;
 #endif
 #ifdef LILYGO_WATCH_2020_V3
     // Audio fanfare x'D
-    lLog("Audio: Initialize\n");
+    lUILog("Audio: Initialize\n");
     ttgo->enableAudio();
 
     // from https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library/blob/master/examples/UnitTest/HardwareTest/HardwareTest.ino
@@ -141,7 +142,7 @@ void TakeScreenShootSound() {
     id3 = new AudioFileSourceID3(file);
     out = new AudioOutputI2S();
     out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
-    lLog("Audio: MP3 Screenshoot\n");
+    lUILog("Audio: MP3 Screenshoot\n");
     mp3 = new AudioGeneratorMP3();
     mp3->begin(id3, out);
     while (true) {
@@ -150,7 +151,7 @@ void TakeScreenShootSound() {
                 mp3->stop();
             }
         } else {
-            lLog("Audio: MP3 done\n");
+            lUILog("Audio: MP3 done\n");
             break;
         }
     }
@@ -310,7 +311,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         overlay->createSprite(TFT_WIDTH, TFT_HEIGHT);
         // http://i.stack.imgur.com/5fcX6.png
         overlay->fillSprite(TFT_TRANSPARENT);
-        lLog("UI: new overlay generated %p\n", overlay);
+        lUILog("UI: new overlay generated %p\n", overlay);
     }
     // try to get UI lock
     bool changes = false;
@@ -342,8 +343,8 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                             if ( pushedTime > 2300 ) {
                                 touchDownTimeMS=0;
                                 ScreenShots.push_back(TakeScreenShoot());
-                                lLog("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG\n");
-                                lLog("UI: Saved screenshoots: %d\n",ScreenShots.size());
+                                lUILog("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG\n");
+                                lUILog("UI: Saved screenshoots: %d\n",ScreenShots.size());
                             }
                         }
                     }                    
@@ -408,16 +409,14 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
 
 static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     if ( UI_EVENTS != base ) {
-        lLog("UI: uiEventReady: received unknown event: %d discarding event\n", base);
+        lUILog("UI: uiEventReady: received unknown event: %d discarding event\n", base);
         return;
     }
     if ( UI_EVENT_READY != id ) {
-        lLog("UI: uiEventReady: received unknown id: %d discarding event\n", id);
+        lUILog("UI: uiEventReady: received unknown id: %d discarding event\n", id);
         return;
     }
-#ifdef LUNOKIOT_DEBUG_UI
-    lLog("lunokIoT: UI event loop running");
-#endif
+    lUILog("lunokIoT: UI event loop running\n");
     ttgo->setBrightness(255);
 }
 
@@ -432,7 +431,7 @@ static void UITickTask(void* args) {
         if ( ESP_ERR_TIMEOUT == what ) {
             FPS--;
             if ( FPS < 1 ) { FPS =1; }
-            lLog("UI: Tick timeout! (fps: %d)\n",FPS);
+            lUILog("UI: Tick timeout! (fps: %d)\n",FPS);
         }
     }
     vTaskDelete(NULL); // unreachable code

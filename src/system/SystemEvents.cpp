@@ -457,11 +457,11 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("tBMAAInvalid",(int64_t)timeBMAActivityInvalid,false);
     NVS.setInt("sBMAANone",stepsBMAActivityNone,false);
     NVS.setInt("tBMAANone",(int64_t)timeBMAActivityNone,false);
-    lLog("DEBUG stepCount: %d\n",stepCount);
+    //lLog("DEBUG stepCount: %d\n",stepCount);
     NVS.setInt("stepCount",stepCount,false);
     delay(50);
     bool saved = NVS.commit();
-    if ( false == saved ) { lLog("NVS: Unable to commit!! (data lost!)\n"); }
+    if ( false == saved ) { lLog("NVS: Unable to commit!! (data lost!?)\n"); }
     NVS.close();
     lLog("NVS: Closed\n");
     Serial.flush();
@@ -657,7 +657,7 @@ static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t 
     LaunchApplication(new Provisioning2Application());
 #else
 */
-    lLog("lunokIoT: Launching 'WatchfaceApplication'...\n");
+    //lLog("lunokIoT: Launching 'WatchfaceApplication'...\n");
     LaunchApplication(new WatchfaceApplication());
 //#endif
 
@@ -668,74 +668,74 @@ static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int
     bool identified=false;
     if ( WIFI_PROV_EVENT == base) {
         if ( WIFI_PROV_INIT == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Initialized\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Initialized\n",base);
             identified=true;
         } else if ( WIFI_PROV_START == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Started\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Started\n",base);
             identified=true;
         } else if ( WIFI_PROV_CRED_RECV == id ) {
             wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)event_data;
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n",base,(const char *) wifi_sta_cfg->ssid,(const char *) wifi_sta_cfg->password);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n",base,(const char *) wifi_sta_cfg->ssid,(const char *) wifi_sta_cfg->password);
             identified=true;
         } else if ( WIFI_PROV_CRED_FAIL == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n",base);
             identified=true;
         } else if ( WIFI_PROV_CRED_SUCCESS == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n",base);
             identified=true;
         } else if ( WIFI_PROV_END == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: End\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: End\n",base);
             identified=true;
         } else if ( WIFI_PROV_DEINIT == id ) {
-            lLog("FreeRTOS event:'%s' WiFi provisioning: Deinit\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi provisioning: Deinit\n",base);
             identified=true;
         }
     } else if ( WIFI_EVENT == base) {
         if ( WIFI_EVENT_SCAN_DONE == id ) {
             wifi_event_sta_scan_done_t *scanData = (wifi_event_sta_scan_done_t *)event_data;
             const char * scanDoneStr = (scanData->status?"failed":"done");
-            lLog("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n",base,scanData->scan_id,scanDoneStr,scanData->number);
+            lNetLog("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n",base,scanData->scan_id,scanDoneStr,scanData->number);
             identified=true;
         } else if ( WIFI_EVENT_STA_START == id ) {
-            lLog("FreeRTOS event:'%s' WiFi STA: Start\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi STA: Start\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_STOP == id ) {
-            lLog("FreeRTOS event:'%s' WiFi STA: Stop\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi STA: Stop\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_CONNECTED == id ) {
-            lLog("FreeRTOS event:'%s' WiFi STA: Connected\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi STA: Connected\n",base);
             identified=true;
         } else if ( WIFI_EVENT_STA_DISCONNECTED == id ) {
-            lLog("FreeRTOS event:'%s' WiFi STA: Disconnected\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi STA: Disconnected\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_START == id ) {
-            lLog("FreeRTOS event:'%s' WiFi AP: Start\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi AP: Start\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_STOP == id ) {
-            lLog("FreeRTOS event:'%s' WiFi AP: Stop\n",base);
+            lNetLog("FreeRTOS event:'%s' WiFi AP: Stop\n",base);
             identified=true;
         } else if ( WIFI_EVENT_AP_STACONNECTED == id ) {
             wifi_event_ap_staconnected_t *apStaData = (wifi_event_ap_staconnected_t *)event_data;
-            lLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            lNetLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
             identified=true;
         } else if ( WIFI_EVENT_AP_STADISCONNECTED == id ) {
             wifi_event_ap_stadisconnected_t *apStaData = (wifi_event_ap_stadisconnected_t *)event_data;
-            lLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
+            lNetLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n",base,apStaData->mac[0],apStaData->mac[1],apStaData->mac[2],apStaData->mac[3],apStaData->mac[4],apStaData->mac[5]);
             identified=true;
         }
     } else if ( IP_EVENT == base) {
         if ( IP_EVENT_STA_GOT_IP == id ) {
-            lLog("FreeRTOS event:'%s' Network: IP Obtained\n",base);
+            lNetLog("FreeRTOS event:'%s' Network: IP Obtained\n",base);
             identified=true;
         } else if ( IP_EVENT_STA_LOST_IP == id ) {
-            lLog("FreeRTOS event:'%s' Network: IP Lost\n",base);
+            lNetLog("FreeRTOS event:'%s' Network: IP Lost\n",base);
             identified=true;
         } else if ( IP_EVENT_AP_STAIPASSIGNED == id ) {
             ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
             esp_ip4_addr_t newIP = assignedIP->ip;
             unsigned char octet[4]  = {0,0,0,0};
             for (int i=0; i<4; i++) { octet[i] = ( newIP.addr >> (i*8) ) & 0xFF; }
-            lLog("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n",base,octet[0],octet[1],octet[2],octet[3]);
+            lNetLog("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n",base,octet[0],octet[1],octet[2],octet[3]);
             identified=true;
         }
         
@@ -755,64 +755,64 @@ static void SystemLoopTask(void* args) {
 //        if ( millis() > nextIntTick ) {
             // check for AXP int's
             if (irqAxp) {
-                lLog("CHECK AXP\n");
+                //lLog("CHECK AXP\n");
                 ttgo->power->readIRQ();
                 irqAxp = false;
 
                 if (ttgo->power->isChargingIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery charging\n");
+                    lEvLog("AXP202: Battery charging\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isChargingDoneIRQ()){
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery fully charged\n");
+                    lEvLog("AXP202: Battery fully charged\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattEnterActivateIRQ()){
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery active\n");
+                    lEvLog("AXP202: Battery active\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattExitActivateIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery free\n");
+                    lEvLog("AXP202: Battery free\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattPlugInIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery present\n");
+                    lEvLog("AXP202: Battery present\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattRemoveIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery removed\n");
+                    lEvLog("AXP202: Battery removed\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isBattTempLowIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery temperature low\n");
+                    lEvLog("AXP202: Battery temperature low\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isBattTempHighIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Battery temperature high\n");
+                    lEvLog("AXP202: Battery temperature high\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 } else if (ttgo->power->isVbusPlugInIRQ()) {
                     //setCpuFrequencyMhz(240);
                     ttgo->power->clearIRQ();
                     vbusPresent = true;
                     if ( ttgo->bl->isOn() ) { ttgo->setBrightness(255); }
-                    lLog("AXP202: Power source\n");
+                    lEvLog("AXP202: Power source\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isVbusRemoveIRQ()) {
                     //setCpuFrequencyMhz(80);
                     ttgo->power->clearIRQ();
                     vbusPresent = false;
                     //if ( ttgo->bl->isOn() ) { ttgo->setBrightness(30); }
-                    lLog("AXP202: No power\n");
+                    lEvLog("AXP202: No power\n");
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 } else if (ttgo->power->isPEKShortPressIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Event PEK Button short press\n");
+                    lEvLog("AXP202: Event PEK Button short press\n");
                     Serial.flush();
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
                 } else if (ttgo->power->isPEKLongtPressIRQ()) {
                     ttgo->power->clearIRQ();
-                    lLog("AXP202: Event PEK Button long press\n");
+                    lEvLog("AXP202: Event PEK Button long press\n");
                     Serial.flush();
                     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
                 } else {
@@ -823,7 +823,7 @@ static void SystemLoopTask(void* args) {
             }
             // check the BMA int's
             if (irqBMA) {
-                lLog("CHECK BMA\n");
+                //lLog("CHECK BMA\n");
                 irqBMA = false;
                 bool  rlst;
                 do {
@@ -908,12 +908,12 @@ void SystemEventsStart() {
 
     // Create the event source task with the same priority as the current task
     xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-    lLog("lunokIoT: User event loop running\n");
+    lEvLog("lunokIoT: User event loop running\n");
 
     // get the freeRTOS event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived,NULL));
-    lLog("lunokIoT: System event loop running\n");
+    lEvLog("lunokIoT: System event loop running\n");
 }
 
 /*

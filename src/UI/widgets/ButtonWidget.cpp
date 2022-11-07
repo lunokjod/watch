@@ -6,6 +6,7 @@
 #include "../activator/ActiveRect.hpp"
 #include "CanvasWidget.hpp"
 #include <functional>
+#include "../../app/LogView.hpp"
 
 ButtonWidget::~ButtonWidget() {
 
@@ -17,7 +18,7 @@ bool ButtonWidget::CheckBounds() {
     if ( nullptr == canvas) { return false; }
 
     if ( ( ActiveRect::w != canvas->width() ) || ( ActiveRect::h != canvas->height() ) ) {
-        Serial.printf("ButtonWidget: New size for %p requested: Regenerating canvas...\n", this);
+        lUILog("ButtonWidget: New size for %p requested: Regenerating canvas...\n", this);
         RebuildCanvas(ActiveRect::h,ActiveRect::w);
         return true;
     }

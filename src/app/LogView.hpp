@@ -9,6 +9,33 @@
 
 void lLog(const char *fmt, ...);
 
+// other log flavours
+
+#ifdef LUNOKIOT_DEBUG_APPLICATION
+#define lAppLog(...) { lLog("[APP] "); lLog(__VA_ARGS__); } 
+#else 
+#define lAppLog(...);
+#endif
+
+
+#ifdef LUNOKIOT_DEBUG_EVENTS
+#define lEvLog(...) { lLog("[EV] "); lLog(__VA_ARGS__); } 
+#else 
+#define lEvLog(...);
+#endif
+
+#ifdef LUNOKIOT_DEBUG_NETWORK
+#define lNetLog(...) { lLog("[NET] "); lLog(__VA_ARGS__); } 
+#else 
+#define lNetLog(...);
+#endif
+
+#ifdef LUNOKIOT_DEBUG_UI
+#define lUILog(...) { lLog("[UI] "); lLog(__VA_ARGS__); } 
+#else 
+#define lUILog(...);
+#endif
+
 class LogViewApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;

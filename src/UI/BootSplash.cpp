@@ -18,13 +18,13 @@ extern const uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT
-    lLog("Audio: Not initialized due Silent boot is enabled\n");
+    lUILog("Audio: Not initialized due Silent boot is enabled\n");
     return;
 #endif
 
 #ifdef LILYGO_WATCH_2020_V3
     // Audio fanfare x'D
-    lLog("Audio: Initialize");
+    lUILog("Audio: Initialize");
     ttgo->enableAudio();
 
     // from https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library/blob/master/examples/UnitTest/HardwareTest/HardwareTest.ino
@@ -37,7 +37,7 @@ void SplashFanfare() {
     id3 = new AudioFileSourceID3(file);
     out = new AudioOutputI2S();
     out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
-    lLog("Audio: MP3 boot sound");
+    lUILog("Audio: MP3 boot sound");
     mp3 = new AudioGeneratorMP3();
     mp3->begin(id3, out);
     while (true) {
@@ -46,7 +46,7 @@ void SplashFanfare() {
                 mp3->stop();
             }
         } else {
-            lLog("Audio: MP3 done");
+            lUILog("Audio: MP3 done");
             break;
         }
     }

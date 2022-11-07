@@ -14,14 +14,14 @@ bool lunokIoT_BLEMonitorTaskLoop = false;
 bool lunokIoT_BLEMonitorTaskLoopEnd = false;
 void BLEMonitorTask(void * data) {
     lunokIoT_BLEMonitorTaskLoopEnd=true;
-    lLog("BLEMonitor: BLE scan task starts\n");
+    lAppLog("BLEMonitor: BLE scan task starts\n");
     while(lunokIoT_BLEMonitorTaskLoop) {
         delay(1000);
         // launch when idle
         if (  millis() > BLEMonitorTasknextBLEScan ) {
             NimBLEScan * pBLEScan = BLEDevice::getScan();
             if ( false == pBLEScan->isScanning() ) {
-                lLog("BLE: Scan...\n");
+                lAppLog("BLE: Scan...\n");
                 BLEScanResults foundDevices = pBLEScan->start(5,true);
                 //lLog("BLE: Devices found: %d\n",foundDevices.getCount());
                 //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
@@ -29,7 +29,7 @@ void BLEMonitorTask(void * data) {
             BLEMonitorTasknextBLEScan=millis()+(5*1000);
         }
     }
-    lLog("BLEMonitor: BLE scan task stops\n");
+    lAppLog("BLEMonitor: BLE scan task stops\n");
     lunokIoT_BLEMonitorTaskLoopEnd=false;
     vTaskDelete(NULL);
 }

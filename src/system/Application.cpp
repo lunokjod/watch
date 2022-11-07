@@ -22,9 +22,7 @@ LunokIoTApplication::LunokIoTApplication() {
     this->canvas->setColorDepth(16);
     this->canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
     this->canvas->fillSprite(CanvasWidget::MASK_COLOR);
-#ifdef LUNOKIOT_DEBUG_UI
-    lLog("LunokIoTApplication: %p created\n", this);
-#endif
+    lUILog("LunokIoTApplication: %p created\n", this);
     overlay->fillSprite(TFT_TRANSPARENT);
 }
 
@@ -35,16 +33,14 @@ LunokIoTApplication::~LunokIoTApplication() {
         delete canvas;
         this->canvas = nullptr;
     }
-#ifdef LUNOKIOT_DEBUG_UI
-    lLog("LunokIoTApplication: %p deleted\n", this);
-#endif
+    lUILog("LunokIoTApplication: %p deleted\n", this);
 #ifdef LUNOKIOT_DEBUG
     // In multitask environment is complicated to automate this... but works as advice that something went wrong
     if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 
-        lLog("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
+        lUILog("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
     }
     if ( this->lastApplicationPSRAMFree != ESP.getFreePsram()) { 
-        lLog("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
+        lUILog("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
     }
 #endif
 }
@@ -62,7 +58,7 @@ void LaunchApplicationTask(void * data) {
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
 
         if ( nullptr != currentApplication ) {
-            lLog("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
+            lUILog("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
             LunokIoTApplication *ptrOldApp = currentApplication;
             currentApplication = nullptr;
             if ( nullptr != ptrOldApp ) { // @TODO if this delete is optional, can get some grade of "multi-app"
@@ -71,11 +67,11 @@ void LaunchApplicationTask(void * data) {
         }
 
         if ( nullptr == data ) { // this situation is indeed as prior to screen sleep
-            lLog("Application: None");
+            lUILog("Application: None");
             currentApplication = nullptr;     // no one driving now x'D
             ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
         } else {
-           lLog("Application: %p goes to front\n", instance);
+           lUILog("Application: %p goes to front\n", instance);
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance;
             uint8_t userBright = NVS.getInt("lBright");
@@ -83,14 +79,14 @@ void LaunchApplicationTask(void * data) {
         }
         xSemaphoreGive( UISemaphore );
     } else {
-        lLog("Application: ERROR: Unable to get application semaphore, stop launch\n");
+        lUILog("Application: ERROR: Unable to get application semaphore, stop launch\n");
     }
     vTaskDelete(NULL); // get out of my cicken!!!
 }
 
 void LaunchApplication(LunokIoTApplication *instance) {
     if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
-        lLog("Application: %p Already running, stop launch\n", currentApplication);
+        lUILog("Application: %p Already running, stop launch\n", currentApplication);
         return;
     }
     // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
