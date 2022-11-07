@@ -29,6 +29,7 @@ class lBLEDevice {
         unsigned long firstSeen = 0; // @TODO use time_t instead
         unsigned long lastSeen = 0;
         size_t seenCount = 0;
+        int rssi = 0;
         ~lBLEDevice() { if ( nullptr != devName ) { free(devName); } }
 };
 extern std::list <lBLEDevice*>BLEKnowDevices;

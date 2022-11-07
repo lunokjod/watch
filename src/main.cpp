@@ -85,6 +85,7 @@ void setup() {
       ttgo->rtc->syncToSystem();
       if (getLocalTime(&timeinfo)) {
         lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+        ntpSyncDone=true;
       }
     }
   // begin system communications with applications and itself (lunokIoT system bus)

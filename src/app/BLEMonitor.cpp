@@ -6,8 +6,43 @@
 #include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
+#include <esp_task_wdt.h>
+
+unsigned long BLEMonitorTasknextBLEScan=0;
+TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
+bool lunokIoT_BLEMonitorTaskLoop = false;
+bool lunokIoT_BLEMonitorTaskLoopEnd = false;
+void BLEMonitorTask(void * data) {
+    lunokIoT_BLEMonitorTaskLoopEnd=true;
+    lLog("BLEMonitor: BLE scan task starts\n");
+    while(lunokIoT_BLEMonitorTaskLoop) {
+        delay(1000);
+        // launch when idle
+        if (  millis() > BLEMonitorTasknextBLEScan ) {
+            NimBLEScan * pBLEScan = BLEDevice::getScan();
+            if ( false == pBLEScan->isScanning() ) {
+                lLog("BLE: Scan...\n");
+                BLEScanResults foundDevices = pBLEScan->start(5,true);
+                //lLog("BLE: Devices found: %d\n",foundDevices.getCount());
+                //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+            }
+            BLEMonitorTasknextBLEScan=millis()+(5*1000);
+        }
+    }
+    lLog("BLEMonitor: BLE scan task stops\n");
+    lunokIoT_BLEMonitorTaskLoopEnd=false;
+    vTaskDelete(NULL);
+}
 
 BLEMonitorApplication::~BLEMonitorApplication() {
+    lunokIoT_BLEMonitorTaskLoop=false;
+    while(lunokIoT_BLEMonitorTaskLoopEnd) {
+        delay(2);
+        esp_task_wdt_reset();
+    }
+    //task is dead here, don't need vTaskDelete(lunokIoT_BLEMonitorTask);
+    NimBLEScan * pBLEScan = BLEDevice::getScan();
+    if ( false == pBLEScan->isScanning() ) { pBLEScan->stop(); }
     if ( nullptr != btnBack ) { delete btnBack; }
 }
 
@@ -15,11 +50,14 @@ BLEMonitorApplication::BLEMonitorApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    lunokIoT_BLEMonitorTaskLoop=true;
+    xTaskCreate(BLEMonitorTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask);
 }
 
 bool BLEMonitorApplication::Tick() {
     UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
     btnBack->Interact(touched,touchX, touchY);
+
     rotateVal+=1;
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
@@ -38,12 +76,16 @@ bool BLEMonitorApplication::Tick() {
             DescribeCircle(120,120,90,[&,this](int x,int y, int cx, int cy, int angle, int step, void* payload) {
                 int currentElement = 0;
                 for (auto const& dev : BLEKnowDevices) {
+                    esp_task_wdt_reset();
+                    //if ( 1 == ( currentElement % 32 ) ) { delay(3); }
+                    //if ( abs(dev->rssi) > 92 ) { currentElement++; continue; }
                     int16_t seconds = (millis()-dev->lastSeen)/1000;
                     if ( seconds > 60 ) { currentElement++; continue; } // ignore old devices
                     int searchAngle = (currentElement*elementDegrees);
                     searchAngle=((searchAngle+rotateVal)%360);
                     if ( angle == searchAngle ) {
                         uint8_t alpha = seconds*2;
+                        //lLog("DEV RSSI: %d\n",dev->rssi);
                         if ( seconds > 255 ) { alpha=255; }
                         if ( seconds < 3) { // draw signal
                             canvas->fillCircle(x,y,27,canvas->color24to16(0x1825a9));

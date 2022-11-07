@@ -16,6 +16,7 @@
 #include <esp_wifi.h>
 #include <wifi_provisioning/manager.h>
 
+#include <esp_task_wdt.h>
 
 #include "UI/UI.hpp"
 
@@ -311,7 +312,7 @@ static void DoSleepTask(void* args) {
         vTaskDelete(NULL);
     }*/
     lLog("ESP32: DoSleep Trying to obtain the lock...\n");
-    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); // LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS );
+    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if ( false == done ) {
         lLog("ESP32: DoSleep DISCARDED: already in progress...\n");
         vTaskDelete(NULL);
@@ -469,10 +470,10 @@ void SaveDataBeforeShutdown() {
 static void AXPEventPEKLong(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     LaunchApplication(new ShutdownApplication());
     //SaveDataBeforeShutdown();
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
 }
 void _SendEventWakeTask(void * data) {
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     vTaskDelete(NULL);
 }
 static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -749,8 +750,9 @@ static void SystemLoopTask(void* args) {
     unsigned long nextSySTick = 0; // for rest of system (including UI)
     unsigned long nextIntTick = 0; // inquiry interrupts
     while(true) {
-        delay(1);
-        if ( millis() > nextIntTick ) {
+        esp_task_wdt_reset();
+        delay(10);
+//        if ( millis() > nextIntTick ) {
             // check for AXP int's
             if (irqAxp) {
                 lLog("CHECK AXP\n");
@@ -807,12 +809,12 @@ static void SystemLoopTask(void* args) {
                     ttgo->power->clearIRQ();
                     lLog("AXP202: Event PEK Button short press\n");
                     Serial.flush();
-                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
                 } else if (ttgo->power->isPEKLongtPressIRQ()) {
                     ttgo->power->clearIRQ();
                     lLog("AXP202: Event PEK Button long press\n");
                     Serial.flush();
-                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
                 } else {
                     ttgo->power->clearIRQ();
                     lLog("@TODO unknown interrupt call from AXP202 ?...\n");
@@ -825,7 +827,8 @@ static void SystemLoopTask(void* args) {
                 irqBMA = false;
                 bool  rlst;
                 do {
-                    delay(0);
+                    esp_task_wdt_reset();
+                    delay(1);
                     // Read the BMA423 interrupt status,
                     // need to wait for it to return to true before continuing
                     rlst =  ttgo->bma->readInterrupt();
@@ -864,14 +867,15 @@ static void SystemLoopTask(void* args) {
             }*/
 
 
-            nextIntTick = millis()+(1000/6);
-        }
+//            nextIntTick = millis()+(1000/6);
+//        }
 
 
         //if ( systemSleep ) { continue; }
         // system tick
         if ( millis() > nextSySTick ) {
             if ( true == ttgo->bl->isOn() ) {
+                        esp_task_wdt_reset();
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
             }
             nextSySTick = millis()+(1000/24);
@@ -882,10 +886,10 @@ static void SystemLoopTask(void* args) {
 void SystemEventsStart() {    
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 20, // maybe so big
+        .queue_size = 40, // maybe so big
         .task_name = "lEvTask", // lunokIoT Event Task
         .task_priority = uxTaskPriorityGet(NULL), // when the freeRTOS wants
-        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = tskNO_AFFINITY // bah, dontcare
     }; // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
 

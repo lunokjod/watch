@@ -474,19 +474,6 @@ void BLELoopTask(void * data) {
                     }
                 }
             }
-        } else {
-            // launch when idle
-            if ( ( false == networkActivity ) && ( BLENextscanTime < millis() )) {
-                if ( false == pBLEScan->isScanning() ) {
-                    //lLog("BLE: Scan...\n");
-                    BLEScanResults foundDevices = pBLEScan->start(BLEscanTime, true);
-                    //lLog("BLE: Devices found: %d\n",foundDevices.getCount());
-                    pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-                }
-                BLENextscanTime=millis()+(BLEscanTime*1000);
-            }
-            networkActivity=false;
-            //delay(2000);
         }
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
@@ -564,6 +551,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                                         dev->seenCount);
                 dev->lastSeen = millis();
                 dev->seenCount++;
+                dev->rssi = advertisedDevice->getRSSI();
                 alreadyKnown=true;
             }
         }
@@ -574,6 +562,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
             newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
             sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
             lLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
+            newDev->rssi = advertisedDevice->getRSSI();
             newDev->firstSeen = millis();
             newDev->lastSeen = newDev->firstSeen;
             BLEKnowDevices.push_back(newDev);
@@ -634,22 +623,24 @@ void StopBLE() {
         pTxCharacteristic=nullptr;
     }
     */
+    if ( ( nullptr != pBLEScan ) && (pBLEScan->isScanning())) {
+        lLog("BLE: Waiting scan stops...\n");
+        pBLEScan->stop();
+        pBLEScan->clearResults();
+        delay(100);
+    }
 
     bleEnabled = false;
     if ( bleServiceRunning ) {
         lLog("BLE: Waiting service stops...\n");
         while(bleServiceRunning) { delay(1); }
     }
-    if ( nullptr != pBLEScan ) {
-        pBLEScan->stop();
-        //delete pBLEScan;
-        //pBLEScan = nullptr;
-    }
 
 
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
+    delay(100);
     /*
     pServer = nullptr;
     pService = nullptr;
@@ -661,7 +652,7 @@ void StartBLE() {
     if ( bleEnabled ) { return; }
 
     delay(3000); // wait 3 seconds to enable it
-    if ( bleEnabled ) { vTaskDelete(NULL); }
+    //if ( bleEnabled ) { vTaskDelete(NULL); }
     bleEnabled = true;
     lLog("BLE: Starting...\n");
     uint8_t BLEAddress[6];
@@ -721,7 +712,7 @@ void StartBLE() {
     pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
     pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
     pBLEScan->setInterval(300);
-    pBLEScan->setWindow(299);  // less or equal setInterval value
+    pBLEScan->setWindow(290);  // less or equal setInterval value
 
 
 

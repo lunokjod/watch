@@ -74,7 +74,7 @@ void ScreenWake() {
         ttgo->displayWakeup();
         UINextTimeout = millis()+UITimeout;
         ttgo->touchWakup();
-        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         delay(1); // get time to queue digest ;)
         SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
