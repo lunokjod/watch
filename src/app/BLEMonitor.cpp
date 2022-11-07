@@ -26,7 +26,7 @@ void BLEMonitorTask(void * data) {
                 //lLog("BLE: Devices found: %d\n",foundDevices.getCount());
                 //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
             }
-            BLEMonitorTasknextBLEScan=millis()+(5*1000);
+            BLEMonitorTasknextBLEScan=millis()+(6*1000);
         }
     }
     lAppLog("BLEMonitor: BLE scan task stops\n");

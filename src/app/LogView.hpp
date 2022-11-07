@@ -7,31 +7,33 @@
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-void lLog(const char *fmt, ...);
+extern SemaphoreHandle_t lLogAsBlockSemaphore;
+
+void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
+// main log tool
+#define lLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 
 // other log flavours
-
 #ifdef LUNOKIOT_DEBUG_APPLICATION
-#define lAppLog(...) { lLog("[APP] "); lLog(__VA_ARGS__); } 
+#define lAppLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[APP] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lAppLog(...);
 #endif
 
-
 #ifdef LUNOKIOT_DEBUG_EVENTS
-#define lEvLog(...) { lLog("[EV] "); lLog(__VA_ARGS__); } 
+#define lEvLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[EV] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lEvLog(...);
 #endif
 
 #ifdef LUNOKIOT_DEBUG_NETWORK
-#define lNetLog(...) { lLog("[NET] "); lLog(__VA_ARGS__); } 
+#define lNetLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[NET] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lNetLog(...);
 #endif
 
 #ifdef LUNOKIOT_DEBUG_UI
-#define lUILog(...) { lLog("[UI] "); lLog(__VA_ARGS__); } 
+#define lUILog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[UI] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lUILog(...);
 #endif

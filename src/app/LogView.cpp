@@ -5,7 +5,7 @@
 #include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-
+SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
 TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
 
@@ -24,7 +24,7 @@ void lLogCreate() {
     if ( NULL == lLogSemaphore ) { lLogSemaphore = xSemaphoreCreateMutex(); }
 }
 
-void lLog(const char *fmt, ...) {
+void lRawLog(const char *fmt, ...) {
     lLogCreate();
     va_list args;
     va_start(args, fmt);

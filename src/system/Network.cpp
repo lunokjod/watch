@@ -713,7 +713,7 @@ void StartBLE() {
     pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
     pBLEScan->setInterval(300);
     pBLEScan->setWindow(290);  // less or equal setInterval value
-    pBLEScan->setMaxResults(8);
+    pBLEScan->setMaxResults(0); // dont waste memory with cache
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 

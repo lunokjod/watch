@@ -28,7 +28,7 @@ void InstallStepManager() {
             char keyName[16] = {0};
             sprintf(keyName,"lWSteps_%d",a);
             weekSteps[a] = NVS.getInt(keyName);
-            lLog("Steps: Weekday %d stats '%s'=%d\n",a,keyName,weekSteps[a]);
+            //lLog("Steps: Weekday %d stats '%s'=%d\n",a,keyName,weekSteps[a]);
         }
         lastStepsDay = NVS.getInt("lstWeekStp");
 
@@ -46,7 +46,7 @@ void InstallStepManager() {
             if ( lastStepsDay != tmpTime->tm_wday ) {
                 // run beyond the midnight
                 //if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
-                    lLog("%s: Rotating stepcounter\n",stepsManager->name);
+                    lEvLog("%s: Rotating stepcounter\n",stepsManager->name);
                     
                     // my weeks begins on monday not sunday
                     int correctedDay = lastStepsDay; // use the last day recorded to save on it
@@ -78,7 +78,7 @@ void InstallStepManager() {
                     for(int a=0;a<7;a++) { // Obtain the last days steps
                         char keyName[16] = {0};
                         sprintf(keyName,"lWSteps_%d",a);
-                        lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
+                        //lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
                         NVS.setInt(keyName,weekSteps[a],false);
                     }
                     NVS.setInt("lstWeekStp",lastStepsDay,false);

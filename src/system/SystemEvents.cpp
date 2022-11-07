@@ -102,7 +102,7 @@ void RTCIntHandler() {
 }
 */
 void BMPIntHandler() {
-    lLog("BMA423: NVS: Loading last session values...\n");
+    lEvLog("BMA423: NVS: Loading last session values...\n");
 
     int32_t tempStepCount = NVS.getInt("stepCount");
 
@@ -117,33 +117,33 @@ void BMPIntHandler() {
     unsigned long tempTimeBMAActivityStationary = NVS.getInt("tBMAASta");
     if ( false != tempStepsBMAActivityStationary ) { stepsBMAActivityStationary=tempStepsBMAActivityStationary; }
     if ( false != tempTimeBMAActivityStationary ) { timeBMAActivityStationary=tempTimeBMAActivityStationary; }
-    lLog("BMA423: NVS: Last session stepsBMAActivityStationary = %d\n",stepsBMAActivityStationary);
-    lLog("BMA423: NVS: Last session timeBMAActivityStationary = %lu\n",timeBMAActivityStationary);
+    //lLog("BMA423: NVS: Last session stepsBMAActivityStationary = %d\n",stepsBMAActivityStationary);
+    //lLog("BMA423: NVS: Last session timeBMAActivityStationary = %lu\n",timeBMAActivityStationary);
     uint32_t tempStepsBMAActivityWalking = NVS.getInt("sBMAAWalk");
     unsigned long tempTimeBMAActivityWalking = NVS.getInt("tBMAAWalk");
     if ( false != tempStepsBMAActivityWalking ) { stepsBMAActivityWalking=tempStepsBMAActivityWalking; }
     if ( false != tempTimeBMAActivityWalking ) { timeBMAActivityWalking=tempTimeBMAActivityWalking; }
-    lLog("BMA423: NVS: Last session stepsBMAActivityWalking = %d\n",stepsBMAActivityWalking);
-    lLog("BMA423: NVS: Last session timeBMAActivityWalking = %lu\n",timeBMAActivityWalking);
+    //lLog("BMA423: NVS: Last session stepsBMAActivityWalking = %d\n",stepsBMAActivityWalking);
+    //lLog("BMA423: NVS: Last session timeBMAActivityWalking = %lu\n",timeBMAActivityWalking);
     uint32_t tempStepsBMAActivityRunning = NVS.getInt("sBMAARun");
     unsigned long tempTimeBMAActivityRunning = NVS.getInt("tBMAARun");
     if ( false != tempStepsBMAActivityRunning ) { stepsBMAActivityRunning=tempStepsBMAActivityRunning; }
     if ( false != tempTimeBMAActivityRunning ) { timeBMAActivityRunning=tempTimeBMAActivityRunning; }
-    lLog("BMA423: NVS: Last session stepsBMAActivityRunning = %d\n",stepsBMAActivityRunning);
-    lLog("BMA423: NVS: Last session timeBMAActivityRunning = %lu\n",timeBMAActivityRunning);
+    //lLog("BMA423: NVS: Last session stepsBMAActivityRunning = %d\n",stepsBMAActivityRunning);
+    //lLog("BMA423: NVS: Last session timeBMAActivityRunning = %lu\n",timeBMAActivityRunning);
     uint32_t tempStepsBMAActivityNone = NVS.getInt("sBMAANone");
     unsigned long tempTimeBMAActivityNone = NVS.getInt("tBMAANone");
     if ( false != tempStepsBMAActivityNone ) { stepsBMAActivityNone=tempStepsBMAActivityNone; }
     if ( false != tempTimeBMAActivityNone ) { timeBMAActivityNone=tempTimeBMAActivityNone; }
-    lLog("BMA423: NVS: Last session stepsBMAActivityNone = %d\n",stepsBMAActivityNone);
-    lLog("BMA423: NVS: Last session timeBMAActivityNone = %lu\n",timeBMAActivityNone);
+    //lLog("BMA423: NVS: Last session stepsBMAActivityNone = %d\n",stepsBMAActivityNone);
+    //lLog("BMA423: NVS: Last session timeBMAActivityNone = %lu\n",timeBMAActivityNone);
 
-    lLog("BMA423: NVS: Last session tempStepCount: %d\n",tempStepCount);
+    //lLog("BMA423: NVS: Last session tempStepCount: %d\n",tempStepCount);
     
     if ( 0 != tempStepCount ) {
         lastBootStepCount = tempStepCount;
         stepCount = lastBootStepCount;
-        lLog("BMA423: NVS: Last session stepCount: %d\n",stepCount);
+        lEvLog("BMA423: NVS: Last session stepCount: %d\n",stepCount);
     }
 
     if ( false != tempAccXMax ) { accXMax=tempAccXMax; }
@@ -153,11 +153,11 @@ void BMPIntHandler() {
     if ( false != tempAccZMax ) { accZMax=tempAccZMax; }
     if ( false != tempAccZMin ) { accZMin=tempAccZMin; }
 
-    lLog("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
+    //lLog("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
 
-    lLog("BMA423: NVS: X(%d/%d) ",accXMax,accXMin);
-    lLog("Y(%d/%d) ",accYMax,accYMin);
-    lLog("Z(%d/%d)\n",accZMax,accZMin);
+    //lLog("BMA423: NVS: X(%d/%d) ",accXMax,accXMin);
+    //lLog("Y(%d/%d) ",accYMax,accYMin);
+    //lLog("Z(%d/%d)\n",accZMax,accZMin);
     // Accel parameter structure
     Acfg cfg;
     /*!
@@ -261,18 +261,18 @@ void WakeUpReason() {
   esp_sleep_wakeup_cause_t wakeup_reason;
 
   wakeup_reason = esp_sleep_get_wakeup_cause();
-  lLog("ESP32 Wake up from: ");
+  lEvLog("ESP32 Wake up from: ");
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0 :
-        lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
+        lEvLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
         break;
     case ESP_SLEEP_WAKEUP_EXT1 :
         {
-            lLog("Interrupt triggered on ext1 <-- ");
+            lEvLog("Interrupt triggered on ext1 <-- ");
             uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-            if ( GPIO_SEL_37 == GPIO_reason) { lLog("(RTC) PCF8563\n"); }
-            else if ( GPIO_SEL_38 == GPIO_reason) { lLog("(TOUCH) FocalTech\n"); }
-            else if ( GPIO_SEL_39 == GPIO_reason) { lLog("(ACCEL) BMA423\n"); }
+            if ( GPIO_SEL_37 == GPIO_reason) { lEvLog("(RTC) PCF8563\n"); }
+            else if ( GPIO_SEL_38 == GPIO_reason) { lEvLog("(TOUCH) FocalTech\n"); }
+            else if ( GPIO_SEL_39 == GPIO_reason) { lEvLog("(ACCEL) BMA423\n"); }
             else {
                 //Serial.printf("unexpected (?) GPIO %d reason: %u\n", impliedGPIO, GPIO_reason);
                 lLog("WARNING: Unexpected: GPIO\n");
@@ -292,14 +292,14 @@ void WakeUpReason() {
         }
         break;
     case ESP_SLEEP_WAKEUP_TIMER :
-        lLog("Wakeup caused by timer\n");
-        lLog("Event: Forced sample due no user activity for a while (%ds timeout)\n", LUNOKIOT_WAKE_TIME_S);
+        lEvLog("Wakeup caused by timer\n");
+        lEvLog("Event: Forced sample due no user activity for a while (%ds timeout)\n", LUNOKIOT_WAKE_TIME_S);
         TakeSamples();
         DoSleep();
         break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : lLog("Wakeup caused by touchpad\n"); break;
-    case ESP_SLEEP_WAKEUP_ULP : lLog("Wakeup caused by ULP program\n"); break;
-    default : lLog("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : lEvLog("Wakeup caused by touchpad\n"); break;
+    case ESP_SLEEP_WAKEUP_ULP : lEvLog("Wakeup caused by ULP program\n"); break;
+    default : lEvLog("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
   }
 }
 uint16_t doSleepThreads=0;
@@ -311,10 +311,10 @@ static void DoSleepTask(void* args) {
         Serial.println("ESP32: DoSleep DISCARDED due network activity");
         vTaskDelete(NULL);
     }*/
-    lLog("ESP32: DoSleep Trying to obtain the lock...\n");
+    lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
     bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if ( false == done ) {
-        lLog("ESP32: DoSleep DISCARDED: already in progress...\n");
+        lEvLog("ESP32: DoSleep DISCARDED: already in progress...\n");
         vTaskDelete(NULL);
     }
 
@@ -322,7 +322,7 @@ static void DoSleepTask(void* args) {
     lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
     lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
 
-    lLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
+    lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
     ScreenSleep();
 
@@ -334,11 +334,11 @@ static void DoSleepTask(void* args) {
     //Serial.printf("WIFISTATUS: %d\n",WiFi.status());
     //while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
     while ( WL_CONNECTED == WiFi.status()) {
-        lLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
+        lEvLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
         retries--;
         if ( 0 == retries ) {
-            lLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
+            lEvLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
             WiFi.disconnect(true);
             delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
             break;
@@ -346,7 +346,7 @@ static void DoSleepTask(void* args) {
     }
     WiFi.mode(WIFI_OFF);
     if ( retries < MAXRETRIES ) {
-        lLog("ESP32: WiFi released, DoSleep continue...\n");
+        lEvLog("ESP32: WiFi released, DoSleep continue...\n");
     }
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
@@ -355,18 +355,18 @@ static void DoSleepTask(void* args) {
     esp_sleep_enable_ext0_wakeup( GPIO_NUM_35, 0);
     esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR*LUNOKIOT_WAKE_TIME_S);
     esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
-    lLog("ESP32: -- ZZz --\n");
+    lEvLog("ESP32: -- ZZz --\n");
     Serial.flush();
     delay(100);
     esp_light_sleep_start(); // device sleeps now
-    lLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
+    lEvLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
     systemSleep = false;
 
     xSemaphoreGive( DoSleepTaskSemaphore );
 
     WakeUpReason();
 
-    lLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
+    lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
 
 
     vTaskDelete(NULL);
@@ -401,14 +401,14 @@ static void BMAEventActivity(void* handler_args, esp_event_base_t base, int32_t 
             stepsBMAActivityNone+=totalStepsBMAActivity;
             timeBMAActivityNone += totalBMAActivity;
         }
-        lLog("BMA423: Event: Last actity: %s\n",currentActivity);
-        lLog("BMA423: Event: Current actity: %s\n",nowActivity);
-        lLog("BMA423: Timers:\n");
-        lLog("BMA423:        Stationary: %lu secs (%u steps)\n",timeBMAActivityStationary/1000, stepsBMAActivityStationary );
-        lLog("BMA423:           Walking: %lu secs (%u steps)\n",timeBMAActivityWalking/1000, stepsBMAActivityWalking );
-        lLog("BMA423:           Running: %lu secs (%u steps)\n",timeBMAActivityRunning/1000, stepsBMAActivityRunning );
-        lLog("BMA423:           Invalid: %lu secs (%u steps)\n",timeBMAActivityInvalid/1000, stepsBMAActivityInvalid );
-        lLog("BMA423:              None: %lu secs (%u steps)\n",timeBMAActivityNone/1000, stepsBMAActivityNone );
+        lEvLog("BMA423: Event: Last actity: %s\n",currentActivity);
+        lEvLog("BMA423: Event: Current actity: %s\n",nowActivity);
+        lEvLog("BMA423: Timers:\n");
+        lEvLog("BMA423:        Stationary: %lu secs (%u steps)\n",timeBMAActivityStationary/1000, stepsBMAActivityStationary );
+        lEvLog("BMA423:           Walking: %lu secs (%u steps)\n",timeBMAActivityWalking/1000, stepsBMAActivityWalking );
+        lEvLog("BMA423:           Running: %lu secs (%u steps)\n",timeBMAActivityRunning/1000, stepsBMAActivityRunning );
+        lEvLog("BMA423:           Invalid: %lu secs (%u steps)\n",timeBMAActivityInvalid/1000, stepsBMAActivityInvalid );
+        lEvLog("BMA423:              None: %lu secs (%u steps)\n",timeBMAActivityNone/1000, stepsBMAActivityNone );
 
         beginBMAActivity = millis();
         beginStepsBMAActivity = stepCount;
@@ -419,7 +419,7 @@ static void BMAEventActivity(void* handler_args, esp_event_base_t base, int32_t 
     }
 }
 static void BMAEventNoActivity(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    lLog("BMA423: Event: No actity");
+    lEvLog("BMA423: Event: No actity");
     if ( false == ttgo->bl->isOn() ) {
         DoSleep();
     }
@@ -430,7 +430,7 @@ static void BMAEventStepCounter(void* handler_args, esp_event_base_t base, int32
     uint32_t nowSteps = ttgo->bma->getCounter();
     if (nowSteps != (stepCount - lastBootStepCount) ) {
         stepCount = nowSteps + lastBootStepCount;
-        lLog("BMA423: Event: Steps: %d\n",stepCount);
+        lEvLog("BMA423: Event: Steps: %d\n",stepCount);
     }
     if ( false == ttgo->bl->isOn() ) {
         DoSleep();
@@ -463,7 +463,7 @@ void SaveDataBeforeShutdown() {
     bool saved = NVS.commit();
     if ( false == saved ) { lLog("NVS: Unable to commit!! (data lost!?)\n"); }
     NVS.close();
-    lLog("NVS: Closed\n");
+    lEvLog("NVS: Closed\n");
     Serial.flush();
 }
 
@@ -483,13 +483,13 @@ static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t 
     if ( millis() > lastPEK ) {
         */
         if ( ttgo->bl->isOn() ) {
-            lLog("Event: user wants to put device to sleep\n");
+            lEvLog("Event: user wants to put device to sleep\n");
             ScreenSleep();
             LaunchApplication(nullptr);
             delay(20);
             DoSleep();
         } else {
-            lLog("Event: user wants to get a screen\n");
+            lEvLog("Event: user wants to get a screen\n");
             TakeSamples();
             ScreenWake();
             xTaskCreate(_SendEventWakeTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
@@ -645,7 +645,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
 
 static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     
-    lLog("lunokIoT: System event: up and running...\n");
+    lEvLog("lunokIoT: System event: up and running...\n");
 /*
 #ifdef LUNOKIOT_WIFI_ENABLED
     if ( provisioned ) {

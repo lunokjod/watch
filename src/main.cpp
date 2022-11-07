@@ -45,7 +45,7 @@ void setup() {
   ttgo->begin(); //lLog functions become possible beyond here (TFT init)
   NVS.begin(); // need NVS to get the current configuration
   uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
-  lLog("lunokIoT: User screen rotation: %d\n", rotation);
+  lUILog("User screen rotation: %d\n", rotation);
   ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
   userTall= NVS.getInt("UserTall");
   if ( 0 == userTall ) { userTall = 120; }
@@ -58,7 +58,7 @@ void setup() {
 
   }
 #ifdef LUNOKIOT_DEBUG
-  lLog("lunokIoT: System initializing...\n");
+  lEvLog("lunokIoT: System initializing...\n");
 #endif
   SplashAnnounce(); // simple eyecandy meanwhile boot
 
@@ -73,18 +73,17 @@ void setup() {
 
     int daylight = NVS.getInt("summerTime");
     long timezone = NVS.getInt("timezoneTime");
-    lLog("Watchface: Summer time: %s\n",(daylight?"true":"false"));
-    lLog("Watchface: GMT: %d\n",timezone);
+    lEvLog("RTC: Config: Summer time: %s GMT: %d\n",(daylight?"true":"false"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer);
 
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) {
-      lLog("RTC: The timedate seems valid\n");
+      lEvLog("RTC: The timedate seems valid\n");
       RTC_Date r = ttgo->rtc->getDateTime();
-      lLog("RTC: time: %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
+      lEvLog("RTC: time: %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
       ttgo->rtc->syncToSystem();
       if (getLocalTime(&timeinfo)) {
-        lLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
+        lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
         ntpSyncDone=true;
       }
     }
@@ -106,7 +105,7 @@ void setup() {
 #ifdef LUNOKIOT_DEBUG
   unsigned long setupEndTime = millis();
   currentBootTime = setupEndTime-setupBeginTime;
-  lLog("lunokIoT: Boot time: %lu ms\n", currentBootTime);
+  lEvLog("lunokIoT: Boot time: %lu ms\n", currentBootTime);
 #endif
 
   SplashAnnounceEnd();
