@@ -30,8 +30,9 @@ class lBLEDevice {
         unsigned long lastSeen = 0;
         size_t seenCount = 0;
         int rssi = 0;
-        ~lBLEDevice() { if ( nullptr != devName ) { free(devName); } }
+        ~lBLEDevice();
 };
+
 extern std::list <lBLEDevice*>BLEKnowDevices;
 
 // Install the network loop task scheduler

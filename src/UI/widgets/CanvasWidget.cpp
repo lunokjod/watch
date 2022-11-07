@@ -32,7 +32,7 @@ CanvasWidget::~CanvasWidget() {
         this->canvas = nullptr;
         tmp->deleteSprite();
         delete tmp;
-        lUILog("Destroyed canvas: %p\n", this);
+        //lUILog("Destroyed canvas: %p\n", this);
     }
 }
 

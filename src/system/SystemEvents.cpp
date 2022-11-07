@@ -29,6 +29,7 @@
 
 #include "../app/LogView.hpp"
 
+#include <cmath>
 bool systemSleep = false;
 // Event loops
 esp_event_loop_handle_t systemEventloopHandler;
@@ -355,6 +356,7 @@ static void DoSleepTask(void* args) {
     esp_sleep_enable_ext0_wakeup( GPIO_NUM_35, 0);
     esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR*LUNOKIOT_WAKE_TIME_S);
     esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
+    //delay(1000);
     lEvLog("ESP32: -- ZZz --\n");
     Serial.flush();
     delay(100);
@@ -418,6 +420,16 @@ static void BMAEventActivity(void* handler_args, esp_event_base_t base, int32_t 
         DoSleep();
     }
 }
+
+static void AnyEventSystem(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    if ( 0 != strcmp(SYSTEM_EVENTS,base)) {
+        lLog("WARNING! unkown base: '%s' args: %p id: %d data: %p\n",base,handler_args,id,event_data);
+        return;
+    }
+    if ( SYSTEM_EVENT_TICK == id ) { return; }
+    //lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
+}
+
 static void BMAEventNoActivity(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lEvLog("BMA423: Event: No actity");
     if ( false == ttgo->bl->isOn() ) {
@@ -470,10 +482,10 @@ void SaveDataBeforeShutdown() {
 static void AXPEventPEKLong(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     LaunchApplication(new ShutdownApplication());
     //SaveDataBeforeShutdown();
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 void _SendEventWakeTask(void * data) {
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     vTaskDelete(NULL);
 }
 static void AXPEventPEKShort(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -508,6 +520,7 @@ void TakeBMPSample() {
     bool res = ttgo->bma->getAccel(acc);
 
     if (res != false) {
+        // @TODO simplify the values to round (send event only if change is relevant)
         if ( ( accX != acc.x ) || ( accY != acc.y ) || ( accZ != acc.z ) ) {
             accX = acc.x;
             accY = acc.y;
@@ -541,9 +554,10 @@ void TakeBMPSample() {
             
             //Serial.printf("BMA423: Acceleromether: X: %dº Y: %dº Z: %dº\n",degX,degY,degZ);
     
-            //Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", acc.x, acc.y, acc.z);
+            //lEvLog("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", acc.x, acc.y, acc.z);
+            //esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMP_EVENT_MOVE,nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
 
-#ifdef LUNOKIOT_SERIAL_CSV
+#ifdef LUNOKIOT_SERIAL_GYRO_CSV
             // RAW
             Serial.printf("CSV:%f,%f,%f\n",degX,degY,degZ);
             
@@ -556,15 +570,15 @@ void TakeBMPSample() {
             ldegY = degY;
             ldegZ = degZ; 
 #endif           
-            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMP_EVENT_MOVE,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
         }
     }
     float nowBMATemp = ttgo->bma->temperature();
-    if ( nowBMATemp != bmaTemp ) {
+    if ( round(nowBMATemp) != round(bmaTemp) ) {
         //Serial.printf("BMA423: Temperature: %.1fºC\n", bmaTemp);
-        bmaTemp = nowBMATemp;
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP,nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
     }
+    bmaTemp = nowBMATemp; // set value
+
     // Obtain the BMA423 direction,
     // so that the screen orientation is consistent with the sensor
     uint8_t nowRotation = ttgo->bma->direction();
@@ -629,12 +643,11 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
         // begin tick report
         float nowAXPTemp = ttgo->power->getTemp();
         if ( nowAXPTemp != axpTemp ) {
-            //Serial.printf("AXP202: Temperature: %.1fºC\n", axpTemp);
             axpTemp = nowAXPTemp;
-            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE,nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+            //lEvLog("AXP202: Temperature: %.1fºC\n", axpTemp);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE,nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         }
-
-        nextSlowSensorsTick = millis()+(1000/1);
+        nextSlowSensorsTick = millis()+3000;
     }
 
     if ( millis() > nextSensorsTick ) { // poll some other sensors ( normal pooling )
@@ -878,7 +891,7 @@ static void SystemLoopTask(void* args) {
                         esp_task_wdt_reset();
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
             }
-            nextSySTick = millis()+(1000/24);
+            nextSySTick = millis()+(1000/12);
         }
         //delay(1000/24);
     }
@@ -886,7 +899,7 @@ static void SystemLoopTask(void* args) {
 void SystemEventsStart() {    
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 40, // maybe so big
+        .queue_size = 10, // maybe so big
         .task_name = "lEvTask", // lunokIoT Event Task
         .task_priority = uxTaskPriorityGet(NULL), // when the freeRTOS wants
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
@@ -898,14 +911,14 @@ void SystemEventsStart() {
 
     // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
     // The loop handle is provided as an argument in order for this example to display the loop the handler is being run on.
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, SystemEventReady, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, SystemEventTick, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, AXPEventPEKShort,nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, AXPEventPEKLong,nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter,nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity,nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity,nullptr, NULL));
-
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, SystemEventReady, nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, SystemEventTick, nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, AXPEventPEKShort,nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, AXPEventPEKLong,nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter,nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity,nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity,nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, AnyEventSystem,nullptr, NULL);
     // Create the event source task with the same priority as the current task
     xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
     lEvLog("lunokIoT: User event loop running\n");

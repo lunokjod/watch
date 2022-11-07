@@ -67,7 +67,7 @@ void LaunchApplicationTask(void * data) {
         }
 
         if ( nullptr == data ) { // this situation is indeed as prior to screen sleep
-            lUILog("Application: None");
+            lUILog("Application: None\n");
             currentApplication = nullptr;     // no one driving now x'D
             ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
         } else {

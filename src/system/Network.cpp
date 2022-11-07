@@ -47,8 +47,8 @@
 #endif
 
 #include "../app/LogView.hpp"
+#include <esp_task_wdt.h>
 
-BLEScan *pBLEScan = nullptr;
 int BLEscanTime = 5; //In seconds
 unsigned long BLENextscanTime = 0;
 BLEServer *pServer = nullptr;
@@ -56,6 +56,7 @@ BLEService *pService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
 
 std::list <lBLEDevice*>BLEKnowDevices;
 
@@ -77,6 +78,13 @@ bool BLESendScreenShootCommand = false;
 
 // Network scheduler list
 std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
+
+lBLEDevice::~lBLEDevice() {
+    if ( nullptr != devName ) {
+        free(devName); 
+    }
+    lNetLog("BLEDevice %p destroyed\n", this);
+}
 
 /*
  * Stop desired task from network scheduler
@@ -366,6 +374,7 @@ static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void*
 
 static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     StopBLE();
+    delay(100);
 }
 
 void BLESetupHooks() {
@@ -401,6 +410,23 @@ void BLELoopTask(void * data) {
     oldDeviceConnected = false;
     deviceConnected = false;
     while(bleEnabled) {
+        esp_task_wdt_reset();
+        delay(10);
+
+        // clean old BLE peers here
+        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
+            size_t b4Devs = BLEKnowDevices.size();
+            BLEKnowDevices.remove_if([](lBLEDevice *dev){
+                int16_t seconds = (millis()-dev->lastSeen)/1000;
+                if ( seconds > 80 ) {
+                    //lNetLog("BLE: Removed expired seen device: '%s' %s\n",dev->devName,dev->addr.toString().c_str());
+                    delete dev;
+                    return true;
+                }
+                return false;
+            });
+            xSemaphoreGive( BLEKnowDevicesSemaphore );
+        }
         if ( blePeer ) {
             if ( BLESendScreenShootCommand ) { // the client has sended "GETSCREENSHOOT" in the BLE UART
                 // first iteration
@@ -542,32 +568,39 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
             advertisedDevice->getName().c_str()
         ); */
         bool alreadyKnown = false;
-        for (auto const& dev : BLEKnowDevices) {
-            if ( dev->addr == advertisedDevice->getAddress() ) {
-                lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times)\n",
-                                        dev->devName,dev->addr.toString().c_str(),
-                                        ((millis()-dev->firstSeen)/1000),
-                                        ((millis()-dev->lastSeen)/1000),
-                                        dev->seenCount);
-                dev->lastSeen = millis();
-                dev->seenCount++;
-                dev->rssi = advertisedDevice->getRSSI();
-                alreadyKnown=true;
+        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
+            for (auto const& dev : BLEKnowDevices) {
+                if ( dev->addr == advertisedDevice->getAddress() ) {
+                    /*
+                    lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times)\n",
+                                            dev->devName,dev->addr.toString().c_str(),
+                                            ((millis()-dev->firstSeen)/1000),
+                                            ((millis()-dev->lastSeen)/1000),
+                                            dev->seenCount);
+                    */
+                    dev->lastSeen = millis();
+                    dev->seenCount++;
+                    if ( advertisedDevice->haveRSSI() ) {
+                        dev->rssi = advertisedDevice->getRSSI();
+                    }
+                    alreadyKnown=true;
+                }
             }
-        }
 
-        if ( false == alreadyKnown ) {
-            lBLEDevice * newDev = new lBLEDevice();
-            newDev->addr =  advertisedDevice->getAddress();
-            newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
-            sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
-            lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
-            newDev->rssi = advertisedDevice->getRSSI();
-            newDev->firstSeen = millis();
-            newDev->lastSeen = newDev->firstSeen;
-            BLEKnowDevices.push_back(newDev);
+            if ( false == alreadyKnown ) {
+                lBLEDevice * newDev = new lBLEDevice();
+                newDev->addr =  advertisedDevice->getAddress();
+                newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
+                sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
+                //lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
+                newDev->rssi = advertisedDevice->getRSSI();
+                newDev->firstSeen = millis();
+                newDev->lastSeen = newDev->firstSeen;
+                BLEKnowDevices.push_back(newDev);
+            }
+            //lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
+            xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
-        lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
     }
 };
 
@@ -623,19 +656,23 @@ void StopBLE() {
         pTxCharacteristic=nullptr;
     }
     */
-    if ( ( nullptr != pBLEScan ) && (pBLEScan->isScanning())) {
+   
+    if ( BLEDevice::getScan()->isScanning()) {
         lNetLog("BLE: Waiting scan stops...\n");
-        pBLEScan->stop();
-        pBLEScan->clearResults();
+        BLEDevice::getScan()->stop();
         delay(100);
+        BLEDevice::getScan()->clearResults();
+        BLEDevice::getScan()->clearDuplicateCache();
     }
 
     bleEnabled = false;
     if ( bleServiceRunning ) {
         lNetLog("BLE: Waiting service stops...\n");
         while(bleServiceRunning) { delay(1); }
-    }
+        lNetLog("BLE: Service ended\n");
 
+    }
+ 
 
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
@@ -708,12 +745,13 @@ void StartBLE() {
     // Start advertising
     pServer->getAdvertising()->start();
 
-    pBLEScan = BLEDevice::getScan(); //create new scan
-    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+    BLEScan * pBLEScan = BLEDevice::getScan(); //create new scan
+    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
-    pBLEScan->setInterval(300);
-    pBLEScan->setWindow(290);  // less or equal setInterval value
+    pBLEScan->setInterval(100);
+    pBLEScan->setWindow(99);  // less or equal setInterval value
     pBLEScan->setMaxResults(0); // dont waste memory with cache
+    //pBLEScan->setDuplicateFilter(false);
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
