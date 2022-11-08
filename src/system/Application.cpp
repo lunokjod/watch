@@ -118,7 +118,10 @@ void LaunchApplicationTask(void * data) {
                     }
                 }
             }
-            
+            // redraw fullscreen
+            TFT_eSprite *appView = instance->GetCanvas();
+            appView->pushSprite(0,0);
+
             if ( nullptr != ptrToCurrent ) {
                 lUILog("LaunchApplicationTask: %p closing...\n", ptrToCurrent);
                 if ( nullptr != ptrToCurrent ) { // @TODO if this delete is optional, can get some grade of "multi-app"
