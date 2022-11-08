@@ -671,7 +671,7 @@ static void SystemEventReady(void* handler_args, esp_event_base_t base, int32_t 
 #else
 */
     //lLog("lunokIoT: Launching 'WatchfaceApplication'...\n");
-    LaunchApplication(new WatchfaceApplication());
+    LaunchApplication(new WatchfaceApplication(),false);
 //#endif
 
 }

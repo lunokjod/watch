@@ -35,24 +35,23 @@ void BLEMonitorTask(void *data)
                 BLEMonitorScanLoops=0;
                 continue;
             }*/
-            if (pBLEScan->isScanning())
-            {
-                pBLEScan->stop();
-                lAppLog("BLE: Scan stopped!\n");
-                delay(1000);
-                continue;
+            if (bleEnabled) {
+                if (pBLEScan->isScanning()) {
+                    pBLEScan->stop();
+                    lAppLog("BLE: Scan stopped!\n");
+                    delay(1000);
+                    continue;
+                }
+                lAppLog("BLE: Scan %d begin\n", BLEMonitorScanLoops);
+                // pBLEScan->clearDuplicateCache();
+                // pBLEScan->clearResults();
+                // pBLEScan->setMaxResults(5);
+                BLEScanResults foundDevices = pBLEScan->start(4);
+                // lAppLog("BLE: Devices found: %d\n",foundDevices.getCount());
+                // pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+                // pBLEScan->clearDuplicateCache();
+                BLEMonitorScanLoops++;
             }
-
-            lAppLog("BLE: Scan %d begin\n", BLEMonitorScanLoops);
-            // pBLEScan->clearDuplicateCache();
-            // pBLEScan->clearResults();
-            // pBLEScan->setMaxResults(5);
-            BLEScanResults foundDevices = pBLEScan->start(4);
-            // lAppLog("BLE: Devices found: %d\n",foundDevices.getCount());
-            // pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-            // pBLEScan->clearDuplicateCache();
-            BLEMonitorScanLoops++;
-
             BLEMonitorTasknextBLEScan = millis() + (5 * 1000);
         }
     }
@@ -104,16 +103,14 @@ bool BLEMonitorApplication::Tick()
     {
         canvas->fillSprite(canvas->color24to16(0x212121));
         btnBack->DrawTo(canvas);
-        if (bleEnabled)
-        {
+        if (bleEnabled) {
             canvas->fillCircle(120, 120, 30, TFT_BLACK);
             canvas->fillCircle(120, 120, 28, TFT_WHITE);
             canvas->fillCircle(120, 120, 24, TFT_BLUE);
             canvas->drawXBitmap((TFT_WIDTH - img_bluetooth_32_width) / 2, (TFT_HEIGHT - img_bluetooth_32_height) / 2, img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, TFT_WHITE);
         }
 
-        if (BLEKnowDevices.size() > 0)
-        {
+        if (BLEKnowDevices.size() > 0) {
             int elementDegrees = 360 / BLEKnowDevices.size();
             if (elementDegrees > 359)
             {

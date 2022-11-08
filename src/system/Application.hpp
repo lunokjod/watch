@@ -29,6 +29,6 @@ class LunokIoTApplication {
 /*
  * Push the application to foreground
  */
-void LaunchApplication(LunokIoTApplication *instance);
+void LaunchApplication(LunokIoTApplication *instance,bool animation=true);
 
 #endif
