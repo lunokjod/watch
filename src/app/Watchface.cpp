@@ -1008,6 +1008,12 @@ bool WatchfaceApplication::Tick() {
         // UPLOAD MONITOR
         //uploadMonitor->DrawTo(watchFaceCanvas->canvas,120-40,115);
 
+        if ( firstRun ) { 
+            lAppLog("Watchface: First run half draw (for splash effect)\n");
+            watchFaceCanvas->DrawTo(canvas);
+            firstRun = false;
+            return true;
+        }
 
         unsigned long localtimeMeasure= millis();
         

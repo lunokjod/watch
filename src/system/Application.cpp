@@ -75,7 +75,16 @@ void LaunchApplicationTask(void * data) {
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance;
             uint8_t userBright = NVS.getInt("lBright");
-            if ( userBright != 0 ) { ttgo->setBrightness(userBright); }
+            if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
+            instance->Tick(); // force new app full redraw ;-P
+            TFT_eSprite *appView = instance->GetCanvas();
+            for(float scale=0.1;scale<0.8;scale+=0.15) {
+                TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
+                scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                scaledImg->deleteSprite();
+                delete scaledImg;
+            }
+
         }
         xSemaphoreGive( UISemaphore );
     } else {
