@@ -22,6 +22,7 @@ void BLEMonitorTask(void * data) {
         // launch when idle
         if (  millis() > BLEMonitorTasknextBLEScan ) {
             NimBLEScan * pBLEScan = BLEDevice::getScan();
+            /*
             if ( BLEMonitorScanLoops > 5 ) {
                 lAppLog("BLE: Rolling to avoid saturation\n");
                 StopBLE();
@@ -30,7 +31,7 @@ void BLEMonitorTask(void * data) {
                 delay(3200);
                 BLEMonitorScanLoops=0;
                 continue;
-            }
+            }*/
             if ( pBLEScan->isScanning() ) {
                 pBLEScan->stop();
                 lAppLog("BLE: Scan stopped!\n");
@@ -41,14 +42,14 @@ void BLEMonitorTask(void * data) {
             lAppLog("BLE: Scan %d begin\n",BLEMonitorScanLoops);
             //pBLEScan->clearDuplicateCache();
             //pBLEScan->clearResults();
-            pBLEScan->setMaxResults(5);
-            BLEScanResults foundDevices = pBLEScan->start(2);
+            //pBLEScan->setMaxResults(5);
+            BLEScanResults foundDevices = pBLEScan->start(4);
             //lAppLog("BLE: Devices found: %d\n",foundDevices.getCount());
-            pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+            //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
             //pBLEScan->clearDuplicateCache();
             BLEMonitorScanLoops++;
 
-            BLEMonitorTasknextBLEScan=millis()+(3*1000);
+            BLEMonitorTasknextBLEScan=millis()+(5*1000);
         }
     }
     lAppLog("BLEMonitor: BLE scan task stops\n");
@@ -80,9 +81,9 @@ BLEMonitorApplication::BLEMonitorApplication() {
 }
 bool BLEMonitorApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
-    if ( touched ) {
-        UINextTimeout = millis()+(UITimeout*4); // disable screen timeout on this app
-    }
+    //if ( touched ) {
+    UINextTimeout = millis()+(UITimeout*4); // disable screen timeout on this app
+    //}
     rotateVal+=1;
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
@@ -106,7 +107,7 @@ bool BLEMonitorApplication::Tick() {
                         esp_task_wdt_reset();
                         //if ( abs(dev->rssi) > 92 ) { currentElement++; continue; }
                         int16_t seconds = (millis()-dev->lastSeen)/1000;
-                        if ( seconds > 75 ) { currentElement++; continue; } // ignore old devices
+                        if ( seconds > 80 ) { currentElement++; continue; } // ignore old devices
                         int searchAngle = (currentElement*elementDegrees);
                         searchAngle=((searchAngle+rotateVal)%360);
                         if ( angle == searchAngle ) {
@@ -121,11 +122,11 @@ bool BLEMonitorApplication::Tick() {
 
                                 canvas->fillCircle(x,y,radius-8,canvas->color24to16(0x1825a9));
                                 canvas->fillCircle(x,y,radius-12,canvas->color24to16(0x212121));
-                            } else if ( seconds > 68 ) { radius-=12;
-                            } else if ( seconds > 60 ) { radius-=10;
-                            } else if ( seconds > 50 ) { radius-=8;
-                            } else if ( seconds > 40 ) { radius-=5;
-                            } else if ( seconds > 30 ) { radius-=3; }
+                            } else if ( seconds > 77 ) { radius-=12;
+                            } else if ( seconds > 69 ) { radius-=10;
+                            } else if ( seconds > 62 ) { radius-=8;
+                            } else if ( seconds > 53 ) { radius-=5;
+                            } else if ( seconds > 40 ) { radius-=3; }
                             canvas->fillCircle(x,y,radius-14,TFT_BLACK);
                             canvas->fillCircle(x,y,radius-16,TFT_WHITE);
                             uint32_t finalColor = canvas->alphaBlend(alpha,canvas->color24to16(0x212121),TFT_BLUE);

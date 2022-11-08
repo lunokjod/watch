@@ -81,7 +81,8 @@ std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
 
 lBLEDevice::~lBLEDevice() {
     if ( nullptr != devName ) {
-        free(devName); 
+        free(devName);
+        devName=nullptr;
     }
     lNetLog("BLEDevice %p destroyed\n", this);
 }
@@ -593,7 +594,9 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                 newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
                 sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
                 //lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
-                newDev->rssi = advertisedDevice->getRSSI();
+                if ( advertisedDevice->haveRSSI() ) {
+                    newDev->rssi = advertisedDevice->getRSSI();
+                }
                 newDev->firstSeen = millis();
                 newDev->lastSeen = newDev->firstSeen;
                 BLEKnowDevices.push_back(newDev);
@@ -750,7 +753,7 @@ void StartBLE() {
     pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
     pBLEScan->setInterval(100);
     pBLEScan->setWindow(99);  // less or equal setInterval value
-    pBLEScan->setMaxResults(0); // dont waste memory with cache
+    pBLEScan->setMaxResults(3); // dont waste memory with cache
     //pBLEScan->setDuplicateFilter(false);
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
