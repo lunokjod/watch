@@ -56,15 +56,7 @@ void LaunchApplicationTask(void * data) {
     delay(10); // do a little delay to launch it (usefull to get a bit of 'yeld()') and launcher call task ends
 
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
-
-        if ( nullptr != currentApplication ) {
-            lUILog("LaunchApplicationTask: %p closing to run: %p\n", currentApplication,instance);
-            LunokIoTApplication *ptrOldApp = currentApplication;
-            currentApplication = nullptr;
-            if ( nullptr != ptrOldApp ) { // @TODO if this delete is optional, can get some grade of "multi-app"
-                delete ptrOldApp;
-            }
-        }
+        LunokIoTApplication * ptrToCurrent = currentApplication;
 
         if ( nullptr == data ) { // this situation is indeed as prior to screen sleep
             lUILog("Application: None\n");
@@ -76,15 +68,53 @@ void LaunchApplicationTask(void * data) {
             currentApplication = instance;
             uint8_t userBright = NVS.getInt("lBright");
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
-            instance->Tick(); // force new app full redraw ;-P
-            TFT_eSprite *appView = instance->GetCanvas();
-            for(float scale=0.1;scale<0.8;scale+=0.15) {
-                TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
-                scaledImg->deleteSprite();
-                delete scaledImg;
+
+            if ( false ) { // slow fade (must use canvas)
+                if ( nullptr != ptrToCurrent ) {
+                    instance->Tick(); // force new app full redraw ;-P
+                    TFT_eSprite *appView = instance->GetCanvas();
+                    
+                    //for(uint16_t alpha=0;alpha<255;alpha+=128){
+                        for(int16_t y=0;y<TFT_HEIGHT;y+=2) {
+                            for(int16_t x=0;x<TFT_WIDTH;x+=2) {
+                                //uint16_t currC = ptrToCurrent->canvas->readPixel(x,y);
+                                uint16_t nextC = appView->readPixel(x,y);
+                                //uint16_t mixC = appView->alphaBlend(alpha,nextC,currC);
+                                //ttgo->tft->drawPixel(x,y,mixC);
+                                ttgo->tft->drawPixel(x,y,nextC);
+                            }
+                        }
+                    //}
+                }
             }
 
+            { // Launch new app effect (zoom out)    
+                instance->Tick(); // force new app full redraw ;-P
+                TFT_eSprite *appView = instance->GetCanvas();
+                for(float scale=0.1;scale<0.4;scale+=0.04) {
+                    TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
+                    //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->deleteSprite();
+                    delete scaledImg;
+                }
+                for(float scale=0.4;scale<0.7;scale+=0.15) {
+                    TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
+                    //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->deleteSprite();
+                    delete scaledImg;
+                }
+            }
+            
+            if ( nullptr != ptrToCurrent ) {
+                lUILog("LaunchApplicationTask: %p closing...\n", ptrToCurrent);
+                if ( nullptr != ptrToCurrent ) { // @TODO if this delete is optional, can get some grade of "multi-app"
+                    lUILog("LaunchApplicationTask: %p has gone\n", ptrToCurrent);
+                    delete ptrToCurrent;
+                    ptrToCurrent=nullptr;
+                }
+            }
         }
         xSemaphoreGive( UISemaphore );
     } else {
