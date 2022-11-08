@@ -691,7 +691,7 @@ void StopBLE() {
 void StartBLE() {
     if ( bleEnabled ) { return; }
 
-    delay(3000); // wait 3 seconds to enable it
+    //delay(3000); // wait 3 seconds to enable it
     //if ( bleEnabled ) { vTaskDelete(NULL); }
     bleEnabled = true;
     lNetLog("BLE: Starting...\n");
