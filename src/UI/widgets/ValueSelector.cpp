@@ -4,7 +4,7 @@
 #include "ValueSelector.hpp"
 
 ValueSelector::~ValueSelector() {
-
+    if ( nullptr != buffer ) { delete buffer; }
 }
 
 ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor, bool showsign):

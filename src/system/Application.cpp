@@ -117,10 +117,10 @@ void LaunchApplicationTask(void * data) {
                         delete scaledImg;
                     }
                 }
+                // redraw fullscreen
+                TFT_eSprite *appView = instance->GetCanvas();
+                appView->pushSprite(0,0);
             }
-            // redraw fullscreen
-            TFT_eSprite *appView = instance->GetCanvas();
-            appView->pushSprite(0,0);
 
             if ( nullptr != ptrToCurrent ) {
                 lUILog("LaunchApplicationTask: %p closing...\n", ptrToCurrent);
