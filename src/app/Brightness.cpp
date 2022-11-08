@@ -7,11 +7,15 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../static/img_bright_48.xbm"
+#include "LogView.hpp"
 
 BrightnessApplication::~BrightnessApplication() {
+    uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
+    //lAppLog("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
+    ttgo->setBrightness(currentValue);
+    NVS.setInt("lBright",currentValue,false);
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != brightGauge ) { delete brightGauge; }
-    NVS.setInt("lBright",ttgo->bl->getLevel(),false);    
 }
 
 BrightnessApplication::BrightnessApplication() {
@@ -19,8 +23,11 @@ BrightnessApplication::BrightnessApplication() {
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
     brightGauge = new GaugeWidget(40,40,240-80);
-    uint8_t currentValue = ttgo->bl->getLevel()*(360/255);
+
+    uint8_t userBright = NVS.getInt("lBright");
+    int16_t currentValue = userBright*(360.0/255);
     brightGauge->selectedAngle = currentValue;
+    ttgo->setBrightness(userBright);
 
 }
 
@@ -28,8 +35,8 @@ bool BrightnessApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     bool change = brightGauge->Interact(touched,touchX, touchY);
     if ( change ) {
-        uint8_t currentValue = ((360.0/255)*brightGauge->selectedAngle);
-        //lLog("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
+        uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
+        //lAppLog("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
         ttgo->setBrightness(currentValue);
     }
     if (millis() > nextRedraw ) {
