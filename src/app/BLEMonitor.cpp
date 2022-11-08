@@ -12,12 +12,13 @@ extern bool bleEnabled;
 unsigned long BLEMonitorTasknextBLEScan = 0;
 TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
 bool lunokIoT_BLEMonitorTaskLoop = false;
-bool lunokIoT_BLEMonitorTaskLoopEnd = false;
+bool lunokIoT_BLEMonitorTaskLoopEnded = false;
 size_t BLEMonitorScanLoops = 0;
 void BLEMonitorTask(void *data)
 {
-    lunokIoT_BLEMonitorTaskLoopEnd = true;
+    lunokIoT_BLEMonitorTaskLoopEnded = true;
     lAppLog("BLEMonitor: BLE scan task starts\n");
+    BLEMonitorScanLoops=0;
     while (lunokIoT_BLEMonitorTaskLoop)
     {
         delay(67);
@@ -55,19 +56,20 @@ void BLEMonitorTask(void *data)
             BLEMonitorTasknextBLEScan = millis() + (5 * 1000);
         }
     }
-    lAppLog("BLEMonitor: BLE scan task stops\n");
-    lunokIoT_BLEMonitorTaskLoopEnd = false;
+    lAppLog("BLEMonitor: BLE scan task stops <----------------------------\n");
+    lunokIoT_BLEMonitorTaskLoopEnded = false;
     vTaskDelete(NULL);
 }
 
 BLEMonitorApplication::~BLEMonitorApplication()
 {
+    lAppLog("BLEMonitor: Waiting BLE task stop...\n");
     lunokIoT_BLEMonitorTaskLoop = false;
-    while (lunokIoT_BLEMonitorTaskLoopEnd)
-    {
-        delay(2);
+    while (lunokIoT_BLEMonitorTaskLoopEnded) {
+        delay(10);
         esp_task_wdt_reset();
     }
+    lAppLog("BLEMonitor: BLE task dies\n");
     // task is dead here, don't need vTaskDelete(lunokIoT_BLEMonitorTask);
     NimBLEScan *pBLEScan = BLEDevice::getScan();
     if (false == pBLEScan->isScanning())

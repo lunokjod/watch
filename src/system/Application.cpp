@@ -57,6 +57,13 @@ class LaunchApplicationDescriptor {
         bool animation;
 };
 
+void KillApplicationTask(void * data) {
+    lUILog("KillApplicationTask: %p closing...\n", data);
+    LunokIoTApplication *instance = (LunokIoTApplication *)data;
+    delete instance;
+    lUILog("KillApplicationTask: %p has gone\n", data);
+    vTaskDelete(NULL);
+}
 
 void LaunchApplicationTask(void * data) {
     LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
@@ -64,7 +71,7 @@ void LaunchApplicationTask(void * data) {
     LunokIoTApplication *instance = dataDesc->instance; // get app instance loaded
     bool animation = dataDesc->animation;
 
-    delay(10); // do a little delay to launch it (usefull to get a bit of 'yeld()') and launcher call task ends
+    //delay(10); // do a little delay to launch it (usefull to get a bit of 'yeld()') and launcher call task ends
 
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
         LunokIoTApplication * ptrToCurrent = currentApplication;
@@ -79,29 +86,29 @@ void LaunchApplicationTask(void * data) {
             currentApplication = instance; // set as main app
             uint8_t userBright = NVS.getInt("lBright");
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
+            TFT_eSprite *appView = instance->GetCanvas();
             if ( animation ) {
-                if ( false ) { // slow fade (must use canvas)
-                    if ( nullptr != ptrToCurrent ) {
-                        instance->Tick(); // force new app full redraw ;-P
-                        TFT_eSprite *appView = instance->GetCanvas();
-                        
-                        //for(uint16_t alpha=0;alpha<255;alpha+=128){
-                            for(int16_t y=0;y<TFT_HEIGHT;y+=2) {
-                                for(int16_t x=0;x<TFT_WIDTH;x+=2) {
-                                    //uint16_t currC = ptrToCurrent->canvas->readPixel(x,y);
-                                    uint16_t nextC = appView->readPixel(x,y);
-                                    //uint16_t mixC = appView->alphaBlend(alpha,nextC,currC);
-                                    //ttgo->tft->drawPixel(x,y,mixC);
-                                    ttgo->tft->drawPixel(x,y,nextC);
-                                }
-                            }
-                        //}
-                    }
-                }
-
-                { // Launch new app effect (zoom out)    
+                /*
+                { // slow fade (must use canvas)
                     instance->Tick(); // force new app full redraw ;-P
                     TFT_eSprite *appView = instance->GetCanvas();
+                    
+                    //for(uint16_t alpha=0;alpha<255;alpha+=128){
+                        for(int16_t y=0;y<TFT_HEIGHT;y+=2) {
+                            for(int16_t x=0;x<TFT_WIDTH;x+=2) {
+                                //uint16_t currC = ptrToCurrent->canvas->readPixel(x,y);
+                                uint16_t nextC = appView->readPixel(x,y);
+                                //uint16_t mixC = appView->alphaBlend(alpha,nextC,currC);
+                                //ttgo->tft->drawPixel(x,y,mixC);
+                                ttgo->tft->drawPixel(x,y,nextC);
+                            }
+                        }
+                    //}
+                }
+                */
+
+                { // Launch new app effect (zoom out)    
+                    instance->Tick(); // force new app full redraw
                     for(float scale=0.1;scale<0.4;scale+=0.04) {
                         TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
                         //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
@@ -117,23 +124,20 @@ void LaunchApplicationTask(void * data) {
                         delete scaledImg;
                     }
                 }
-                // redraw fullscreen
+                // push full image
+                appView->pushSprite(0,0);
+            } else { // no animation, simply consume first tick and push
+                instance->Tick(); // get splash
                 TFT_eSprite *appView = instance->GetCanvas();
                 appView->pushSprite(0,0);
             }
-
-            if ( nullptr != ptrToCurrent ) {
-                lUILog("LaunchApplicationTask: %p closing...\n", ptrToCurrent);
-                if ( nullptr != ptrToCurrent ) { // @TODO if this delete is optional, can get some grade of "multi-app"
-                    lUILog("LaunchApplicationTask: %p has gone\n", ptrToCurrent);
-                    delete ptrToCurrent;
-                    ptrToCurrent=nullptr;
-                }
-            }
         }
-        xSemaphoreGive( UISemaphore );
-    } else {
-        lUILog("Application: ERROR: Unable to get application semaphore, stop launch\n");
+        xSemaphoreGive( UISemaphore ); // free
+
+        if ( nullptr != ptrToCurrent ) {
+            // kill app in other thread (some apps takes much time)
+            xTaskCreate(KillApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr);
+        }
     }
     vTaskDelete(NULL); // get out of my cicken!!!
 }
