@@ -424,7 +424,7 @@ static void UITickTask(void* args) {
     FPS = MAXFPS;
     while(true) {
         delay(1000/FPS);
-         if ( false == UIRunning ) { continue; }
+        if ( false == UIRunning ) { continue; }
         if ( systemSleep ) { continue; }
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);

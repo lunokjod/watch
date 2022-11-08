@@ -63,7 +63,7 @@ std::list <lBLEDevice*>BLEKnowDevices;
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
+#define SERVICE_UART_UUID      "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
@@ -392,15 +392,15 @@ rgb565 myLastColor = { .u16 = (uint16_t)TFT_TRANSPARENT }; // improbable color
 uint16_t lastRLECount = 0;
 
 void BLELoopTask(void * data) {
-    bleServiceRunning=true;
+    bleServiceRunning=true; // notify outside that I'm running
 
-    union RLEPackage {
+    union RLEPackage { // description for send IMAGES via UART TX notification
         uint8_t bytes[5];
         struct {
             uint16_t color;
-            uint8_t repeat;
-            uint8_t x; // screen is 240x240, don't waste my time!
-            uint8_t y;
+            uint8_t repeat; // the same color must repeat in next N'th pixels (RLE)
+            uint8_t x; // screen is 240x240, don't waste my time! :(
+            uint8_t y; // why send coordinates? because BLE notify can be lost
         };
     };
 
@@ -486,7 +486,7 @@ void BLELoopTask(void * data) {
                         if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
                             realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
                             lNetLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
-                            delay(100);
+                            delay(10);
                             theScreenShotToSend=nullptr;
                             realImageSize=0;
                             imageUploadSize=0;
@@ -494,7 +494,7 @@ void BLELoopTask(void * data) {
                             screenShootCurrentImageX=0;
                             BLESendScreenShootCommand=false;
                             screenShootInProgress = false;
-                            //DISCONNECT THE CLIENT
+                            //DISCONNECT THE CLIENT to notify end of picture
                             BLEKickAllPeers();
                             networkActivity=false;
                         }
@@ -507,7 +507,7 @@ void BLELoopTask(void * data) {
             screenShootInProgress=false;
             blePeer=false;
             lNetLog("Network: BLE Device disconnected\n");
-            delay(500); // give the bluetooth stack the chance to get things ready
+            //delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
             lNetLog("Network: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
@@ -535,18 +535,20 @@ void BLELoopTask(void * data) {
 
 /**  None of these are required as they will be handled by the library with defaults. **
  **                       Remove as you see fit for your needs                        */  
-class MyServerCallbacks: public BLEServerCallbacks {
+class LBLEServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
+        lNetLog("BLE: Server client connect\n");
+        deviceConnected = true;
     };
 
     void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
+        lNetLog("BLE: Server client disconnect\n");
+        deviceConnected = false;
     }
   /***************** New - Security handled here ********************
   ****** Note: these are the same return values as defaults ********/
     uint32_t onPassKeyRequest(){
-      lNetLog("BLE: Server PassKeyRequest\n");
+      lNetLog("BLE: Server PassKeyRequest @TODO\n");
       return 123456; 
     }
 
@@ -562,7 +564,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 };
 
 
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice* advertisedDevice) {
         /* lLog("BLE: '%s' '%s'\n", 
             advertisedDevice->getAddress().toString().c_str(),
@@ -607,7 +609,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     }
 };
 
-class MyCallbacks: public BLECharacteristicCallbacks {
+class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
         if (rxValue.length() > 0) {
@@ -663,15 +665,15 @@ void StopBLE() {
     if ( BLEDevice::getScan()->isScanning()) {
         lNetLog("BLE: Waiting scan stops...\n");
         BLEDevice::getScan()->stop();
-        delay(100);
         BLEDevice::getScan()->clearResults();
         BLEDevice::getScan()->clearDuplicateCache();
+        delay(100);
     }
 
     bleEnabled = false;
     if ( bleServiceRunning ) {
         lNetLog("BLE: Waiting service stops...\n");
-        while(bleServiceRunning) { delay(1); }
+        while(bleServiceRunning) { delay(5); esp_task_wdt_reset(); }
         lNetLog("BLE: Service ended\n");
 
     }
@@ -680,7 +682,7 @@ void StopBLE() {
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
-    delay(100);
+    //delay(100);
     /*
     pServer = nullptr;
     pService = nullptr;
@@ -689,68 +691,50 @@ void StopBLE() {
 }
 
 void StartBLE() {
-    if ( bleEnabled ) { return; }
+    if ( bleEnabled ) { return; }  // global flag enabled, already called, safe to ignore
+    bleEnabled = true;             // set the unsafe "lock"
+    lNetLog("BLE: Starting...\n"); // notify to log
 
-    //delay(3000); // wait 3 seconds to enable it
-    //if ( bleEnabled ) { vTaskDelete(NULL); }
-    bleEnabled = true;
-    lNetLog("BLE: Starting...\n");
-    uint8_t BLEAddress[6];
-    esp_read_mac(BLEAddress,ESP_MAC_BT);
-    char BTName[30] = { 0 };
-    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]);
-    
+    uint8_t BLEAddress[6];                  // 6 octets are the BLE address
+    esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
+
+    char BTName[14] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
+    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
+
     // Create the BLE Device
-    BLEDevice::init(BTName);
-    //if ( nullptr == pServer ) {
-        // Create the BLE Server
-        pServer = BLEDevice::createServer();
-        pServer->setCallbacks(new MyServerCallbacks());
-    //}
-    // Create the BLE Service
-    //if ( nullptr == pService ) {
-        pService = pServer->createService(SERVICE_UUID);
-    //}
+    BLEDevice::init(std::string(BTName)); // hate strings
+
+    // create the server
+    pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
+
+    // Create the BLE Service UART
+    pService = pServer->createService(SERVICE_UART_UUID);
 
     //if ( nullptr == pTxCharacteristic ) {
         // Create a BLE Characteristic
         pTxCharacteristic = pService->createCharacteristic(
             CHARACTERISTIC_UUID_TX,
-            /******* Enum Type NIMBLE_PROPERTY now *******      
-            BLECharacteristic::PROPERTY_NOTIFY
-            );
-            **********************************************/  
             NIMBLE_PROPERTY::NOTIFY
         );
-    //}
-    /***************************************************   
-     NOTE: DO NOT create a 2902 descriptor 
-    it will be created automatically if notifications 
-    or indications are enabled on a characteristic.
 
-    pCharacteristic->addDescriptor(new BLE2902());
-    ****************************************************/                  
-
+    // UART data come here
     BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
-                                            CHARACTERISTIC_UUID_RX,
-                                    /******* Enum Type NIMBLE_PROPERTY now *******       
-                                            BLECharacteristic::PROPERTY_WRITE
-                                            );
-                                    *********************************************/  
-                                            NIMBLE_PROPERTY::WRITE
-                                            );
+                                            CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE);
 
-    pRxCharacteristic->setCallbacks(new MyCallbacks());
+    pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks()); // @TODO here can be a leak
 
     // Start the service
     pService->start();
 
     // Start advertising
-    pServer->getAdvertising()->start();
+    NimBLEAdvertising *adv = pServer->getAdvertising();
+    adv->setAppearance(CONFIG_BT_NIMBLE_SVC_GAP_APPEARANCE);
+    adv->start();
 
-    BLEScan * pBLEScan = BLEDevice::getScan(); //create new scan
-    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks(), true);
-    pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
+    BLEScan * pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
+    pBLEScan->setActiveScan(false); //active scan uses more power
     pBLEScan->setInterval(100);
     pBLEScan->setWindow(99);  // less or equal setInterval value
     pBLEScan->setMaxResults(3); // dont waste memory with cache

@@ -4,6 +4,7 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_bluetooth_32.xbm"
 #include "Watchface.hpp"
+#include "BLEDevice.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 #include <esp_task_wdt.h>
@@ -14,13 +15,12 @@ TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
 bool lunokIoT_BLEMonitorTaskLoop = false;
 bool lunokIoT_BLEMonitorTaskLoopEnded = false;
 size_t BLEMonitorScanLoops = 0;
-void BLEMonitorTask(void *data)
-{
+
+void BLEMonitorTask(void *data) {
     lunokIoT_BLEMonitorTaskLoopEnded = true;
-    lAppLog("BLEMonitor: BLE scan task starts\n");
+    lAppLog("BLEMonitorTask: BLE scan task starts\n");
     BLEMonitorScanLoops=0;
-    while (lunokIoT_BLEMonitorTaskLoop)
-    {
+    while (lunokIoT_BLEMonitorTaskLoop) {
         delay(67);
         // launch when idle
         if (millis() > BLEMonitorTasknextBLEScan)
@@ -39,11 +39,11 @@ void BLEMonitorTask(void *data)
             if (bleEnabled) {
                 if (pBLEScan->isScanning()) {
                     pBLEScan->stop();
-                    lAppLog("BLE: Scan stopped!\n");
+                    lAppLog("BLEMonitorTask: Scan stopped!\n");
                     delay(1000);
                     continue;
                 }
-                lAppLog("BLE: Scan %d begin\n", BLEMonitorScanLoops);
+                lAppLog("BLEMonitorTask: Scan %d begin\n", BLEMonitorScanLoops);
                 // pBLEScan->clearDuplicateCache();
                 // pBLEScan->clearResults();
                 // pBLEScan->setMaxResults(5);
@@ -56,7 +56,7 @@ void BLEMonitorTask(void *data)
             BLEMonitorTasknextBLEScan = millis() + (5 * 1000);
         }
     }
-    lAppLog("BLEMonitor: BLE scan task stops <----------------------------\n");
+    lAppLog("BLEMonitorTask: BLE scan task stops\n");
     lunokIoT_BLEMonitorTaskLoopEnded = false;
     vTaskDelete(NULL);
 }
@@ -87,30 +87,28 @@ BLEMonitorApplication::~BLEMonitorApplication()
 BLEMonitorApplication::BLEMonitorApplication()
 {
     btnBack = new ButtonImageXBMWidget(
-        5, TFT_HEIGHT - 69, 64, 64, [&, this]()
-        { LaunchApplication(new WatchfaceApplication()); },
+        5, TFT_HEIGHT - 69, 64, 64, [&, this]() { LaunchApplication(new WatchfaceApplication()); },
         img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, ttgo->tft->color24to16(0x353e45), false);
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreate(BLEMonitorTask, "bMonTA", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask);
     UINextTimeout = millis() + (UITimeout * 4); // disable screen timeout on this app
 }
-bool BLEMonitorApplication::Tick()
-{
+
+bool BLEMonitorApplication::Tick() {
     btnBack->Interact(touched, touchX, touchY);
     // if ( touched ) {
     UINextTimeout = millis() + (UITimeout * 4); // disable screen timeout on this app
     //}
-    rotateVal += 1;
-    if (millis() > nextRedraw)
-    {
+    if (millis() > nextRedraw) {
+        rotateVal += 1;
         canvas->fillSprite(canvas->color24to16(0x212121));
         btnBack->DrawTo(canvas);
-        if (bleEnabled) {
-            canvas->fillCircle(120, 120, 30, TFT_BLACK);
-            canvas->fillCircle(120, 120, 28, TFT_WHITE);
-            canvas->fillCircle(120, 120, 24, TFT_BLUE);
-            canvas->drawXBitmap((TFT_WIDTH - img_bluetooth_32_width) / 2, (TFT_HEIGHT - img_bluetooth_32_height) / 2, img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, TFT_WHITE);
-        }
+        canvas->fillCircle(120, 120, 30, TFT_BLACK);
+        canvas->fillCircle(120, 120, 28, TFT_WHITE);
+        canvas->fillCircle(120, 120, 24, TFT_BLUE);
+        uint16_t iconColor = TFT_WHITE;
+        if ( false == bleEnabled ) { iconColor = TFT_DARKGREY; }
+        canvas->drawXBitmap((TFT_WIDTH - img_bluetooth_32_width) / 2, (TFT_HEIGHT - img_bluetooth_32_height) / 2, img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, iconColor);
 
         if (BLEKnowDevices.size() > 0) {
             int elementDegrees = 360 / BLEKnowDevices.size();
@@ -126,6 +124,7 @@ bool BLEMonitorApplication::Tick()
                 {
                 int currentElement = 0;
                 if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
+                    lBLEDevice * BTDeviceSelected = nullptr;
                     for (auto const& dev : BLEKnowDevices) {
                         esp_task_wdt_reset();
                         //if ( abs(dev->rssi) > 92 ) { currentElement++; continue; }
@@ -152,7 +151,7 @@ bool BLEMonitorApplication::Tick()
                             } else if ( seconds > 40 ) { radius-=3; }
                             canvas->fillCircle(x,y,radius-14,TFT_BLACK);
                             canvas->fillCircle(x,y,radius-16,TFT_WHITE);
-                            uint32_t finalColor = canvas->alphaBlend(alpha,canvas->color24to16(0x212121),TFT_BLUE);
+                            uint16_t finalColor = canvas->alphaBlend(alpha,canvas->color24to16(0x212121),TFT_BLUE);
                             canvas->fillCircle(x,y,radius-18,finalColor);
                             if ( seconds < 5) { // draw signal
                                 canvas->setTextColor(TFT_BLACK);
@@ -174,9 +173,15 @@ bool BLEMonitorApplication::Tick()
                                 canvas->drawString(dev->addr.toString().c_str(), x,y);
                             }
                             if ( ( touched ) && ( false == BTDeviceTouched ) ) {
-                                if ( ActiveRect::InRadius(touchX, touchY,x,y,30) ) {
+                                //lAppLog("InRadius x: %d y: %d\n",x,y);
+                                if ( ActiveRect::InRadius(touchX, touchY,x,y,50) ) {
                                     lAppLog("TOUCHED BT: %s\n",dev->addr.toString().c_str());
                                     BTDeviceTouched=true;
+                                    BTDeviceSelected=dev;
+                                    canvas->fillCircle(x,y,160,finalColor);
+                                    xSemaphoreGive( BLEKnowDevicesSemaphore );
+                                    LaunchApplication(new BLEDeviceMonitorApplication(finalColor,dev->addr));
+                                    return true;
                                 }
                             }
                         }
@@ -187,7 +192,7 @@ bool BLEMonitorApplication::Tick()
                 return true; },
                 nullptr);
         }
-        nextRedraw = millis() + (1000 / 12);
+        nextRedraw = millis() + (1000 / 18);
         return true;
     }
     return false;

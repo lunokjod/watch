@@ -30,6 +30,7 @@
 #include "../app/LogView.hpp"
 
 #include <cmath>
+extern bool UIRunning;
 bool systemSleep = false;
 // Event loops
 esp_event_loop_handle_t systemEventloopHandler;
@@ -257,7 +258,7 @@ void AXPIntHandler() {
     ttgo->power->clearIRQ();    
 }
 
-void WakeUpReason() {
+void WakeUpReason() { // this function decides the system must wake or sleep
 
   esp_sleep_wakeup_cause_t wakeup_reason;
 
@@ -313,7 +314,7 @@ static void DoSleepTask(void* args) {
         vTaskDelete(NULL);
     }*/
     lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
-    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    bool done = xSemaphoreTake( DoSleepTaskSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     if ( false == done ) {
         lEvLog("ESP32: DoSleep DISCARDED: already in progress...\n");
         vTaskDelete(NULL);
@@ -335,11 +336,11 @@ static void DoSleepTask(void* args) {
     //Serial.printf("WIFISTATUS: %d\n",WiFi.status());
     //while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
     while ( WL_CONNECTED == WiFi.status()) {
-        lEvLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
+        lNetLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
         retries--;
-        if ( 0 == retries ) {
-            lEvLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
+        if ( 0 == retries+1 ) {
+            lNetLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
             WiFi.disconnect(true);
             delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
             break;
@@ -575,7 +576,9 @@ void TakeBMPSample() {
     float nowBMATemp = ttgo->bma->temperature();
     if ( round(nowBMATemp) != round(bmaTemp) ) {
         //Serial.printf("BMA423: Temperature: %.1fºC\n", bmaTemp);
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP,nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
+        if ( UIRunning ) {
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP,nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
+        }
     }
     bmaTemp = nowBMATemp; // set value
 
@@ -609,7 +612,9 @@ void TakeBMPSample() {
             break;
         }
         */
+       if ( UIRunning ) {
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DIRECTION,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+       }
 
     }
 }

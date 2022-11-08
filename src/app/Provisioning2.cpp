@@ -69,7 +69,6 @@ void Provisioning2Deinit() {
     wifi_prov_mgr_stop_provisioning();
     wifi_prov_mgr_deinit();
     WiFi.removeEvent(Provisioning2_SysProvEvent);
-    delay(100);
     WiFi.disconnect(true);
     delay(100);
     WiFi.mode(WIFI_OFF);
