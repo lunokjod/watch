@@ -5,6 +5,7 @@
 #include "../lunokiot_config.hpp"
 #include "About.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "LogView.hpp"
 
 const unsigned long AboutBoxTextScrollDelay = 1000/16;
 //const unsigned long 
@@ -118,16 +119,29 @@ AboutApplication::AboutApplication() {
     perspectiveTextBuffer = new CanvasWidget(120,TFT_WIDTH);
     perspectiveTextBuffer->canvas->fillSprite(TFT_BLACK);
 
-    // final interface
+    /*
     canvas->fillRect(0,0,TFT_WIDTH,30,TFT_BLACK);
     canvas->fillRect(0,150,TFT_WIDTH,15,TFT_BLACK);
     canvas->fillRect(0,TFT_HEIGHT-74,TFT_WIDTH,74,canvas->color24to16(0x212121));
     btnBack->DrawTo(canvas);
     canvas->pushSprite(0,0);
-
+    */
+drawOneSecond=millis()+1000;
 }
 
 bool AboutApplication::Tick() {
+    // draw the UI during the first second
+    if ( drawOneSecond > millis() ) {
+        // final interface
+        lAppLog("AboutApplication: First run half draw (for splash effect)\n");
+        canvas->fillRect(0,0,TFT_WIDTH,30,TFT_BLACK);
+        canvas->fillRect(0,150,TFT_WIDTH,15,TFT_BLACK);
+        canvas->fillRect(0,TFT_HEIGHT-74,TFT_WIDTH,74,canvas->color24to16(0x212121));
+        btnBack->DrawTo(canvas);
+        canvas->pushSprite(0,0);
+        return true;
+    }
+
     btnBack->Interact(touched,touchX, touchY);
     if ( millis() > nextScrollRedraw) {
         // update the source canvas (plain text scroll)
