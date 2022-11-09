@@ -309,7 +309,7 @@ WatchfaceApplication::WatchfaceApplication() {
             // GMT +8 = 28800
             // GMT -1 = -3600
             // GMT 0 = 0
-            while( false == getLocalTime(&timeinfo,100) ){ delay(100); }
+            while( false == getLocalTime(&timeinfo,100) ) { delay(100); }
             lNetLog("Watchface: NTP Received\n");
             if (getLocalTime(&timeinfo)) {
                 lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
@@ -566,11 +566,13 @@ void WatchfaceApplication::PrepareDataLayer() {
     if ( bleEnabled ) {
         posX = 36;
         posY = 171;
-        uint32_t dotColor = TFT_DARKGREY;
-        if ( bleServiceRunning ) { dotColor = TFT_GREEN; }
+        uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
+        if ( bleServiceRunning ) { dotColor = canvas->color24to16(0x006400); }
+        if ( blePeer ) { dotColor = TFT_GREEN; }
         marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
-        unsigned char * img = img_bluetooth_24_bits;
-        if ( blePeer ) { img = img_bluetooth_peer_24_bits; }
+
+        unsigned char * img = img_bluetooth_24_bits;         // bluetooth logo only icon
+        if ( blePeer ) { img = img_bluetooth_peer_24_bits; } // bluetooth with peer icon
         overlay->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
     }
 

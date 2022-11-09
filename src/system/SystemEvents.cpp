@@ -83,6 +83,8 @@ unsigned long timeBMAActivityNone = 0;
 bool irqAxp = false;
 bool irqBMA = false;
 bool irqRTC = false;
+
+extern NimBLECharacteristic * battCharacteristic;
 /*
 void RTCIntHandler() {
     pinMode(RTC_INT_PIN, INPUT_PULLDOWN);
@@ -634,9 +636,7 @@ static void SystemEventTick(void* handler_args, esp_event_base_t base, int32_t i
             if ( nowBatteryPercent != batteryPercent ) {
                 batteryPercent = nowBatteryPercent;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC,nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-            }
-            batteryPercent = nowBatteryPercent;
-            
+            }            
         } else {
             if ( -1 != batteryPercent ) {
                 batteryPercent = -1;

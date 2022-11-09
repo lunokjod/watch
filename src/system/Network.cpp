@@ -45,7 +45,7 @@
 #ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
 #include "LocalCloud.hpp"
 #endif
-
+#include "Datasources/kvo.hpp"
 #include "../app/LogView.hpp"
 #include <esp_task_wdt.h>
 
@@ -53,20 +53,15 @@ int BLEscanTime = 5; //In seconds
 unsigned long BLENextscanTime = 0;
 BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
+BLEService *pLunokIoTService = nullptr;
+BLEService *pBattService = nullptr;
 BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
-
+NimBLECharacteristic * battCharacteristic = nullptr;
 std::list <lBLEDevice*>BLEKnowDevices;
-
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
-
-#define SERVICE_UART_UUID      "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
-#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
-#define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
-
+EventKVO * battPublish = nullptr; 
 extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
 extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 
@@ -393,6 +388,7 @@ uint16_t lastRLECount = 0;
 
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
+    lNetLog("BLE: Task begin\n");
 
     union RLEPackage { // description for send IMAGES via UART TX notification
         uint8_t bytes[5];
@@ -506,10 +502,10 @@ void BLELoopTask(void * data) {
         if (!deviceConnected && oldDeviceConnected) {
             screenShootInProgress=false;
             blePeer=false;
-            lNetLog("Network: BLE Device disconnected\n");
+            lNetLog("BLE: Device disconnected\n");
             //delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
-            lNetLog("Network: Start BLE advertising\n");
+            lNetLog("BLE: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
             networkActivity=false;
         }
@@ -518,7 +514,7 @@ void BLELoopTask(void * data) {
         if (deviceConnected && !oldDeviceConnected) {
             // do stuff here on connecting
             blePeer=true;
-            lNetLog("Network: BLE Device connected\n");
+            lNetLog("BLE: Device connected\n");
             oldDeviceConnected=deviceConnected;
             networkActivity=true;
         }
@@ -537,16 +533,19 @@ void BLELoopTask(void * data) {
  **                       Remove as you see fit for your needs                        */  
 class LBLEServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-        lNetLog("BLE: Server client connect\n");
+        lNetLog("BLE: Client connect\n");
         deviceConnected = true;
     };
-
+    void onAuthenticationComplete(ble_gap_conn_desc* desc) {
+        lNetLog("BLE: Authentication complete\n");
+        //LaunchApplication(new WatchfaceApplication());
+    }
     void onDisconnect(BLEServer* pServer) {
-        lNetLog("BLE: Server client disconnect\n");
+        lNetLog("BLE: Client disconnect\n");
         deviceConnected = false;
     }
-  /***************** New - Security handled here ********************
-  ****** Note: these are the same return values as defaults ********/
+
+    /*
     uint32_t onPassKeyRequest(){
       lNetLog("BLE: Server PassKeyRequest @TODO\n");
       return 123456; 
@@ -555,14 +554,8 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
     bool onConfirmPIN(uint32_t pass_key){
       lNetLog("BLE: The passkey YES/NO number: '%s'\n",pass_key);
       return true; 
-    }
-
-    void onAuthenticationComplete(ble_gap_conn_desc desc){
-      lNetLog("BLE: Starting BLE work!\n");
-    }
-  /*******************************************************************/
+    }*/
 };
-
 
 class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice* advertisedDevice) {
@@ -586,6 +579,15 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                     if ( advertisedDevice->haveRSSI() ) {
                         dev->rssi = advertisedDevice->getRSSI();
                     }
+                    if ( advertisedDevice->haveTXPower() ) {
+                        dev->txPower = advertisedDevice->getTXPower();
+                    }
+                    // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
+                    if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
+                        // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
+                        dev->distance = 10 ^((dev->txPower-dev->rssi)/(10* 2));
+                        lNetLog("BLE: DEBUG Device DISTANCE: %f\n",dev->distance);
+                    }
                     alreadyKnown=true;
                 }
             }
@@ -598,6 +600,15 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                 //lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
                 if ( advertisedDevice->haveRSSI() ) {
                     newDev->rssi = advertisedDevice->getRSSI();
+                }
+                if ( advertisedDevice->haveTXPower() ) {
+                    newDev->txPower = advertisedDevice->getTXPower();
+                }
+                // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
+                if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
+                    // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
+                    newDev->distance = 10 ^((newDev->txPower-newDev->rssi)/(10* 2));
+                    lNetLog("BLE: DEBUG Device DISTANCE: %f\n",newDev->distance);
                 }
                 newDev->firstSeen = millis();
                 newDev->lastSeen = newDev->firstSeen;
@@ -617,18 +628,18 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
             const char * ScreenShootCommand = "GETSCREENSHOOT";
             const char * PushMessageCommand = "PUSHMSG";
 
-            if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(ScreenShootCommand))) {
+            if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(PushMessageCommand))) {
                 lNetLog("BLE: UART: '%s' command received\n",PushMessageCommand);
             } else if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
                 lNetLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
                 BLESendScreenShootCommand = true;
             } else {
                 BLESendScreenShootCommand=false;
-                lNetLog("BLE: UART Received Value: %c",receivedCommand);
+                lNetLog("BLE: UART Received Value: ");
                 for (int i = 0; i < rxValue.length(); i++) {
-                    lNetLog("%c",rxValue[i]);
+                    lLog("'%c'(0x%x) ",rxValue[i],rxValue[i]);
                 }
-                lNetLog("\n");
+                lLog("\n");
             }
         }
     }
@@ -667,7 +678,7 @@ void StopBLE() {
         BLEDevice::getScan()->stop();
         BLEDevice::getScan()->clearResults();
         BLEDevice::getScan()->clearDuplicateCache();
-        delay(100);
+        //delay(100);
     }
 
     bleEnabled = false;
@@ -677,11 +688,14 @@ void StopBLE() {
         lNetLog("BLE: Service ended\n");
 
     }
- 
-
+    if ( nullptr != battPublish ) {
+        delete battPublish;
+        battPublish=nullptr;
+    }
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
+    battCharacteristic = nullptr;
     //delay(100);
     /*
     pServer = nullptr;
@@ -694,7 +708,17 @@ void StartBLE() {
     if ( bleEnabled ) { return; }  // global flag enabled, already called, safe to ignore
     bleEnabled = true;             // set the unsafe "lock"
     lNetLog("BLE: Starting...\n"); // notify to log
-
+    if ( nullptr == battPublish ) {
+        battPublish = new EventKVO([&](){
+            if ( nullptr != battCharacteristic ) { // @TODO bad place, this must be placed in network listening event
+                uint8_t level = 0;
+                if ( -1 != batteryPercent ) { level = batteryPercent; }
+                lNetLog("BLE: Notify Battery: %d%%\n",level); // notify to log
+                battCharacteristic->setValue(level);
+                battCharacteristic->notify();
+            }
+        },PMU_EVENT_BATT_PC);
+    }
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
 
@@ -703,6 +727,14 @@ void StartBLE() {
 
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
+    BLEDevice::setSecurityAuth(true,true,true);
+
+    uint32_t generatedPin=random(0,999999);
+    lNetLog("BLE: generated PIN: %06d\n",generatedPin);
+    BLEDevice::setSecurityPasskey(generatedPin);
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
+
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
 
     // create the server
     pServer = BLEDevice::createServer();
@@ -710,26 +742,44 @@ void StartBLE() {
 
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
-
-    //if ( nullptr == pTxCharacteristic ) {
-        // Create a BLE Characteristic
-        pTxCharacteristic = pService->createCharacteristic(
-            CHARACTERISTIC_UUID_TX,
-            NIMBLE_PROPERTY::NOTIFY
-        );
-
+    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
     // UART data come here
     BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
-                                            CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE);
+                    CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
+    pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
+ 
 
-    pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks()); // @TODO here can be a leak
+    // battery services
+    // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
+    pBattService = pServer->createService(BLE_SERVICE_BATTERY);
+    battCharacteristic = pBattService->createCharacteristic(BLE_CHARACTERISTIC_BATTERY,
+                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY );
+    uint8_t level = 0;
+    if ( -1 != batteryPercent ) { level = batteryPercent; }
+    battCharacteristic->setValue(level);
 
-    // Start the service
+
+    // lunokiot services
+    pLunokIoTService = pServer->createService(BLE_SERVICE_LUNOKIOT);
+    // version announce to peers
+    NimBLECharacteristic * lVersionCharacteristic = 
+                pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_VERSION,
+                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+    const uint32_t currVer = LUNOKIOT_BUILD_NUMBER;
+    lVersionCharacteristic->setValue(currVer);
+
+
+    // Start the services
+    pLunokIoTService->start();
+    pBattService->start();
     pService->start();
 
     // Start advertising
     NimBLEAdvertising *adv = pServer->getAdvertising();
     adv->setAppearance(CONFIG_BT_NIMBLE_SVC_GAP_APPEARANCE);
+    adv->addTxPower();
+    adv->addServiceUUID(BLE_SERVICE_LUNOKIOT);
+    adv->addServiceUUID(BLE_SERVICE_BATTERY);
     adv->start();
 
     BLEScan * pBLEScan = BLEDevice::getScan();
@@ -738,7 +788,7 @@ void StartBLE() {
     pBLEScan->setInterval(100);
     pBLEScan->setWindow(99);  // less or equal setInterval value
     pBLEScan->setMaxResults(3); // dont waste memory with cache
-    //pBLEScan->setDuplicateFilter(false);
+    pBLEScan->setDuplicateFilter(false);
 
     xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 

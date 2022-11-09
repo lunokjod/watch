@@ -25,8 +25,13 @@
 * WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
 * Wake up every 60 seconds to monitor the user pose (future sleep monitor)
 * Wake up every activity/stepcounter (future fitness monitor)
-* Screen capture can be shared via BLE UART (see tools/getScreenshoot.py)
-
+* Screen capture can be shared via BLE UART (see tools/getScreenshoot.py) don't work due BLE security (script must be adapted)
+ * BLE GATT support
+  * Pairing with random pin (see "Bluetooth" on main menu)
+   * Remove current bonded devices
+  * BLE Battery standard notification. Can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
+  * All encrypted
+  * Man in the middle resistant
 ## Full application list:
 
 [See App gallery](src/app/README.md)
@@ -88,7 +93,6 @@
 ## Know problems
  * Lower than 172Kb of free heap makes fail the sprite alloc, getting glitches or missinformation
  * Some kind of leak on (almost) heap between system and watchface... long term use impossible, restarted by heap overflow occurs after many of uses (glitches can be seen before as advice system is running out of memory)
- * BLE added a little bit of unstability (development in early stages...)
  * Touch are unstable meanwhile calibration is running (some seconds after boot)
 
 ## Warning:
