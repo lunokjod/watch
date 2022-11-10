@@ -52,16 +52,22 @@
 int BLEscanTime = 5; //In seconds
 unsigned long BLENextscanTime = 0;
 BLEServer *pServer = nullptr;
+
 BLEService *pService = nullptr;
 BLEService *pLunokIoTService = nullptr;
 BLEService *pBattService = nullptr;
+
 BLECharacteristic * pTxCharacteristic = nullptr;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
 NimBLECharacteristic * battCharacteristic = nullptr;
+NimBLECharacteristic * lBattTempCharacteristic = nullptr;
+NimBLECharacteristic * lBMATempCharacteristic = nullptr;
 std::list <lBLEDevice*>BLEKnowDevices;
-EventKVO * battPublish = nullptr; 
+EventKVO * battPercentPublish = nullptr; 
+EventKVO * battTempPublish = nullptr; 
+EventKVO * envTempPublish = nullptr; 
 extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
 extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 
@@ -232,7 +238,7 @@ static void NetworkHandlerTask(void* args) {
                 if ( bleEnabled ) { StopBLE(); }
                 delay(100);
                 WiFi.begin();
-                //WiFi.setAutoReconnect(false);
+                WiFi.setAutoReconnect(false);
             } else {
                 lNetLog("Network: No tasks pending for this period... don't launch WiFi\n");
                 for (auto const& tsk : networkPendingTasks) {
@@ -370,7 +376,7 @@ static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void*
 
 static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     StopBLE();
-    delay(100);
+    //delay(100);
 }
 
 void BLESetupHooks() {
@@ -586,7 +592,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                     if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
                         // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
                         dev->distance = 10 ^((dev->txPower-dev->rssi)/(10* 2));
-                        lNetLog("BLE: DEBUG Device DISTANCE: %f\n",dev->distance);
+                        //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",dev->distance);
                     }
                     alreadyKnown=true;
                 }
@@ -608,7 +614,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                 if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
                     // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
                     newDev->distance = 10 ^((newDev->txPower-newDev->rssi)/(10* 2));
-                    lNetLog("BLE: DEBUG Device DISTANCE: %f\n",newDev->distance);
+                    //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",newDev->distance);
                 }
                 newDev->firstSeen = millis();
                 newDev->lastSeen = newDev->firstSeen;
@@ -688,14 +694,25 @@ void StopBLE() {
         lNetLog("BLE: Service ended\n");
 
     }
-    if ( nullptr != battPublish ) {
-        delete battPublish;
-        battPublish=nullptr;
+
+    if ( nullptr != battPercentPublish ) {
+        delete battPercentPublish;
+        battPercentPublish=nullptr;
     }
+    if ( nullptr != battTempPublish ) {
+        delete battTempPublish;
+        battTempPublish=nullptr;
+    }
+    if ( nullptr != envTempPublish ) {
+        delete envTempPublish;
+        envTempPublish=nullptr;
+    }
+
     //pService->removeCharacteristic(pTxCharacteristic, true);
     //pServer->removeService(pService, true);
     BLEDevice::deinit(true);
     battCharacteristic = nullptr;
+    lBattTempCharacteristic=nullptr;
     //delay(100);
     /*
     pServer = nullptr;
@@ -704,13 +721,28 @@ void StopBLE() {
     */
 }
 
+float ReverseFloat( const float inFloat )
+{
+   float retVal;
+   char *floatToConvert = ( char* ) & inFloat;
+   char *returnFloat = ( char* ) & retVal;
+
+   // swap the bytes into a temporary buffer
+   returnFloat[0] = floatToConvert[3];
+   returnFloat[1] = floatToConvert[2];
+   returnFloat[2] = floatToConvert[1];
+   returnFloat[3] = floatToConvert[0];
+
+   return retVal;
+}
+
 void StartBLE() {
     if ( bleEnabled ) { return; }  // global flag enabled, already called, safe to ignore
     bleEnabled = true;             // set the unsafe "lock"
     lNetLog("BLE: Starting...\n"); // notify to log
-    if ( nullptr == battPublish ) {
-        battPublish = new EventKVO([&](){
-            if ( nullptr != battCharacteristic ) { // @TODO bad place, this must be placed in network listening event
+    if ( nullptr == battPercentPublish ) {
+        battPercentPublish = new EventKVO([&](){
+            if ( nullptr != battCharacteristic ) {
                 uint8_t level = 0;
                 if ( -1 != batteryPercent ) { level = batteryPercent; }
                 lNetLog("BLE: Notify Battery: %d%%\n",level); // notify to log
@@ -719,6 +751,33 @@ void StartBLE() {
             }
         },PMU_EVENT_BATT_PC);
     }
+    if ( nullptr == battTempPublish ) {
+        battTempPublish = new EventKVO([&](){
+            if ( nullptr != lBattTempCharacteristic ) {
+                // dont send if decimal change, only integers
+                const float currValFloat = lBattTempCharacteristic->getValue<float>();
+                if ( round(axpTemp) != round(currValFloat) ) {
+                    lNetLog("BLE: Notify Battery Temperature: %.1fC\n",axpTemp);
+                    lBattTempCharacteristic->setValue(axpTemp);
+                    lBattTempCharacteristic->notify();
+                }
+            }
+        },PMU_EVENT_TEMPERATURE);
+    }
+    if ( nullptr == envTempPublish ) {
+        envTempPublish = new EventKVO([&](){
+            if ( nullptr != lBMATempCharacteristic ) {
+                // dont send if decimal change, only integers
+                const float currValFloat = lBMATempCharacteristic->getValue<float>();
+                if ( round(bmaTemp) != round(currValFloat) ) {
+                    lNetLog("BLE: Notify BMA Temperature: %.1fC\n",bmaTemp);
+                    lBMATempCharacteristic->setValue(bmaTemp);
+                    lBMATempCharacteristic->notify();
+                }
+            }
+        },BMA_EVENT_TEMP);
+    }
+
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
 
@@ -728,6 +787,7 @@ void StartBLE() {
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
     BLEDevice::setSecurityAuth(true,true,true);
+    lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
 
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
@@ -736,7 +796,7 @@ void StartBLE() {
 
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
 
-    // create the server
+    // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
 
@@ -748,7 +808,6 @@ void StartBLE() {
                     CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
     pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
  
-
     // battery services
     // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
     pBattService = pServer->createService(BLE_SERVICE_BATTERY);
@@ -756,7 +815,12 @@ void StartBLE() {
                             NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY );
     uint8_t level = 0;
     if ( -1 != batteryPercent ) { level = batteryPercent; }
-    battCharacteristic->setValue(level);
+    battCharacteristic->setValue(level);    
+#ifdef LUNOKIOT_DEBUG_NETWORK
+    NimBLEDescriptor * battDescriptor = battCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+    battDescriptor->setValue("Percentage 0 - 100");
+#endif
+
 
 
     // lunokiot services
@@ -766,7 +830,47 @@ void StartBLE() {
                 pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_VERSION,
                             NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     const uint32_t currVer = LUNOKIOT_BUILD_NUMBER;
-    lVersionCharacteristic->setValue(currVer);
+    lVersionCharacteristic->setValue<uint32_t>(currVer);
+    // set format on GATT
+    NimBLE2904 *verCharType=(NimBLE2904*)lVersionCharacteristic->createDescriptor(BLE_DESCRIPTOR_TYPE);
+    verCharType->setFormat(NimBLE2904::FORMAT_UINT32);
+#ifdef LUNOKIOT_DEBUG_NETWORK
+    NimBLEDescriptor * lVersionDescCharacteristic = lVersionCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+    lVersionDescCharacteristic->setValue("Version");
+#endif
+
+    // battery temp announce to peers from PMU_EVENT_TEMPERATURE event
+    lBattTempCharacteristic = 
+                pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_BATTERY_TEMP,
+                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY);
+    lBattTempCharacteristic->setValue(axpTemp);
+    // set format on GATT
+    NimBLE2904 *battTempCharType=(NimBLE2904*)lBattTempCharacteristic->createDescriptor(BLE_DESCRIPTOR_TYPE);
+    battTempCharType->setFormat(NimBLE2904::FORMAT_FLOAT32);
+    battTempCharType->setUnit(0x272F); // degrees
+#ifdef LUNOKIOT_DEBUG_NETWORK
+    NimBLEDescriptor * lBattTempDescCharacteristic = lBattTempCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+    lBattTempDescCharacteristic->setValue("Battery Temperature");
+#endif
+
+
+    // BMA temp announce to peers from BMA_EVENT_TEMP event
+    lBMATempCharacteristic = 
+                pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_BMA_TEMP,
+                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY);
+    lBMATempCharacteristic->setValue(axpTemp);
+    // set format on GATT
+    NimBLE2904 *bmaTempCharType=(NimBLE2904*)lBMATempCharacteristic->createDescriptor(BLE_DESCRIPTOR_TYPE);
+    bmaTempCharType->setFormat(NimBLE2904::FORMAT_FLOAT32);
+    bmaTempCharType->setUnit(0x272F); // degrees
+#ifdef LUNOKIOT_DEBUG_NETWORK
+    NimBLEDescriptor * lBMATempDescCharacteristic = lBMATempCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
+    lBMATempDescCharacteristic->setValue("Acceleromether Temperature");
+#endif
+
+
+
+
 
 
     // Start the services

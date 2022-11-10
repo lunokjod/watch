@@ -567,7 +567,7 @@ void WatchfaceApplication::PrepareDataLayer() {
         posX = 36;
         posY = 171;
         uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-        if ( bleServiceRunning ) { dotColor = canvas->color24to16(0x006400); }
+        if ( bleServiceRunning ) { dotColor = canvas->color24to16(0x008000); }
         if ( blePeer ) { dotColor = TFT_GREEN; }
         marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
 
