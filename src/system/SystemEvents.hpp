@@ -18,6 +18,7 @@ enum {
     SYSTEM_EVENT_STOP,        // when the system is power down
     SYSTEM_EVENT_WAKE,        //  received when the system is wake up
     SYSTEM_EVENT_LIGHTSLEEP,  // received when the system is begin sleep
+    SYSTEM_EVENT_TIMER,       // ESP32 timed wakeup
 
     PMU_EVENT_BATT_CHARGING,  // notify when the battery is charging
     PMU_EVENT_BATT_FULL,      // the batt is full

@@ -452,7 +452,7 @@ WatchfaceApplication::WatchfaceApplication() {
     topRightButton = new ActiveRect(160,0,80,80,[&, this]() {
         if ( pendingNotifications > 0 ) { pendingNotifications=0;}
         else { pendingNotifications = random(1,10); }
-        lAppLog("Watchface: pushed area @TODO THIS IS A TEST");
+        //lAppLog("Watchface: pushed area @TODO THIS IS A TEST\n");
         // must show number of notifications pending
 
         //LaunchApplication(new SOMEAPPTOREADNOTIFICATIONS_@TODO());

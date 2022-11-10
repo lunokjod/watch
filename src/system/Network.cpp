@@ -436,7 +436,7 @@ void BLELoopTask(void * data) {
                 if ( false == screenShootInProgress ) {
                     theScreenShotToSend = (void*)screenShootCanvas;
                     screenShootInProgress = true;
-                    lNetLog("Network: begin sending screenshoot via BLE UART\n");
+                    lNetLog("Begin send screenshoot via BLE UART\n");
                     screenShootCurrentImageY=0;
                     screenShootCurrentImageX=0;
                     networkActivity=true;
@@ -745,7 +745,7 @@ void StartBLE() {
             if ( nullptr != battCharacteristic ) {
                 uint8_t level = 0;
                 if ( -1 != batteryPercent ) { level = batteryPercent; }
-                lNetLog("BLE: Notify Battery: %d%%\n",level); // notify to log
+                //lNetLog("BLE: Notify Battery: %d%%\n",level); // notify to log
                 battCharacteristic->setValue(level);
                 battCharacteristic->notify();
             }
@@ -757,7 +757,7 @@ void StartBLE() {
                 // dont send if decimal change, only integers
                 const float currValFloat = lBattTempCharacteristic->getValue<float>();
                 if ( round(axpTemp) != round(currValFloat) ) {
-                    lNetLog("BLE: Notify Battery Temperature: %.1fC\n",axpTemp);
+                    //lNetLog("BLE: Notify Battery Temperature: %.1fC\n",axpTemp);
                     lBattTempCharacteristic->setValue(axpTemp);
                     lBattTempCharacteristic->notify();
                 }
@@ -770,7 +770,7 @@ void StartBLE() {
                 // dont send if decimal change, only integers
                 const float currValFloat = lBMATempCharacteristic->getValue<float>();
                 if ( round(bmaTemp) != round(currValFloat) ) {
-                    lNetLog("BLE: Notify BMA Temperature: %.1fC\n",bmaTemp);
+                    //lNetLog("BLE: Notify BMA Temperature: %.1fC\n",bmaTemp);
                     lBMATempCharacteristic->setValue(bmaTemp);
                     lBMATempCharacteristic->notify();
                 }
@@ -894,7 +894,7 @@ void StartBLE() {
     pBLEScan->setMaxResults(3); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
 
-    xTaskCreate(BLELoopTask, "ble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreate(BLELoopTask, "lble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 
     //Serial.println("Waiting a client connection to notify...");
 }

@@ -392,6 +392,7 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
         UINextTimeout = millis()+UITimeout;
         return;
     }
+    // if vbus get energy don't sleep
     if ( ttgo->power->isVBUSPlug() ) {
         UINextTimeout = millis()+UITimeout;
         return;
@@ -408,16 +409,9 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
 }
 
 static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    if ( UI_EVENTS != base ) {
-        lUILog("UI: uiEventReady: received unknown event: %d discarding event\n", base);
-        return;
-    }
-    if ( UI_EVENT_READY != id ) {
-        lUILog("UI: uiEventReady: received unknown id: %d discarding event\n", id);
-        return;
-    }
     lUILog("lunokIoT: UI event loop running\n");
-    ttgo->setBrightness(255);
+    systemSleep = false;
+    ttgo->setBrightness(255); // by default, user overrides this on LaunchApplication
 }
 
 static void UITickTask(void* args) {
