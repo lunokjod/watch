@@ -5,6 +5,8 @@
  * @@LUNOKIOT_GENERATED_FILE_WARNING@@
  */
 
+#include "UI/themes/default.hpp"
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
@@ -102,6 +104,7 @@ extern int16_t accZ;
  */
 extern uint32_t FPS;
 const uint32_t MAXFPS = 18;
+extern LunokIoTThemeColorPalette * currentTheme;
 
 extern int16_t touchX; // X coordinate from last sample
 extern int16_t touchY; // Y coordinate from last sample

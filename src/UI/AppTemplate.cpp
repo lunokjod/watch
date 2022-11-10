@@ -2,12 +2,14 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+#include "../lunokiot_config.hpp"
 
 #include "../app/Watchface.hpp" // for back button
 #include "../app/LogView.hpp"   // for lLog functions
 
 #include "../static/img_back_32.xbm"              // back button
 #include "../UI/widgets/ButtonImageXBMWidget.hpp" // back button
+
 
 TemplateApplication::~TemplateApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }

@@ -49,9 +49,9 @@ void InstallStepManager() {
                     lEvLog("%s: Rotating stepcounter\n",stepsManager->name);
                     
                     // my weeks begins on monday not sunday
-                    int correctedDay = lastStepsDay; // use the last day recorded to save on it
-                    if ( -1 == correctedDay ) { correctedDay=6; }
-
+                    int correctedDay = tmpTime->tm_wday-2; // use the last day recorded to save on it
+                    if ( correctedDay == -2 ) { correctedDay = 5; }
+                    else if ( correctedDay == -1 ) { correctedDay = 6; }
                     weekSteps[correctedDay] = stepCount;
                     stepCount = 0;
                     lastBootStepCount = 0;
@@ -110,7 +110,7 @@ void StepsApplication::CreateStats() {
 
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }
-    weekGraph = new GraphWidget(50,180,minVal,maxVal,canvas->color24to16(0x56818a), canvas->color24to16(0x212121));
+    weekGraph = new GraphWidget(50,180,minVal,maxVal,ThCol(mark), ThCol(background));
     
     // push values from weekSteps
     int t=6;
@@ -127,11 +127,11 @@ void StepsApplication::CreateStats() {
 StepsApplication::StepsApplication() {
     btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
 
     btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new StepsSetupApplication());
-    },img_setup_32_bits,img_setup_32_height,img_setup_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(text),ThCol(button),false);
     
     CreateStats();
     Tick();
@@ -141,7 +141,7 @@ bool StepsApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     btnSetup->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         btnSetup->DrawTo(canvas);
         weekGraph->DrawTo(canvas,30,30);
@@ -150,7 +150,7 @@ bool StepsApplication::Tick() {
         canvas->setTextSize(1);
         canvas->setTextDatum(TL_DATUM);
         canvas->setTextWrap(false,false);
-        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextColor(ThCol(text));
         canvas->drawString("Mo.", 34,90);
         canvas->drawString("Tu.", 60,90);
         canvas->drawString("We.", 86,90);
@@ -159,8 +159,8 @@ bool StepsApplication::Tick() {
         canvas->drawString("Sa.", 166,90);
         canvas->drawString("Su.", 192,90);
 
-        canvas->drawXBitmap(30,120,img_step_32_bits,img_step_32_width,img_step_32_height,TFT_WHITE);
-        canvas->drawXBitmap(130,120,img_distance_32_bits,img_distance_32_width,img_distance_32_height,TFT_WHITE);
+        canvas->drawXBitmap(30,120,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
+        canvas->drawXBitmap(130,120,img_distance_32_bits,img_distance_32_width,img_distance_32_height,ThCol(text));
 
         char bufferText[32] = {0};
         canvas->setTextSize(2);
@@ -198,7 +198,7 @@ bool StepsApplication::Tick() {
         //lLog("Steps: WeekDay: %d\n",correctedDay);
         if ( -1 == correctedDay ) { correctedDay=6; }
         //drawrect under the current week day
-        canvas->fillRect(35+(25*correctedDay),100,25,5,TFT_WHITE);
+        canvas->fillRect(35+(25*correctedDay),100,25,5,ThCol(light));
 
 
         uint32_t totalStepsValues = stepsBMAActivityStationary
@@ -206,8 +206,8 @@ bool StepsApplication::Tick() {
                 +stepsBMAActivityInvalid+stepsBMAActivityNone;
         uint32_t barWidth = 220;
 
-        canvas->fillRect(8,165,barWidth+4,9,canvas->color24to16(0x353e45));
-        canvas->fillRect(10,167,barWidth,5,TFT_RED);
+        canvas->fillRect(8,165,barWidth+4,9,ThCol(background_alt));
+        canvas->fillRect(10,167,barWidth,5,ThCol(high));
 
         if ( totalStepsValues > 0 ) {
             //Serial.printf("Steps: TotalSteps: %d\n", totalStepsValues);
@@ -217,8 +217,8 @@ bool StepsApplication::Tick() {
             //Serial.printf("-------> stepsBMAActivityWalking: %d\n", pcWalking);
             uint32_t pcRunning=(stepsBMAActivityRunning*barWidth)/totalStepsValues;
             //Serial.printf("-------> stepsBMAActivityRunning: %d\n", pcRunning);
-            canvas->fillRect(10,167,pcWalking,5,TFT_GREEN);
-            canvas->fillRect(10+pcWalking,167,pcRunning,5,TFT_YELLOW);
+            canvas->fillRect(10,167,pcWalking,5,ThCol(low));
+            canvas->fillRect(10+pcWalking,167,pcRunning,5,ThCol(medium));
         }
 
 

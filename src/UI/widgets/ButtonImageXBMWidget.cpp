@@ -34,7 +34,7 @@ void ButtonImageXBMWidget::DrawTo(TFT_eSprite * endCanvas) {
         _img->canvas->fillSprite(CanvasWidget::MASK_COLOR);
         uint32_t imgColor = xbmColor;
         if ( enabled ) {
-            _img->canvas->drawXBitmap(1,1,XBMBitmapPtr, xbmW, xbmH, TFT_BLACK);
+            _img->canvas->drawXBitmap(1,1,XBMBitmapPtr, xbmW, xbmH, ThCol(shadow));
         } else {
             imgColor = TFT_DARKGREY;
         }

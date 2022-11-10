@@ -514,7 +514,7 @@ void WatchfaceApplication::PrepareDataLayer() {
             battActivity = true;
         } else if ( batteryPercent < 10 ) {
                 battActivity = true;
-                battColor = TFT_RED;
+                battColor = ThCol(high);
         } else if ( batteryPercent < 35 ) { battColor = TFT_YELLOW; }
         //else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
         marksCanvas->canvas->setTextColor(battColor);
@@ -559,35 +559,35 @@ void WatchfaceApplication::PrepareDataLayer() {
         overlay->setTextColor(battColor);
         overlay->setTextDatum(CL_DATUM);
         overlay->drawString("No batt", posX+10, posY+1);
-        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_RED); // Alarm: red dot
+        marksCanvas->canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
     }
 
     if ( bleEnabled ) {
         posX = 36;
         posY = 171;
         uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-        if ( bleServiceRunning ) { dotColor = canvas->color24to16(0x008000); }
-        if ( blePeer ) { dotColor = TFT_GREEN; }
+        if ( bleServiceRunning ) { dotColor = ThCol(medium); }
+        if ( blePeer ) { dotColor = ThCol(low); }
         marksCanvas->canvas->fillCircle(posX, posY, 5, dotColor);
 
         unsigned char * img = img_bluetooth_24_bits;         // bluetooth logo only icon
         if ( blePeer ) { img = img_bluetooth_peer_24_bits; } // bluetooth with peer icon
-        overlay->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, TFT_WHITE);
+        overlay->drawXBitmap(posX+10,posY-12,img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
     }
 
     // connectivity notifications
     if ( wifiEnabled ) {
         posX = 51;
         posY = 189;
-        marksCanvas->canvas->fillCircle(posX, posY, 5, TFT_GREEN);
-        overlay->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, TFT_WHITE);
+        marksCanvas->canvas->fillCircle(posX, posY, 5, ThCol(low));
+        overlay->drawXBitmap(posX+10,posY-12,img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
     }
     if ( vbusPresent ) {
         posX=69; // 60;
         posY=203; // 190;
-        uint32_t color = TFT_DARKGREY;
+        uint32_t color = ThCol(background);
         if ( ttgo->power->isChargeing() ) {
-            color = TFT_GREEN;
+            color = ThCol(low);
         }
         marksCanvas->canvas->fillCircle(posX, posY, 5, color);
         //marksCanvas->canvas->drawXBitmap(posX+10,posY-12,img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
@@ -790,9 +790,9 @@ bool SecondsCallback(int x, int y, int cx, int cy, double angle, int step, void 
     if ( (currentSec*6) == int(angle)) {
         //TFT_eSprite *watchFaceCanvas = (TFT_eSprite *)payload;
         CanvasWidget *watchFaceCanvas = (CanvasWidget *)payload;
-        watchFaceCanvas->canvas->drawLine(x,y,cx,cy, TFT_RED);
-        watchFaceCanvas->canvas->fillCircle(x,y,5,TFT_RED);
-        watchFaceCanvas->canvas->fillCircle(cx,cy,10,TFT_RED); // need a red cap
+        watchFaceCanvas->canvas->drawLine(x,y,cx,cy, ThCol(clock_hands_second));
+        watchFaceCanvas->canvas->fillCircle(x,y,5,ThCol(clock_hands_second));
+        watchFaceCanvas->canvas->fillCircle(cx,cy,10,ThCol(clock_hands_second)); // need a red cap
         return false;
     }
     return true;

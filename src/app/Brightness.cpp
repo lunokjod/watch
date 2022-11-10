@@ -21,7 +21,7 @@ BrightnessApplication::~BrightnessApplication() {
 BrightnessApplication::BrightnessApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     brightGauge = new GaugeWidget(40,40,240-80);
 
     uint8_t userBright = NVS.getInt("lBright");
@@ -41,7 +41,7 @@ bool BrightnessApplication::Tick() {
         ttgo->setBrightness(currentValue);
     }
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         canvas->drawXBitmap((TFT_WIDTH/2)-(img_bright_48_width/2),
                     (TFT_HEIGHT/2)-(img_bright_48_height/2),
                     img_bright_48_bits,

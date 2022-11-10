@@ -1,5 +1,6 @@
 #include "BootSplash.hpp"
 #include "lunokiot_config.hpp"
+extern LunokIoTThemeColorPalette * currentTheme;
 
 #ifdef LILYGO_WATCH_2020_V3
 #include <driver/i2s.h>
@@ -7,10 +8,10 @@
 #include "AudioFileSourceID3.h"
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
+
 #endif
 #include "../app/LogView.hpp"
 #include "../static/img_lunokiot_logo.xbm"
-
 
 #ifdef LILYGO_WATCH_2020_V3
 extern const uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
@@ -64,9 +65,9 @@ void SplashFanfare() {
 
 void SplashAnnounce() {
     ttgo->setBrightness(0); // low brightness
-    ttgo->tft->fillScreen(TFT_WHITE);
+    ttgo->tft->fillScreen(ttgo->tft->color24to16(currentTheme->boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you are read this!!! :)
-    ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, TFT_DARKGREY);
+    ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ttgo->tft->color24to16(currentTheme->boot_splash_foreground));
 
 #ifdef LUNOKIOT_DEBUG
     // text stuff

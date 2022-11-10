@@ -4,8 +4,8 @@
 #include <Arduino.h> // more portable than esp-idf, but more limited
 #include <LilyGoWatch.h> // manufacturer library
 #include <ArduinoNvs.h> // persistent values
-
 #include "lunokiot_config.hpp" // all watch shit and hardcoded values (generated!! don't waste your time)
+LunokIoTThemeColorPalette * currentTheme = new LunokIoTThemeColorPalette();
 
 #include "system/SystemEvents.hpp" // the "heart"
 #include "UI/UI.hpp" // UI optional stuff for user interaction
@@ -21,6 +21,7 @@
 #include "app/LogView.hpp" // adds lLog(...)
 
 TTGOClass *ttgo; // ttgo library shit ;)
+TFT_eSPI * tft;
 
 #ifdef LUNOKIOT_DEBUG
 unsigned long currentBootTime = 0; // debug-freak info
@@ -43,6 +44,7 @@ void setup() {
   // lilygo Twatch library dependencies
   ttgo = TTGOClass::getWatch();
   ttgo->begin(); //lLog functions become possible beyond here (TFT init)
+  tft = ttgo->tft;
   NVS.begin(); // need NVS to get the current configuration
   uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
   lUILog("User screen rotation: %d\n", rotation);

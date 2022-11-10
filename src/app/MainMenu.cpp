@@ -97,14 +97,11 @@ MainMenuApplicationEntry AllApps[] = {
 };
 int MaxAppOffset = sizeof(AllApps) / sizeof(AllApps[0])-1;
 
-MainMenuApplication::~MainMenuApplication() {
-
-}
 MainMenuApplication::MainMenuApplication() {
     canvas->setTextSize(1);
     canvas->setTextDatum(BC_DATUM);
     canvas->setFreeFont(&FreeMonoBold18pt7b);
-    canvas->setTextColor(TFT_WHITE);
+    canvas->setTextColor(currentTheme->text);
     Tick(); // force first redraw as splash :)
 }
 bool MainMenuApplication::Tick() {
@@ -131,7 +128,7 @@ bool MainMenuApplication::Tick() {
     int32_t currentDisplacement = displacement+newDisplacement;
     lastTouch = touched;
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(TFT_BLACK);
+        canvas->fillSprite(ttgo->tft->color24to16(currentTheme->dark));
 
         int32_t lastCurrentAppOffset = currentAppOffset-1;
         if ( lastCurrentAppOffset > -1 ) {
@@ -139,22 +136,21 @@ bool MainMenuApplication::Tick() {
                                 (TFT_HEIGHT/2)-(AllApps[lastCurrentAppOffset].height/2),
                                 AllApps[lastCurrentAppOffset].imagebits,
                                 AllApps[lastCurrentAppOffset].width,
-                                AllApps[lastCurrentAppOffset].height, TFT_WHITE);            
+                                AllApps[lastCurrentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));            
         }
         canvas->drawXBitmap((TFT_WIDTH/2)-(AllApps[currentAppOffset].width/2)-newDisplacement,
                             (TFT_HEIGHT/2)-(AllApps[currentAppOffset].height/2),
                             AllApps[currentAppOffset].imagebits,
                             AllApps[currentAppOffset].width,
-                            AllApps[currentAppOffset].height, TFT_WHITE);
+                            AllApps[currentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));
         int32_t nextCurrentAppOffset = currentAppOffset+1;
         if ( nextCurrentAppOffset < MaxAppOffset+1 ) { 
             canvas->drawXBitmap(((TFT_WIDTH/2)-(AllApps[nextCurrentAppOffset].width/2))-newDisplacement+(MenuItemSize+(MenuItemSize/2)),
                                 (TFT_HEIGHT/2)-(AllApps[nextCurrentAppOffset].height/2),
                                 AllApps[nextCurrentAppOffset].imagebits,
                                 AllApps[nextCurrentAppOffset].width,
-                                AllApps[nextCurrentAppOffset].height, TFT_WHITE);            
+                                AllApps[nextCurrentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));            
         }
-
         if ( 0 == newDisplacement ) { // only when the fingers are quiet
             //Show element count
             //currentAppOffset > MaxAppOffset
@@ -164,17 +160,16 @@ bool MainMenuApplication::Tick() {
             int32_t y=15;
             for(int32_t c=0;c<=MaxAppOffset;c++) {
                 if ( c == currentAppOffset ) {
-                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad,TFT_WHITE);
+                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad,ThCol(light));
                 } else if ( c < currentAppOffset ) {
-                    canvas->drawCircle(x+(dotSpacing*c),y,dotRad-1,canvas->color24to16(0x555f68));
+                    canvas->drawCircle(x+(dotSpacing*c),y,dotRad-1,ThCol(darken));
                 } else {
-                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad-1,canvas->color24to16(0x555f68));
+                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad-1,ThCol(middle));
                 }
             }
             //Show the app name
             canvas->drawString(AllApps[currentAppOffset].name, appNamePosX, appNamePosY);
         }
-
         nextRedraw = millis()+(1000/16);
         return true;
     }

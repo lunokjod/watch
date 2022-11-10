@@ -8,7 +8,8 @@
 #include "../system/Application.hpp"
 
 extern uint8_t pendingNotifications;
-
+extern TFT_eSPI * tft;
+#define ThCol(WHAT) tft->color24to16(currentTheme->WHAT)
 /*
  * Convenient uint32_t to R/G/B union
  */

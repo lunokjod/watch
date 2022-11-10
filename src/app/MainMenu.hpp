@@ -18,7 +18,6 @@ class MainMenuApplication: public LunokIoTApplication {
         int32_t appNamePosY = TFT_HEIGHT-20;
     public:
         MainMenuApplication();
-        ~MainMenuApplication();
         bool Tick();
 };
 

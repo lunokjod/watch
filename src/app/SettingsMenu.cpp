@@ -83,11 +83,11 @@ bool SettingsMenuApplication::Tick() {
     int32_t currentDisplacement = displacement+newDisplacement;
     lastTouch = touched;
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         canvas->setTextSize(2);
         canvas->setTextDatum(TC_DATUM);
         canvas->setFreeFont(0);
-        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextColor(ThCol(light));
         canvas->drawString("Settings", 120, 32);
         int32_t lastCurrentAppOffset = currentAppOffset-1;
         if ( lastCurrentAppOffset > -1 ) {
@@ -95,20 +95,20 @@ bool SettingsMenuApplication::Tick() {
                                 (TFT_HEIGHT/2)-(SettingsApps[lastCurrentAppOffset].height/2),
                                 SettingsApps[lastCurrentAppOffset].imagebits,
                                 SettingsApps[lastCurrentAppOffset].width,
-                                SettingsApps[lastCurrentAppOffset].height, TFT_WHITE);            
+                                SettingsApps[lastCurrentAppOffset].height, ThCol(light));            
         }
         canvas->drawXBitmap((TFT_WIDTH/2)-(SettingsApps[currentAppOffset].width/2)-newDisplacement,
                             (TFT_HEIGHT/2)-(SettingsApps[currentAppOffset].height/2),
                             SettingsApps[currentAppOffset].imagebits,
                             SettingsApps[currentAppOffset].width,
-                            SettingsApps[currentAppOffset].height, TFT_WHITE);
+                            SettingsApps[currentAppOffset].height, ThCol(light));
         int32_t nextCurrentAppOffset = currentAppOffset+1;
         if ( nextCurrentAppOffset < MaxSettingsAppOffset+1 ) { 
             canvas->drawXBitmap(((TFT_WIDTH/2)-(SettingsApps[nextCurrentAppOffset].width/2))-newDisplacement+(MenuItemSize+(MenuItemSize/2)),
                                 (TFT_HEIGHT/2)-(SettingsApps[nextCurrentAppOffset].height/2),
                                 SettingsApps[nextCurrentAppOffset].imagebits,
                                 SettingsApps[nextCurrentAppOffset].width,
-                                SettingsApps[nextCurrentAppOffset].height, TFT_WHITE);            
+                                SettingsApps[nextCurrentAppOffset].height, ThCol(light));            
         }
 
         if ( 0 == newDisplacement ) { // only when the fingers are quiet
@@ -119,18 +119,18 @@ bool SettingsMenuApplication::Tick() {
             int32_t y=15;
             for(int32_t c=0;c<=MaxSettingsAppOffset;c++) {
                 if ( c == currentAppOffset ) {
-                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad,TFT_WHITE);
+                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad,ThCol(light));
                 } else if ( c < currentAppOffset ) {
-                    canvas->drawCircle(x+(dotSpacing*c),y,dotRad-1,canvas->color24to16(0x555f68));
+                    canvas->drawCircle(x+(dotSpacing*c),y,dotRad-1,ThCol(middle));
                 } else {
-                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad-1,canvas->color24to16(0x555f68));
+                    canvas->fillCircle(x+(dotSpacing*c),y,dotRad-1,ThCol(middle));
                 }
             }
             //Show the app name
             canvas->setTextSize(1);
             canvas->setTextDatum(BC_DATUM);
             canvas->setFreeFont(&FreeMonoBold18pt7b);
-            canvas->setTextColor(TFT_WHITE);
+            canvas->setTextColor(ThCol(light));
             canvas->drawString(SettingsApps[currentAppOffset].name, appNamePosX, appNamePosY);
         }
 
