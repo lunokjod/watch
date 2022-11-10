@@ -346,7 +346,7 @@ void WakeUpReason()
         else if (GPIO_SEL_39 == GPIO_reason)
         {
             lEvLog("(BMA) BMA423\n");
-            return;
+            //return;
         }
         else
         {
@@ -445,7 +445,7 @@ static void DoSleepTask(void *args)
     esp_sleep_enable_ext1_wakeup(GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
     lEvLog("ESP32: -- ZZz --\n");
     Serial.flush();
-//    delay(100);
+    delay(100);
     esp_light_sleep_start();            // device sleeps now
     lEvLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
     systemSleep = false;
@@ -965,7 +965,7 @@ static void SystemLoopTask(void *args)
         {
             lEvLog("-- MARK (%d) --\n", markCount);
             markCount++;
-            nextLogMark = millis() + 120000;
+            nextLogMark = millis() + 10000;
         }
         // check for AXP int's
         if (irqAxp)
