@@ -1102,7 +1102,7 @@ static void SystemLoopTask(void *args) {
         if (millis() > nextLogMark) {
             lEvLog("-- MARK (%d) --\n", markCount);
             markCount++;
-            nextLogMark = millis() + 10000;
+            nextLogMark = millis() + 120000;
         }
 
         //  system tick

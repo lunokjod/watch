@@ -5,7 +5,8 @@
 #include "../static/img_mainmenu_back.xbm"
 #include "Watchface.hpp"
 #include "../static/img_mainmenu_options.xbm"
-#include "Settings.hpp"
+#include "SettingsMenu.hpp"
+
 #include "../static/img_mainmenu_battery.xbm"
 #include "Battery.hpp"
 #include "../static/img_mainmenu_debug.xbm"
@@ -74,17 +75,9 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
-    {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new BLEMonitorApplication()); } },
-    {"Bluetooth",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, []() { LaunchApplication(new BluetoothApplication()); } },
+    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsMenuApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
-    {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
-    {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
-    {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, []() { LaunchApplication(new AdvancedSettingsApplication()); } },
-    {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, []() { LaunchApplication(new SetTimeApplication()); } },
-    {"Timezone",img_timezone_120_bits, img_timezone_120_height, img_timezone_120_width, []() { LaunchApplication(new SetTimeZoneApplication()); } },
-    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
-    {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, []() { LaunchApplication(new RotationApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, []() { LaunchApplication(new AboutApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI_DEMO
@@ -139,6 +132,7 @@ bool MainMenuApplication::Tick() {
     lastTouch = touched;
     if (millis() > nextRedraw ) {
         canvas->fillSprite(TFT_BLACK);
+
         int32_t lastCurrentAppOffset = currentAppOffset-1;
         if ( lastCurrentAppOffset > -1 ) {
             canvas->drawXBitmap((TFT_WIDTH/2)-(AllApps[lastCurrentAppOffset].width/2)-newDisplacement-(MenuItemSize+(MenuItemSize/2)),

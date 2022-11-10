@@ -88,10 +88,6 @@ void LaunchApplicationTask(void * data) {
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
             TFT_eSprite *appView = instance->GetCanvas();
             if ( animation ) { // Launch new app effect (zoom out)
-
-                //@TODO if use the canvas without TICK as splash???
-                //instance->Tick(); // force new app full redraw
-
                 for(float scale=0.1;scale<0.4;scale+=0.04) {
                     TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
                     //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
