@@ -107,7 +107,7 @@ SettingsApplication::SettingsApplication() {
     canvas->setTextColor(TFT_WHITE);
     canvas->drawString("When WIFi up, try to sync via NTP",ntpCheck->x+55,ntpCheck->y);
 
-
+    Tick();
 }
 
 bool SettingsApplication::Tick() {

@@ -36,6 +36,7 @@ BluetoothApplication::BluetoothApplication() {
         NimBLEDevice::deleteAllBonds();
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,TFT_WHITE,ttgo->tft->color24to16(0xff0000));
     generatedPin = BLEDevice::getSecurityPasskey();
+    Tick();
 }
 
 bool BluetoothApplication::Tick() {

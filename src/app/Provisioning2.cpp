@@ -288,7 +288,7 @@ Provisioning2Application::Provisioning2Application() {
 
     },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,ttgo->tft->color24to16(0x2347bc));
     startProvBtn->taskStackSize=LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE;
-
+    Tick();
 }
 bool Provisioning2Application::Tick() {
     UINextTimeout = millis()+UITimeout; // don't allow sleep by timeout on this app

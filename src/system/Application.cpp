@@ -87,50 +87,28 @@ void LaunchApplicationTask(void * data) {
             uint8_t userBright = NVS.getInt("lBright");
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
             TFT_eSprite *appView = instance->GetCanvas();
-            if ( animation ) {
-                /*
-                { // slow fade (must use canvas)
-                    instance->Tick(); // force new app full redraw ;-P
-                    TFT_eSprite *appView = instance->GetCanvas();
-                    
-                    //for(uint16_t alpha=0;alpha<255;alpha+=128){
-                        for(int16_t y=0;y<TFT_HEIGHT;y+=2) {
-                            for(int16_t x=0;x<TFT_WIDTH;x+=2) {
-                                //uint16_t currC = ptrToCurrent->canvas->readPixel(x,y);
-                                uint16_t nextC = appView->readPixel(x,y);
-                                //uint16_t mixC = appView->alphaBlend(alpha,nextC,currC);
-                                //ttgo->tft->drawPixel(x,y,mixC);
-                                ttgo->tft->drawPixel(x,y,nextC);
-                            }
-                        }
-                    //}
-                }
-                */
+            if ( animation ) { // Launch new app effect (zoom out)
 
-                { // Launch new app effect (zoom out)    
-                    instance->Tick(); // force new app full redraw
-                    for(float scale=0.1;scale<0.4;scale+=0.04) {
-                        TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                        scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
-                        scaledImg->deleteSprite();
-                        delete scaledImg;
-                    }
-                    for(float scale=0.4;scale<0.7;scale+=0.15) {
-                        TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                        scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
-                        scaledImg->deleteSprite();
-                        delete scaledImg;
-                    }
+                //@TODO if use the canvas without TICK as splash???
+                //instance->Tick(); // force new app full redraw
+
+                for(float scale=0.1;scale<0.4;scale+=0.04) {
+                    TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
+                    //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->deleteSprite();
+                    delete scaledImg;
                 }
-                // push full image
-                appView->pushSprite(0,0);
-            } else { // no animation, simply consume first tick and push
-                instance->Tick(); // get splash
-                TFT_eSprite *appView = instance->GetCanvas();
-                appView->pushSprite(0,0);
+                for(float scale=0.4;scale<0.7;scale+=0.15) {
+                    TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
+                    //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->deleteSprite();
+                    delete scaledImg;
+                }
             }
+            // push full image
+            appView->pushSprite(0,0);
         }
         xSemaphoreGive( UISemaphore ); // free
 

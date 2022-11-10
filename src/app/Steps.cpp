@@ -134,6 +134,7 @@ StepsApplication::StepsApplication() {
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
     
     CreateStats();
+    Tick();
 }
 
 bool StepsApplication::Tick() {

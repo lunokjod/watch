@@ -28,6 +28,7 @@ BrightnessApplication::BrightnessApplication() {
     int16_t currentValue = userBright*(360.0/255);
     brightGauge->selectedAngle = currentValue;
     ttgo->setBrightness(userBright);
+    Tick();
 
 }
 

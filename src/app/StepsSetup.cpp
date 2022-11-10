@@ -34,6 +34,7 @@ StepsSetupApplication::StepsSetupApplication() {
     tallValue = new ValueSelector(10,10,220,110,120,220,canvas->color24to16(0x212121));
     tallValue->selectedValue = userTall;
     genderSelect->switchEnabled = userMaleFemale;
+    Tick();
 }
 
 bool StepsSetupApplication::Tick() {

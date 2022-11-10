@@ -27,6 +27,7 @@ BatteryApplication::BatteryApplication() {
     BattPCEvent = new EventKVO([&, this](){
         this->dirtyFrame = true; // mark as dirty for full redraw the next Tick
     },PMU_EVENT_BATT_PC);
+    Tick();
 }
 bool BatteryApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY); // user touch the button?

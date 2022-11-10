@@ -47,7 +47,7 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
     this->GetCanvas()->drawString(stepsString, posX+1, posY+1);
     this->GetCanvas()->setTextColor(TFT_WHITE);
     this->GetCanvas()->drawString(stepsString, posX, posY);
-
+    Tick();
 }
 
 bool ShutdownApplication::Tick() {

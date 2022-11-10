@@ -79,10 +79,6 @@ void ScreenWake() {
         delay(1); // get time to queue digest ;)
         SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
-        if ( ttgo->power->isVBUSPlug() ) {
-            ttgo->setBrightness(255);
-        } //else { ttgo->setBrightness(30); }
-
         FPS = MAXFPS;
         UINextTimeout = millis()+UITimeout;
     }

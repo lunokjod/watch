@@ -61,6 +61,7 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
     overlay->setTextColor(TFT_WHITE);
     overlay->setTextDatum(TL_DATUM);
     overlay->drawString("Full erase",rx+7,ry+7);
+    Tick();
 }
 
 bool AdvancedSettingsApplication::Tick() {

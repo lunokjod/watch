@@ -41,6 +41,7 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
     lLog("GMT: %d\n",timezone);
     timezoneGMTSelector->selectedValue=timezone;
     switchDaylight->switchEnabled=daylight;
+    Tick();
 }
 
 bool SetTimeZoneApplication::Tick() {

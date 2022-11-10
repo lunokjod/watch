@@ -36,6 +36,7 @@ NotificacionsApplication::NotificacionsApplication() {
             Serial.printf("        read:  %s\n",((const char *)(currentNotification["read"])?"true":"false"));
         }
     }
+    Tick();
 }
 
 bool NotificacionsApplication::Tick() {

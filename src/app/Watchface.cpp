@@ -52,7 +52,6 @@ double sphereRotation = 0;
 
 int demoCycle = 0;
 int demobattPC = 100;
-unsigned long nextWatchFaceFullRedraw = 0;
 
 extern TFT_eSprite *overlay;
 
@@ -461,8 +460,8 @@ WatchfaceApplication::WatchfaceApplication() {
 
     //uploadMonitor = new GraphWidget(50,80,0,255,TFT_YELLOW, CanvasWidget::MASK_COLOR);
     
-
-    nextWatchFaceFullRedraw = 0;
+    backgroundCanvas->DrawTo(watchFaceCanvas->canvas); // use as splash
+    watchFaceCanvas->DrawTo(canvas);           // 16bitColor+endianess=mess x'D
 }
 
 WatchfaceApplication::~WatchfaceApplication() {
@@ -1009,13 +1008,6 @@ bool WatchfaceApplication::Tick() {
 
         // UPLOAD MONITOR
         //uploadMonitor->DrawTo(watchFaceCanvas->canvas,120-40,115);
-
-        if ( firstRun ) { 
-            lAppLog("Watchface: First run half draw (for splash effect)\n");
-            watchFaceCanvas->DrawTo(canvas);
-            firstRun = false;
-            return true;
-        }
 
         unsigned long localtimeMeasure= millis();
         

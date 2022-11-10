@@ -31,7 +31,7 @@ RotationApplication::RotationApplication() {
         NVS.setInt("ScreenRot",1,false);
         ttgo->tft->setRotation(1);
     });
-
+    Tick();
 }
 bool RotationApplication::Tick() {
     up->Interact(touched,touchX,touchY);

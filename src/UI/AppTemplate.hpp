@@ -2,15 +2,16 @@
 #define __LUNOKIOT__CHANGEME_APP__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "../system/Application.hpp"
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-class MainMenuApplication: public LunokIoTApplication {
+class TemplateApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
+        ButtonImageXBMWidget * btnBack = nullptr;
     public:
-        MainMenuApplication();
-        ~MainMenuApplication();
+        TemplateApplication();
+        ~TemplateApplication();
         bool Tick();
 };
 

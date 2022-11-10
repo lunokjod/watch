@@ -21,12 +21,13 @@ BLEDeviceMonitorApplication::BLEDeviceMonitorApplication(uint16_t baseColor,NimB
         { LaunchApplication(new BLEMonitorApplication()); },
         img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, ttgo->tft->color24to16(0x353e45), false);
     //xTaskCreate(BLEMonitorTask, "bMonTA", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask);
-    UINextTimeout = millis() + (UITimeout * 4); // disable screen timeout on this app
+    Tick();
+    UINextTimeout = millis() + UITimeout; // disable screen timeout on this app
 }
 bool BLEDeviceMonitorApplication::Tick() {
     btnBack->Interact(touched, touchX, touchY);
     // if ( touched ) {
-    UINextTimeout = millis() + (UITimeout * 4); // disable screen timeout on this app
+    UINextTimeout = millis() + UITimeout; // disable screen timeout on this app
     //}
     if (millis() > nextRedraw) {
         rotateVal += 1;

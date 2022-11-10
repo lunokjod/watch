@@ -78,7 +78,6 @@ MainMenuApplicationEntry AllApps[] = {
     {"Bluetooth",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, []() { LaunchApplication(new BluetoothApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
-    //{"Activity",img_mainmenu_activity_bits, img_mainmenu_activity_height, img_mainmenu_activity_width, []() { LaunchApplication(new ActivitiesApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, []() { LaunchApplication(new AdvancedSettingsApplication()); } },
@@ -88,8 +87,8 @@ MainMenuApplicationEntry AllApps[] = {
     {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, []() { LaunchApplication(new RotationApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, []() { LaunchApplication(new AboutApplication()); } },
-/*
-#ifdef LUNOKIOT_DEBUG_UI
+#ifdef LUNOKIOT_DEBUG_UI_DEMO
+    {"GyroMonitor",img_mainmenu_activity_bits, img_mainmenu_activity_height, img_mainmenu_activity_width, []() { LaunchApplication(new ActivitiesApplication()); } },
     {"Playground9",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication9()); } },
     {"Playground8",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication8()); } },
     {"Playground7",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication7()); } },
@@ -102,7 +101,6 @@ MainMenuApplicationEntry AllApps[] = {
     {"Playground0",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication0()); } },
     {"Playground",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new PlaygroundApplication()); } },
 #endif
-*/
 };
 int MaxAppOffset = sizeof(AllApps) / sizeof(AllApps[0])-1;
 
@@ -114,14 +112,13 @@ MainMenuApplication::MainMenuApplication() {
     canvas->setTextDatum(BC_DATUM);
     canvas->setFreeFont(&FreeMonoBold18pt7b);
     canvas->setTextColor(TFT_WHITE);
+    Tick(); // force first redraw as splash :)
 }
 bool MainMenuApplication::Tick() {
-    if (( touched ) && (false == lastTouch)) {
+    if (( touched ) && (false == lastTouch)) { // thumb detected
         displaced = false;
         lastTouchX = touchX;
-        //Serial.println("THUMB IN");
-    } else if (( false == touched ) && (lastTouch)) {
-        //Serial.println("THUMB OUT");
+    } else if (( false == touched ) && (lastTouch)) { // thumb out
         displacement+=newDisplacement;
         newDisplacement = 0;
         if ( false == displaced ) { AllApps[currentAppOffset].callback(); }
@@ -163,7 +160,8 @@ bool MainMenuApplication::Tick() {
                                 AllApps[nextCurrentAppOffset].width,
                                 AllApps[nextCurrentAppOffset].height, TFT_WHITE);            
         }
-        if ( 0 == newDisplacement ) {
+
+        if ( 0 == newDisplacement ) { // only when the fingers are quiet
             //Show element count
             //currentAppOffset > MaxAppOffset
             const uint8_t dotRad = 5;
@@ -183,7 +181,7 @@ bool MainMenuApplication::Tick() {
             canvas->drawString(AllApps[currentAppOffset].name, appNamePosX, appNamePosY);
         }
 
-        nextRedraw = millis()+(1000/12);
+        nextRedraw = millis()+(1000/16);
         return true;
     }
     return false;

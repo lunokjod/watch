@@ -520,6 +520,17 @@ static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t 
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
 
+static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    if ( false == ttgo->bl->isOn()) { return; } // no screen?
+
+    if ( vbusPresent ) { // is plugged?
+        ttgo->setBrightness(255); // full light!!!
+    } else {
+        uint8_t userBright = NVS.getInt("lBright"); // restore user light
+        if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
+    }
+}
+
 static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     if (0 != strcmp(SYSTEM_EVENTS, base))
@@ -710,8 +721,7 @@ void TakeBMPSample()
     if (round(nowBMATemp) != round(bmaTemp))
     {
         // Serial.printf("BMA423: Temperature: %.1fºC\n", bmaTemp);
-        if (UIRunning)
-        {
+        if (UIRunning) {
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         }
     }
@@ -748,8 +758,7 @@ void TakeBMPSample()
             break;
         }
         */
-        if (UIRunning)
-        {
+        if (UIRunning) {
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DIRECTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
         }
     }
@@ -951,9 +960,10 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
     }
 }
 
-static void SystemLoopTask(void *args)
-{
-    unsigned long nextSySTick = 0; // for rest of system (including UI)
+// this loop is the HEART of system
+
+static void SystemLoopTask(void *args) {
+    unsigned long nextSySTick = 0; // heartbeat of system
     unsigned long nextIntTick = 0; // inquiry interrupts
     unsigned long nextLogMark = 0; // do a log mark
     size_t markCount = 0;
@@ -961,116 +971,91 @@ static void SystemLoopTask(void *args)
     {
         esp_task_wdt_reset();
         delay(10);
-        if (millis() > nextLogMark)
-        {
-            lEvLog("-- MARK (%d) --\n", markCount);
-            markCount++;
-            nextLogMark = millis() + 10000;
-        }
         // check for AXP int's
-        if (irqAxp)
-        {
-            // lLog("CHECK AXP\n");
+        if (irqAxp) {
             ttgo->power->readIRQ();
-            irqAxp = false;
-
-            if (ttgo->power->isChargingIRQ())
-            {
+            if (ttgo->power->isChargingIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery charging\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isChargingDoneIRQ())
-            {
+            else if (ttgo->power->isChargingDoneIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery fully charged\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isBattEnterActivateIRQ())
-            {
+            else if (ttgo->power->isBattEnterActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery active\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isBattExitActivateIRQ())
-            {
+            else if (ttgo->power->isBattExitActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery free\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isBattPlugInIRQ())
-            {
+            else if (ttgo->power->isBattPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery present\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isBattRemoveIRQ())
-            {
+            else if (ttgo->power->isBattRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery removed\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isBattTempLowIRQ())
-            {
+            else if (ttgo->power->isBattTempLowIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature low\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             }
-            else if (ttgo->power->isBattTempHighIRQ())
-            {
+            else if (ttgo->power->isBattTempHighIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature high\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             }
-            else if (ttgo->power->isVbusPlugInIRQ())
-            {
-                // setCpuFrequencyMhz(240);
+            else if (ttgo->power->isVbusPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = true;
-                if (ttgo->bl->isOn())
-                {
-                    ttgo->setBrightness(255);
-                }
                 lEvLog("AXP202: Power source\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isVbusRemoveIRQ())
-            {
-                // setCpuFrequencyMhz(80);
+            else if (ttgo->power->isVbusRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = false;
-                // if ( ttgo->bl->isOn() ) { ttgo->setBrightness(30); }
                 lEvLog("AXP202: No power\n");
+                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
-            else if (ttgo->power->isPEKShortPressIRQ())
-            {
+            else if (ttgo->power->isPEKShortPressIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button short press\n");
-                Serial.flush();
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+                irqAxp = false;
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             }
-            else if (ttgo->power->isPEKLongtPressIRQ())
-            {
+            else if (ttgo->power->isPEKLongtPressIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button long press\n");
-                Serial.flush();
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
-            }
-            else
-            {
-                ttgo->power->clearIRQ();
+                irqAxp = false;
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            } else {
+                //ttgo->power->clearIRQ();
                 lLog("@TODO unknown interrupt call from AXP202 ?...\n");
             }
         }
         // check the BMA int's
-        if (irqBMA)
-        {
-            // lLog("CHECK BMA\n");
-            irqBMA = false;
+        if (irqBMA) {
             bool rlst;
-            do
-            {
+            do {
                 esp_task_wdt_reset();
                 delay(1);
                 // Read the BMA423 interrupt status,
@@ -1078,21 +1063,18 @@ static void SystemLoopTask(void *args)
                 rlst = ttgo->bma->readInterrupt();
             } while (!rlst);
             // Check if it is a step interrupt
-            if (ttgo->bma->isStepCounter())
-            {
+            if (ttgo->bma->isStepCounter()) {
+                irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-            }
-            else if (ttgo->bma->isActivity())
-            {
+            } else if (ttgo->bma->isActivity()) {
+                irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-            }
-            else if (ttgo->bma->isAnyNoMotion())
-            {
+            } else if (ttgo->bma->isAnyNoMotion()) {
+                irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-            }
-            else
-            {
+            } else {
                 lLog("@TODO unknown interrupt call from BMA423 ?...\n");
+                // this intentionally creates a infinite loop and WATCHDOG interrupt
             }
         }
         /*
@@ -1116,21 +1098,21 @@ static void SystemLoopTask(void *args)
             delay(10);
         }*/
 
-        //            nextIntTick = millis()+(1000/6);
-        //        }
+        // log mark
+        if (millis() > nextLogMark) {
+            lEvLog("-- MARK (%d) --\n", markCount);
+            markCount++;
+            nextLogMark = millis() + 10000;
+        }
 
-        // if ( systemSleep ) { continue; }
         //  system tick
-        if (millis() > nextSySTick)
-        {
-            if (true == ttgo->bl->isOn())
-            {
+        if (millis() > nextSySTick) {
+            if (true == ttgo->bl->isOn()) {
                 esp_task_wdt_reset();
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
             }
             nextSySTick = millis() + (1000 / 12);
         }
-        // delay(1000/24);
     }
 }
 void SystemEventsStart()
@@ -1157,6 +1139,8 @@ void SystemEventsStart()
     esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity, nullptr, NULL);
     esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity, nullptr, NULL);
     esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, SystemEventTimer, nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, SystemEventPMUPower, nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, SystemEventPMUPower, nullptr, NULL);
     esp_event_handler_instance_register_with(systemEventloopHandler, ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, AnyEventSystem, nullptr, NULL);
     // Create the event source task with the same priority as the current task
     xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);

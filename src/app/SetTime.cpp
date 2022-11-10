@@ -44,9 +44,8 @@ SetTimeApplication::SetTimeApplication() {
     },img_settime_32_bits,img_settime_32_height,img_settime_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
     showDateButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new SetDateApplication());
-    },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
-
-
+    },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
+    Tick();
 }
 bool SetTimeApplication::Tick() {
     bool change=false;

@@ -16,8 +16,9 @@
 
 
 class WatchfaceApplication: public LunokIoTApplication {
+    private:
+        unsigned long nextWatchFaceFullRedraw = 0;
     public:
-        bool firstRun = true;
         bool showOverlay=false;
         GraphWidget * uploadMonitor = nullptr;
         //TaskHandle_t NTPTaskHandler = NULL;
