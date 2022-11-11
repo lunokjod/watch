@@ -45,8 +45,8 @@
 #include "../static/img_mainmenu_bluetooth.xbm"
 
 
-#include "BLEMonitor.hpp"
-
+#include "Theme.hpp"
+#include "../static/img_mainmenu_themes.xbm"
 
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
@@ -75,9 +75,10 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
-    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsMenuApplication()); } },
+    {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, []() { LaunchApplication(new ThemeApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
+    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsMenuApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, []() { LaunchApplication(new AboutApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI_DEMO
@@ -101,7 +102,7 @@ MainMenuApplication::MainMenuApplication() {
     canvas->setTextSize(1);
     canvas->setTextDatum(BC_DATUM);
     canvas->setFreeFont(&FreeMonoBold18pt7b);
-    canvas->setTextColor(currentTheme->text);
+    canvas->setTextColor(ThCol(text));
     Tick(); // force first redraw as splash :)
 }
 bool MainMenuApplication::Tick() {
@@ -128,7 +129,7 @@ bool MainMenuApplication::Tick() {
     int32_t currentDisplacement = displacement+newDisplacement;
     lastTouch = touched;
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(ttgo->tft->color24to16(currentTheme->dark));
+        canvas->fillSprite(ThCol(dark));
 
         int32_t lastCurrentAppOffset = currentAppOffset-1;
         if ( lastCurrentAppOffset > -1 ) {
@@ -136,20 +137,20 @@ bool MainMenuApplication::Tick() {
                                 (TFT_HEIGHT/2)-(AllApps[lastCurrentAppOffset].height/2),
                                 AllApps[lastCurrentAppOffset].imagebits,
                                 AllApps[lastCurrentAppOffset].width,
-                                AllApps[lastCurrentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));            
+                                AllApps[lastCurrentAppOffset].height, ThCol(light));            
         }
         canvas->drawXBitmap((TFT_WIDTH/2)-(AllApps[currentAppOffset].width/2)-newDisplacement,
                             (TFT_HEIGHT/2)-(AllApps[currentAppOffset].height/2),
                             AllApps[currentAppOffset].imagebits,
                             AllApps[currentAppOffset].width,
-                            AllApps[currentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));
+                            AllApps[currentAppOffset].height, ThCol(light));
         int32_t nextCurrentAppOffset = currentAppOffset+1;
         if ( nextCurrentAppOffset < MaxAppOffset+1 ) { 
             canvas->drawXBitmap(((TFT_WIDTH/2)-(AllApps[nextCurrentAppOffset].width/2))-newDisplacement+(MenuItemSize+(MenuItemSize/2)),
                                 (TFT_HEIGHT/2)-(AllApps[nextCurrentAppOffset].height/2),
                                 AllApps[nextCurrentAppOffset].imagebits,
                                 AllApps[nextCurrentAppOffset].width,
-                                AllApps[nextCurrentAppOffset].height, ttgo->tft->color24to16(currentTheme->light));            
+                                AllApps[nextCurrentAppOffset].height, ThCol(light));
         }
         if ( 0 == newDisplacement ) { // only when the fingers are quiet
             //Show element count

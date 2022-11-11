@@ -7,9 +7,55 @@
 #include <functional>
 #include "../system/Application.hpp"
 
-extern uint8_t pendingNotifications;
+/*
+ * Default lunokIoT Watch color palette
+ */
+struct TemplateColorPalette {
+        // here all your colors, use union to generate an alias
+        uint32_t color0;
+        uint32_t color1;
+        uint32_t color2;
+        uint32_t color3;
+        uint32_t color4;
+        uint32_t color5;
+        uint32_t color6;
+        uint32_t color7;
+        uint32_t color8;
+        uint32_t color9;
+};
+
+struct TemplateThemeScheme {
+        uint32_t background;
+        uint32_t min;
+        uint32_t shadow;
+        uint32_t background_alt;
+        uint32_t button;
+        uint32_t darken;
+        uint32_t boot_splash_foreground;
+        uint32_t text_alt;
+        uint32_t middle;
+        uint32_t max;
+        uint32_t mark;
+        uint32_t highlight;
+        uint32_t text;
+        uint32_t light;
+        uint32_t boot_splash_background;
+        uint32_t dark;
+        uint32_t high;
+        uint32_t clock_hands_second;
+        uint32_t medium;
+        uint32_t low;
+};
+#include "themes/default.hpp"
+#include "themes/blue.hpp"
+extern TemplateColorPalette currentColorPalette;
+extern TemplateThemeScheme currentThemeScheme;
+
 extern TFT_eSPI * tft;
-#define ThCol(WHAT) tft->color24to16(currentTheme->WHAT)
+#define ThCol(WHAT) tft->color24to16(currentThemeScheme.WHAT)
+
+
+extern uint8_t pendingNotifications;
 /*
  * Convenient uint32_t to R/G/B union
  */

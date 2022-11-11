@@ -29,9 +29,9 @@ StepsSetupApplication::~StepsSetupApplication() {
 StepsSetupApplication::StepsSetupApplication() {
     btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new StepsApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(background),false);
     genderSelect = new SwitchWidget(142,20,[&,this](){ });
-    tallValue = new ValueSelector(10,10,220,110,120,220,canvas->color24to16(0x212121));
+    tallValue = new ValueSelector(10,10,220,110,120,220,ThCol(background));
     tallValue->selectedValue = userTall;
     genderSelect->switchEnabled = userMaleFemale;
     Tick();
@@ -45,7 +45,7 @@ bool StepsSetupApplication::Tick() {
         nextSpinStep=millis()+(1000/4);
     }
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         genderSelect->DrawTo(canvas);
         tallValue->DrawTo(canvas);
@@ -54,7 +54,7 @@ bool StepsSetupApplication::Tick() {
         canvas->setTextSize(3);
         canvas->setTextDatum(TL_DATUM);
         canvas->setTextWrap(false,false);
-        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextColor(ThCol(text));
         canvas->drawString("M", 120,40);
         canvas->drawString("F", 210,40);
 

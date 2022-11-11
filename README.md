@@ -32,6 +32,7 @@
   * BLE Battery standard notification. Can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
   * All encrypted
   * Man in the middle resistant
+ * Color themes
 ## Full application list:
 
 [See App gallery](src/app/README.md)

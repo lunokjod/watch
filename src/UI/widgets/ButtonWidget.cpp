@@ -43,8 +43,7 @@ void ButtonWidget::DrawTo(TFT_eSprite * endCanvas) {
         canvas->fillRoundRect( border, border,(ActiveRect::w-(border*2)),(ActiveRect::h-(border*2)),radius,buttonColor);
     } else {
         // clear is in case of no borders (avoid glitch with lastInteraction)
-        // @TODO replace with fillsprite
-        canvas->fillRoundRect( 0, 0,ActiveRect::w,ActiveRect::h,radius,CanvasWidget::MASK_COLOR);
+//        canvas->fillRoundRect( 0, 0,ActiveRect::w,ActiveRect::h,radius,CanvasWidget::MASK_COLOR);
     }
 
     if ( lastInteraction ) {
@@ -52,7 +51,5 @@ void ButtonWidget::DrawTo(TFT_eSprite * endCanvas) {
         uint16_t lightColor = canvas->alphaBlend(128,buttonColor,TFT_WHITE);
         canvas->fillRoundRect( border, border,(ActiveRect::w-(border*2)),(ActiveRect::h-(border*2)),radius,lightColor);
     }
-    if ( nullptr != endCanvas ) {
-        CanvasWidget::DrawTo(endCanvas,x,y);
-    }
+    if ( nullptr != endCanvas ) { CanvasWidget::DrawTo(endCanvas,x,y); }
 }

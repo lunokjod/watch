@@ -43,7 +43,7 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     char textBuffer[14] = { 0 }; // more than 2^32
 
     buffer->canvas->setTextSize(3);
-    buffer->canvas->setTextColor(canvas->alphaBlend(128,textColor,TFT_BLACK));
+    buffer->canvas->setTextColor(canvas->alphaBlend(128,textColor,ThCol(shadow)));
 
     // descendants
     buffer->canvas->setTextDatum(BC_DATUM);
@@ -108,7 +108,7 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     if ( showsign ) { if ( selectedValue > 0 ) { showsignString=(char *)"+"; } }
     sprintf(textBuffer,"%s%d", showsignString, selectedValue);
     //sprintf(textBuffer,"%d", selectedValue);
-    buffer->canvas->setTextColor(TFT_BLACK);
+    buffer->canvas->setTextColor(ThCol(shadow));
     buffer->canvas->drawString(textBuffer, posX+2, posY+2);
 
     buffer->canvas->setTextColor(textColor);

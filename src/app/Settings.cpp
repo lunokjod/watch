@@ -40,7 +40,7 @@ SettingsApplication::SettingsApplication() {
 #endif
     bleCheck=new SwitchWidget(80,160, [&,this]() {
         NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
-    }, canvas->color24to16(0x555f68));
+    });
     bleCheck->switchEnabled=NVS.getInt("BLEEnabled");
 #ifndef LUNOKIOT_BLE_ENABLED
     bleCheck->switchEnabled=false;
@@ -49,12 +49,12 @@ SettingsApplication::SettingsApplication() {
 
     btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](){
         showOverlay = (!showOverlay);
-    },img_help_32_bits,img_help_32_height,img_help_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
 
 
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
 
     ntpCheck=new SwitchWidget(10,10, [&,this]() {
         NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
@@ -128,7 +128,7 @@ bool SettingsApplication::Tick() {
     if ( ret ) { interacted = true; }
 
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         btnHelp->DrawTo(canvas);
         btnBack->DrawTo(canvas);
         ntpCheck->DrawTo(canvas);
@@ -138,12 +138,12 @@ bool SettingsApplication::Tick() {
         canvas->setTextFont(0);
         canvas->setTextSize(2);
         canvas->setTextDatum(TL_DATUM);
-        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextColor(ThCol(text));
         canvas->drawString("NTP",95,35);
         canvas->drawString("OpenWeather",95,85);
 
-        canvas->drawXBitmap(160,130,img_wifi_32_bits,img_wifi_32_width,img_wifi_32_height,TFT_WHITE);
-        canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,TFT_WHITE);
+        canvas->drawXBitmap(160,130,img_wifi_32_bits,img_wifi_32_width,img_wifi_32_height,ThCol(text));
+        canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,ThCol(text));
 
         //if ( ( false == interacted ) && ( touched ) ) { showOverlay=(!showOverlay); }
         if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }

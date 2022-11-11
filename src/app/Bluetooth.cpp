@@ -25,16 +25,16 @@ uint32_t BluetoothApplication::SetBLERandomPin() {
 BluetoothApplication::BluetoothApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     
     btnGeneratePIN=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
         SetBLERandomPin();
-    },img_lock_32_bits,img_lock_32_height,img_lock_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_lock_32_bits,img_lock_32_height,img_lock_32_width,ThCol(text),ThCol(button),false);
 
     btnRemoveBonding=new ButtonImageXBMWidget(5,5,64,64,[&,this](){
         lAppLog("BLE: Bound devices removed\n");
         NimBLEDevice::deleteAllBonds();
-    },img_trash_32_bits,img_trash_32_height,img_trash_32_width,TFT_WHITE,ttgo->tft->color24to16(0xff0000));
+    },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     generatedPin = BLEDevice::getSecurityPasskey();
     Tick();
 }
@@ -47,13 +47,13 @@ bool BluetoothApplication::Tick() {
     btnGeneratePIN->Interact(touched,touchX, touchY);
     btnRemoveBonding->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         btnGeneratePIN->DrawTo(canvas);
         btnRemoveBonding->DrawTo(canvas);
 
         canvas->setTextFont(0);
-        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextColor(ThCol(text));
         char pinAsChar[7] = { 0 };
         sprintf(pinAsChar,"%06d",generatedPin);
         canvas->setTextSize(2);
@@ -64,7 +64,7 @@ bool BluetoothApplication::Tick() {
         if ( bleEnabled ) {
             canvas->drawString(pinAsChar,TFT_WIDTH/2,TFT_HEIGHT/2);
         } else {
-            canvas->setTextColor(TFT_DARKGREY);
+            canvas->setTextColor(ThCol(text_alt));
             canvas->drawString("DISABLED",TFT_WIDTH/2,TFT_HEIGHT/2);
         }
 

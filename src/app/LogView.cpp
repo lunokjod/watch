@@ -5,6 +5,8 @@
 #include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
+#include "../UI/UI.hpp"
+
 SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
 TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
@@ -59,7 +61,7 @@ LogViewApplication::~LogViewApplication() {
 LogViewApplication::LogViewApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     Tick();
 }
 
@@ -69,7 +71,7 @@ bool LogViewApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
-        canvas->fillRect(0,TFT_HEIGHT-69,TFT_WIDTH,69,canvas->color24to16(0x212121));
+        canvas->fillRect(0,TFT_HEIGHT-69,TFT_WIDTH,69,ThCol(background));
         btnBack->DrawTo(canvas);        
         if ( nullptr != LogTextBuffer ) {            
             LogTextBuffer->setPivot(0,0);

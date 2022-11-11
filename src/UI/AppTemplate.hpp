@@ -6,8 +6,8 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
 class TemplateApplication: public LunokIoTApplication {
-    private:
-        unsigned long nextRedraw=0;
+    protected:
+        unsigned long nextRefresh=0;
         ButtonImageXBMWidget * btnBack = nullptr;
     public:
         TemplateApplication();

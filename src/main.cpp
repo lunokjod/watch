@@ -5,7 +5,6 @@
 #include <LilyGoWatch.h> // manufacturer library
 #include <ArduinoNvs.h> // persistent values
 #include "lunokiot_config.hpp" // all watch shit and hardcoded values (generated!! don't waste your time)
-LunokIoTThemeColorPalette * currentTheme = new LunokIoTThemeColorPalette();
 
 #include "system/SystemEvents.hpp" // the "heart"
 #include "UI/UI.hpp" // UI optional stuff for user interaction

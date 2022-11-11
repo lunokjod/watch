@@ -16,7 +16,7 @@ class ButtonWidget: public ActiveRect, public CanvasWidget {
         virtual ~ButtonWidget();
         void BuildCanvas(int16_t h, int16_t w);
         bool CheckBounds();
-        ButtonWidget(int16_t x,int16_t y, int16_t h, int16_t w, std::function<void ()> notifyTo, uint32_t btnBackgroundColor=ttgo->tft->color24to16(0x353e45), bool borders=true);
+        ButtonWidget(int16_t x,int16_t y, int16_t h, int16_t w, std::function<void ()> notifyTo, uint32_t btnBackgroundColor=ThCol(button), bool borders=true);
         void DrawTo(TFT_eSprite * endCanvas);
 };
 #endif

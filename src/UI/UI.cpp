@@ -18,7 +18,7 @@
 #include <functional>
 
 #include "../app/LogView.hpp"
-
+#include "UI.hpp"
 
 #ifdef LILYGO_WATCH_2020_V3
 #include <driver/i2s.h>
@@ -30,16 +30,21 @@
 extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
 extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
-bool touched=false;
-int16_t touchX=0;
+TemplateColorPalette currentColorPalette = DefaultThemeColorPalette;
+TemplateThemeScheme currentThemeScheme = DefaultThemeScheme;
+
+bool touched=false; // is screen touch?
+int16_t touchX=0;   // thumb coords
 int16_t touchY=0;
-double touchDragAngle=0;
-double touchDragDistance=0;
-int16_t touchDragVectorX=0;
+double touchDragAngle=0;    // angle of drag
+double touchDragDistance=0; // distance
+int16_t touchDragVectorX=0; // XY vectors
 int16_t touchDragVectorY=0;
-unsigned long touchDownTimeMS=0;
-bool directDraw =false;
-uint32_t FPS=0;
+unsigned long touchDownTimeMS=0; // time push
+
+bool directDraw =false; // don't refresh screen (application-driven)
+uint32_t FPS=0;         // current FPS
+
 //bool UIAlertLedEnabled = false;
 int16_t downTouchX=120;
 int16_t downTouchY=120;

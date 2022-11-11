@@ -7,7 +7,7 @@
 #include "../static/img_trash_32.xbm"
 #include "../static/img_log_32.xbm"
 #include "../static/img_help_32.xbm"
-
+#include "../UI/UI.hpp"
 #include "Shutdown.hpp"
 
 #include "Watchface.hpp"
@@ -26,17 +26,17 @@ AdvancedSettingsApplication::~AdvancedSettingsApplication() {
 AdvancedSettingsApplication::AdvancedSettingsApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     btnErase=new ButtonImageXBMWidget(5,5,64,64,[&,this](){
         NVS.eraseAll(true);
         LaunchApplication(new ShutdownApplication(true,false));
-    },img_trash_32_bits,img_trash_32_height,img_trash_32_width,TFT_WHITE,ttgo->tft->color24to16(0xff0000));
+    },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](){
         LaunchApplication(new LogViewApplication());
-    },img_log_32_bits,img_log_32_height,img_log_32_width,TFT_WHITE,ttgo->tft->color24to16(0x555f68));
+    },img_log_32_bits,img_log_32_height,img_log_32_width,ThCol(text),ThCol(background_alt));
     btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](){
         showOverlay = (!showOverlay);
-    },img_help_32_bits,img_help_32_height,img_help_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
 
     overlay->fillSprite(TFT_BLACK);
     const uint8_t margin = 32;
@@ -70,7 +70,7 @@ bool AdvancedSettingsApplication::Tick() {
     btnLog->Interact(touched,touchX, touchY);
     btnHelp->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         btnErase->DrawTo(canvas);
         btnLog->DrawTo(canvas);

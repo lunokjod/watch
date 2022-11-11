@@ -792,7 +792,7 @@ bool SecondsCallback(int x, int y, int cx, int cy, double angle, int step, void 
         CanvasWidget *watchFaceCanvas = (CanvasWidget *)payload;
         watchFaceCanvas->canvas->drawLine(x,y,cx,cy, ThCol(clock_hands_second));
         watchFaceCanvas->canvas->fillCircle(x,y,5,ThCol(clock_hands_second));
-        watchFaceCanvas->canvas->fillCircle(cx,cy,10,ThCol(clock_hands_second)); // need a red cap
+        watchFaceCanvas->canvas->fillCircle(cx,cy,10,ThCol(clock_hands_second)); // color cap
         return false;
     }
     return true;
