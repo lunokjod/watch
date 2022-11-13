@@ -3,38 +3,35 @@
 #include "default.hpp"
 #include "../UI.hpp"
 
+static uint32_t BlueThemeColors[] = {
+    0xd1dbe4,0xbac9d7,0xa3b7ca,0x8ca5bd,0x7593af,
+    0x476f95,0x305d88,0x255481,0x1f4f7e,0x194a7a
+};
+
 struct TemplateColorPalette BlueThemeColorPalette = {
-    .color0 = 0xd1dbe4,
-    .color1 = 0xbac9d7,
-    .color2 = 0xa3b7ca,
-    .color3 = 0x8ca5bd,
-    .color4 = 0x7593af,
-    .color5 = 0x476f95,
-    .color6 = 0x305d88,
-    .color7 = 0x255481,
-    .color8 = 0x1f4f7e,
-    .color9 = 0x194a7a
+        .colors = BlueThemeColors,
+        .size = sizeof(BlueThemeColors)/sizeof(uint32_t)-1
 };
 
 struct TemplateThemeScheme BlueThemeScheme = {
-    .background = BlueThemeColorPalette.color9,
-    .min = BlueThemeColorPalette.color0,
-    .shadow = BlueThemeColorPalette.color7,
-    .background_alt = BlueThemeColorPalette.color8,
-    .button = BlueThemeColorPalette.color6,
-    .darken = BlueThemeColorPalette.color8,
-    .boot_splash_foreground = BlueThemeColorPalette.color8,
-    .text_alt = BlueThemeColorPalette.color2,
-    .middle = BlueThemeColorPalette.color4,
-    .max = BlueThemeColorPalette.color0,
-    .mark = BlueThemeColorPalette.color7,
-    .highlight = BlueThemeColorPalette.color3,
-    .text = BlueThemeColorPalette.color0,
-    .light = BlueThemeColorPalette.color3,
-    .boot_splash_background = BlueThemeColorPalette.color0,
-    .dark = BlueThemeColorPalette.color6,
+    .background = BlueThemeColorPalette.colors[9],
+    .min = BlueThemeColorPalette.colors[0],
+    .shadow = BlueThemeColorPalette.colors[7],
+    .background_alt = BlueThemeColorPalette.colors[8],
+    .button = BlueThemeColorPalette.colors[6],
+    .darken = BlueThemeColorPalette.colors[8],
+    .boot_splash_foreground = BlueThemeColorPalette.colors[8],
+    .text_alt = BlueThemeColorPalette.colors[2],
+    .middle = BlueThemeColorPalette.colors[4],
+    .max = BlueThemeColorPalette.colors[0],
+    .mark = BlueThemeColorPalette.colors[7],
+    .highlight = BlueThemeColorPalette.colors[3],
+    .text = BlueThemeColorPalette.colors[0],
+    .light = BlueThemeColorPalette.colors[3],
+    .boot_splash_background = BlueThemeColorPalette.colors[0],
+    .dark = BlueThemeColorPalette.colors[6],
     .high = 0xff0000,
-    .clock_hands_second = BlueThemeColorPalette.color7,
-    .medium = BlueThemeColorPalette.color8,
-    .low = BlueThemeColorPalette.color9
+    .clock_hands_second = BlueThemeColorPalette.colors[7],
+    .medium = BlueThemeColorPalette.colors[8],
+    .low = BlueThemeColorPalette.colors[9]
 };

@@ -8,22 +8,14 @@
 #include "../system/Application.hpp"
 
 /*
- * Default lunokIoT Watch color palette
+ * Use template to get the theme colors
  */
 struct TemplateColorPalette {
-        // here all your colors, use union to generate an alias
-        uint32_t color0;
-        uint32_t color1;
-        uint32_t color2;
-        uint32_t color3;
-        uint32_t color4;
-        uint32_t color5;
-        uint32_t color6;
-        uint32_t color7;
-        uint32_t color8;
-        uint32_t color9;
+    uint32_t *colors;
+    size_t size;
 };
 
+// associate TemplateColorPalette.colors offset point to this
 struct TemplateThemeScheme {
         uint32_t background;
         uint32_t min;

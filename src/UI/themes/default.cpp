@@ -2,38 +2,33 @@
 #include <cstdio> 
 #include "default.hpp"
 #include "../UI.hpp"
+static uint32_t DefaultThemeColors[] = { 0x212121,0x353e45,0x555f68,0x56818a,0xfcb61d,0xffffff,0x000000,0xff0000,0xffff00,0x00ff00 };
+// why this? seems redundant... 
+// tip: need iterate colors for show theme colors
 struct TemplateColorPalette DefaultThemeColorPalette = {
-        .color0 = 0x212121,
-        .color1 = 0x353e45,
-        .color2 = 0x555f68,
-        .color3 = 0x56818a,
-        .color4 = 0xfcb61d,
-        .color5 = 0xffffff,
-        .color6 = 0x000000,
-        .color7 = 0xff0000,
-        .color8 = 0xffff00,
-        .color9 = 0x00ff00
+        .colors = DefaultThemeColors,
+        .size = sizeof(DefaultThemeColors)/sizeof(uint32_t)-1
 };
 
 struct TemplateThemeScheme DefaultThemeScheme = {
-        .background = DefaultThemeColorPalette.color0,
-        .min = DefaultThemeColorPalette.color0,
-        .shadow = DefaultThemeColorPalette.color0,
-        .background_alt = DefaultThemeColorPalette.color2,
-        .button = DefaultThemeColorPalette.color1,
-        .darken = DefaultThemeColorPalette.color1,
-        .boot_splash_foreground = DefaultThemeColorPalette.color1,
-        .text_alt = DefaultThemeColorPalette.color2,
-        .middle = DefaultThemeColorPalette.color2,
-        .max = DefaultThemeColorPalette.color3,
-        .mark = DefaultThemeColorPalette.color3,
-        .highlight = DefaultThemeColorPalette.color4,
-        .text = DefaultThemeColorPalette.color5,
-        .light = DefaultThemeColorPalette.color5,
-        .boot_splash_background = DefaultThemeColorPalette.color5,
-        .dark = DefaultThemeColorPalette.color6,
-        .high = DefaultThemeColorPalette.color7,
-        .clock_hands_second = DefaultThemeColorPalette.color7,
-        .medium = DefaultThemeColorPalette.color8,
-        .low = DefaultThemeColorPalette.color9
+        .background = DefaultThemeColorPalette.colors[0],
+        .min = DefaultThemeColorPalette.colors[0],
+        .shadow = DefaultThemeColorPalette.colors[0],
+        .background_alt = DefaultThemeColorPalette.colors[2],
+        .button = DefaultThemeColorPalette.colors[1],
+        .darken = DefaultThemeColorPalette.colors[1],
+        .boot_splash_foreground = DefaultThemeColorPalette.colors[1],
+        .text_alt = DefaultThemeColorPalette.colors[2],
+        .middle = DefaultThemeColorPalette.colors[2],
+        .max = DefaultThemeColorPalette.colors[3],
+        .mark = DefaultThemeColorPalette.colors[3],
+        .highlight = DefaultThemeColorPalette.colors[4],
+        .text = DefaultThemeColorPalette.colors[5],
+        .light = DefaultThemeColorPalette.colors[5],
+        .boot_splash_background = DefaultThemeColorPalette.colors[5],
+        .dark = DefaultThemeColorPalette.colors[6],
+        .high = DefaultThemeColorPalette.colors[7],
+        .clock_hands_second = DefaultThemeColorPalette.colors[7],
+        .medium = DefaultThemeColorPalette.colors[8],
+        .low = DefaultThemeColorPalette.colors[9]
 };
