@@ -10,11 +10,11 @@ Canvas is a base widget, their only function is show their contents on the scree
 
 Usage (on Application constructor):
 
-```new CanvasWidget(int16_t heightInPixels, int16_t widthInPixels);```
+```CanvasWidget canvasCreated = new CanvasWidget(int16_t heightInPixels, int16_t widthInPixels);```
 
 on Application::Tick must be call draw
 
-```DrawTo(canvas, int16_t xInPixels, int16_t yInPixels,int32_t maskColor=MASK_COLOR);```
+```canvasCreated->DrawTo(canvas, int16_t xInPixels, int16_t yInPixels,int32_t maskColor=MASK_COLOR);```
 
 on (Application destructor)
 
@@ -28,11 +28,11 @@ Canvas with zoom capability (can be scaled)
 
 Creation:
 
-```new CanvasZWidget(int16_t heightInPixels, int16_t widthInPixels, float scale=1.0);```
+```CanvasZWidget *canvasZCreated = new CanvasZWidget(int16_t heightInPixels, int16_t widthInPixels, float scale=1.0);```
 
 Draw:
 
-```DrawTo(Canvas, int16_t xInPixels, int16_t yInPixels, float scale, bool centered, int32_t maskColor);```
+```canvasZCreated->DrawTo(Canvas, int16_t xInPixels, int16_t yInPixels, float scale, bool centered, int32_t maskColor);```
 
 on (Application destructor):
 
@@ -40,4 +40,28 @@ on (Application destructor):
 
 [Code](CanvasZWidget.hpp)
 
-@TODO explain: Button, ButtonImage, Switch, Gauge, Graph, ValueSelector
+
+## Button
+
+This is the first widget that is reactive (do something when is pushed) in combination of [Canvas](CanvasWidget.hpp) and [ActiveRect](../activator/ActiveRect.hpp)
+
+Creation:
+
+```
+ButtonWidget *buttonCreated = new ButtonWidget(int16_t xInPixels,int16_t yInPixels, int16_t heightInPixels, int16_t widthInPixels, []() {
+    /* put here code to run when button is pushed */
+}, uint32_t btnBackgroundColor, bool borders);
+```
+
+Draw:
+
+```buttonCreated->DrawTo(canvas);```
+
+on (Application destructor):
+
+```delete buttonCreated;```
+
+
+
+
+@TODO explain: ButtonImage, Switch, Gauge, Graph, ValueSelector
