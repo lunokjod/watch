@@ -89,3 +89,5 @@ and it's all... icons can be made with gimp (xbm format) img_mainmenu_bright_bit
   * return **false** means no redraw needed
 
  * To draw a splash screen must draw your canvas before leave Application constructor, If no splash use a "Tick();" at end of constructor
+
+ * See [widgets to write a user interface](../UI/widgets/README.md)

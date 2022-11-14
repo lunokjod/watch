@@ -9,8 +9,9 @@ class CanvasWidget {
     private:
     public:
         static const uint32_t MASK_COLOR=0x100; // ttgo->tft->color565(0x01,0x20,0x00)
-        TFT_eSprite *canvas = nullptr;
-        unsigned long lastRefresh=0;
+        TFT_eSprite *canvas = nullptr; // create on constructor
+        //unsigned long lastRefresh=0; // next forced redraw
+
         // BRG
         CanvasWidget(int16_t h=0, int16_t w=0);
         void RebuildCanvas(int16_t h=0, int16_t w=0);
