@@ -12,8 +12,10 @@
 BrightnessApplication::~BrightnessApplication() {
     uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
     //lAppLog("CURENT: %u ANGLE: %d\n", currentValue,brightGauge->selectedAngle);
-    ttgo->setBrightness(currentValue);
-    NVS.setInt("lBright",currentValue,false);
+    if (currentValue != 0) {
+        ttgo->setBrightness(currentValue);
+//        NVS.setInt("lBright",currentValue,false); @THANKS @gravedigger128 :-*
+    };
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != brightGauge ) { delete brightGauge; }
 }
