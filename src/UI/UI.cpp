@@ -77,7 +77,8 @@ esp_event_loop_handle_t uiEventloopHandle;
 
 void ScreenWake() {
     if ( false == ttgo->bl->isOn() ) {
-        //ttgo->rtc->syncToSystem();
+        setCpuFrequencyMhz(240);
+        if ( ttgo->rtc->isValid() ) { ttgo->rtc->syncToSystem(); }
         ttgo->displayWakeup();
         UINextTimeout = millis()+UITimeout;
         #if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
@@ -101,12 +102,7 @@ void ScreenSleep() {
         ttgo->touchToSleep();
         Serial.flush();
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-
-
-        //setCpuFrequencyMhz(80);
-        //ttgo->rtc->syncToSystem();
-        //delay(50);
-        //@TODO send hint for suspend main CPU via system user-defined event loop like LunokIoTEventloopTask
+        setCpuFrequencyMhz(80);
     }
 }
 
