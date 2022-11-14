@@ -30,6 +30,7 @@
 extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
 extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
+// default theme and palette
 TemplateColorPalette currentColorPalette = DefaultThemeColorPalette;
 TemplateThemeScheme currentThemeScheme = DefaultThemeScheme;
 
@@ -79,7 +80,9 @@ void ScreenWake() {
         //ttgo->rtc->syncToSystem();
         ttgo->displayWakeup();
         UINextTimeout = millis()+UITimeout;
+        #if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
         ttgo->touchWakup();
+        #endif
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         delay(1); // get time to queue digest ;)
         SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
