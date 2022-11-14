@@ -1,4 +1,4 @@
-# lilyGo TWatch 2020 lunokIoTWatch firmware
+# LilyGo TWatch 2020 lunokIoTWatch firmware
 
 ![wartchface0](/doc/watchface0.png)
 ![wartchface0_day](/doc/day_watchface0.png)
@@ -11,9 +11,12 @@
 ![provisioning app](/doc/provisioning.png)
 
 * Note: under heavy development (not ready for everyday use)
-* On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap you can bypass disabling -DLUNOKIOT_WIFI_ENABLED if don't want wifi features (NTP+weather+localcloud)
 
-## Build and upload & flash
+* You can set WiFi credentials ("Home>Settings>Prov") via QR using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap (select WiFi provisioning using WiFi)
+
+* The BluetoothLE pairing can be archieved via "Home>Settings>Pair" can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
+
+## Build, upload & flash:
  * First take care about what hardware version have (at this time 1,2 and 3)
  * Install https://platformio.org/install/cli
 
@@ -25,6 +28,16 @@ $ touch openWeatherKey.txt
 $ pio run -e Release-twatch2020_V3 -t upload
 ```
  * Replace '_V3' with your watch version
+
+## Update from earlier version:
+```
+$ git fetch
+$ git reset --hard HEAD
+$ git merge '@{u}'
+$ pio run -t clean
+$ pio run -e Release-twatch2020_V3 -t upload
+```
+
 ## Basic usage:
 
 * Use button to wake/sleep the watch
@@ -36,14 +49,13 @@ $ pio run -e Release-twatch2020_V3 -t upload
 * WiFi time sync once every 24h (using network time protocol NTP)
 * WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
 * Wake up every 60 seconds to monitor the user pose (future sleep monitor)
-* Wake up every activity/stepcounter (future fitness monitor)
+* Wake up every activity/stepcounter (steps monitor app Home>Steps)
 * Screen capture can be shared via BLE UART (see tools/getScreenshoot.py) don't work due BLE security (script must be adapted)
  * BLE GATT support
-  * Pairing with random pin (see "Bluetooth" on main menu)
+  * Pairing with random pin (see "Home>Settings>Pair" on main menu)
    * Remove current bonded devices
   * BLE Battery standard notification. Can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
-  * All encrypted
-  * Man in the middle resistant
+  * Man in the middle resistant (BLE)
  * Color themes
 ## Full application list:
 
