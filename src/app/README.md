@@ -75,3 +75,11 @@ On the AllApps definition goes all MainMenu entries:
 ```{"PUT YOUR APP NAME HERE",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new MYAPPLICATION()); } },```
 
 and it's all... icons can be made with gimp (xbm format) img_mainmenu_bright_bits,img_mainmenu_bright_height and img_mainmenu_bright_width are inside xbm file
+
+## How application works:
+
+ * Applications on lWatch are objects descendants from TemplateApplication or LunokIoTApplication
+
+ ***LunokIoTApplication*** is the base application (use it if don't want "back" button on your application)
+
+ ***TemplateApplication*** is a LunokIoTApplication with back button (recommended)
