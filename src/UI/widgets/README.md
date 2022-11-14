@@ -10,7 +10,7 @@ Canvas is a base widget, their only function is show their contents on the scree
 
 Usage (on Application constructor):
 
-```CanvasWidget canvasCreated = new CanvasWidget(int16_t heightInPixels, int16_t widthInPixels);```
+```CanvasWidget *canvasCreated = new CanvasWidget(int16_t heightInPixels, int16_t widthInPixels);```
 
 on Application::Tick must be call draw
 
@@ -49,7 +49,9 @@ Creation:
 
 ```
 ButtonWidget *buttonCreated = new ButtonWidget(int16_t xInPixels,int16_t yInPixels, int16_t heightInPixels, int16_t widthInPixels, []() {
+
     /* put here code to run when button is pushed */
+
 }, uint32_t btnBackgroundColor, bool borders);
 ```
 
@@ -64,5 +66,29 @@ on (Application destructor):
 [Code](ButtonWidget.hpp)
 
 
+## ButtonImage
 
-@TODO explain: ButtonImage, Switch, Gauge, Graph, ValueSelector
+Draw a button with a image centered on it (xbm format) more info: https://github.com/MichaelMure/gimp-plugins/blob/master/common/file-xbm.c
+
+* note this can be exported easily from gimp using ending ".xbm" file name
+
+```
+ButtonImageXBMWidget *imgButton = ButtonImageXBMWidget(int16_t x,int16_t y, int16_t h, int16_t w, []() {
+
+    /* put here code to run when button is pushed */
+
+}, const uint8_t *XBMBitmapPtr, int16_t xbmH, int16_t xbmW, uint16_t xbmColor=ThCol(text), uint32_t btnBackgroundColor=ThCol(button), bool borders=true);
+```
+
+Draw:
+
+```imgButton->DrawTo(canvas);```
+
+on (Application destructor):
+
+```delete imgButton;```
+
+[Code](ButtonImageXBMWidget.hpp)
+
+
+@TODO explain: Switch, Gauge, Graph, ValueSelector
