@@ -56,3 +56,22 @@
 ![steps1](../../doc/img_steps1.png)
 
 * @TODO 
+
+# Develop new application:
+
+ * Duplicate files named:
+ ```src/app/ApplicationBase.hpp``` & ```src/app/ApplicationBase.cpp``` set name at your discretion (recomended add "Appliction" at end)
+
+ * Edit both files and change all references to "ApplicationBase" and change to "YourDesiredNameApplication"
+
+ * your app is ready!
+ 
+ ## Add to mainmenu (edit app/MainMenu.cpp)
+
+ Include here #include "SomethingApplication.hpp" file on it
+
+On the AllApps definition goes all MainMenu entries:
+
+```{"PUT YOUR APP NAME HERE",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new MYAPPLICATION()); } },```
+
+and it's all... icons can be made with gimp (xbm format) img_mainmenu_bright_bits,img_mainmenu_bright_height and img_mainmenu_bright_width are inside xbm file
