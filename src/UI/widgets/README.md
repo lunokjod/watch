@@ -61,6 +61,7 @@ on (Application destructor):
 
 ```delete buttonCreated;```
 
+[Code](ButtonWidget.hpp)
 
 
 
