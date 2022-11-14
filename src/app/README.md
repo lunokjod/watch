@@ -83,3 +83,9 @@ and it's all... icons can be made with gimp (xbm format) img_mainmenu_bright_bit
  ***LunokIoTApplication*** is the base application (use it if don't want "back" button on your application)
 
  ***TemplateApplication*** is a LunokIoTApplication with back button (recommended)
+
+::Tick() method are called from System, the app must draw their interface here (canvas)
+  * return **true** means the UI has changed
+  * return **false** means no redraw needed
+
+ * To draw a splash screen must draw your canvas before leave Application constructor, If no splash use a "Tick();" at end of constructor
