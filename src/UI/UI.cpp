@@ -31,8 +31,8 @@ extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_so
 extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
 // default theme and palette
-TemplateColorPalette currentColorPalette = DefaultThemeColorPalette;
-TemplateThemeScheme currentThemeScheme = DefaultThemeScheme;
+const TemplateColorPalette * currentColorPalette = &DefaultThemeColorPalette;
+const TemplateThemeScheme * currentThemeScheme = &DefaultThemeScheme;
 
 bool touched=false; // is screen touch?
 int16_t touchX=0;   // thumb coords
@@ -102,7 +102,6 @@ void ScreenSleep() {
         Serial.flush();
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
-        
 
         //setCpuFrequencyMhz(80);
         //ttgo->rtc->syncToSystem();

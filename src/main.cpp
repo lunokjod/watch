@@ -48,6 +48,12 @@ void setup() {
   uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
   lUILog("User screen rotation: %d\n", rotation);
   ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
+
+  size_t themeOffset = NVS.getInt("lWTheme");
+  currentColorPalette = &AllColorPaletes[themeOffset];
+  currentThemeScheme = &AllThemes[themeOffset];
+  SplashAnnounce(); // simple eyecandy meanwhile boot
+
   userTall= NVS.getInt("UserTall");
   if ( 0 == userTall ) { userTall = 120; }
   userMaleFemale = NVS.getInt("UserSex");
@@ -61,7 +67,9 @@ void setup() {
 #ifdef LUNOKIOT_DEBUG
   lEvLog("lunokIoT: System initializing...\n");
 #endif
-  SplashAnnounce(); // simple eyecandy meanwhile boot
+
+
+
 
 #ifdef LILYGO_WATCH_2020_V3
   // haptic announce (@TODO user choice "silent boot")

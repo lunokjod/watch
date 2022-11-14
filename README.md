@@ -13,6 +13,12 @@
 * Note: under heavy development (not ready for everyday use)
 * On first launch must set WiFi credentials using QR (WiFI only at this time) using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap you can bypass disabling -DLUNOKIOT_WIFI_ENABLED if don't want wifi features (NTP+weather+localcloud)
 
+## Build and upload
+ * First take care about what hardware version have (at this time 1,2 and 3)
+ * Install https://platformio.org/install/cli
+
+`$ pio run -e Release-twatch2020_V3 -t upload`
+
 ## Basic usage:
 
 * Use button to wake/sleep the watch

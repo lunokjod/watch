@@ -1,16 +1,17 @@
 #include <Arduino.h>
 #include <cstdio> 
-#include "default.hpp"
 #include "../UI.hpp"
-static uint32_t DefaultThemeColors[] = { 0x212121,0x353e45,0x555f68,0x56818a,0xfcb61d,0xffffff,0x000000,0xff0000,0xffff00,0x00ff00 };
+
+const uint32_t DefaultThemeColors[] = { 0x212121,0x353e45,0x555f68,0x56818a,0xfcb61d,
+                                        0xffffff,0x000000,0xff0000,0xffff00,0x00ff00 };
 // why this? seems redundant... 
 // tip: need iterate colors for show theme colors
-struct TemplateColorPalette DefaultThemeColorPalette = {
+const struct TemplateColorPalette DefaultThemeColorPalette = {
         .colors = DefaultThemeColors,
-        .size = sizeof(DefaultThemeColors)/sizeof(uint32_t)-1
+        .size = sizeof(DefaultThemeColors)/sizeof(uint32_t)
 };
 
-struct TemplateThemeScheme DefaultThemeScheme = {
+const struct TemplateThemeScheme DefaultThemeScheme = {
         .background = DefaultThemeColorPalette.colors[0],
         .min = DefaultThemeColorPalette.colors[0],
         .shadow = DefaultThemeColorPalette.colors[0],

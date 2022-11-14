@@ -4,12 +4,13 @@
 #include "../UI/AppTemplate.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
+
 class ThemeApplication : public TemplateApplication {
     private:
         CanvasWidget * imageBase=nullptr;
         unsigned long nextRefresh=0;
-        ButtonWidget *defaultThemeBtn = nullptr;
-        ButtonWidget *blueThemeBtn = nullptr;
+        const static size_t MAXThemes = 9;
+        ButtonWidget *themeButton[MAXThemes] = { nullptr };
     public:
         ThemeApplication();
         ~ThemeApplication();

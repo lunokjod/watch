@@ -11,8 +11,8 @@
  * Use template to get the theme colors
  */
 struct TemplateColorPalette {
-    uint32_t *colors;
-    size_t size;
+    const uint32_t *colors;
+    const size_t size;
 };
 
 // associate TemplateColorPalette.colors offset point to this
@@ -38,13 +38,14 @@ struct TemplateThemeScheme {
         uint32_t medium;
         uint32_t low;
 };
-#include "themes/default.hpp"
-#include "themes/blue.hpp"
-extern TemplateColorPalette currentColorPalette;
-extern TemplateThemeScheme currentThemeScheme;
+
+#include "themes/all_themes.hpp"
+
+extern const TemplateColorPalette * currentColorPalette;
+extern const TemplateThemeScheme * currentThemeScheme;
 
 extern TFT_eSPI * tft;
-#define ThCol(WHAT) tft->color24to16(currentThemeScheme.WHAT)
+#define ThCol(WHAT) tft->color24to16(currentThemeScheme->WHAT)
 
 
 extern uint8_t pendingNotifications;

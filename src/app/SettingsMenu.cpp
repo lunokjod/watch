@@ -28,6 +28,8 @@
 #include "Bluetooth.hpp"
 #include "../static/img_mainmenu_bluetooth.xbm"
 #include "BLEMonitor.hpp"
+#include "Theme.hpp"
+#include "../static/img_mainmenu_themes.xbm"
 
 typedef struct {
     const char *name;
@@ -41,7 +43,7 @@ typedef struct {
 MainMenuApplicationEntry SettingsApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
-    {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, []() { LaunchApplication(new AdvancedSettingsApplication()); } },
+    {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, []() { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, []() { LaunchApplication(new BluetoothApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new BLEMonitorApplication()); } },
@@ -50,6 +52,7 @@ MainMenuApplicationEntry SettingsApps[] = {
     {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
     {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, []() { LaunchApplication(new RotationApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
+    {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, []() { LaunchApplication(new AdvancedSettingsApplication()); } },
 };
 int MaxSettingsAppOffset = sizeof(SettingsApps) / sizeof(SettingsApps[0])-1;
 
