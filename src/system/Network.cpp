@@ -786,9 +786,9 @@ void StartBLE() {
 
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
-    BLEDevice::setSecurityAuth(true,true,true);
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
 
+    BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
     BLEDevice::setSecurityPasskey(generatedPin);
