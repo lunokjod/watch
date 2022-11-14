@@ -1,10 +1,11 @@
 #include <Arduino.h>
-#include "LogView.hpp"
+#include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "ApplicationBase.hpp"
 
 ApplicationBase::ApplicationBase() {
     // Init here any you need
+    lAppLog("Hello from ApplicationBase!\n");
 
     canvas->fillSprite(ThCol(background)); // use theme colors
 
@@ -26,11 +27,13 @@ bool ApplicationBase::Tick() {
     //mywidget->Interact(touched,touchX,touchY);
 
     if ( millis() > nextRefresh ) {
-        
-        // draw your interface here!!!
+        lAppLog("Loop in ApplicationBase!\n");
+        canvas->fillSprite(ThCol(background)); // use theme colors
+
+        // draw your interface widgets here!!!
         //mywidget->DrawTo(canvas);
 
-        nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
+        nextRefresh=millis()+(1000/12); // 8 FPS is enought for GUI
         return true;
     }
     return false;
