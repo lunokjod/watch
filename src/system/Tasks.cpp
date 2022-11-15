@@ -71,7 +71,7 @@ static void TimedHandlerTask(void* args) {
     }
     vTaskDelete(NULL);
 }
-bool TimedTaskkHandler() {
+bool TimedTaskHandler() {
     xTaskCreate(TimedHandlerTask, "ltask", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
     return false;
 }

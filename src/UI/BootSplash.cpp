@@ -1,16 +1,24 @@
-#include "BootSplash.hpp"
-#include "lunokiot_config.hpp"
+#include <esp_task_wdt.h> // used for reset task watchdog
 
-#ifdef LILYGO_WATCH_2020_V3
+#include "BootSplash.hpp" // public methods
+
+#include "lunokiot_config.hpp" 
+
+#ifdef LILYGO_WATCH_2020_V3 // only if have speaker
 #include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
 #include "AudioFileSourceID3.h"
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
-
 #endif
-#include "../app/LogView.hpp"
-#include "../static/img_lunokiot_logo.xbm"
+
+#include "../app/LogView.hpp" // lLog shit
+#include "../static/img_lunokiot_logo.xbm" // sputnik image
+
+bool bootLoop = true; // this stops the animation loop
+bool bootLoopEnds = false; // this is used by the splash to know bootLoop is ended
+
+TFT_eSprite *splashLoadingBar = nullptr;
 
 #ifdef LILYGO_WATCH_2020_V3
 extern const uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
@@ -24,7 +32,7 @@ void SplashFanfare() {
 
 #ifdef LILYGO_WATCH_2020_V3
     // Audio fanfare x'D
-    lUILog("Audio: Initialize");
+    lUILog("Audio: Initialize\n");
     ttgo->enableAudio();
 
     // from https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library/blob/master/examples/UnitTest/HardwareTest/HardwareTest.ino
@@ -32,12 +40,12 @@ void SplashFanfare() {
     AudioFileSourcePROGMEM *file;
     AudioOutputI2S *out;
     AudioFileSourceID3 *id3;
-    // file = new AudioFileSourcePROGMEM(image, sizeof(image));
+
     file = new AudioFileSourcePROGMEM(boot_sound_start, (uint32_t)(boot_sound_end-boot_sound_start));
     id3 = new AudioFileSourceID3(file);
     out = new AudioOutputI2S();
     out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
-    lUILog("Audio: MP3 boot sound");
+    lUILog("Audio: MP3 boot sound\n");
     mp3 = new AudioGeneratorMP3();
     mp3->begin(id3, out);
     while (true) {
@@ -46,7 +54,7 @@ void SplashFanfare() {
                 mp3->stop();
             }
         } else {
-            lUILog("Audio: MP3 done");
+            lUILog("Audio: MP3 done\n");
             break;
         }
     }
@@ -62,11 +70,37 @@ void SplashFanfare() {
 }
 #endif
 
+void SplashMeanWhile(void *data) { // task to do boot animation
+    bootLoop=true;
+
+
+    //splashLoadingBar = new TFT_eSprite(ttgo->tft);
+    //splashLoadingBar->setColorDepth(16);
+    //splashLoadingBar->createSprite(100,10);
+    //splashLoadingBar->fillSprite(ThCol(boot_splash_background));
+    bootLoopEnds=false;
+    int offset=0;
+    while (bootLoop) {
+        // do something beauty meanwhile boot
+        //splashLoadingBar->pushSprite(0,0);
+        esp_task_wdt_reset();
+        delay(300);
+    }
+    //splashLoadingBar->deleteSprite();
+    //delete splashLoadingBar;
+    bootLoopEnds=true;
+    vTaskDelete(NULL);
+}
+
 void SplashAnnounce() {
+    bootLoop=true;
+    
     ttgo->setBrightness(0); // low brightness
     ttgo->tft->fillScreen(ThCol(boot_splash_background));
-    // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you are read this!!! :)
+    // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
     ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
+
+//    xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TASK_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), NULL);
 
 #ifdef LUNOKIOT_DEBUG
     // text stuff
@@ -77,7 +111,7 @@ void SplashAnnounce() {
     int32_t posX = TFT_WIDTH-10;
     int32_t posY = 10;
     // more than needed buffer (in stack for guarantee their destruction)
-    char buildNumberAsString[16] = { 0 };
+    char buildNumberAsString[10] = { 0 };
     // dump my shit string buffer
     sprintf(buildNumberAsString,"#%u", LUNOKIOT_BUILD_NUMBER );
     ttgo->tft->setTextColor(TFT_DARKGREY);
@@ -106,4 +140,13 @@ void SplashAnnounceEnd() {
 #ifdef LILYGO_WATCH_2020_V3
     SplashFanfare(); // sound and shake
 #endif
+/**
+    delay(10000);
+    bootLoopEnds=false;
+    bootLoop=false;
+    while(bootLoopEnds) {
+        esp_task_wdt_reset();
+        delay(100);
+    }
+*/
 }

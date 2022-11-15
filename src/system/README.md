@@ -16,7 +16,7 @@
 
 **UI** Helpers for build user interface and the UI event loop
 
-**BootSplash** Simple TFT eyecandy during boot process
+**BootSplash** Simple TFT eyecandy during boot process (theme choose color)
 
 ## Datasources:
 

@@ -14,7 +14,7 @@ class TimedTaskDescriptor {
 };
 
 // Install the network loop task scheduler
-bool TimedTaskkHandler();
+bool TimedTaskHandler();
 // Remove desired task from network pooling
 bool RemoveTimedTask(TimedTaskDescriptor *oldTsk);
 // Add task to the network loop
