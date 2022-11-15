@@ -57,6 +57,9 @@ $ pio run -e Release-twatch2020_V3 -t upload
   * BLE Battery standard notification. Can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
   * Man in the middle resistant (BLE)
  * Color themes
+ * Screen orientation
+
+ 
 ## Full application list:
 
 [See App gallery](src/app/README.md)
@@ -74,8 +77,6 @@ $ pio run -e Release-twatch2020_V3 -t upload
 
 ### Pending to implement:
 * Add first launch application assistant to set or omit the desired setup parts
-  * the mandatory wifi sync on first launc must be optional (Lohtse shar)
-  * option for flip screen (Lohtse shar)
 * PDM Mic (voice assistant)
 * RTC (alarm)
 * espNow (locate other family watches)
