@@ -41,7 +41,7 @@ IATestApplication::IATestApplication() {
     accelSphere = new CanvasWidget(150, 150); // BMP info on a spin
     compositeBuffer150 = new CanvasWidget(150,150); // dirty buffer to do things with accelSphere
 
-    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,ttgo->tft->color24to16(0x2a040c));//0x686890));
+    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,canvas->color24to16(0x2a040c));//0x686890));
     eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,87,CanvasWidget::MASK_COLOR);
     eyeLensBuffer->canvas->fillRect(0,0,100,200,CanvasWidget::MASK_COLOR);
 
@@ -52,7 +52,7 @@ IATestApplication::IATestApplication() {
     compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80,CanvasWidget::MASK_COLOR);
 
     // outher circle decoration
-    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,ttgo->tft->color24to16(0x383838));
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,canvas->color24to16(0x383838));
     compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,116,CanvasWidget::MASK_COLOR);
     // eraser ;-P
     compositeBuffer->canvas->fillRect(0,0,118,TFT_HEIGHT,CanvasWidget::MASK_COLOR);

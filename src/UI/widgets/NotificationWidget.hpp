@@ -1,14 +1,15 @@
 #ifndef __LUNOKIOT__UI__NOTIFICATION___
 #define __LUNOKIOT__UI__NOTIFICATION___
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+#include <functional>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
+
 #include "lunokiot_config.hpp"
 
 #include "CanvasWidget.hpp"
 
 #include "ButtonWidget.hpp"
-
-#include <functional>
 
 class NotificationWidget: public ButtonWidget {
     public:
@@ -22,7 +23,7 @@ class NotificationWidget: public ButtonWidget {
         char * message=nullptr;
         uint32_t color=0x0;
         bool Interact(bool touch, int16_t tx,int16_t ty);
-        NotificationWidget(std::function<void ()> notifyTo, char *message, uint32_t color=ttgo->tft->color24to16(0x353e45));
+        NotificationWidget(std::function<void ()> notifyTo, char *message, uint32_t color=tft->color24to16(0x353e45));
         void DrawTo(TFT_eSprite * endCanvas);
         bool isRead = false;
         ~NotificationWidget();

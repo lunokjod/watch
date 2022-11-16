@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "../lunokiot_config.hpp"
-
+extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

@@ -9,6 +9,9 @@
 
 #include "LogView.hpp"
 
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo lib
+
 BrightnessApplication::~BrightnessApplication() {
     uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
     if (currentValue != 0) {
@@ -37,19 +40,20 @@ bool BrightnessApplication::Tick() {
         brightGauge->DirectDraw();
         return false;
     }
+    TemplateApplication::Tick();
+
     if (millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background));
-        TemplateApplication::Tick();
         // sun in the center
         canvas->drawXBitmap((TFT_WIDTH/2)-(img_bright_48_width/2),
-                    ((TFT_HEIGHT/2)-(img_bright_48_height/2)-10),
+                    ((TFT_HEIGHT/2)-(img_bright_48_height/2)-14),
                     img_bright_48_bits,
                     img_bright_48_width,
                     img_bright_48_height,
                     TFT_WHITE);
         brightGauge->DrawTo(canvas);
-        TemplateApplication::Tick();
-        nextRefresh=millis()+(1000/8);
+        btnBack->DrawTo(canvas);
+        nextRefresh=millis()+(1000/3);
         return true;
     }
     return false;

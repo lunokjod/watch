@@ -4,6 +4,9 @@
 
 #include "lunokiot_config.hpp" 
 
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo lib
+
 #ifdef LILYGO_WATCH_2020_V3 // only if have speaker
 #include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
@@ -14,6 +17,7 @@
 
 #include "../app/LogView.hpp" // lLog shit
 #include "../static/img_lunokiot_logo.xbm" // sputnik image
+extern TTGOClass *ttgo; // ttgo lib
 
 bool bootLoop = true; // this stops the animation loop
 bool bootLoopEnds = false; // this is used by the splash to know bootLoop is ended

@@ -2,10 +2,10 @@
 #define __LUNOKIOT__CANVAS__WIDGET___HEADER__
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include "../base/Widget.hpp"
 
-class CanvasWidget {
+class CanvasWidget : public Drawable {
     public:
-        static const uint32_t MASK_COLOR=0x100; // ttgo->tft->color565(0x01,0x20,0x00)
         TFT_eSprite *canvas=nullptr; // must be nullptr on creation
         // BRG
         CanvasWidget(int16_t h, int16_t w);

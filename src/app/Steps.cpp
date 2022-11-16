@@ -235,7 +235,7 @@ bool StepsApplication::Tick() {
                     timeBMAActivityNone = 0;
 */
 
-        nextRedraw=millis()+(1000/6);
+        nextRedraw=millis()+(1000/16);
         return true;
     }
     return false;

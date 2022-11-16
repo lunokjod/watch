@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
+
 #include "../lunokiot_config.hpp"
 
 #include "Shutdown.hpp"

@@ -9,8 +9,8 @@
 #include "../static/img_search_48.xbm"
 
 ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication() {
-    uint32_t wcolor = ttgo->tft->color24to16(0x27273d);
-    uint32_t mcolor = ttgo->tft->color24to16(0x3b3b5b);
+    uint32_t wcolor = canvas->color24to16(0x27273d);
+    uint32_t mcolor = canvas->color24to16(0x3b3b5b);
 
     accXGraph = new GraphWidget(24,79,0,360,TFT_RED,mcolor);
     accYGraph = new GraphWidget(24,79,0,360,TFT_GREEN,mcolor);

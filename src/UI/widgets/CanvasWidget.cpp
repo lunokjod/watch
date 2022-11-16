@@ -21,10 +21,10 @@ CanvasWidget::~CanvasWidget() {
     delete canvas;
 }
 
-void CanvasWidget::DirectDraw(int16_t x=0,int16_t y=0) {
+void CanvasWidget::DirectDraw(int16_t x,int16_t y) {
     //tft->setSwapBytes(false);
     //canvas->setSwapBytes(true);
-    canvas->pushSprite(x,y);
+    canvas->pushSprite(x,y,Drawable::MASK_COLOR);
     //canvas->setSwapBytes(false);
     //tft->setSwapBytes(true);
 }

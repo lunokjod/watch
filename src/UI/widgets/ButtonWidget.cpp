@@ -1,16 +1,26 @@
-#include <Arduino.h>
+//#include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "lunokiot_config.hpp"
-#include "ButtonWidget.hpp"
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <functional>
 
+#include "lunokiot_config.hpp"
 #include "../activator/ActiveRect.hpp"
 #include "CanvasWidget.hpp"
-#include <functional>
 #include "../../app/LogView.hpp"
+
+#include "ButtonWidget.hpp"
+
+extern TFT_eSPI *tft;
+
 
 ButtonWidget::~ButtonWidget() {
 
 }
+
+void ButtonWidget::DirectDraw() {
+    CanvasWidget::DirectDraw(x,y);
+}
+
 ButtonWidget::ButtonWidget(int16_t x, int16_t y, int16_t h, int16_t w, std::function<void ()> notifyTo, uint32_t btnBackgroundColor, bool borders)
                 : ActiveRect(x,y,h,w,notifyTo), CanvasWidget(h,w), btnBackgroundColor(btnBackgroundColor), borders(borders) {
 }
@@ -39,7 +49,7 @@ void ButtonWidget::DrawTo(TFT_eSprite * endCanvas) {
 
         border = 3;
         if ( false == enabled ) { border = 4; }
-        if ( false == enabled ) { buttonColor = ttgo->tft->color24to16(0x494949); } //ttgo->tft->color565(164,128,128); }
+        if ( false == enabled ) { buttonColor = tft->color24to16(0x494949); } //ttgo->tft->color565(164,128,128); }
         canvas->fillRoundRect( border, border,(ActiveRect::w-(border*2)),(ActiveRect::h-(border*2)),radius,buttonColor);
     } else {
         // clear is in case of no borders (avoid glitch with lastInteraction)

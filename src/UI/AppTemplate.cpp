@@ -1,7 +1,6 @@
+//#include <Arduino.h>
 #include "AppTemplate.hpp"
-
-#include <Arduino.h>
-#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../lunokiot_config.hpp"
 
 #include "../app/Watchface.hpp" // for back button
@@ -20,9 +19,12 @@ TemplateApplication::TemplateApplication() {
 }
 
 bool TemplateApplication::Tick() {
-    bool interacted = btnBack->Interact(touched,touchX, touchY);
+    bool backTap = btnBack->Interact(touched,touchX, touchY); 
+    if ( backTap ) {
+        btnBack->DirectDraw();
+    }
     if ( millis() > nextRefresh ) {
         btnBack->DrawTo(canvas);
     }
-    return interacted;
+    return backTap;
 }

@@ -1,11 +1,15 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <Arduino.h>
+//#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
 #include "Settings.hpp"
 #include "../static/img_back_32.xbm"
 #include "../lunokiot_config.hpp"
 #include "About.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
+
+extern TFT_eSPI *tft;
 
 const unsigned long AboutBoxTextScrollDelay = 1000/16;
 //const unsigned long 
@@ -107,8 +111,8 @@ AboutApplication::AboutApplication() {
     canvas->fillSprite(TFT_BLACK);
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
-    textBuffer = new TFT_eSprite(ttgo->tft);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
+    textBuffer = new TFT_eSprite(tft);
     textBuffer->setColorDepth(1);
     textBuffer->createSprite(TFT_WIDTH,120+18);
     textBuffer->fillSprite(TFT_BLACK);

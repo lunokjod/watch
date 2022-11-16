@@ -1,5 +1,8 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <Arduino.h>
+
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
+
 #include "LogView.hpp"
 #include "../static/img_back_32.xbm"
 #include "Watchface.hpp"
@@ -13,7 +16,7 @@ SemaphoreHandle_t lLogSemaphore = NULL;
 
 void lLogCreate() {
     if ( nullptr == LogViewApplication::LogTextBuffer ) {
-        LogViewApplication::LogTextBuffer = new TFT_eSprite(ttgo->tft);
+        LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
         LogViewApplication::LogTextBuffer->setColorDepth(1);
         LogViewApplication::LogTextBuffer->createSprite(TFT_WIDTH,TFT_HEIGHT-70);
         LogViewApplication::LogTextBuffer->fillSprite(TFT_BLACK);

@@ -1,5 +1,8 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
+
 #include "Provisioning2.hpp"
 #include "../system/Application.hpp"
 
@@ -138,7 +141,7 @@ void Provisioning2Application::GenerateQRCode() {
         currentQRRendered = nullptr;
     }
     //@TODO  must be use canvasWidget instead of tft sprites!! 
-    currentQRRendered = new TFT_eSprite(ttgo->tft);
+    currentQRRendered = new TFT_eSprite(tft);
     currentQRRendered->setColorDepth(16);
     currentQRRendered->createSprite(QRSize, QRSize);
     currentQRRendered->fillSprite(TFT_BLACK);
@@ -175,7 +178,7 @@ void Provisioning2Application::GenerateQRCode() {
     }
 
     const int32_t radius = 28; 
-    uint16_t iconColor = ttgo->tft->color24to16(0x0a0f1e);
+    uint16_t iconColor = canvas->color24to16(0x0a0f1e);
     // border
     currentQRRendered->fillCircle((currentQRRendered->width()/2),(currentQRRendered->height()/2),radius, TFT_WHITE);
     // background
@@ -286,7 +289,7 @@ Provisioning2Application::Provisioning2Application() {
         }
         WiFi.onEvent(Provisioning2_SysProvEvent);
 
-    },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,ttgo->tft->color24to16(0x2347bc));
+    },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,canvas->color24to16(0x2347bc));
     startProvBtn->taskStackSize=LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE;
     Tick();
 }

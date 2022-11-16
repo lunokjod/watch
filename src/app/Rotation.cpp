@@ -1,9 +1,12 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "Rotation.hpp"
 #include "../UI/UI.hpp"
 #include "../static/img_happy_48.xbm"
 #include <ArduinoNvs.h> // persistent values
+
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
 
 RotationApplication::~RotationApplication() {
     if ( nullptr != buffer ) { delete buffer; }
@@ -17,19 +20,19 @@ RotationApplication::RotationApplication() {
 
     up = new ButtonWidget(60,10,60,TFT_WIDTH-120,[]() {
         NVS.setInt("ScreenRot",2,false);
-        ttgo->tft->setRotation(2);
+        tft->setRotation(2);
     });
     right = new ButtonWidget((TFT_WIDTH-10)-60,60,TFT_HEIGHT-120,60,[]() {
         NVS.setInt("ScreenRot",3,false);
-        ttgo->tft->setRotation(3);
+        tft->setRotation(3);
      });
     down = new ButtonWidget(60,(TFT_HEIGHT-10)-60,60,TFT_WIDTH-120,[]() {
         NVS.setInt("ScreenRot",0,false);
-        ttgo->tft->setRotation(0);
+        tft->setRotation(0);
     });
     left = new ButtonWidget(10,60,TFT_HEIGHT-120,60,[]() {
         NVS.setInt("ScreenRot",1,false);
-        ttgo->tft->setRotation(1);
+        tft->setRotation(1);
     });
     Tick();
 }

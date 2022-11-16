@@ -1,10 +1,11 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "Battery.hpp"
 #include "../lunokiot_config.hpp"
 #include "../static/img_battery_empty_160.c"
 #include "../static/img_power_64.xbm"
 
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo lib
 
 BatteryApplication::~BatteryApplication() {
     if ( nullptr != BattPCEvent ) {

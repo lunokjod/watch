@@ -2,6 +2,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "PeerApplication.hpp"

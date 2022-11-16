@@ -19,7 +19,7 @@ SetTimeZoneApplication::~SetTimeZoneApplication() {
 SetTimeZoneApplication::SetTimeZoneApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,ttgo->tft->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
 
     switchDaylight=new SwitchWidget(10,10, [&,this]() { }, canvas->color24to16(0x555f68));
 
@@ -30,7 +30,7 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
         NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
         NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
 
-    },img_timezone_32_bits,img_timezone_32_height,img_timezone_32_width,TFT_WHITE, ttgo->tft->color24to16(0x353e45));
+    },img_timezone_32_bits,img_timezone_32_height,img_timezone_32_width,TFT_WHITE, canvas->color24to16(0x353e45));
 
     timezoneGMTSelector = new ValueSelector(120,60,100,115,-12,12,
     canvas->color24to16(0x212121),true);

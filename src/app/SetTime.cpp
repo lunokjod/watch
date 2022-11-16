@@ -1,5 +1,9 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
+
+
+
 #include "SetTime.hpp"
 #include "SetDate.hpp"
 #include "LogView.hpp"

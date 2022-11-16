@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
 #include <ArduinoNvs.h>
 
 #include "SystemEvents.hpp"

@@ -2,6 +2,8 @@
 #include <LilyGoWatch.h>
 #include "Playground7.hpp"
 #include "../UI/UI.hpp"
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
 
 PlaygroundApplication7::~PlaygroundApplication7() {
     ttgo->setBrightness(128);    

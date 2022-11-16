@@ -1,10 +1,11 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "Playground.hpp"
 #include "../static/img_sample_120.c"
 #include "../static/img_sample2_120.c"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
 
 
 PlaygroundApplication::~PlaygroundApplication() {

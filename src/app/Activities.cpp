@@ -1,5 +1,7 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
+//#include <Arduino.h>
+//#include <LilyGoWatch.h>
 #include "../lunokiot_config.hpp"
 
 #include "Activities.hpp"
@@ -7,6 +9,8 @@
 #include "../static/img_activity_running.xbm"
 #include "../static/img_activity_walking.xbm"
 #include "../static/img_activity_stay.xbm"
+
+extern TFT_eSPI *tft;
 
 ActivitiesApplication::~ActivitiesApplication() {
     if ( nullptr != giroLog ) {
@@ -17,7 +21,7 @@ ActivitiesApplication::~ActivitiesApplication() {
 
 ActivitiesApplication::ActivitiesApplication() {
     counter = 0;
-    giroLog = new TFT_eSprite(ttgo->tft);
+    giroLog = new TFT_eSprite(tft);
     giroLog->setColorDepth(16);
     giroLog->createSprite(TFT_WIDTH, 100);
     giroLog->fillSprite(TFT_BLACK);

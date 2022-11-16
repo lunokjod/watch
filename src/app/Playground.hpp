@@ -11,7 +11,7 @@ class PlaygroundApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
     public:
-        TFT_eSPI *tft = ttgo->tft;
+        //TFT_eSPI *tft = ttgo->tft;
         CanvasWidget *buffer=nullptr;
         bool alphaDirection = true;
         int16_t currentAlpha = 0;

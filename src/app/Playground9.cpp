@@ -2,7 +2,7 @@
 #include <LilyGoWatch.h>
 #include "Playground9.hpp"
 #include "../UI/UI.hpp"
-
+extern TTGOClass *ttgo; // ttgo library shit ;)
 PlaygroundApplication9::~PlaygroundApplication9() {
     
 }

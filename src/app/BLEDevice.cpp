@@ -19,7 +19,7 @@ BLEDeviceMonitorApplication::BLEDeviceMonitorApplication(uint16_t baseColor,NimB
     btnBack = new ButtonImageXBMWidget(
         5, TFT_HEIGHT - 69, 64, 64, [&, this]()
         { LaunchApplication(new BLEMonitorApplication()); },
-        img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, ttgo->tft->color24to16(0x353e45), false);
+        img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, canvas->color24to16(0x353e45), false);
     //xTaskCreate(BLEMonitorTask, "bMonTA", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask);
     Tick();
     UINextTimeout = millis() + UITimeout; // disable screen timeout on this app

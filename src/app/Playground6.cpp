@@ -1,8 +1,10 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "Playground6.hpp"
 #include "../UI/UI.hpp"
 #include <list>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
 
 extern std::list<TFT_eSprite *>ScreenShots;
 
@@ -21,7 +23,7 @@ PlaygroundApplication6::PlaygroundApplication6() {
     for (auto const& capture : ScreenShots) {
         Serial.printf("Playground6: ScreenShoot %p\n",capture);
         TFT_eSprite * reduced = ScaleSprite(capture,thumnailScale);
-        TFT_eSprite *buffer = new TFT_eSprite(ttgo->tft);
+        TFT_eSprite *buffer = new TFT_eSprite(tft);
         buffer->createSprite(reduced->width(),reduced->height());
         reduced->pushRotated(buffer,0);
         Thumbnails.push_back(buffer);

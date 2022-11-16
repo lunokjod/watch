@@ -4,7 +4,7 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-
+extern TTGOClass *ttgo; // ttgo library shit ;)
 #include <Arduino_JSON.h>
 #include <HTTPClient.h>
 

@@ -82,7 +82,7 @@ void GaugeWidget::DirectDraw() {
     if ( dirty ) {
         ForceDraw();
         dirty = false;
-        buffer->canvas->pushSprite(x,y,CanvasWidget::MASK_COLOR);
+        buffer->canvas->pushSprite(x,y,Drawable::MASK_COLOR);
     }
 }
 

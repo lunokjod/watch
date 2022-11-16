@@ -1,24 +1,18 @@
-#include "UI.hpp"
-#include "BootSplash.hpp"
 #include <LilyGoWatch.h>
-#include "lunokiot_config.hpp"
-
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
 #include <esp_event.h>
 #include <esp_event_base.h>
-
-#include "../system/SystemEvents.hpp"
-
-#include "../system/Application.hpp"
-#include "representation/Point2D.hpp"
-
-#include "widgets/CanvasWidget.hpp"
 #include <functional>
 
-#include "../app/LogView.hpp"
+#include "lunokiot_config.hpp"
 #include "UI.hpp"
+#include "BootSplash.hpp"
+#include "../system/SystemEvents.hpp"
+#include "../system/Application.hpp"
+#include "representation/Point2D.hpp"
+#include "widgets/CanvasWidget.hpp"
+#include "../app/LogView.hpp"
 
 #ifdef LILYGO_WATCH_2020_V3
 #include <driver/i2s.h>
@@ -27,6 +21,9 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 #endif
+
+extern TTGOClass *ttgo; // ttgo lib
+
 extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
 extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
