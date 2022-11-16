@@ -45,9 +45,9 @@ void ButtonImageXBMWidget::DrawTo(TFT_eSprite * endCanvas) {
     }
     /*
     uint16_t iconColor = ttgo->tft->color24to16(0xffffff);
-    int16_t cx = (ClearProvisioningButton->x + (ClearProvisioningButton->GetCanvas()->height()/2)-(img_trash_48_height/2));
-    int16_t cy = (ClearProvisioningButton->y + (ClearProvisioningButton->GetCanvas()->width()/2)-(img_trash_48_width/2));
-    this->GetCanvas()->drawXBitmap(cx,cy,img_trash_48_bits, img_trash_48_width, img_trash_48_height,iconColor);
+    int16_t cx = (ClearProvisioningButton->x + (ClearProvisioningButton->canvas->height()/2)-(img_trash_48_height/2));
+    int16_t cy = (ClearProvisioningButton->y + (ClearProvisioningButton->canvas->width()/2)-(img_trash_48_width/2));
+    this->canvas->drawXBitmap(cx,cy,img_trash_48_bits, img_trash_48_width, img_trash_48_height,iconColor);
     */
     if ( lastInteraction ) { 
         // button pushed

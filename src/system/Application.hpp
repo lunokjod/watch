@@ -2,23 +2,19 @@
 #define __LUNOKIOT__APPLICATION__SUPPORT__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "Application.hpp"
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 /*
  * Basic application with UI
  */
 class LunokIoTApplication {
     public:
-        TFT_eSprite *canvas=nullptr; // application buffer
-
+        TFT_eSprite *canvas; // application buffer (all must draw here)
+        // build canvas
         LunokIoTApplication();
         virtual ~LunokIoTApplication();
-        
-        TFT_eSprite *GetCanvas(); // almost unused... but is a good practice
-
         virtual bool Tick(); // the UI callback to manage input and screen
-
+        TFT_eSprite *NewScreenShoot();
 #ifdef LUNOKIOT_DEBUG
         uint32_t lastApplicationHeapFree = 0;
         uint32_t lastApplicationPSRAMFree = 0;

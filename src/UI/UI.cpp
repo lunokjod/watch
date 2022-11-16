@@ -226,7 +226,7 @@ TFT_eSprite *TakeScreenShoot() {
     ttgo->setBrightness(0);
     ttgo->tft->fillScreen(TFT_WHITE);
     ttgo->setBrightness(255);
-    TFT_eSprite *appView = currentApplication->GetCanvas();
+    TFT_eSprite *appView = currentApplication->canvas;
     TFT_eSprite *myCopy = DuplicateSprite(appView);
     ttgo->tft->fillScreen(TFT_BLACK);
     ttgo->setBrightness(0);
@@ -316,7 +316,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     bool changes = false;
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         if ( nullptr != currentApplication ) {
-            TFT_eSprite *appView = currentApplication->GetCanvas();
+            TFT_eSprite *appView = currentApplication->canvas;
             if ( nullptr != appView ) {
                 // perform the call to the app logic
                 changes = currentApplication->Tick();

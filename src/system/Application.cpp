@@ -1,27 +1,32 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+#include <ArduinoNvs.h>
+
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
 
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
-#include <ArduinoNvs.h>
 #include "../app/LogView.hpp"
 
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
 extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
-//TFT_eSprite * LunokIoTApplication::lastStateCanvas = TFT_eSprite::createSprite(TFT_HEIGHT,TFT_WIDTH);
 
+LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
+
+// get a capture of current application
+TFT_eSprite *LunokIoTApplication::NewScreenShoot() { return DuplicateSprite(canvas); }
 LunokIoTApplication::LunokIoTApplication() {
 #ifdef LUNOKIOT_DEBUG
     // trying to reduce leaks
-    this->lastApplicationHeapFree = ESP.getFreeHeap();
-    this->lastApplicationPSRAMFree = ESP.getFreePsram();
+    lastApplicationHeapFree = ESP.getFreeHeap();
+    lastApplicationPSRAMFree = ESP.getFreePsram();
 #endif
-    this->canvas = new TFT_eSprite(ttgo->tft);
-    this->canvas->setColorDepth(16);
-    this->canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
-    this->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    canvas = new TFT_eSprite(tft);
+    canvas->setColorDepth(16);
+    canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
+    canvas->fillSprite(ThCol(background));
     lUILog("LunokIoTApplication: %p created\n", this);
     overlay->fillSprite(TFT_TRANSPARENT);
 }
@@ -45,11 +50,7 @@ LunokIoTApplication::~LunokIoTApplication() {
 #endif
 }
 
-TFT_eSprite * LunokIoTApplication::GetCanvas() { return this->canvas; } // almost unused, I use ->canvas by slacker x'D
-
 bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the full screen redraw
-
-LunokIoTApplication *currentApplication = nullptr;
 
 class LaunchApplicationDescriptor {
     public:
@@ -86,7 +87,7 @@ void LaunchApplicationTask(void * data) {
             currentApplication = instance; // set as main app
             uint8_t userBright = NVS.getInt("lBright");
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
-            TFT_eSprite *appView = instance->GetCanvas();
+            TFT_eSprite *appView = instance->canvas;
             if ( animation ) { // Launch new app effect (zoom out)
                 for(float scale=0.1;scale<0.4;scale+=0.04) {
                     TFT_eSprite *scaledImg = ScaleSprite(appView,scale);

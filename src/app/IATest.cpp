@@ -41,47 +41,47 @@ IATestApplication::IATestApplication() {
     accelSphere = new CanvasWidget(150, 150); // BMP info on a spin
     compositeBuffer150 = new CanvasWidget(150,150); // dirty buffer to do things with accelSphere
 
-    eyeLensBuffer->GetCanvas()->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,ttgo->tft->color24to16(0x2a040c));//0x686890));
-    eyeLensBuffer->GetCanvas()->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,87,CanvasWidget::MASK_COLOR);
-    eyeLensBuffer->GetCanvas()->fillRect(0,0,100,200,CanvasWidget::MASK_COLOR);
+    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,ttgo->tft->color24to16(0x2a040c));//0x686890));
+    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,87,CanvasWidget::MASK_COLOR);
+    eyeLensBuffer->canvas->fillRect(0,0,100,200,CanvasWidget::MASK_COLOR);
 
 
     // generating back mask (circle)
     // base sphere (using transparent on center)
-    compositeBuffer->GetCanvas()->fillSprite(TFT_BLACK);
-    compositeBuffer->GetCanvas()->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillSprite(TFT_BLACK);
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80,CanvasWidget::MASK_COLOR);
 
     // outher circle decoration
-    compositeBuffer->GetCanvas()->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,ttgo->tft->color24to16(0x383838));
-    compositeBuffer->GetCanvas()->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,116,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,ttgo->tft->color24to16(0x383838));
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,116,CanvasWidget::MASK_COLOR);
     // eraser ;-P
-    compositeBuffer->GetCanvas()->fillRect(0,0,118,TFT_HEIGHT,CanvasWidget::MASK_COLOR);
-    compositeBuffer->GetCanvas()->fillRect(132,0,108,TFT_HEIGHT,CanvasWidget::MASK_COLOR);
-    compositeBuffer->GetCanvas()->fillRect(110,120,30,120,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillRect(0,0,118,TFT_HEIGHT,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillRect(132,0,108,TFT_HEIGHT,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillRect(110,120,30,120,CanvasWidget::MASK_COLOR);
 
-    watchFacebackground->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
+    watchFacebackground->canvas->fillSprite(CanvasWidget::MASK_COLOR);
     // build the circle marks
     for (int16_t sphereAngle = 0;sphereAngle<360;sphereAngle+=24) {
-        compositeBuffer->GetCanvas()->pushRotated(watchFacebackground->GetCanvas(),sphereAngle,CanvasWidget::MASK_COLOR);
+        compositeBuffer->canvas->pushRotated(watchFacebackground->canvas,sphereAngle,CanvasWidget::MASK_COLOR);
     }
 
     // upper single border circle
-    compositeBuffer->GetCanvas()->drawCircle(TFT_HEIGHT/2, TFT_WIDTH/2,150, canvas->color24to16(0x383838));
+    compositeBuffer->canvas->drawCircle(TFT_HEIGHT/2, TFT_WIDTH/2,150, canvas->color24to16(0x383838));
 
     // inner circle
-    compositeBuffer->GetCanvas()->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80, canvas->color24to16(0x383838));
-    compositeBuffer->GetCanvas()->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,75,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80, canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,75,CanvasWidget::MASK_COLOR);
     // right side circle cut
-    compositeBuffer->GetCanvas()->fillRect(180,84,120,74, TFT_BLACK);
-    compositeBuffer->GetCanvas()->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,75, CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillRect(180,84,120,74, TFT_BLACK);
+    compositeBuffer->canvas->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,75, CanvasWidget::MASK_COLOR);
 
-//    compositeBuffer->GetCanvas()->fillRect(120,80,120,80, TFT_BLACK);
+//    compositeBuffer->canvas->fillRect(120,80,120,80, TFT_BLACK);
     // right side circle cut lines
-    compositeBuffer->GetCanvas()->fillRect(185,80,55,5, compositeBuffer->canvas->color24to16(0x383838));
-    compositeBuffer->GetCanvas()->fillRect(185,160,55,5, compositeBuffer->canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillRect(185,80,55,5, compositeBuffer->canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillRect(185,160,55,5, compositeBuffer->canvas->color24to16(0x383838));
 
     // Dump to buffer
-    compositeBuffer->GetCanvas()->pushRotated(watchFacebackground->GetCanvas(),0,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->pushRotated(watchFacebackground->canvas,0,CanvasWidget::MASK_COLOR);
 
     const int32_t notificationRouletteAngle=35;
     circleNotifications = new CanvasWidget(TFT_HEIGHT, TFT_WIDTH);
@@ -93,39 +93,39 @@ IATestApplication::IATestApplication() {
     // notification pane draw
 
     // notif 1 test
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->GetCanvas()->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x00ff00));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x00ff00));
 
-    compositeBuffer->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
 
-    circleNotifications->GetCanvas()->pushRotated(compositeBuffer->GetCanvas(),notificationRouletteAngle,CanvasWidget::MASK_COLOR);
-    circleNotifications->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-    compositeBuffer->GetCanvas()->pushRotated(circleNotifications->GetCanvas(),0,CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->pushRotated(compositeBuffer->canvas,notificationRouletteAngle,CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
     // notif 2 test
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->GetCanvas()->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x0000ff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x0000ff));
 
-    compositeBuffer->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-    circleNotifications->GetCanvas()->pushRotated(compositeBuffer->GetCanvas(),notificationRouletteAngle,CanvasWidget::MASK_COLOR);
-    circleNotifications->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-    compositeBuffer->GetCanvas()->pushRotated(circleNotifications->GetCanvas(),0,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->pushRotated(compositeBuffer->canvas,notificationRouletteAngle,CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
 
     // notif 3 test
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->GetCanvas()->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff00ff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff00ff));
 
-    compositeBuffer->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-    circleNotifications->GetCanvas()->pushRotated(compositeBuffer->GetCanvas(),notificationRouletteAngle,CanvasWidget::MASK_COLOR);
-    circleNotifications->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-    compositeBuffer->GetCanvas()->pushRotated(circleNotifications->GetCanvas(),0,CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->pushRotated(compositeBuffer->canvas,notificationRouletteAngle,CanvasWidget::MASK_COLOR);
+    circleNotifications->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
 
     // notif 4 test
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->GetCanvas()->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->GetCanvas()->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff0ffa));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff0ffa));
     
 }
 
@@ -140,13 +140,13 @@ bool IATestApplication::Tick() {
         // static int16_t notifAngle = 0;
        //  testButton[0]->x = 120;
        //  testButton[0]->y = 140;
-         //testButton[0]->DrawTo(clockSphere->GetCanvas());
+         //testButton[0]->DrawTo(clockSphere->canvas);
 
         // notifAngle++;
         // if ( notifAngle > 359 ) { notifAngle = notifAngle-360; }
 
         
-        // clockSphere->GetCanvas()->fillRect(testButton[0]->x-20,testButton[0]->y-20,45+40,45+40,MYTRANSPARENT);
+        // clockSphere->canvas->fillRect(testButton[0]->x-20,testButton[0]->y-20,45+40,45+40,MYTRANSPARENT);
 
         nextRedraw = millis()+(1000/3);
     }
@@ -156,9 +156,9 @@ bool IATestApplication::Tick() {
     static unsigned long assistantRedraw = 0;
     if ( assistantRedraw < millis() ) {
         // clean the composite
-        compositeBuffer150->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-        compositeBuffer150->GetCanvas()->setPivot(75,75);
-        accelSphere->GetCanvas()->pushRotated(compositeBuffer150->GetCanvas(),0,CanvasWidget::MASK_COLOR);
+        compositeBuffer150->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+        compositeBuffer150->canvas->setPivot(75,75);
+        accelSphere->canvas->pushRotated(compositeBuffer150->canvas,0,CanvasWidget::MASK_COLOR);
 
         int32_t randX = 8 - random(0, 16);
         int32_t randY = 8 - random(0, 16);
@@ -180,31 +180,31 @@ bool IATestApplication::Tick() {
         int32_t sizeY = (pcY*0.12); if ( sizeY < 2 ) { sizeY =1; }
         int32_t sizeZ = (pcZ*0.12); if ( sizeZ < 2 ) { sizeZ =1; }
         /*
-        compositeBuffer150->GetCanvas()->fillCircle(75,pcX+eyeSize,sizeX,colorX);
-        compositeBuffer150->GetCanvas()->fillCircle(pcY+eyeSize,75,sizeY,colorY);
-        compositeBuffer150->GetCanvas()->fillCircle(75+(pcZ*0.33)+eyeSize,75+(pcZ*0.33)+eyeSize,sizeZ,colorZ);
+        compositeBuffer150->canvas->fillCircle(75,pcX+eyeSize,sizeX,colorX);
+        compositeBuffer150->canvas->fillCircle(pcY+eyeSize,75,sizeY,colorY);
+        compositeBuffer150->canvas->fillCircle(75+(pcZ*0.33)+eyeSize,75+(pcZ*0.33)+eyeSize,sizeZ,colorZ);
         */
-        compositeBuffer150->GetCanvas()->fillCircle(75,pcX+randX,sizeX,colorX);
-        compositeBuffer150->GetCanvas()->fillCircle(75,pcY+randY,sizeY,colorY);
-        compositeBuffer150->GetCanvas()->fillCircle(75,pcZ+randZ,sizeZ,colorZ);
+        compositeBuffer150->canvas->fillCircle(75,pcX+randX,sizeX,colorX);
+        compositeBuffer150->canvas->fillCircle(75,pcY+randY,sizeY,colorY);
+        compositeBuffer150->canvas->fillCircle(75,pcZ+randZ,sizeZ,colorZ);
         int32_t fakeHeight = random(0, 100);
         //int32_t dcolor = random(0, 16536);
         int32_t dsize = random(1, 4);
-        compositeBuffer150->GetCanvas()->fillCircle(75,fakeHeight,dsize,canvas->color24to16(0x8840bf)+randZ);
+        compositeBuffer150->canvas->fillCircle(75,fakeHeight,dsize,canvas->color24to16(0x8840bf)+randZ);
 
         /*
         int32_t drandX = random(0, 100);
         int32_t drandY = random(0, 100);
         int32_t dsize = random(1, 4);
         int32_t dcolor = random(0, 16536);
-        compositeBuffer150->GetCanvas()->fillCircle(drandX,drandY,dsize,canvas->color24to16(0x8840bf)+randZ);
+        compositeBuffer150->canvas->fillCircle(drandX,drandY,dsize,canvas->color24to16(0x8840bf)+randZ);
         */
 
         // cleanup final buffer
-        accelSphere->GetCanvas()->fillSprite(CanvasWidget::MASK_COLOR);
-        compositeBuffer150->GetCanvas()->setPivot(75,75);
-        compositeBuffer150->GetCanvas()->pushRotated(accelSphere->GetCanvas(),3,CanvasWidget::MASK_COLOR);
-        compositeBuffer150->GetCanvas()->setPivot(75,75);
+        accelSphere->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+        compositeBuffer150->canvas->setPivot(75,75);
+        compositeBuffer150->canvas->pushRotated(accelSphere->canvas,3,CanvasWidget::MASK_COLOR);
+        compositeBuffer150->canvas->setPivot(75,75);
 /*
         static int16_t accelSphereAngle = 0;
         accelSphereAngle++;
@@ -226,11 +226,11 @@ bool IATestApplication::Tick() {
     static int16_t eyeBufferAngle = 0;
     eyeBufferAngle++;
     eyeBufferAngle = eyeBufferAngle % 360;
-    eyeLensBuffer->GetCanvas()->pushRotated(canvas,360-eyeBufferAngle,CanvasWidget::MASK_COLOR);
+    eyeLensBuffer->canvas->pushRotated(canvas,360-eyeBufferAngle,CanvasWidget::MASK_COLOR);
 
-    accelSphere->GetCanvas()->pushRotated(canvas,0,CanvasWidget::MASK_COLOR); // BMA
+    accelSphere->canvas->pushRotated(canvas,0,CanvasWidget::MASK_COLOR); // BMA
 
-    watchFacebackground->GetCanvas()->pushRotated(canvas,0,CanvasWidget::MASK_COLOR); // background
+    watchFacebackground->canvas->pushRotated(canvas,0,CanvasWidget::MASK_COLOR); // background
 
     // notifications
     static int16_t notificationsAngle = 0;
@@ -249,7 +249,7 @@ bool IATestApplication::Tick() {
     testButton[0]->y = 0;
     testButton[0]->canvas->setPivot( 0,0);
 
-    testButton[0]->canvas->pushRotated(circleNotifications->GetCanvas(),0,MYTRANSPARENT);
+    testButton[0]->canvas->pushRotated(circleNotifications->canvas,0,MYTRANSPARENT);
      */
 
 
@@ -276,18 +276,18 @@ bool IATestApplication::Tick() {
 */
        //testButton[0]->canvas->pushRotated(circleNotifications->canvas,MYTRANSPARENT);
 
-        testButton[0]->DrawTo(circleNotifications->GetCanvas());
+        testButton[0]->DrawTo(circleNotifications->canvas);
 
- // /////  testButton[0]->canvas->pushRotated(circleNotifications->GetCanvas(),0,MYTRANSPARENT);
+ // /////  testButton[0]->canvas->pushRotated(circleNotifications->canvas,0,MYTRANSPARENT);
 
-  //circleNotifications->GetCanvas()->pushRotated(canvas,notificationsAngle,MYTRANSPARENT);
-
-
+  //circleNotifications->canvas->pushRotated(canvas,notificationsAngle,MYTRANSPARENT);
 
 
-//circleNotifications->GetCanvas()->pushSprite(0,0);
-    //int16_t anchorX = accelSphere->GetCanvas()->getPivotX();
-    //int16_t anchorY = accelSphere->GetCanvas()->getPivotY();
+
+
+//circleNotifications->canvas->pushSprite(0,0);
+    //int16_t anchorX = accelSphere->canvas->getPivotX();
+    //int16_t anchorY = accelSphere->canvas->getPivotY();
     //Serial.println("@TODO use anchor to get the eye the impression of watch you");
 
 

@@ -19,7 +19,6 @@
 
 class ActiveRect { 
     public:
-        // vars @TODO create getters
         int16_t x;
         int16_t y;
         int16_t h;
@@ -33,9 +32,8 @@ class ActiveRect {
         void SetH(int16_t h) { this->h = h; }
         int16_t GetW() { return w; }
         void SetW(int16_t w) { this->w = w; }
-        
 
-        bool enabled;
+        bool enabled = true;
         void SetEnabled(bool state);
         // info
         unsigned long lastTapTime = 0;

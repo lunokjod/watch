@@ -18,40 +18,40 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
     timeFromBegin=millis();
     Serial.flush();
 
-    this->GetCanvas()->setSwapBytes(true);
-    this->GetCanvas()->pushImage(0,0,img_poweroff_fullscreen.width,img_poweroff_fullscreen.height, (uint16_t *)img_poweroff_fullscreen.pixel_data);
-    this->GetCanvas()->setSwapBytes(false);
+    this->canvas->setSwapBytes(true);
+    this->canvas->pushImage(0,0,img_poweroff_fullscreen.width,img_poweroff_fullscreen.height, (uint16_t *)img_poweroff_fullscreen.pixel_data);
+    this->canvas->setSwapBytes(false);
 
     char stepsString[128] = { 0 };
-    //this->GetCanvas()->fillSprite(TFT_DARKGREY);
-    this->GetCanvas()->setTextColor(TFT_WHITE);
+    //this->canvas->fillSprite(TFT_DARKGREY);
+    this->canvas->setTextColor(TFT_WHITE);
 
-    this->GetCanvas()->setTextSize(2);
-    this->GetCanvas()->setTextWrap(false,false);
-    this->GetCanvas()->setFreeFont(&FreeMonoBold24pt7b);
-    this->GetCanvas()->setTextDatum(TL_DATUM);
+    this->canvas->setTextSize(2);
+    this->canvas->setTextWrap(false,false);
+    this->canvas->setFreeFont(&FreeMonoBold24pt7b);
+    this->canvas->setTextDatum(TL_DATUM);
     sprintf(stepsString,"See");
-    this->GetCanvas()->setTextColor(TFT_BLACK);
-    this->GetCanvas()->drawString(stepsString, 6, 6);
-    this->GetCanvas()->setTextColor(TFT_WHITE);
-    this->GetCanvas()->drawString(stepsString, 5, 5);
+    this->canvas->setTextColor(TFT_BLACK);
+    this->canvas->drawString(stepsString, 6, 6);
+    this->canvas->setTextColor(TFT_WHITE);
+    this->canvas->drawString(stepsString, 5, 5);
 
     int32_t posX = TFT_WIDTH/2;
     int32_t posY = TFT_HEIGHT-8;
 
-    this->GetCanvas()->setTextSize(1);
-    this->GetCanvas()->setTextDatum(BC_DATUM);
-    this->GetCanvas()->setFreeFont(&FreeMonoBold18pt7b);
+    this->canvas->setTextSize(1);
+    this->canvas->setTextDatum(BC_DATUM);
+    this->canvas->setFreeFont(&FreeMonoBold18pt7b);
     sprintf(stepsString,"you soon :)");
-    this->GetCanvas()->setTextColor(TFT_BLACK);
-    this->GetCanvas()->drawString(stepsString, posX+1, posY+1);
-    this->GetCanvas()->setTextColor(TFT_WHITE);
-    this->GetCanvas()->drawString(stepsString, posX, posY);
+    this->canvas->setTextColor(TFT_BLACK);
+    this->canvas->drawString(stepsString, posX+1, posY+1);
+    this->canvas->setTextColor(TFT_WHITE);
+    this->canvas->drawString(stepsString, posX, posY);
     Tick();
 }
 
 bool ShutdownApplication::Tick() {
-    if ( nullptr == this->GetCanvas() ) { return false; }
+    if ( nullptr == this->canvas ) { return false; }
     unsigned long milisFromBegin = millis()-timeFromBegin;
     bright-=8;
     if ( bright > -1 ) { ttgo->setBrightness(bright); }

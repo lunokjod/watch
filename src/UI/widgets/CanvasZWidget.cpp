@@ -67,7 +67,7 @@ void CanvasZWidget::RebuildCanvas(int16_t w, int16_t h) {
     canvas->fillSprite(MASK_COLOR);
 }
 
-TFT_eSprite *CanvasZWidget::GetCanvas() { return this->canvas; }
+TFT_eSprite *CanvasZWidget::canvas { return this->canvas; }
 
 
 CanvasZWidget::~CanvasZWidget() {

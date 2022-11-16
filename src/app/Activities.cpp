@@ -84,22 +84,22 @@ bool ActivitiesApplication::Tick() {
 
     if ( nextRedraw < millis() ) {
         char stepsString[128] = { 0 };
-        this->GetCanvas()->fillSprite(TFT_BLACK);
-        this->GetCanvas()->setPivot(0,TFT_HEIGHT-100);
-        this->GetCanvas()->fillRect(0,TFT_WIDTH-100,TFT_HEIGHT,100, TFT_BLACK);
+        this->canvas->fillSprite(TFT_BLACK);
+        this->canvas->setPivot(0,TFT_HEIGHT-100);
+        this->canvas->fillRect(0,TFT_WIDTH-100,TFT_HEIGHT,100, TFT_BLACK);
         giroLog->setPivot(0,0);
-        giroLog->pushRotated(this->GetCanvas(),0,TFT_BLACK);
-        this->GetCanvas()->setPivot(TFT_WIDTH/2,TFT_HEIGHT/2);
+        giroLog->pushRotated(this->canvas,0,TFT_BLACK);
+        this->canvas->setPivot(TFT_WIDTH/2,TFT_HEIGHT/2);
 
-        this->GetCanvas()->setTextSize(1);
-        this->GetCanvas()->setFreeFont(&FreeMonoBold12pt7b);
-        this->GetCanvas()->setTextDatum(TL_DATUM);
-        this->GetCanvas()->setTextWrap(false,false);
+        this->canvas->setTextSize(1);
+        this->canvas->setFreeFont(&FreeMonoBold12pt7b);
+        this->canvas->setTextDatum(TL_DATUM);
+        this->canvas->setTextWrap(false,false);
         int32_t posX = 10;
         int32_t posY = 10;
         sprintf(stepsString,"Steps: %u", stepCount );
-        this->GetCanvas()->setTextColor(TFT_WHITE);
-        this->GetCanvas()->drawString(stepsString, posX, posY);
+        this->canvas->setTextColor(TFT_WHITE);
+        this->canvas->drawString(stepsString, posX, posY);
 
         float methers = (stepCount*stepDistanceCm)/100.0;
         if ( methers < 1000 ) {
@@ -107,54 +107,54 @@ bool ActivitiesApplication::Tick() {
         } else {
             sprintf(stepsString,"Dist: %.2f Km", float(methers/1000.0) );
         }
-        this->GetCanvas()->setTextColor(TFT_WHITE);
-        this->GetCanvas()->drawString(stepsString, posX, posY+20);
+        this->canvas->setTextColor(TFT_WHITE);
+        this->canvas->drawString(stepsString, posX, posY+20);
 
 
         if ( nullptr != currentActivity ) {
             if ( 0 == strcmp("BMA423_USER_WALKING",currentActivity)) {
-                this->GetCanvas()->drawXBitmap(10,60, img_activity_walking_bits, img_activity_walking_width, img_activity_walking_height, TFT_WHITE);
+                this->canvas->drawXBitmap(10,60, img_activity_walking_bits, img_activity_walking_width, img_activity_walking_height, TFT_WHITE);
             } else if ( 0 == strcmp("BMA423_USER_RUNNING",currentActivity)) {
-                this->GetCanvas()->drawXBitmap(10,60, img_activity_running_bits, img_activity_running_width, img_activity_running_height, TFT_WHITE);
+                this->canvas->drawXBitmap(10,60, img_activity_running_bits, img_activity_running_width, img_activity_running_height, TFT_WHITE);
             } else {
-                this->GetCanvas()->drawXBitmap(10,60, img_activity_stay_bits, img_activity_stay_width, img_activity_stay_height, TFT_WHITE);
+                this->canvas->drawXBitmap(10,60, img_activity_stay_bits, img_activity_stay_width, img_activity_stay_height, TFT_WHITE);
             }
         }
 
 
-        this->GetCanvas()->setTextSize(1);
-        this->GetCanvas()->setFreeFont(&FreeMonoBold9pt7b);
-        this->GetCanvas()->setTextDatum(TL_DATUM);
-        this->GetCanvas()->setTextWrap(false,false);
-        this->GetCanvas()->setTextColor(TFT_WHITE);
+        this->canvas->setTextSize(1);
+        this->canvas->setFreeFont(&FreeMonoBold9pt7b);
+        this->canvas->setTextDatum(TL_DATUM);
+        this->canvas->setTextWrap(false,false);
+        this->canvas->setTextColor(TFT_WHITE);
 
         const int32_t Radius = 30;
         const int16_t x = 170;
         const int16_t y = 100;
 
-        this->GetCanvas()->fillCircle(x,y,Radius,TFT_BLACK);
+        this->canvas->fillCircle(x,y,Radius,TFT_BLACK);
         
-        this->GetCanvas()->fillEllipse(x,y,pcY*float(Radius/100.0),Radius, giroLog->color565(0,0,64));
-        this->GetCanvas()->fillEllipse(x,y,Radius,pcX*float(Radius/100.0), giroLog->color565(0,64,0));
-        this->GetCanvas()->drawEllipse(x,y,Radius,pcX*float(Radius/100.0), giroLog->color565(0,255,0));
-        this->GetCanvas()->drawEllipse(x,y,pcY*float(Radius/100.0),Radius, giroLog->color565(0,0,255));
-        //this->GetCanvas()->drawEllipse(x,y,pcZ*float(Radius/100.0),pcZ*float(Radius/100.0), giroLog->color565(255,0,0));
+        this->canvas->fillEllipse(x,y,pcY*float(Radius/100.0),Radius, giroLog->color565(0,0,64));
+        this->canvas->fillEllipse(x,y,Radius,pcX*float(Radius/100.0), giroLog->color565(0,64,0));
+        this->canvas->drawEllipse(x,y,Radius,pcX*float(Radius/100.0), giroLog->color565(0,255,0));
+        this->canvas->drawEllipse(x,y,pcY*float(Radius/100.0),Radius, giroLog->color565(0,0,255));
+        //this->canvas->drawEllipse(x,y,pcZ*float(Radius/100.0),pcZ*float(Radius/100.0), giroLog->color565(255,0,0));
 
 
 
-        this->GetCanvas()->drawCircle(x,y,Radius,TFT_WHITE);
+        this->canvas->drawCircle(x,y,Radius,TFT_WHITE);
 
         sprintf(stepsString,"X: %.2f", degX );
-        this->GetCanvas()->drawString(stepsString, 10, (TFT_WIDTH-100)+pcX-20);
+        this->canvas->drawString(stepsString, 10, (TFT_WIDTH-100)+pcX-20);
         sprintf(stepsString,"Y: %.2f", degY );
-        this->GetCanvas()->drawString(stepsString, 95, (TFT_WIDTH-100)+pcY-20);
+        this->canvas->drawString(stepsString, 95, (TFT_WIDTH-100)+pcY-20);
         sprintf(stepsString,"Z: %.2f", degZ );
-        this->GetCanvas()->drawString(stepsString, 170, (TFT_WIDTH-100)+pcZ-20);
+        this->canvas->drawString(stepsString, 170, (TFT_WIDTH-100)+pcZ-20);
 
         unsigned long timeFromBoot = millis()/1000;
-        this->GetCanvas()->setTextDatum(BR_DATUM);
+        this->canvas->setTextDatum(BR_DATUM);
         sprintf(stepsString,"Time: %lu s", timeFromBoot );
-        this->GetCanvas()->drawString(stepsString, TFT_WIDTH, TFT_HEIGHT);
+        this->canvas->drawString(stepsString, TFT_WIDTH, TFT_HEIGHT);
 
         /*
         angle+=3;
@@ -162,10 +162,10 @@ bool ActivitiesApplication::Tick() {
         for(int y=20;y<TFT_WIDTH;y+=20) {
             for(int x=20;x<TFT_HEIGHT;x+=20) {
                 if ( offset == counter ) {
-                    this->GetCanvas()->fillCircle(x,y,10,TFT_YELLOW);
+                    this->canvas->fillCircle(x,y,10,TFT_YELLOW);
                 } else {
-                    //this->GetCanvas()->fillCircle(x,y,10,TFT_BLACK);
-                    this->GetCanvas()->drawCircle(x,y,5,TFT_YELLOW);
+                    //this->canvas->fillCircle(x,y,10,TFT_BLACK);
+                    this->canvas->drawCircle(x,y,5,TFT_YELLOW);
 
                 }
                 offset++;
@@ -177,7 +177,7 @@ bool ActivitiesApplication::Tick() {
         int16_t x,y;
         bool touch = ttgo->getTouch(x,y);
         if ( touch ) {
-            this->GetCanvas()->fillRect(x-40,y-40,80,80, TFT_GREEN);
+            this->canvas->fillRect(x-40,y-40,80,80, TFT_GREEN);
         }
         */
         nextRedraw = millis()+80;

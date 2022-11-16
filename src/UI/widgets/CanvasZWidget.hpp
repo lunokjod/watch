@@ -22,7 +22,7 @@ class CanvasZWidget : public CanvasWidget {
         unsigned long lastRefresh=0;
         // BRG
         void RebuildCanvas(int16_t h=0, int16_t w=0);
-        TFT_eSprite *GetCanvas();
+        TFT_eSprite *canvas;
         */
 };
 

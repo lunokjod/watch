@@ -11,7 +11,7 @@ class TemplateApplication: public LunokIoTApplication {
         ButtonImageXBMWidget * btnBack = nullptr;
     public:
         TemplateApplication();
-        ~TemplateApplication();
+        virtual ~TemplateApplication();
         bool Tick();
 };
 

@@ -57,6 +57,7 @@ void GaugeWidget::ForceDraw() {
 bool GaugeWidget::Interact(bool touch, int16_t tx,int16_t ty, int16_t margin) {
     if ( !touch ) { return false; }
     if ( !InRadius(tx,ty,x,y,((h+w)/2)+margin) ) { return false; }
+
     // obtain vector from center
     int16_t tdvX = tx-(x+((h+w)/4)); // this sprite is rectangular
     int16_t tdvY = ty-(y+((h+w)/4)); // don't care H or W
@@ -74,10 +75,7 @@ bool GaugeWidget::Interact(bool touch, int16_t tx,int16_t ty, int16_t margin) {
     return true;
 }
 GaugeWidget::~GaugeWidget() {
-    if ( nullptr != buffer ) {
-        buffer->canvas->deleteSprite();
-        delete buffer;
-    }
+    delete buffer;
 }
 
 void GaugeWidget::DrawTo(TFT_eSprite * endCanvas) {

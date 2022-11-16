@@ -11,16 +11,12 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp" // back button
 
 
-TemplateApplication::~TemplateApplication() {
-    if ( nullptr != btnBack ) { delete btnBack; }
-}
+TemplateApplication::~TemplateApplication() { delete btnBack; }
 
 TemplateApplication::TemplateApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
-
-    Tick(); // splash
 }
 
 bool TemplateApplication::Tick() {
