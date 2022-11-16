@@ -21,6 +21,14 @@ CanvasWidget::~CanvasWidget() {
     delete canvas;
 }
 
+void CanvasWidget::DirectDraw(int16_t x=0,int16_t y=0) {
+    //tft->setSwapBytes(false);
+    //canvas->setSwapBytes(true);
+    canvas->pushSprite(x,y);
+    //canvas->setSwapBytes(false);
+    //tft->setSwapBytes(true);
+}
+
 void CanvasWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, int32_t maskColor) {
     if ( nullptr == endCanvas) { return; }
     endCanvas->setPivot(x,y);

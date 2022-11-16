@@ -78,6 +78,14 @@ GaugeWidget::~GaugeWidget() {
     delete buffer;
 }
 
+void GaugeWidget::DirectDraw() {
+    if ( dirty ) {
+        ForceDraw();
+        dirty = false;
+        buffer->canvas->pushSprite(x,y,CanvasWidget::MASK_COLOR);
+    }
+}
+
 void GaugeWidget::DrawTo(TFT_eSprite * endCanvas) {
     if ( dirty ) { 
         ForceDraw();

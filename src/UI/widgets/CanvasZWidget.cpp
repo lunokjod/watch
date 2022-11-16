@@ -28,6 +28,7 @@ TFT_eSprite * CanvasZWidget::GetScaledImage(float scale) {
     TFT_eSprite * scaledCopy = ScaleSprite(canvas, scale);
     return scaledCopy;
 }
+
 void CanvasZWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, float z, bool centered, int32_t maskColor) {
     if ( nullptr == endCanvas) { return; }
     if ( nullptr == canvas ){ return; }
