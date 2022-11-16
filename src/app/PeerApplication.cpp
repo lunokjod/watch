@@ -8,8 +8,34 @@
 #include "../static/img_chat_32.xbm"
 #include "../static/img_hi_32.xbm"
 #include "../static/img_hi_48.xbm"
+#include "../static/img_ask_48.xbm"
+#include "../static/img_walk_48.xbm"
+#include "../static/img_flag_48.xbm"
+#include "../static/img_fast_48.xbm"
+#include "../static/img_slow_48.xbm"
+#include "../static/img_home_48.xbm"
+#include "../static/img_next_48.xbm"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+
+const char *LUNOKIOT_ESPNOW_EMOJI = "lIoTEmoji";
+
+typedef struct {
+    int16_t width;
+    int16_t height;
+    unsigned char * data;
+} PeerIconData;
+
+PeerIconData emojiArray[] = {
+    { img_hi_48_width, img_hi_48_height, img_hi_48_bits },
+    { img_ask_48_width, img_ask_48_height, img_ask_48_bits },
+    { img_walk_48_width, img_walk_48_height, img_walk_48_bits },
+    { img_flag_48_width, img_flag_48_height, img_flag_48_bits },
+    { img_fast_48_width, img_fast_48_height, img_fast_48_bits },
+    { img_slow_48_width, img_slow_48_height, img_slow_48_bits },
+    { img_home_48_width, img_home_48_height, img_home_48_bits },
+    { img_next_48_width, img_next_48_height, img_next_48_bits },
+};
 
 uint8_t broadcastAddress[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 esp_now_peer_info_t peerInfo;
@@ -19,35 +45,36 @@ uint8_t espNowMAC[6];                  // 6 octets are the WIFI address
 bool newNotification=false;
 unsigned long showIconUntil=0;
 uint8_t lastPeerMAC[6];                  // 6 octets are their WIFI address
+size_t lastPeerEmojiID=0;
 
-typedef struct  {
-    const char * command;
-} lESPNowMessage;
-
-lESPNowMessage PeerAppMessages[] = {
-    "lIoT_Hello",
-//    "lIoT_TS"
-};
-
-#define PEER_HELLO PeerAppMessages[0].command
-//#define PEER_TIMESTAMP PeerAppMessages[1].command
+typedef struct {
+    char command[10];
+    uint8_t emojiID;
+} lIoTESPNowDataPackage;
 
 void PeerApplication::OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
     //lAppLog("ESPNOW: Last Packet Send Status: %s\n",((status == ESP_NOW_SEND_SUCCESS)?"Success":"FAILED"));
 }
 
 void PeerApplication::OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-    char *dataBuffer =  (char *)ps_malloc(len+1);
-    memcpy(dataBuffer,incomingData,len);
     lAppLog("Bytes received: %d byte from: '%02x:%02x:%02x:%02x:%02x:%02x'\n",len,
     mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+
+    lIoTESPNowDataPackage *receiveData = (lIoTESPNowDataPackage*)incomingData;
+    if ( 0 == strncmp(LUNOKIOT_ESPNOW_EMOJI,receiveData->command,strlen(LUNOKIOT_ESPNOW_EMOJI))) {
+        memcpy(lastPeerMAC,mac,6);
+        ttgo->shake();
+        lastPeerEmojiID=receiveData->emojiID;
+        newNotification=true;
+    }
+    /*
     if ( 0 == strncmp(PEER_HELLO,dataBuffer,strlen(PEER_HELLO))) {
         memcpy(lastPeerMAC,mac,6);
         //lAppLog("Peer says hello!\n");
         ttgo->shake();
         newNotification=true;
         showIconUntil=millis()+3000;
-    }
+    }*/
     /*
     else if ( 0 == strncmp(PEER_TIMESTAMP,dataBuffer,strlen(PEER_TIMESTAMP))) {
         const uint8_t *msgPtr=(const uint8_t *)incomingData+strlen(PEER_TIMESTAMP); // offset of timestamp value
@@ -68,8 +95,6 @@ void PeerApplication::OnDataRecv(const uint8_t * mac, const uint8_t *incomingDat
             esp_now_send(broadcastAddress, incomingData, len);
         }
     }*/
-
-    free(dataBuffer);
 }
 
 PeerApplication::PeerApplication() {
@@ -97,17 +122,17 @@ PeerApplication::PeerApplication() {
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
         lAppLog("ESPNOW: Failed to add peer\n");
     }
-    iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[](){
-
+    iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&](){
+        emojiPaletteVisible=(!emojiPaletteVisible);
     },img_chat_32_bits,img_chat_32_height,img_chat_32_width);
-    iconPaletteBtn->enabled=false; //@TODO
-    
     
     sendEmojiBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[&,this](){
-        lAppLog("@TODO DEBUUUUUG selectedEmojiOffset\n");
-
+        lIoTESPNowDataPackage myCurrentData;
+        strncpy(myCurrentData.command,LUNOKIOT_ESPNOW_EMOJI,strlen(LUNOKIOT_ESPNOW_EMOJI));
+        myCurrentData.emojiID= (uint8_t)selectedEmojiOffset;
+        // = { LUNOKIOT_ESPNOW_EMOJI, (uint8_t)selectedEmojiOffset };
         // Send message via ESP-NOW
-        esp_err_t result = esp_now_send(broadcastAddress, (const uint8_t*)PEER_HELLO, strlen(PEER_HELLO)+1);
+        esp_err_t result = esp_now_send(broadcastAddress, (const uint8_t*)&myCurrentData, sizeof(myCurrentData));
         if (result == ESP_OK) {
             //lAppLog("ESPNOW: Sent with success\n");
         } else {
@@ -117,22 +142,20 @@ PeerApplication::PeerApplication() {
         scrollZone->canvas->scroll(0,-64);
         int16_t sZw = scrollZone->canvas->width();
         int16_t sZh = scrollZone->canvas->height();
-        scrollZone->canvas->fillRoundRect(0,sZh-62,sZw-10,62,5,ThCol(darken));
+        scrollZone->canvas->fillRoundRect(0,sZh-62,sZw-10,62,10,ThCol(darken));
         scrollZone->canvas->fillTriangle(sZw, sZh-10, sZw-12, sZh-10, sZw-12, sZh-20,ThCol(darken));
-        scrollZone->canvas->drawRoundRect(0,sZh-62,sZw-10,62,5,ThCol(dark));
-
-
+        scrollZone->canvas->drawRoundRect(0,sZh-62,sZw-10,62,10,ThCol(dark));
 
         scrollZone->canvas->drawXBitmap(
             25,
             sZh-52,
-            img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+            emojiArray[selectedEmojiOffset].data,emojiArray[selectedEmojiOffset].width,emojiArray[selectedEmojiOffset].height,
             ThCol(shadow)
         );
         scrollZone->canvas->drawXBitmap(
             23,
             sZh-54,
-            img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+            emojiArray[selectedEmojiOffset].data,emojiArray[selectedEmojiOffset].width,emojiArray[selectedEmojiOffset].height,
             ThCol(text)
         );
         //char macAsChar[18] = { 0 };
@@ -159,9 +182,48 @@ PeerApplication::PeerApplication() {
 
 
 
-    },img_hi_32_bits,img_hi_32_height,img_hi_32_width);
+    },
+    emojiArray[selectedEmojiOffset].data,
+    emojiArray[selectedEmojiOffset].height,
+    emojiArray[selectedEmojiOffset].width);
 
     colorCanvas = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
+    emojiPaletteCanvas = new CanvasWidget(144,144);
+    emojiPaletteCanvas->canvas->fillRoundRect(0,0,emojiPaletteCanvas->canvas->width(),emojiPaletteCanvas->canvas->height(),8,TFT_WHITE);
+
+    emojiPaletteCanvas->canvas->drawXBitmap(0,0,img_hi_48_bits,img_hi_48_width,img_hi_48_height,TFT_BLACK);
+    emojiPaletteCanvas->canvas->drawXBitmap(48,0,img_ask_48_bits,img_ask_48_width,img_ask_48_height,TFT_BLACK);
+    emojiPaletteCanvas->canvas->drawXBitmap(96,0,img_walk_48_bits,img_walk_48_width,img_walk_48_height,TFT_BLACK);
+
+    emojiPaletteCanvas->canvas->drawXBitmap(0,48,img_flag_48_bits,img_flag_48_width,img_flag_48_height,TFT_BLACK);
+    emojiPaletteCanvas->canvas->drawXBitmap(48,48,img_fast_48_bits,img_fast_48_width,img_fast_48_height,TFT_BLACK);
+    emojiPaletteCanvas->canvas->drawXBitmap(96,48,img_slow_48_bits,img_slow_48_width,img_slow_48_height,TFT_BLACK);
+
+    emojiPaletteCanvas->canvas->drawXBitmap(0,96,img_home_48_bits,img_home_48_width,img_home_48_height,TFT_BLACK);
+    emojiPaletteCanvas->canvas->drawXBitmap(48,96,img_next_48_bits,img_next_48_width,img_next_48_height,TFT_BLACK);
+//    emojiPaletteCanvas->canvas->drawXBitmap(96,48,img_slow_48_bits,img_slow_48_width,img_slow_48_height,TFT_BLACK);
+
+    iconPaletteArea= new ActiveRect(
+        (canvas->width()/2)-(emojiPaletteCanvas->canvas->width()/2),
+        (canvas->height()/2)-(emojiPaletteCanvas->canvas->height()/2),
+        emojiPaletteCanvas->canvas->height(),emojiPaletteCanvas->canvas->width(),[&](){
+            selectedEmojiOffset++;
+            if ( selectedEmojiOffset > (sizeof(emojiArray)/sizeof(emojiArray[0]))-1 ) {
+                selectedEmojiOffset = 0;
+            }
+            lAppLog("selectedEmojiOffset: %d\n",selectedEmojiOffset);
+            
+            // hack my own buttons x'DD
+            sendEmojiBtn->XBMBitmapPtr = emojiArray[selectedEmojiOffset].data;
+            sendEmojiBtn->xbmH = emojiArray[selectedEmojiOffset].height;
+            sendEmojiBtn->xbmW = emojiArray[selectedEmojiOffset].width;
+            delete sendEmojiBtn->_img;
+            sendEmojiBtn->_img = new CanvasWidget(sendEmojiBtn->xbmH+1,sendEmojiBtn->xbmW+1);
+            sendEmojiBtn->_img->canvas->drawXBitmap(1,1,sendEmojiBtn->XBMBitmapPtr,sendEmojiBtn->xbmW,sendEmojiBtn->xbmH,TFT_BLACK);
+            sendEmojiBtn->_img->canvas->drawXBitmap(0,0,sendEmojiBtn->XBMBitmapPtr,sendEmojiBtn->xbmW,sendEmojiBtn->xbmH,sendEmojiBtn->xbmColor);
+            emojiPaletteVisible=false;
+        });
+
 
     scrollZone = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
     scrollZone->canvas->fillSprite(CanvasWidget::MASK_COLOR);
@@ -179,6 +241,8 @@ PeerApplication::~PeerApplication() {
     delete sendEmojiBtn;
     delete iconPaletteBtn;
     delete scrollZone;
+    delete iconPaletteArea;
+    delete emojiPaletteCanvas;
 }
 
 bool PeerApplication::Tick() {
@@ -215,6 +279,7 @@ bool PeerApplication::Tick() {
         sendEmojiBtn->Interact(touched,touchX,touchY);
         iconPaletteBtn->Interact(touched,touchX,touchY);
         sendEmojiBtn->DrawTo(canvas);
+
         iconPaletteBtn->DrawTo(canvas);
         
         if ( newNotification ) {
@@ -227,24 +292,22 @@ bool PeerApplication::Tick() {
             //text bubble
             int16_t sZw = scrollZone->canvas->width();
             int16_t sZh = scrollZone->canvas->height();
-            scrollZone->canvas->fillRoundRect(10,sZh-62,sZw-10,62,5,ThCol(background_alt));
+            scrollZone->canvas->fillRoundRect(10,sZh-62,sZw-10,62,10,ThCol(background_alt));
             scrollZone->canvas->fillTriangle(0, sZh-10, 12, sZh-10, 12, sZh-20, ThCol(background_alt));
-            scrollZone->canvas->drawRoundRect(10,sZh-62,sZw-10,62,5,ThCol(dark));
+            scrollZone->canvas->drawRoundRect(10,sZh-62,sZw-10,62,10,ThCol(dark));
             //scrollZone->canvas->drawTriangle(0, sZh-5, 10, sZh, 10, sZh-10, ThCol(dark));
             //lAppLog("DEVICE COLOR: %04x\n", deviceColor);
 
             scrollZone->canvas->drawXBitmap(
-                scrollZone->canvas->width()-(img_hi_48_width+25),
-                //((scrollZone->canvas->width()/2)-(img_hi_48_width/2))+24,
+                scrollZone->canvas->width()-(emojiArray[lastPeerEmojiID].width+25),
                 scrollZone->canvas->height()-52,
-                img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+                emojiArray[lastPeerEmojiID].data,emojiArray[lastPeerEmojiID].width,emojiArray[lastPeerEmojiID].height,
                 ThCol(shadow)
             );
             scrollZone->canvas->drawXBitmap(
-                scrollZone->canvas->width()-(img_hi_48_width+23),
-                //((scrollZone->canvas->width()/2)-(img_hi_48_width/2))+22,
+                scrollZone->canvas->width()-(emojiArray[lastPeerEmojiID].width+23),
                 scrollZone->canvas->height()-54,
-                img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+                emojiArray[lastPeerEmojiID].data,emojiArray[lastPeerEmojiID].width,emojiArray[lastPeerEmojiID].height,
                 deviceColor
             );
             char macAsChar[18] = { 0 };
@@ -270,10 +333,17 @@ bool PeerApplication::Tick() {
 
             newNotification=false;
         }
+
         colorCanvas->canvas->fillSprite(CanvasWidget::MASK_COLOR);
         scrollZone->DrawTo(colorCanvas->canvas); // this crap is for GBR RGB
         colorCanvas->DrawTo(canvas,30,25);
 
+        if ( emojiPaletteVisible ) {
+            iconPaletteArea->Interact(touched,touchX,touchY);
+            emojiPaletteCanvas->DrawTo(canvas,
+            (canvas->width()/2)-(emojiPaletteCanvas->canvas->width()/2),
+            (canvas->height()/2)-(emojiPaletteCanvas->canvas->height()/2));
+        }
         TemplateApplication::Tick(); // calls to TemplateApplication::Tick()
 
         nextRefresh=millis()+(1000/16);

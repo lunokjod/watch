@@ -24,6 +24,6 @@ class ButtonImageXBMWidget: public ButtonWidget {
                         const uint8_t *XBMBitmapPtr,
                         int16_t xbmH, int16_t xbmW, uint16_t xbmColor=ThCol(text),
                         uint32_t btnBackgroundColor=ThCol(button), bool borders=true);
-        void DrawTo(TFT_eSprite * endCanvas);
+        virtual void DrawTo(TFT_eSprite * endCanvas);
 };
 #endif

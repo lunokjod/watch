@@ -11,10 +11,13 @@ class PeerApplication : public TemplateApplication {
         size_t selectedEmojiOffset = 0;
         unsigned long nextRefresh=0;
         //unsigned long nextTimestampSend=0;
+        ActiveRect * iconPaletteArea;
         ButtonImageXBMWidget * sendEmojiBtn;
         ButtonImageXBMWidget * iconPaletteBtn;
         CanvasWidget * scrollZone;
         CanvasWidget * colorCanvas;
+        CanvasWidget * emojiPaletteCanvas;
+        bool emojiPaletteVisible=false;
 
     public:
         PeerApplication();

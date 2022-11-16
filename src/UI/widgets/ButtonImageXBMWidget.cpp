@@ -2,6 +2,7 @@
 #include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 #include "ButtonImageXBMWidget.hpp"
+#include "../../app/LogView.hpp"
 
 #include "../activator/ActiveRect.hpp"
 #include "CanvasWidget.hpp"
