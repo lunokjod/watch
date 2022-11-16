@@ -7,7 +7,7 @@
 #include "PeerApplication.hpp"
 #include "../static/img_chat_32.xbm"
 #include "../static/img_hi_32.xbm"
-#include "../static/img_hi_64.xbm"
+#include "../static/img_hi_48.xbm"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
@@ -76,6 +76,7 @@ PeerApplication::PeerApplication() {
     canvas->fillSprite(ThCol(background)); // use theme colors
     // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
+    WiFi.setTxPower(WIFI_POWER_19_5dBm);
     // Init ESP-NOW
     if (esp_now_init() != ESP_OK) {
         lAppLog("Error initializing ESP-NOW\n");
@@ -91,6 +92,7 @@ PeerApplication::PeerApplication() {
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
     peerInfo.channel = 0;  
     peerInfo.encrypt = false;
+    peerInfo.priv = (void *)this;
     // Add peer        
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
         lAppLog("ESPNOW: Failed to add peer\n");
@@ -98,8 +100,12 @@ PeerApplication::PeerApplication() {
     iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[](){
 
     },img_chat_32_bits,img_chat_32_height,img_chat_32_width);
+    iconPaletteBtn->enabled=false; //@TODO
+    
+    
+    sendEmojiBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[&,this](){
+        lAppLog("@TODO DEBUUUUUG selectedEmojiOffset\n");
 
-    sendHelloBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[](){
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (const uint8_t*)PEER_HELLO, strlen(PEER_HELLO)+1);
         if (result == ESP_OK) {
@@ -107,6 +113,52 @@ PeerApplication::PeerApplication() {
         } else {
             //lAppLog("ESPNOW: Error sending\n");
         }
+        // draw my message
+        scrollZone->canvas->scroll(0,-64);
+        int16_t sZw = scrollZone->canvas->width();
+        int16_t sZh = scrollZone->canvas->height();
+        scrollZone->canvas->fillRoundRect(0,sZh-62,sZw-10,62,5,ThCol(darken));
+        scrollZone->canvas->fillTriangle(sZw, sZh-10, sZw-12, sZh-10, sZw-12, sZh-20,ThCol(darken));
+        scrollZone->canvas->drawRoundRect(0,sZh-62,sZw-10,62,5,ThCol(dark));
+
+
+
+        scrollZone->canvas->drawXBitmap(
+            25,
+            sZh-52,
+            img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+            ThCol(shadow)
+        );
+        scrollZone->canvas->drawXBitmap(
+            23,
+            sZh-54,
+            img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+            ThCol(text)
+        );
+        //char macAsChar[18] = { 0 };
+        //sprintf(macAsChar,"%02x%02x:",lastPeerMAC[4],lastPeerMAC[5]);
+        scrollZone->canvas->setTextFont(0);
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+            char timeChar[18] = { 0 };
+            sprintf(timeChar,"%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min);
+            scrollZone->canvas->setTextSize(1);
+            scrollZone->canvas->setTextDatum(TR_DATUM);
+            scrollZone->canvas->setTextColor(ThCol(shadow));
+            scrollZone->canvas->drawString(timeChar,sZw-32,(scrollZone->canvas->height()-28));
+            scrollZone->canvas->setTextColor(ThCol(text));
+            scrollZone->canvas->drawString(timeChar,sZw-30,(scrollZone->canvas->height()-30));
+        }
+        const char myselfChar[] =":You";
+        scrollZone->canvas->setTextSize(2);
+        scrollZone->canvas->setTextDatum(BR_DATUM);
+        scrollZone->canvas->setTextColor(ThCol(shadow));
+        scrollZone->canvas->drawString(myselfChar,sZw-32,(scrollZone->canvas->height()-28));
+        scrollZone->canvas->setTextColor(ThCol(text));
+        scrollZone->canvas->drawString(myselfChar,sZw-30,(scrollZone->canvas->height()-30));
+
+
+
     },img_hi_32_bits,img_hi_32_height,img_hi_32_width);
 
     colorCanvas = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
@@ -114,7 +166,6 @@ PeerApplication::PeerApplication() {
     scrollZone = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
     scrollZone->canvas->fillSprite(CanvasWidget::MASK_COLOR);
     scrollZone->canvas->setScrollRect(0,0,scrollZone->canvas->width(),scrollZone->canvas->height(),CanvasWidget::MASK_COLOR);
-    //canvas->setScrollRect(10,25,TFT_WIDTH-20,TFT_HEIGHT-100,ThCol(background));
     Tick(); // OR call this if no splash 
 }
 
@@ -125,7 +176,7 @@ PeerApplication::~PeerApplication() {
     esp_now_deinit();
     WiFi.mode(WIFI_OFF);
     delete colorCanvas;
-    delete sendHelloBtn;
+    delete sendEmojiBtn;
     delete iconPaletteBtn;
     delete scrollZone;
 }
@@ -161,81 +212,63 @@ bool PeerApplication::Tick() {
         canvas->setTextDatum(TC_DATUM);
         canvas->drawString(WiFi.macAddress().c_str(),TFT_WIDTH/2,10);
 
-        sendHelloBtn->Interact(touched,touchX,touchY);
+        sendEmojiBtn->Interact(touched,touchX,touchY);
         iconPaletteBtn->Interact(touched,touchX,touchY);
-        sendHelloBtn->DrawTo(canvas);
+        sendEmojiBtn->DrawTo(canvas);
         iconPaletteBtn->DrawTo(canvas);
         
-        if ( 0 != showIconUntil ) {
-            if ( newNotification ) {
-                
-                if ( 0 != currentScroll) {
-                    while(true) {
-                        currentScroll++;
-                        if ( currentScroll < (64/8)+1) {
-                            scrollZone->canvas->scroll(0,-8);
-                            continue;
-                        }
-                        break;
-                    }
-                }
-                currentScroll=0;
-                uint16_t deviceColor = lastPeerMAC[4];
-                deviceColor = deviceColor << 8;
-                deviceColor = deviceColor +lastPeerMAC[5];
-                deviceColor = canvas->alphaBlend(192,deviceColor,TFT_WHITE); // more lighten
+        if ( newNotification ) {
+            scrollZone->canvas->scroll(0,-64);
+            uint16_t deviceColor = lastPeerMAC[4];
+            deviceColor = deviceColor << 8;
+            deviceColor = deviceColor +lastPeerMAC[5];
+            deviceColor = canvas->alphaBlend(192,deviceColor,TFT_WHITE); // more lighten
 
-                int16_t sZw = scrollZone->canvas->width();
-                int16_t sZh = scrollZone->canvas->height();
-                //text bubble
-                scrollZone->canvas->fillRoundRect(10,sZh-64,sZw-10,64,5,ThCol(background_alt));
+            //text bubble
+            int16_t sZw = scrollZone->canvas->width();
+            int16_t sZh = scrollZone->canvas->height();
+            scrollZone->canvas->fillRoundRect(10,sZh-62,sZw-10,62,5,ThCol(background_alt));
+            scrollZone->canvas->fillTriangle(0, sZh-10, 12, sZh-10, 12, sZh-20, ThCol(background_alt));
+            scrollZone->canvas->drawRoundRect(10,sZh-62,sZw-10,62,5,ThCol(dark));
+            //scrollZone->canvas->drawTriangle(0, sZh-5, 10, sZh, 10, sZh-10, ThCol(dark));
+            //lAppLog("DEVICE COLOR: %04x\n", deviceColor);
 
-                //lAppLog("DEVICE COLOR: %04x\n", deviceColor);
-                //canvas->drawRect(10,25,TFT_WIDTH-20,TFT_HEIGHT-100,TFT_RED); // the scroll area
-
-                scrollZone->canvas->drawXBitmap(
-                    ((scrollZone->canvas->width()/2)-(img_hi_64_width/2))+24,
-                    scrollZone->canvas->height()-64,
-                    img_hi_64_bits,img_hi_64_width,img_hi_64_height,
-                    ThCol(shadow)
-                );
-                scrollZone->canvas->drawXBitmap(
-                    ((scrollZone->canvas->width()/2)-(img_hi_64_width/2))+22,
-                    scrollZone->canvas->height()-62,
-                    img_hi_64_bits,img_hi_64_width,img_hi_64_height,
-                    deviceColor
-                );
-                char macAsChar[18] = { 0 };
-                sprintf(macAsChar,"%02x%02x:",lastPeerMAC[4],lastPeerMAC[5]);
-                scrollZone->canvas->setTextFont(0);
-                struct tm timeinfo;
-                if (getLocalTime(&timeinfo)) {
-                    char timeChar[18] = { 0 };
-                    sprintf(timeChar,"%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min);
-                    scrollZone->canvas->setTextSize(1);
-                    scrollZone->canvas->setTextDatum(BR_DATUM);
-                    scrollZone->canvas->setTextColor(ThCol(shadow));
-                    scrollZone->canvas->drawString(timeChar,scrollZone->canvas->width()-6,scrollZone->canvas->height()-6);
-                    scrollZone->canvas->setTextColor(deviceColor);
-                    scrollZone->canvas->drawString(timeChar,scrollZone->canvas->width()-8,scrollZone->canvas->height()-8);
-                }
-                scrollZone->canvas->setTextSize(2);
+            scrollZone->canvas->drawXBitmap(
+                scrollZone->canvas->width()-(img_hi_48_width+25),
+                //((scrollZone->canvas->width()/2)-(img_hi_48_width/2))+24,
+                scrollZone->canvas->height()-52,
+                img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+                ThCol(shadow)
+            );
+            scrollZone->canvas->drawXBitmap(
+                scrollZone->canvas->width()-(img_hi_48_width+23),
+                //((scrollZone->canvas->width()/2)-(img_hi_48_width/2))+22,
+                scrollZone->canvas->height()-54,
+                img_hi_48_bits,img_hi_48_width,img_hi_48_height,
+                deviceColor
+            );
+            char macAsChar[18] = { 0 };
+            sprintf(macAsChar,"%02x%02x:",lastPeerMAC[4],lastPeerMAC[5]);
+            scrollZone->canvas->setTextFont(0);
+            struct tm timeinfo;
+            if (getLocalTime(&timeinfo)) {
+                char timeChar[18] = { 0 };
+                sprintf(timeChar,"%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min);
+                scrollZone->canvas->setTextSize(1);
                 scrollZone->canvas->setTextDatum(TL_DATUM);
                 scrollZone->canvas->setTextColor(ThCol(shadow));
-                scrollZone->canvas->drawString(macAsChar,16,(scrollZone->canvas->height()-58));
+                scrollZone->canvas->drawString(timeChar,32,(scrollZone->canvas->height()-28));
                 scrollZone->canvas->setTextColor(deviceColor);
-                scrollZone->canvas->drawString(macAsChar,14,(scrollZone->canvas->height()-60));
+                scrollZone->canvas->drawString(timeChar,30,(scrollZone->canvas->height()-30));
+            }
+            scrollZone->canvas->setTextSize(2);
+            scrollZone->canvas->setTextDatum(BL_DATUM);
+            scrollZone->canvas->setTextColor(ThCol(shadow));
+            scrollZone->canvas->drawString(macAsChar,32,(scrollZone->canvas->height()-28));
+            scrollZone->canvas->setTextColor(deviceColor);
+            scrollZone->canvas->drawString(macAsChar,30,(scrollZone->canvas->height()-30));
 
-                newNotification=false;
-            }
-            if ( millis() > showIconUntil ) {
-                showIconUntil = 0;
-            } else {
-                currentScroll++;
-                if ( currentScroll < (64/8)+1) {
-                    scrollZone->canvas->scroll(0,-8);
-                }
-            }
+            newNotification=false;
         }
         colorCanvas->canvas->fillSprite(CanvasWidget::MASK_COLOR);
         scrollZone->DrawTo(colorCanvas->canvas); // this crap is for GBR RGB
@@ -243,7 +276,7 @@ bool PeerApplication::Tick() {
 
         TemplateApplication::Tick(); // calls to TemplateApplication::Tick()
 
-        nextRefresh=millis()+(1000/12);
+        nextRefresh=millis()+(1000/16);
         return true;
     }
     return false;

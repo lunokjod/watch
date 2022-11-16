@@ -8,10 +8,10 @@
 
 class PeerApplication : public TemplateApplication {
     private:
-        int16_t currentScroll=0;
+        size_t selectedEmojiOffset = 0;
         unsigned long nextRefresh=0;
         //unsigned long nextTimestampSend=0;
-        ButtonImageXBMWidget * sendHelloBtn;
+        ButtonImageXBMWidget * sendEmojiBtn;
         ButtonImageXBMWidget * iconPaletteBtn;
         CanvasWidget * scrollZone;
         CanvasWidget * colorCanvas;
