@@ -4,12 +4,18 @@
 #include "../UI/AppTemplate.hpp"
 #include <esp_now.h>
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/CanvasWidget.hpp"
 
 class PeerApplication : public TemplateApplication {
     private:
+        int16_t currentScroll=0;
         unsigned long nextRefresh=0;
-        unsigned long nextTimestampSend=0;
+        //unsigned long nextTimestampSend=0;
         ButtonImageXBMWidget * sendHelloBtn;
+        ButtonImageXBMWidget * iconPaletteBtn;
+        CanvasWidget * scrollZone;
+        CanvasWidget * colorCanvas;
+
     public:
         PeerApplication();
         ~PeerApplication();

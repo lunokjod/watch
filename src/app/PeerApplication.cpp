@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
-
+#include <LilyGoWatch.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "PeerApplication.hpp"
 #include "../static/img_chat_32.xbm"
-#include "../static/img_mainmenu_chat.xbm"
+#include "../static/img_hi_32.xbm"
+#include "../static/img_hi_64.xbm"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
@@ -14,7 +15,10 @@ uint8_t broadcastAddress[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 esp_now_peer_info_t peerInfo;
 
 uint8_t espNowMAC[6];                  // 6 octets are the WIFI address
+
+bool newNotification=false;
 unsigned long showIconUntil=0;
+uint8_t lastPeerMAC[6];                  // 6 octets are their WIFI address
 
 typedef struct  {
     const char * command;
@@ -22,11 +26,11 @@ typedef struct  {
 
 lESPNowMessage PeerAppMessages[] = {
     "lIoT_Hello",
-    "lIoT_TS"
+//    "lIoT_TS"
 };
 
 #define PEER_HELLO PeerAppMessages[0].command
-#define PEER_TIMESTAMP PeerAppMessages[1].command
+//#define PEER_TIMESTAMP PeerAppMessages[1].command
 
 void PeerApplication::OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
     //lAppLog("ESPNOW: Last Packet Send Status: %s\n",((status == ESP_NOW_SEND_SUCCESS)?"Success":"FAILED"));
@@ -35,13 +39,17 @@ void PeerApplication::OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t 
 void PeerApplication::OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     char *dataBuffer =  (char *)ps_malloc(len+1);
     memcpy(dataBuffer,incomingData,len);
-    lAppLog("Bytes received: %d from: '%02x:%02x:%02x:%02x:%02x:%02x'\n",len,
+    lAppLog("Bytes received: %d byte from: '%02x:%02x:%02x:%02x:%02x:%02x'\n",len,
     mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
     if ( 0 == strncmp(PEER_HELLO,dataBuffer,strlen(PEER_HELLO))) {
-        lAppLog("Peer says hello!\n");
+        memcpy(lastPeerMAC,mac,6);
+        //lAppLog("Peer says hello!\n");
         ttgo->shake();
+        newNotification=true;
         showIconUntil=millis()+3000;
-    } else if ( 0 == strncmp(PEER_TIMESTAMP,dataBuffer,strlen(PEER_TIMESTAMP))) {
+    }
+    /*
+    else if ( 0 == strncmp(PEER_TIMESTAMP,dataBuffer,strlen(PEER_TIMESTAMP))) {
         const uint8_t *msgPtr=(const uint8_t *)incomingData+strlen(PEER_TIMESTAMP); // offset of timestamp value
         unsigned long * receivedTimestamp= (unsigned long *)msgPtr;
         msgPtr+=sizeof(unsigned long); // offset of original sender mac
@@ -59,7 +67,7 @@ void PeerApplication::OnDataRecv(const uint8_t * mac, const uint8_t *incomingDat
             //lAppLog("ESPNOW received TIMESTAMP, return to sender\n");
             esp_now_send(broadcastAddress, incomingData, len);
         }
-    }
+    }*/
 
     free(dataBuffer);
 }
@@ -87,8 +95,11 @@ PeerApplication::PeerApplication() {
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
         lAppLog("ESPNOW: Failed to add peer\n");
     }
+    iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[](){
 
-    sendHelloBtn=new ButtonImageXBMWidget(20,40,60,200,[](){
+    },img_chat_32_bits,img_chat_32_height,img_chat_32_width);
+
+    sendHelloBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[](){
         // Send message via ESP-NOW
         esp_err_t result = esp_now_send(broadcastAddress, (const uint8_t*)PEER_HELLO, strlen(PEER_HELLO)+1);
         if (result == ESP_OK) {
@@ -96,25 +107,36 @@ PeerApplication::PeerApplication() {
         } else {
             //lAppLog("ESPNOW: Error sending\n");
         }
-    },img_chat_32_bits,img_chat_32_height,img_chat_32_width);
+    },img_hi_32_bits,img_hi_32_height,img_hi_32_width);
+
+    colorCanvas = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
+
+    scrollZone = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH-60);
+    scrollZone->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+    scrollZone->canvas->setScrollRect(0,0,scrollZone->canvas->width(),scrollZone->canvas->height(),CanvasWidget::MASK_COLOR);
+    //canvas->setScrollRect(10,25,TFT_WIDTH-20,TFT_HEIGHT-100,ThCol(background));
     Tick(); // OR call this if no splash 
 }
 
 PeerApplication::~PeerApplication() {
     // please remove/delete/free all to avoid leaks!
-    delete sendHelloBtn;
-
     esp_now_unregister_recv_cb();
     esp_now_unregister_send_cb();
     esp_now_deinit();
     WiFi.mode(WIFI_OFF);
+    delete colorCanvas;
+    delete sendHelloBtn;
+    delete iconPaletteBtn;
+    delete scrollZone;
 }
 
 bool PeerApplication::Tick() {
+    UINextTimeout = millis()+UITimeout; // disable screen timeout during this app run
 
     // put your interacts here:
     //mywidget->Interact(touched,touchX,touchY);
-
+    
+    /*
     if ( millis() > nextTimestampSend ) {
         const size_t timestampLenght = strlen(PEER_TIMESTAMP)+sizeof(unsigned long)+ESP_NOW_ETH_ALEN;
         char timestamp[timestampLenght];
@@ -128,40 +150,100 @@ bool PeerApplication::Tick() {
         memcpy(timestamp+strlen(PEER_TIMESTAMP),&now,sizeof(now));
 
         esp_now_send(broadcastAddress, (const uint8_t*)timestamp, timestampLenght);
-        nextTimestampSend=millis()+(1000*5);
-    }
+        nextTimestampSend=millis()+(1000*15);
+    }*/
     if ( millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background)); // use theme colors
 
         canvas->setTextFont(0);
-        canvas->setTextColor(ThCol(text));
-        canvas->setTextSize(2);
+        canvas->setTextColor(ThCol(text_alt));
+        canvas->setTextSize(1);
         canvas->setTextDatum(TC_DATUM);
         canvas->drawString(WiFi.macAddress().c_str(),TFT_WIDTH/2,10);
 
         sendHelloBtn->Interact(touched,touchX,touchY);
+        iconPaletteBtn->Interact(touched,touchX,touchY);
         sendHelloBtn->DrawTo(canvas);
+        iconPaletteBtn->DrawTo(canvas);
+        
         if ( 0 != showIconUntil ) {
+            if ( newNotification ) {
+                
+                if ( 0 != currentScroll) {
+                    while(true) {
+                        currentScroll++;
+                        if ( currentScroll < (64/8)+1) {
+                            scrollZone->canvas->scroll(0,-8);
+                            continue;
+                        }
+                        break;
+                    }
+                }
+                currentScroll=0;
+                uint16_t deviceColor = lastPeerMAC[4];
+                deviceColor = deviceColor << 8;
+                deviceColor = deviceColor +lastPeerMAC[5];
+                deviceColor = canvas->alphaBlend(192,deviceColor,TFT_WHITE); // more lighten
+
+                int16_t sZw = scrollZone->canvas->width();
+                int16_t sZh = scrollZone->canvas->height();
+                //text bubble
+                scrollZone->canvas->fillRoundRect(10,sZh-64,sZw-10,64,5,ThCol(background_alt));
+
+                //lAppLog("DEVICE COLOR: %04x\n", deviceColor);
+                //canvas->drawRect(10,25,TFT_WIDTH-20,TFT_HEIGHT-100,TFT_RED); // the scroll area
+
+                scrollZone->canvas->drawXBitmap(
+                    ((scrollZone->canvas->width()/2)-(img_hi_64_width/2))+24,
+                    scrollZone->canvas->height()-64,
+                    img_hi_64_bits,img_hi_64_width,img_hi_64_height,
+                    ThCol(shadow)
+                );
+                scrollZone->canvas->drawXBitmap(
+                    ((scrollZone->canvas->width()/2)-(img_hi_64_width/2))+22,
+                    scrollZone->canvas->height()-62,
+                    img_hi_64_bits,img_hi_64_width,img_hi_64_height,
+                    deviceColor
+                );
+                char macAsChar[18] = { 0 };
+                sprintf(macAsChar,"%02x%02x:",lastPeerMAC[4],lastPeerMAC[5]);
+                scrollZone->canvas->setTextFont(0);
+                struct tm timeinfo;
+                if (getLocalTime(&timeinfo)) {
+                    char timeChar[18] = { 0 };
+                    sprintf(timeChar,"%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min);
+                    scrollZone->canvas->setTextSize(1);
+                    scrollZone->canvas->setTextDatum(BR_DATUM);
+                    scrollZone->canvas->setTextColor(ThCol(shadow));
+                    scrollZone->canvas->drawString(timeChar,scrollZone->canvas->width()-6,scrollZone->canvas->height()-6);
+                    scrollZone->canvas->setTextColor(deviceColor);
+                    scrollZone->canvas->drawString(timeChar,scrollZone->canvas->width()-8,scrollZone->canvas->height()-8);
+                }
+                scrollZone->canvas->setTextSize(2);
+                scrollZone->canvas->setTextDatum(TL_DATUM);
+                scrollZone->canvas->setTextColor(ThCol(shadow));
+                scrollZone->canvas->drawString(macAsChar,16,(scrollZone->canvas->height()-58));
+                scrollZone->canvas->setTextColor(deviceColor);
+                scrollZone->canvas->drawString(macAsChar,14,(scrollZone->canvas->height()-60));
+
+                newNotification=false;
+            }
             if ( millis() > showIconUntil ) {
                 showIconUntil = 0;
             } else {
-                canvas->drawXBitmap(
-                    (TFT_WIDTH/2)-(img_mainmenu_chat_width/2),
-                    (TFT_HEIGHT/2)-(img_mainmenu_chat_height/2),
-                    img_mainmenu_chat_bits,img_mainmenu_chat_width,img_mainmenu_chat_height,
-                    ThCol(text)
-                );
-                // img_mainmenu_chat
+                currentScroll++;
+                if ( currentScroll < (64/8)+1) {
+                    scrollZone->canvas->scroll(0,-8);
+                }
             }
         }
-
+        colorCanvas->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+        scrollZone->DrawTo(colorCanvas->canvas); // this crap is for GBR RGB
+        colorCanvas->DrawTo(canvas,30,25);
 
         TemplateApplication::Tick(); // calls to TemplateApplication::Tick()
 
-        // draw your interface widgets here!!!
-        //mywidget->DrawTo(canvas);
-
-        nextRefresh=millis()+(1000/12); // 8 FPS is enought for GUI
+        nextRefresh=millis()+(1000/12);
         return true;
     }
     return false;
