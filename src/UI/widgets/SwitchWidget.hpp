@@ -1,24 +1,29 @@
 #ifndef __LUNOKIOT__UI__SWITCH___
 #define __LUNOKIOT__UI__SWITCH___
 
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "lunokiot_config.hpp"
-
-#include "../activator/ActiveRect.hpp"
+#include "../activator/ActiveRect.hpp"  // parents
 #include "CanvasWidget.hpp"
-#include <functional>
-#include "../UI.hpp"
+#include <functional>                   // callbacks/lambda
+#include "../UI.hpp"                    // theme
 
 class SwitchWidget: public ActiveRect, public CanvasWidget {
+    protected:
+        bool lastSwitchValue=false;
     public:
-        CanvasWidget * buffer;
+        CanvasWidget * buffer=nullptr;
+
+        bool Interact(bool  touch, int16_t tx,int16_t ty);
+        virtual ~SwitchWidget();
+
+        SwitchWidget(int16_t x, int16_t y, std::function<void ()> notifyTo=nullptr, uint32_t switchColor=ThCol(button));
+
+        virtual void InternalRedraw();
+        virtual void DrawTo(TFT_eSprite * endCanvas);
+        virtual void DirectDraw();
+
         bool switchEnabled=false;
         uint32_t switchColor;
         const int32_t switchHeight = 20; //@TODO this must define canvas sizes
-        SwitchWidget(int16_t x, int16_t y, std::function<void ()> notifyTo, uint32_t switchColor=ThCol(button));
-        virtual ~SwitchWidget();
-        virtual void DrawTo(TFT_eSprite * endCanvas);
-        bool Interact(bool touch, int16_t tx,int16_t ty);
+
 };
 #endif

@@ -1,26 +1,23 @@
 #ifndef __LUNOKIOT__SETTINGS_APP__
 #define __LUNOKIOT__SETTINGS_APP__
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "../system/Application.hpp"
-#include "Watchface.hpp"
 
+#include "../UI/AppTemplate.hpp" // typical app design base with back button
+
+// widgets used
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 
-class SettingsApplication: public LunokIoTApplication {
+class SettingsApplication: public TemplateApplication {
     private:
-        unsigned long nextRedraw=0;
         bool showOverlay=false;
-    public:
         ButtonImageXBMWidget * btnHelp = nullptr;
-        ButtonImageXBMWidget * btnBack = nullptr;
         SwitchWidget * ntpCheck = nullptr;
         SwitchWidget * openweatherCheck = nullptr;
         SwitchWidget * wifiCheck = nullptr;
         SwitchWidget * bleCheck = nullptr;
+    public:        
         SettingsApplication();
-        ~SettingsApplication();
+        virtual ~SettingsApplication();
         bool Tick();
 };
 

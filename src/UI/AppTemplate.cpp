@@ -22,8 +22,8 @@ bool TemplateApplication::Tick() {
     bool backTap = btnBack->Interact(touched,touchX, touchY); 
     if ( backTap ) {
         btnBack->DirectDraw();
-    }
-    if ( millis() > nextRefresh ) {
+    } else {
+    //if ( millis() > nextRefresh ) {
         btnBack->DrawTo(canvas);
     }
     return backTap;

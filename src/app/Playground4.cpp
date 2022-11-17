@@ -1,7 +1,6 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground4.hpp"
-#include "Watchface.hpp"
+#include "../UI/UI.hpp"
 #include <list>
 
 extern std::list<TFT_eSprite *>ScreenShots;

@@ -17,25 +17,31 @@ void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 #ifdef LUNOKIOT_DEBUG_APPLICATION
 #define lAppLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[APP] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
-#define lAppLog(...);
+#define lAppLog(...)
 #endif
 
 #ifdef LUNOKIOT_DEBUG_EVENTS
 #define lEvLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[EV] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
-#define lEvLog(...);
+#define lEvLog(...)
 #endif
 
 #ifdef LUNOKIOT_DEBUG_NETWORK
 #define lNetLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[NET] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
-#define lNetLog(...);
+#define lNetLog(...)
 #endif
 
 #ifdef LUNOKIOT_DEBUG_UI
 #define lUILog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[UI] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lUILog(...);
+#endif
+
+#ifdef LUNOKIOT_DEBUG_UI_DEEP
+#define lUIDeepLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[UI] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+#else 
+#define lUIDeepLog(...)
 #endif
 
 class LogViewApplication: public LunokIoTApplication {

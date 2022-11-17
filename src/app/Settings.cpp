@@ -1,85 +1,82 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "Settings.hpp"
-#include "../static/img_back_32.xbm"
-#include "Watchface.hpp"
+
+#include <Arduino.h>
+#include <ArduinoNvs.h>
+
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
+extern TFT_eSprite *overlay;
+
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
+
+#include "../static/img_back_32.xbm"
 #include "../static/img_wifi_32.xbm"
 #include "../static/img_bluetooth_32.xbm"
 #include "../static/img_help_32.xbm"
 
-#include <ArduinoNvs.h>
 #include "Watchface.hpp"
 
 #include "../system/Network.hpp"
-extern TFT_eSprite *overlay;
-
-//extern NetworkTaskDescriptor * WatchfaceApplication::ntpTask;
-//extern NetworkTaskDescriptor * WatchfaceApplication::weatherTask;
+#include "LogView.hpp"
 
 SettingsApplication::~SettingsApplication() {
-    if ( nullptr != btnHelp ) { delete btnHelp; }
-    if ( nullptr != btnBack ) { delete btnBack; }
-    if ( nullptr != ntpCheck ) { delete ntpCheck; }
-    if ( nullptr != openweatherCheck ) { delete openweatherCheck; }
-    if ( nullptr != wifiCheck ) { delete wifiCheck; }
-    if ( nullptr != bleCheck ) { delete bleCheck; }
+    // on destroy
+    NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
+    NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
+
+    NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
+    if ( nullptr != WatchfaceApplication::ntpTask ) { 
+        WatchfaceApplication::ntpTask->enabled = ntpCheck->switchEnabled;
+    }
+    NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
+    if ( nullptr != WatchfaceApplication::weatherTask ) {
+        WatchfaceApplication::weatherTask->enabled = openweatherCheck->switchEnabled;
+    }
+    delete btnHelp;
+    delete ntpCheck;
+    delete openweatherCheck;
+    delete wifiCheck;
+    delete bleCheck;
 }
 
 SettingsApplication::SettingsApplication() {
-    wifiCheck=new SwitchWidget(80,110, [&,this]() {
-        openweatherCheck->enabled=wifiCheck->switchEnabled;
-        ntpCheck->enabled=wifiCheck->switchEnabled;
-        NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
-    }, canvas->color24to16(0x555f68));
+
+    wifiCheck=new SwitchWidget(80,110);
+#ifdef LUNOKIOT_WIFI_ENABLED
     wifiCheck->switchEnabled=NVS.getInt("WifiEnabled");
-#ifndef LUNOKIOT_WIFI_ENABLED
-    wifiCheck->switchEnabled=false;
+#else
     wifiCheck->enabled=false;
 #endif
-    bleCheck=new SwitchWidget(80,160, [&,this]() {
-        NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
-    });
+    wifiCheck->InternalRedraw();
+
+    bleCheck=new SwitchWidget(80,160);
+#ifdef LUNOKIOT_BLE_ENABLED
     bleCheck->switchEnabled=NVS.getInt("BLEEnabled");
-#ifndef LUNOKIOT_BLE_ENABLED
-    bleCheck->switchEnabled=false;
+#else
     bleCheck->enabled=false;
 #endif
-
+    bleCheck->InternalRedraw();
+    
     btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](){
         showOverlay = (!showOverlay);
     },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
 
-
-    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
-
-    ntpCheck=new SwitchWidget(10,10, [&,this]() {
-        NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-        if ( nullptr != WatchfaceApplication::ntpTask ) {
-            WatchfaceApplication::ntpTask->enabled = ntpCheck->switchEnabled;
-        }
-    }, canvas->color24to16(0x555f68));
+    ntpCheck=new SwitchWidget(10,10);
     ntpCheck->switchEnabled=NVS.getInt("NTPEnabled");
-    ntpCheck->enabled=wifiCheck->switchEnabled;
+    ntpCheck->enabled=wifiCheck->enabled;
+    ntpCheck->InternalRedraw();
 
-    openweatherCheck=new SwitchWidget(10,60, [&,this]() {
-        NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-        if ( nullptr != WatchfaceApplication::weatherTask ) {
-            WatchfaceApplication::weatherTask->enabled = openweatherCheck->switchEnabled;
-        }
-    }, canvas->color24to16(0x555f68));
+    openweatherCheck=new SwitchWidget(10,60);
     openweatherCheck->switchEnabled=NVS.getInt("OWeatherEnabled");
-    openweatherCheck->enabled=wifiCheck->switchEnabled;
-
+    openweatherCheck->enabled=wifiCheck->enabled;
+    openweatherCheck->InternalRedraw();
 
     // build overlay as help screen
     overlay->fillSprite(TFT_BLACK);
     const uint8_t margin = 32;
     const uint8_t radius = 50;
-
+    // translucent
     for(int32_t y=0;y<TFT_HEIGHT;y+=2) {
         for(int32_t x=0;x<TFT_WIDTH;x+=2) {
             overlay->drawPixel(x,y,TFT_TRANSPARENT);
@@ -100,34 +97,31 @@ SettingsApplication::SettingsApplication() {
     overlay->fillCircle(bleCheck->x+margin,bleCheck->y+margin,radius,TFT_TRANSPARENT);
     overlay->fillCircle(btnHelp->x+margin,btnHelp->y+margin,radius,TFT_TRANSPARENT);
     overlay->fillCircle(btnBack->x+margin,btnBack->y+margin,radius,TFT_TRANSPARENT);
-
-    canvas->setTextFont(1);
-    canvas->setTextSize(2);
-    canvas->setTextDatum(CL_DATUM);
-    canvas->setTextColor(TFT_WHITE);
-    canvas->drawString("When WIFi up, try to sync via NTP",ntpCheck->x+55,ntpCheck->y);
-
+    /*
+    overlay->setTextFont(1);
+    overlay->setTextSize(2);
+    overlay->setTextDatum(CL_DATUM);
+    overlay->setTextColor(TFT_WHITE);
+    overlay->drawString("When WIFi up, try to sync via NTP",ntpCheck->x+55,ntpCheck->y);
+    */
     Tick();
 }
 
 bool SettingsApplication::Tick() {
+    
+    TemplateApplication::Tick();
 
-    bool interacted=false;
-    bool ret;
-    ret = btnHelp->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
-    ret = btnBack->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
-    ret = ntpCheck->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
-    ret = openweatherCheck->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
-    ret = wifiCheck->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
-    ret = bleCheck->Interact(touched,touchX, touchY);
-    if ( ret ) { interacted = true; }
+    btnHelp->Interact(touched,touchX, touchY);
+    wifiCheck->Interact(touched,touchX, touchY);
+    ntpCheck->enabled=wifiCheck->switchEnabled;
+    openweatherCheck->enabled=wifiCheck->switchEnabled;
+    bleCheck->Interact(touched,touchX, touchY);
 
-    if (millis() > nextRedraw ) {
+    ntpCheck->Interact(touched,touchX, touchY);
+    openweatherCheck->Interact(touched,touchX, touchY);
+
+
+    if (millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background));
         btnHelp->DrawTo(canvas);
         btnBack->DrawTo(canvas);
@@ -138,17 +132,28 @@ bool SettingsApplication::Tick() {
         canvas->setTextFont(0);
         canvas->setTextSize(2);
         canvas->setTextDatum(TL_DATUM);
-        canvas->setTextColor(ThCol(text));
+        uint16_t textColor = ThCol(text);
+        if ( false == wifiCheck->switchEnabled ) { textColor = ThCol(text_alt); }
+        canvas->setTextColor(textColor);
         canvas->drawString("NTP",95,35);
         canvas->drawString("OpenWeather",95,85);
 
-        canvas->drawXBitmap(160,130,img_wifi_32_bits,img_wifi_32_width,img_wifi_32_height,ThCol(text));
-        canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,ThCol(text));
+#ifdef LUNOKIOT_WIFI_ENABLED
+        textColor = ThCol(text);
+#else
+        textColor = ThCol(text_alt);
+#endif
+        canvas->drawXBitmap(160,130,img_wifi_32_bits,img_wifi_32_width,img_wifi_32_height,textColor);
+#ifdef LUNOKIOT_BLE_ENABLED
+        textColor = ThCol(text);
+#else
+        textColor = ThCol(text_alt);
+#endif
+        canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,textColor);
 
-        //if ( ( false == interacted ) && ( touched ) ) { showOverlay=(!showOverlay); }
         if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
 
-        nextRedraw=millis()+(1000/10);
+        nextRefresh=millis()+(1000/3);
         return true;
     }
     return false;

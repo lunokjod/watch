@@ -1,9 +1,9 @@
 #ifndef __LUNOKIOT__GAUGE__WIDGET___HEADER__
 #define __LUNOKIOT__GAUGE__WIDGET___HEADER__
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
-
 #include "CanvasWidget.hpp"
 #include "../activator/ActiveRect.hpp"
+
+#include "../UI.hpp"
 
 class GaugeWidget : public CanvasWidget, ActiveRect {
     public:

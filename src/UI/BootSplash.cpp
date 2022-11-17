@@ -4,9 +4,6 @@
 
 #include "lunokiot_config.hpp" 
 
-#include <LilyGoWatch.h>
-extern TTGOClass *ttgo; // ttgo lib
-
 #ifdef LILYGO_WATCH_2020_V3 // only if have speaker
 #include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
@@ -15,6 +12,7 @@ extern TTGOClass *ttgo; // ttgo lib
 #include "AudioOutputI2S.h"
 #endif
 
+#include "UI.hpp"
 #include "../app/LogView.hpp" // lLog shit
 #include "../static/img_lunokiot_logo.xbm" // sputnik image
 extern TTGOClass *ttgo; // ttgo lib

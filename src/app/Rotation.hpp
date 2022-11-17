@@ -9,7 +9,6 @@
 class RotationApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
-        CanvasWidget *buffer=nullptr;
         ButtonWidget * up=nullptr;
         ButtonWidget * right=nullptr;
         ButtonWidget * down=nullptr;

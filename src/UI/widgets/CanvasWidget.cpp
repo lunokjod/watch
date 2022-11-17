@@ -2,10 +2,15 @@
 #include "CanvasWidget.hpp"
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
+#include "../../app/LogView.hpp"
 
-CanvasWidget::CanvasWidget(int16_t h, int16_t w) { RebuildCanvas(h,w); }
+CanvasWidget::CanvasWidget(int16_t h, int16_t w) {
+    lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
+    RebuildCanvas(h,w);
+}
 
 void CanvasWidget::RebuildCanvas(int16_t h, int16_t w) {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
     if ( nullptr != canvas ) {
         canvas->deleteSprite();
         delete canvas;
@@ -19,17 +24,16 @@ void CanvasWidget::RebuildCanvas(int16_t h, int16_t w) {
 CanvasWidget::~CanvasWidget() {
     canvas->deleteSprite();
     delete canvas;
+    lUIDeepLog("%s delete %p\n",__PRETTY_FUNCTION__,this);
 }
 
 void CanvasWidget::DirectDraw(int16_t x,int16_t y) {
-    //tft->setSwapBytes(false);
-    //canvas->setSwapBytes(true);
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
     canvas->pushSprite(x,y,Drawable::MASK_COLOR);
-    //canvas->setSwapBytes(false);
-    //tft->setSwapBytes(true);
 }
 
 void CanvasWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, int32_t maskColor) {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
     if ( nullptr == endCanvas) { return; }
     endCanvas->setPivot(x,y);
     canvas->setPivot(0,0);

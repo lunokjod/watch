@@ -218,10 +218,6 @@ PeerApplication::PeerApplication() {
             sendEmojiBtn->XBMBitmapPtr = emojiArray[selectedEmojiOffset].data;
             sendEmojiBtn->xbmH = emojiArray[selectedEmojiOffset].height;
             sendEmojiBtn->xbmW = emojiArray[selectedEmojiOffset].width;
-            delete sendEmojiBtn->_img;
-            sendEmojiBtn->_img = new CanvasWidget(sendEmojiBtn->xbmH+1,sendEmojiBtn->xbmW+1);
-            sendEmojiBtn->_img->canvas->drawXBitmap(1,1,sendEmojiBtn->XBMBitmapPtr,sendEmojiBtn->xbmW,sendEmojiBtn->xbmH,TFT_BLACK);
-            sendEmojiBtn->_img->canvas->drawXBitmap(0,0,sendEmojiBtn->XBMBitmapPtr,sendEmojiBtn->xbmW,sendEmojiBtn->xbmH,sendEmojiBtn->xbmColor);
             emojiPaletteVisible=false;
         });
 

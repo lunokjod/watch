@@ -1,5 +1,3 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
 #include <functional>
 
 #include "lunokiot_config.hpp"
@@ -38,7 +36,7 @@ bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,in
 }
 
 void ActiveRect::_LaunchCallbackTask(void * callbackData) {
-    //delay(5);
+    delay(5); // to get correct values (triggers taskdelay that triggers yeld)
     std::function<void ()> *runMe = reinterpret_cast<std::function<void ()>*>(callbackData);
     (*runMe)();
     vTaskDelete(NULL);
@@ -46,60 +44,39 @@ void ActiveRect::_LaunchCallbackTask(void * callbackData) {
 void ActiveRect::SetEnabled(bool state) {
     enabled = state;
     if ( false == state ) {
+        currentTapTime = 0;
         lastInteraction=false; 
     }
 }
 bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
-    if ( false == enabled ) { return false; }
-
-    bool collision = ActiveRect::InRect(tx,ty,this->x,this->y,this->h,this->w);
+    if ( false == enabled ) { return false; } // no sensitive
     if ( touch ) {
-        lastInteraction = false;
-        if ( collision ) { lastInteraction = true; }
-    } else {
-        if ( lastInteraction ) {
-            lastInteraction = false;
-            if ( collision ) {
-                //Serial.printf("DEBUG Activerect: %s X: %d Y: %d\n",(touched?"true":"false"),tx,ty);
-                lastInteraction = false;
-                if ( nullptr != tapActivityCallback ) {
-                    // launch the callback!
-                    BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
-                    if ( res != pdTRUE ) {
-                        lUILog("ActiveRect: %p Unable to launch task!\n", this);
-                        lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                        lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
-                    }
-                }
-                return true;
+        pushed = ActiveRect::InRect(tx,ty,x,y,h,w); // inside?
+        if ( pushed ) {
+            if ( 0 == currentTapTime ) {
+                currentTapTime = millis();
+                lastInteraction = true;
+            }
+        }
+        return pushed; // don't trigger Interact
+    } else { pushed = false; }
+    if ( false == lastInteraction ) { return false; } // get out fast!
+    // check here the time pushed
+    unsigned long tapTime=millis()-currentTapTime;
+    
+    if ( tapTime > 30 ) {
+        // no callback, nothing to do
+        if ( nullptr != tapActivityCallback ) {
+            // launch the callback!
+            BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+            if ( res != pdTRUE ) {
+                lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
+                lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+                lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
             }
         }
     }
-    return false;
-
-
-
-    if ( false == touch ) {
-        if ( lastInteraction ) {
-            lastInteraction=false;
-            if ( nullptr != tapActivityCallback ) {
-                // launch the callback!
-                BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
-                if ( res != pdTRUE ) {
-                    lUILog("ActiveRect: %p Unable to launch task!\n", this);
-                    lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                    lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
-                }
-            }
-        }
-        return false;
-    }
-    if ( nullptr == tapActivityCallback ) { return false; }
-    if ( lastInteraction ) { return false; }
-    //Serial.printf("ActiveArea::Interact(%s, %d, %d) on %p",(touch?"True":"False"),tx,ty, this);
-    //bool collision = ActiveRect::InRect(tx,ty,this->x,this->y,this->h,this->w);
-    if ( false == collision ) { return false; }
-    lastTapTime = millis();
-    lastInteraction = true;
+    lastInteraction=false;
+    currentTapTime = 0; // no tap, no count
     return true;
 }

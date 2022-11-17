@@ -1,7 +1,6 @@
-#include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "GaugeWidget.hpp"
 #include "CanvasWidget.hpp"
+#include "../UI.hpp"
 
 bool StaticGaugeWidgetCallback(int x,int y, int cx, int cy, int angle, int step, void* payload) {
     // recover the "this" context

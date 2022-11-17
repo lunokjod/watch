@@ -8,16 +8,12 @@
  * Note: can be used as circular point using InRadius
  * 
  */
-
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "lunokiot_config.hpp"
-
-#include "../UI.hpp"
-
 #include <functional> // callbacks 
 
-class ActiveRect { 
+class ActiveRect {
+    protected:
+        bool lastInteraction = false;
+        bool pushed=false;
     public:
         int16_t x;
         int16_t y;
@@ -36,8 +32,7 @@ class ActiveRect {
         bool enabled = true;
         void SetEnabled(bool state);
         // info
-        unsigned long lastTapTime = 0;
-        bool lastInteraction = false;
+        unsigned long currentTapTime = 0;
         uint32_t taskStackSize;
 
         // events
@@ -46,7 +41,7 @@ class ActiveRect {
         bool Interact(bool touch, int16_t tx,int16_t ty); // t for "tap"
 
         // callbacks
-        std::function<void ()> tapActivityCallback;
+        std::function<void ()> tapActivityCallback=nullptr;
 
         // tools
         static void _LaunchCallbackTask(void * callbackData);
