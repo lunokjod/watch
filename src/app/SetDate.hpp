@@ -11,7 +11,7 @@
 class SetDateApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
-        unsigned long nextSelectorTick=0;
+        //unsigned long nextSelectorTick=0;
         ValueSelector * day = nullptr;
         ValueSelector * month = nullptr;
         ButtonImageXBMWidget * showTimeButton = nullptr;

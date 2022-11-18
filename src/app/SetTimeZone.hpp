@@ -12,7 +12,7 @@
 class SetTimeZoneApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
-        unsigned long nextSelectorTick=0;
+        //unsigned long nextSelectorTick=0;
     public:
         ValueSelector * timezoneGMTSelector = nullptr;
         ButtonImageXBMWidget * btnBack = nullptr;

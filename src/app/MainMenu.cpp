@@ -63,7 +63,6 @@
 #include "Playground9.hpp"
 #endif
 
-
 typedef struct {
     const char *name;
     unsigned char * imagebits;

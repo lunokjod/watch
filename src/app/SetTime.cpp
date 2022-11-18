@@ -60,11 +60,11 @@ bool SetTimeApplication::Tick() {
         blinkTime=(!blinkTime);
         nextBlinkTime=millis()+1000;
     }
-    if (millis() > nextSelectorTick ) {
+    //if (millis() > nextSelectorTick ) {
         hour->Interact(touched, touchX, touchY);
         minute->Interact(touched, touchX, touchY);
-        nextSelectorTick=millis()+(1000/4);
-    }
+    //    nextSelectorTick=millis()+(1000/4);
+    //}
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
         hour->DrawTo(canvas);
@@ -84,7 +84,7 @@ bool SetTimeApplication::Tick() {
         canvas->setTextDatum(TR_DATUM);
         canvas->drawString("Minute",TFT_WIDTH-20,10);
 
-        nextRedraw=millis()+(1000/8);
+        nextRedraw=millis()+(1000/4);
         return true;
     }
     return false;

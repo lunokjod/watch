@@ -48,10 +48,10 @@ bool SetTimeZoneApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     switchDaylight->Interact(touched,touchX, touchY);
     btnSetGMT->Interact(touched,touchX, touchY);
-    if (millis() > nextSelectorTick ) {
+    //if (millis() > nextSelectorTick ) {
         timezoneGMTSelector->Interact(touched,touchX,touchY);
-        nextSelectorTick=millis()+(1000/4);
-    }
+    //    nextSelectorTick=millis()+(1000/4);
+    //}
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
         btnBack->DrawTo(canvas);
@@ -68,7 +68,7 @@ bool SetTimeZoneApplication::Tick() {
         canvas->setTextDatum(CR_DATUM);
         canvas->drawString("GMT", 120, 110);
 
-        nextRedraw=millis()+(1000/8);
+        nextRedraw=millis()+(1000/4);
         return true;
     }
     return false;

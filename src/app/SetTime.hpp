@@ -13,7 +13,7 @@ class SetTimeApplication: public LunokIoTApplication {
         bool blinkTime = true;
         unsigned long nextBlinkTime=0;
         unsigned long nextRedraw=0;
-        unsigned long nextSelectorTick=0;
+        //unsigned long nextSelectorTick=0;
         ValueSelector * hour = nullptr;
         ValueSelector * minute = nullptr;
         ButtonImageXBMWidget * showDateButton = nullptr;

@@ -51,11 +51,11 @@ bool SetDateApplication::Tick() {
     showTimeButton->Interact(touched, touchX, touchY);
     setDateButton->Interact(touched, touchX, touchY);
     backButton->Interact(touched, touchX, touchY);
-    if (millis() > nextSelectorTick ) {
+    //if (millis() > nextSelectorTick ) {
         day->Interact(touched,touchX,touchY);
         month->Interact(touched,touchX,touchY);
-        nextSelectorTick=millis()+(1000/4);
-    }
+    //    nextSelectorTick=millis()+(1000/4);
+    //}
 
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
@@ -74,7 +74,7 @@ bool SetDateApplication::Tick() {
         canvas->drawString("Day",20, 10);
         canvas->setTextDatum(TR_DATUM);
         canvas->drawString("Month",TFT_WIDTH-20,10);
-        nextRedraw=millis()+(1000/8);
+        nextRedraw=millis()+(1000/4);
         return true;
     }
     return false;
