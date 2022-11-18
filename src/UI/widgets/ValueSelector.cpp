@@ -2,9 +2,10 @@
 #include <LilyGoWatch.h>
 
 #include "ValueSelector.hpp"
+#include "../../app/LogView.hpp"
 
 ValueSelector::~ValueSelector() {
-    if ( nullptr != buffer ) { delete buffer; }
+    delete buffer;
 }
 
 ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor, bool showsign):
@@ -12,19 +13,39 @@ ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t v
             ActiveRect(x,y,h,w),
             valMin(valMin),valMax(valMax),backgroundColor(backgroundColor),showsign(showsign) {
     buffer = new CanvasWidget(h,w);
+    InternalRedraw();
 }
 
 bool ValueSelector::Interact(bool touch, int16_t tx,int16_t ty) {
-    if ( touch ) {
-        if ( ActiveRect::InRect(tx,ty,x,y,h,w)) {
-            //Serial.printf("TOUCH INSIDE!! DIST: %f ANGLE: %f\n", touchDragDistance, touchDragAngle);
-            if ( ActiveRect::InRect(tx,ty,x,y,h/2,w)) {
-                selectedValue--;
-            } else {
-                selectedValue++;
-            }
+    if ( millis() > nextDragStep ) {
+        if ( stepSize != 0 ) {
+            selectedValue+=stepSize; // up or down depend of value sign
             if ( selectedValue > valMax ) { selectedValue = valMax; }
             else if ( selectedValue < valMin ) { selectedValue = valMin; }
+            lUILog("Step size: %d sel: %d\n",stepSize,selectedValue);
+            InternalRedraw();
+            DirectDraw();
+            stepSize/=2;
+        }
+        nextDragStep=millis()+(1000/12);
+    }
+    if ( touch ) {
+        if ( ActiveRect::InRect(tx,ty,x,y,h,w)) {
+            // basic up/down button functionality
+            if ( ActiveRect::InRect(tx,ty,x,y,h/2,w)) {
+                stepSize=-1;
+            } else {
+                stepSize=1;
+            }
+            // if user drags, use distance as stepSize
+            if ( touchDragDistance > 0.0 ) {
+                stepSize = touchDragDistance/10;
+                if ( stepSize < 1 ) { stepSize=1; }
+                else if ( stepSize > 20 ) { stepSize=20; }
+
+                if ( touchDragAngle < 0 ) { stepSize*=-1; } // convert to negative (up direction)
+            }
+            //lUILog("TOUCH INSIDE!! DIST: %f step: %d\n", touchDragDistance,stepSize);
             return true;
         }
     } else {
@@ -35,7 +56,19 @@ bool ValueSelector::Interact(bool touch, int16_t tx,int16_t ty) {
     return false;
 }
 
-void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
+
+void ValueSelector::DirectDraw() {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
+    //buffer->canvas->fillSprite(random(0,0xffff));
+    buffer->canvas->pushSprite(x,y,Drawable::MASK_COLOR);
+}
+
+
+void ValueSelector::InternalRedraw() {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
+
+
+
     buffer->canvas->fillSprite(backgroundColor);
 
     buffer->canvas->setTextFont(0);
@@ -98,7 +131,6 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
         if ( alpha < 0 ) { alpha=0; }
     }
 
-
     // current value
     posX = buffer->canvas->width()/2;
     posY = buffer->canvas->height()/2;
@@ -113,8 +145,10 @@ void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
 
     buffer->canvas->setTextColor(textColor);
     buffer->canvas->drawString(textBuffer, posX, posY);
-
     buffer->DrawTo(canvas);
+}
+
+void ValueSelector::DrawTo(TFT_eSprite * endCanvas) {
     if ( nullptr != endCanvas ) {
         CanvasWidget::DrawTo(endCanvas,x,y);
     }

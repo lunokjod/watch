@@ -12,8 +12,10 @@
 class ValueSelector: public ActiveRect, public CanvasWidget {
     public:
         bool showsign;
+        unsigned long nextDragStep=0;
         int16_t x;
         int16_t y;
+        int32_t stepSize=0;
         int32_t valMin;
         int32_t valMax;
         int32_t selectedValue=0;
@@ -21,6 +23,8 @@ class ValueSelector: public ActiveRect, public CanvasWidget {
         uint32_t textColor=ThCol(text);
         CanvasWidget * buffer=nullptr;
         virtual ~ValueSelector();
+        virtual void InternalRedraw();
+        virtual void DirectDraw();
         bool Interact(bool touch, int16_t tx,int16_t ty);
         ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin=0,int32_t valMax=100,uint32_t backgroundColor=ThCol(background),bool showsign=false);
         void DrawTo(TFT_eSprite * endCanvas);

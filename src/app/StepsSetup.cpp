@@ -19,7 +19,6 @@ StepsSetupApplication::~StepsSetupApplication() {
         stepDistanceCm = userTall * WOMAN_STEP_PROPORTION;
     } else {
         stepDistanceCm = userTall * MAN_STEP_PROPORTION;
-
     }
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != genderSelect ) { delete genderSelect; }
@@ -33,6 +32,7 @@ StepsSetupApplication::StepsSetupApplication() {
     genderSelect = new SwitchWidget(142,20,[&,this](){ });
     tallValue = new ValueSelector(10,10,220,110,120,220,ThCol(background));
     tallValue->selectedValue = userTall;
+    tallValue->InternalRedraw();
     genderSelect->switchEnabled = userMaleFemale;
     Tick();
 }
@@ -40,10 +40,7 @@ StepsSetupApplication::StepsSetupApplication() {
 bool StepsSetupApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     genderSelect->Interact(touched,touchX, touchY);
-    if (millis() > nextSpinStep ) {
-        tallValue->Interact(touched,touchX, touchY);
-        nextSpinStep=millis()+(1000/4);
-    }
+    tallValue->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
@@ -65,7 +62,7 @@ bool StepsSetupApplication::Tick() {
         canvas->setTextDatum(TL_DATUM);
         canvas->drawString("Tall", 120,120);
 
-        nextRedraw=millis()+(1000/8);
+        nextRedraw=millis()+(1000/3);
         return true;
     }
     return false;
