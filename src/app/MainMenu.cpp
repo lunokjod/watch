@@ -63,6 +63,8 @@
 #include "Playground9.hpp"
 #endif
 
+#include "LogView.hpp"
+
 typedef struct {
     const char *name;
     unsigned char * imagebits;
@@ -77,6 +79,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
+    {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsMenuApplication()); } },
     {"Peers",img_mainmenu_chat_bits, img_mainmenu_chat_height, img_mainmenu_chat_width, []() { LaunchApplication(new PeerApplication()); } },
 //    {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },

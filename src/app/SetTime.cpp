@@ -28,9 +28,11 @@ extern bool ntpSyncDone;
 SetTimeApplication::SetTimeApplication() {
     hour = new MujiValue(0,0,165,120,0,23,TFT_BLACK);
     minute = new ValueSelector(120,0,165,120,0,59,TFT_BLACK);
-    lLog("currentMin: %d currentHour: %d\n",currentMin,currentHour);
+    lAppLog("currentMin: %d currentHour: %d\n",currentMin,currentHour);
     hour->selectedValue = currentHour;
+    hour->InternalRedraw();
     minute->selectedValue = currentMin;
+    minute->InternalRedraw();
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchApplication(new WatchfaceApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    

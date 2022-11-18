@@ -13,14 +13,15 @@ extern TFT_eSPI *tft;
 SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
 TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
+bool LogViewApplication::dirty=false;
 
 void lLogCreate() {
     if ( nullptr == LogViewApplication::LogTextBuffer ) {
         LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
         LogViewApplication::LogTextBuffer->setColorDepth(1);
-        LogViewApplication::LogTextBuffer->createSprite(TFT_WIDTH,TFT_HEIGHT-70);
+        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*50,LogViewApplication::TextHeight*40);
         LogViewApplication::LogTextBuffer->fillSprite(TFT_BLACK);
-        //LogViewApplication::LogTextBuffer->setTextWrap(true,true);
+        LogViewApplication::LogTextBuffer->setTextWrap(false,false);
         LogViewApplication::LogTextBuffer->setTextFont(0);
         LogViewApplication::LogTextBuffer->setTextSize(1);
         LogViewApplication::LogTextBuffer->setTextColor(TFT_WHITE);
@@ -47,6 +48,7 @@ void lRawLog(const char *fmt, ...) {
                 LogViewApplication::LogTextBuffer->scroll(0,LogViewApplication::TextHeight*-1);
                 LogViewApplication::LogTextBuffer->setCursor(x,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
             }
+            LogViewApplication::dirty=true;
         }
         xSemaphoreGive( lLogSemaphore );
     } else {
@@ -57,31 +59,85 @@ void lRawLog(const char *fmt, ...) {
     va_end(args);
 }
 LogViewApplication::~LogViewApplication() {
-    if ( nullptr != btnBack ) { delete btnBack; }
-    // don't destroy textBuffer
+    ViewBuffer->deleteSprite();
+    delete ViewBuffer;
 }
 
 LogViewApplication::LogViewApplication() {
-    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
-    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
+    // build the area for log
+    ViewBuffer = new TFT_eSprite(tft);
+    ViewBuffer->setColorDepth(1);
+    ViewBuffer->createSprite(TFT_WIDTH,TFT_HEIGHT-70);
+    ViewBuffer->fillSprite(TFT_BLACK);
+    if ( nullptr != LogViewApplication::LogTextBuffer ) {
+        offsetY = LogTextBuffer->height()-ViewBuffer->height();
+        LogTextBuffer->setPivot(offsetX,offsetY);
+
+        ViewBuffer->setPivot(0,0);
+        ViewBuffer->fillSprite(TFT_BLACK);
+        LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
+    }
     Tick();
 }
 
 bool LogViewApplication::Tick() {
-    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
 
+    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
     btnBack->Interact(touched,touchX, touchY);
+
+    if ( touched ) {
+        if ( ActiveRect::InRect(touchX,touchY,0,0,ViewBuffer->height(),ViewBuffer->width()) ) {
+            if ( touchDragVectorX != 0 ) {
+                lastTouch=true;
+                if ( millis() > nextSlideTime ) {
+                    if ( nullptr != LogTextBuffer ) {
+                        LogTextBuffer->setPivot(0,0);
+                        int16_t offX=offsetX+touchDragVectorX;
+                        if ( offX > 0 ) { offX = 0; }
+                        else if ( offX < ((LogTextBuffer->width()-ViewBuffer->width())*-1) ) { offX = ((LogTextBuffer->width()-ViewBuffer->width())*-1); }
+                        int16_t offY=offsetY+touchDragVectorY;
+                        if ( offY > 0 ) { offY = 0; }
+                        else if ( offY < ((LogTextBuffer->height()-ViewBuffer->height())*-1) ) { offY = ((LogTextBuffer->height()-ViewBuffer->height())*-1); }
+                        ViewBuffer->setPivot(0,0);
+                        LogTextBuffer->setPivot(offX*-1,offY*-1);
+                        ViewBuffer->fillSprite(TFT_BLACK);
+                        LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
+                        ViewBuffer->pushSprite(0,0);
+                    }
+                    nextSlideTime=millis()+(1000/16);
+                }
+            }
+            return false;
+        }
+    } else if ( lastTouch ) {
+        if ( nullptr != LogViewApplication::LogTextBuffer ) {
+            offsetX+=touchDragVectorX;
+            if ( offsetX > 0 ) { offsetX = 0; }
+            else if ( offsetX < ((LogTextBuffer->width()-ViewBuffer->width())*-1) ) { offsetX = ((LogTextBuffer->width()-ViewBuffer->width())*-1); }
+            
+            offsetY+=touchDragVectorY;
+            if ( offsetY > 0 ) { offsetY = 0; }
+            else if ( offsetY < ((LogTextBuffer->height()-ViewBuffer->height())*-1) ) { offsetY = ((LogTextBuffer->height()-ViewBuffer->height())*-1); }
+        }
+        lastTouch=false;
+    }
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
-        canvas->fillRect(0,TFT_HEIGHT-69,TFT_WIDTH,69,ThCol(background));
-        btnBack->DrawTo(canvas);        
-        if ( nullptr != LogTextBuffer ) {            
-            LogTextBuffer->setPivot(0,0);
+        canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
+        btnBack->DrawTo(canvas);
+
+        if ( nullptr != LogViewApplication::LogTextBuffer ) {
+            ViewBuffer->setPivot(0,0);
+            if ( LogViewApplication::dirty ) {
+                //LogTextBuffer->setPivot(offsetX*-1,offsetY*-1);
+                ViewBuffer->fillSprite(TFT_BLACK);
+                LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
+                LogViewApplication::dirty = false;
+            }
             canvas->setPivot(0,0);
-            LogTextBuffer->pushRotated(canvas,0,0);
+            ViewBuffer->pushRotated(canvas,0,TFT_BLACK);
         }
-        nextRedraw=millis()+(1000/10);
+        nextRedraw=millis()+(1000/3);
         return true;
     }
     return false;

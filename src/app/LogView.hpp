@@ -1,9 +1,10 @@
 #ifndef __LUNOKIOT__LOGVIEW_APP__
 #define __LUNOKIOT__LOGVIEW_APP__
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "../system/Application.hpp"
-#include "Watchface.hpp"
+
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI *tft;
+
+#include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
@@ -44,13 +45,19 @@ void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 #define lUIDeepLog(...)
 #endif
 
-class LogViewApplication: public LunokIoTApplication {
+class LogViewApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;
+        unsigned long nextSlideTime=0;
+        bool lastTouch=false;
+        int16_t offsetX=0;
+        int16_t offsetY=0;
     public:
+        TFT_eSprite * ViewBuffer;
+        static bool dirty;
         static TFT_eSprite * LogTextBuffer;
         static const uint8_t TextHeight=9;
-        ButtonImageXBMWidget * btnBack = nullptr;
+        static const uint8_t TextWidth=9;
         LogViewApplication();
         ~LogViewApplication();
         bool Tick();

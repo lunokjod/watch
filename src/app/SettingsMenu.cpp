@@ -45,7 +45,6 @@ MainMenuApplicationEntry SettingsApps[] = {
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, []() { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, []() { LaunchApplication(new BluetoothApplication()); } },
-    {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new BLEMonitorApplication()); } },
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, []() { LaunchApplication(new SetTimeApplication()); } },
     {"Timezone",img_timezone_120_bits, img_timezone_120_height, img_timezone_120_width, []() { LaunchApplication(new SetTimeZoneApplication()); } },

@@ -10,6 +10,8 @@
 #include "LogView.hpp"
 
 SetTimeZoneApplication::~SetTimeZoneApplication() {
+    NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
+    NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != switchDaylight ) { delete switchDaylight; }
     if ( nullptr != timezoneGMTSelector ) { delete timezoneGMTSelector; }
@@ -24,12 +26,8 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
     switchDaylight=new SwitchWidget(10,10, [&,this]() { }, canvas->color24to16(0x555f68));
 
     btnSetGMT=new ButtonImageXBMWidget(70,TFT_HEIGHT-69,64,110,[&,this](){
-        lLog("Summer time: %s\n",(switchDaylight->switchEnabled?"true":"false"));
-        lLog("GMT: %d\n",timezoneGMTSelector->selectedValue);
-
-        NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
-        NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
-
+        lAppLog("Summer time: %s\n",(switchDaylight->switchEnabled?"true":"false"));
+        lAppLog("GMT: %d\n",timezoneGMTSelector->selectedValue);
     },img_timezone_32_bits,img_timezone_32_height,img_timezone_32_width,TFT_WHITE, canvas->color24to16(0x353e45));
 
     timezoneGMTSelector = new ValueSelector(120,60,100,115,-12,12,
@@ -37,10 +35,11 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
 
     int daylight = NVS.getInt("summerTime");
     long timezone = NVS.getInt("timezoneTime");
-    lLog("Summer time: %s\n",(daylight?"true":"false"));
-    lLog("GMT: %d\n",timezone);
+    lAppLog("Summer time: %s\n",(daylight?"true":"false"));
+    lAppLog("GMT: %d\n",timezone);
     timezoneGMTSelector->selectedValue=timezone;
     switchDaylight->switchEnabled=daylight;
+    timezoneGMTSelector->InternalRedraw();
     Tick();
 }
 
