@@ -22,12 +22,12 @@ bool ValueSelector::Interact(bool touch, int16_t tx,int16_t ty) {
             selectedValue+=stepSize; // up or down depend of value sign
             if ( selectedValue > valMax ) { selectedValue = valMax; }
             else if ( selectedValue < valMin ) { selectedValue = valMin; }
-            lUILog("Step size: %d sel: %d\n",stepSize,selectedValue);
+            //lUILog("Step size: %d sel: %d\n",stepSize,selectedValue);
             InternalRedraw();
             DirectDraw();
             stepSize/=2;
         }
-        nextDragStep=millis()+(1000/12);
+        nextDragStep=millis()+5;
     }
     if ( touch ) {
         if ( ActiveRect::InRect(tx,ty,x,y,h,w)) {
