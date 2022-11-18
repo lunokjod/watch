@@ -28,9 +28,9 @@ class ActiveRect {
         void SetH(int16_t h) { this->h = h; }
         int16_t GetW() { return w; }
         void SetW(int16_t w) { this->w = w; }
-
+        void SetEnabled(bool enabled) { this->enabled = enabled; }
+        bool GetEnabled() { return enabled; }
         bool enabled = true;
-        void SetEnabled(bool state);
         // info
         unsigned long currentTapTime = 0;
         uint32_t taskStackSize;

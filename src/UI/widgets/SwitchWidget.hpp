@@ -8,10 +8,10 @@
 
 class SwitchWidget: public ActiveRect, public CanvasWidget {
     protected:
-        bool lastSwitchValue=false;
+        bool lastInteract=false;
     public:
         CanvasWidget * buffer=nullptr;
-
+        void SetEnabled(bool enabled);
         bool Interact(bool  touch, int16_t tx,int16_t ty);
         virtual ~SwitchWidget();
 

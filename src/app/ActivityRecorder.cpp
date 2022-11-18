@@ -22,14 +22,14 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
         Serial.println("ActivityRecorder: Event: User wants stop!");
         recordOffset = recordEntries-1; // this cause end of recording
     },img_stop_48_bits,img_stop_48_width,img_stop_48_height,TFT_WHITE,wcolor);
-    btnStop->SetEnabled(false);
+    btnStop->enabled = false;
 
     btnRecord = new ButtonImageXBMWidget(5,240-73,68,68,[&, this]() {
         Serial.println("ActivityRecorder: Begin activity recording...");
-        this->btnRecord->SetEnabled(false);
-        this->btnStop->SetEnabled(true);
-        this->btnSave->SetEnabled(false);
-        this->btnMatch->SetEnabled(false);
+        this->btnRecord->enabled = false;
+        this->btnStop->enabled = true;
+        this->btnSave->enabled = false;
+        this->btnMatch->enabled = false;
 
         countdownOffset=0;
         playbackGraph->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
@@ -58,7 +58,7 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
     },img_record_48_bits,img_record_48_width,img_record_48_height,TFT_WHITE, TFT_RED);
 
     btnSave = new ButtonImageXBMWidget(78,240-73,68,68,[&, this]() {
-        this->btnSave->SetEnabled(false);
+        this->btnSave->enabled = false;
 
         if ( ( nullptr == recordX ) || ( nullptr == recordY ) || ( nullptr == recordZ ) ) {
             Serial.println("ActivityRecorder: Nothing to save! abort");
@@ -96,10 +96,10 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
         Serial.printf("ActivityRecorder: Saved at slot %d (lenght %d)\n",historyRecordsOffset, lastRecordOffset-1);
         historyRecordsOffset++;
         if (historyRecordsOffset > (historyRecordMAX-1) ) { historyRecordsOffset = 0; }
-        this->btnMatch->SetEnabled(true);
+        this->btnMatch->enabled = true;
 
     },img_save_48_bits,img_save_48_width,img_save_48_height,TFT_WHITE, canvas->color24to16(0x2e2e48));
-    btnSave->SetEnabled(false);
+    btnSave->enabled = false;
 
     btnMatch = new ButtonImageXBMWidget(78+68+5,240-73,68,68,[&, this]() {
         Serial.println("Building match stream...");
@@ -170,7 +170,7 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
 
 
     },img_search_48_bits,img_search_48_width,img_search_48_height,TFT_WHITE, canvas->color24to16(0x2e2e48));
-    btnMatch->SetEnabled(false);
+    btnMatch->enabled = false;
 
     progressBar = new CanvasWidget(14,200);
     recordData = new CanvasWidget(64,64);
@@ -304,9 +304,9 @@ bool ActivityRecorderApplication::Tick() {
         if ( recordOffset >= recordEntries ) {
             Serial.printf("Recorded time: %lu secs\n", (millis()-recordingTime)/1000);
             this->recording = false;
-            this->btnRecord->SetEnabled(true);
-            this->btnStop->SetEnabled(false);
-            this->btnSave->SetEnabled(true);
+            this->btnRecord->enabled = true;
+            this->btnStop->enabled = false;
+            this->btnSave->enabled = true;
             //this->accXGraph->graph->canvas->fillSprite(this->accXGraph->backgroundColor);
             //this->accYGraph->graph->canvas->fillSprite(this->accYGraph->backgroundColor);
             //this->accZGraph->graph->canvas->fillSprite(this->accZGraph->backgroundColor);

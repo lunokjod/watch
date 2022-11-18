@@ -41,13 +41,7 @@ void ActiveRect::_LaunchCallbackTask(void * callbackData) {
     (*runMe)();
     vTaskDelete(NULL);
 }
-void ActiveRect::SetEnabled(bool state) {
-    enabled = state;
-    if ( false == state ) {
-        currentTapTime = 0;
-        lastInteraction=false; 
-    }
-}
+
 bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
     if ( false == enabled ) { return false; } // no sensitive
     if ( touch ) {
@@ -64,7 +58,7 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
     // check here the time pushed
     unsigned long tapTime=millis()-currentTapTime;
     
-    if ( tapTime > 30 ) {
+    if ( tapTime > 10 ) {
         // no callback, nothing to do
         if ( nullptr != tapActivityCallback ) {
             // launch the callback!

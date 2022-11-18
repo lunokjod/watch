@@ -42,10 +42,17 @@ SettingsApplication::~SettingsApplication() {
 
 SettingsApplication::SettingsApplication() {
 
-    wifiCheck=new SwitchWidget(80,110);
+    wifiCheck=new SwitchWidget(80,110,[&,this](){
+        delay(30);
+        //@TODO the value is inverted due callback is called BEFORE change of bool
+        bool inverVal = (!wifiCheck->switchEnabled);
+        ntpCheck->SetEnabled(inverVal);
+        openweatherCheck->SetEnabled(inverVal);
+    });
 #ifdef LUNOKIOT_WIFI_ENABLED
     wifiCheck->switchEnabled=NVS.getInt("WifiEnabled");
 #else
+    wifiCheck->switchEnabled=false;
     wifiCheck->enabled=false;
 #endif
     wifiCheck->InternalRedraw();
@@ -55,6 +62,7 @@ SettingsApplication::SettingsApplication() {
     bleCheck->switchEnabled=NVS.getInt("BLEEnabled");
 #else
     bleCheck->enabled=false;
+    bleCheck->switchEnabled=false;
 #endif
     bleCheck->InternalRedraw();
     
@@ -64,12 +72,12 @@ SettingsApplication::SettingsApplication() {
 
     ntpCheck=new SwitchWidget(10,10);
     ntpCheck->switchEnabled=NVS.getInt("NTPEnabled");
-    ntpCheck->enabled=wifiCheck->enabled;
+    ntpCheck->enabled=wifiCheck->switchEnabled;
     ntpCheck->InternalRedraw();
 
     openweatherCheck=new SwitchWidget(10,60);
     openweatherCheck->switchEnabled=NVS.getInt("OWeatherEnabled");
-    openweatherCheck->enabled=wifiCheck->enabled;
+    openweatherCheck->enabled=wifiCheck->switchEnabled;
     openweatherCheck->InternalRedraw();
 
     // build overlay as help screen
@@ -113,8 +121,6 @@ bool SettingsApplication::Tick() {
 
     btnHelp->Interact(touched,touchX, touchY);
     wifiCheck->Interact(touched,touchX, touchY);
-    ntpCheck->enabled=wifiCheck->switchEnabled;
-    openweatherCheck->enabled=wifiCheck->switchEnabled;
     bleCheck->Interact(touched,touchX, touchY);
 
     ntpCheck->Interact(touched,touchX, touchY);
@@ -129,6 +135,7 @@ bool SettingsApplication::Tick() {
         openweatherCheck->DrawTo(canvas);
         wifiCheck->DrawTo(canvas);
         bleCheck->DrawTo(canvas);
+
         canvas->setTextFont(0);
         canvas->setTextSize(2);
         canvas->setTextDatum(TL_DATUM);
