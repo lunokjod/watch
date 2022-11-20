@@ -19,7 +19,7 @@ void lLogCreate() {
     if ( nullptr == LogViewApplication::LogTextBuffer ) {
         LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
         LogViewApplication::LogTextBuffer->setColorDepth(1);
-        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*50,LogViewApplication::TextHeight*40);
+        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*40,LogViewApplication::TextHeight*30);
         LogViewApplication::LogTextBuffer->fillSprite(TFT_BLACK);
         LogViewApplication::LogTextBuffer->setTextWrap(false,false);
         LogViewApplication::LogTextBuffer->setTextFont(0);

@@ -1,5 +1,7 @@
 # LilyGo TWatch 2020 lunokIoTWatch firmware
 
+[Buy me a coffe!](https://www.buymeacoffee.com/lunokjod)
+
 ![wartchface0](/doc/watchface0.png)
 ![wartchface0_day](/doc/day_watchface0.png)
 ![playground example0](/doc/playground0.png)
