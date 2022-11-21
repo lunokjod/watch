@@ -1,7 +1,7 @@
 #ifndef __LUNOKIOT__ABOUT_APP__
 #define __LUNOKIOT__ABOUT_APP__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "../system/Application.hpp"
 #include "Watchface.hpp"
 

@@ -1,7 +1,6 @@
 #ifndef __LUNOKIOT__GRAPH__WIDGET___HEADER__
 #define __LUNOKIOT__GRAPH__WIDGET___HEADER__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 #include "CanvasWidget.hpp"
 

@@ -6,12 +6,14 @@
  */
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include <esp_event.h>
 #include <esp_event_base.h>
+
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 #include "system/Application.hpp"
 
@@ -34,7 +36,6 @@ const char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/
 #define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task
 #define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32    // full TCP/IP Stacks
 
-extern TTGOClass *ttgo; // ttgo lib
 
 extern RTC_DATA_ATTR uint32_t bootCount; // @TODO don't work? why?
 

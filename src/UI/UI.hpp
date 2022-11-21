@@ -2,7 +2,7 @@
 #define __LUNOKIOT__UI__DEFINE__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include <esp_event_base.h>
 #include <functional>
 #include "../system/Application.hpp"

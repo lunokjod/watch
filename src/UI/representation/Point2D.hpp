@@ -4,7 +4,7 @@
  * This class represents a 2D point on a plain surface (like screen)
  */
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 
 class Point2D {

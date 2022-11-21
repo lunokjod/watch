@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <ArduinoNvs.h>
+
 //#include <LilyGoWatch.h>
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
@@ -31,7 +33,6 @@ extern TFT_eSPI *tft;
 #include "esp_gatts_api.h"
 #include "esp_bt_defs.h"
 #include "esp_system.h"
-#include <ArduinoNvs.h>
 
 #include "LogView.hpp"
 

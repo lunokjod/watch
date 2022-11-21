@@ -3,7 +3,7 @@
 #include "lunokiot_config.hpp"
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 #include "../system/Application.hpp"
 

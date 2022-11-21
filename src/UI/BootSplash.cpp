@@ -1,3 +1,6 @@
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+
 #include <esp_task_wdt.h> // used for reset task watchdog
 
 #include "BootSplash.hpp" // public methods
@@ -15,6 +18,7 @@
 #include "UI.hpp"
 #include "../app/LogView.hpp" // lLog shit
 #include "../static/img_lunokiot_logo.xbm" // sputnik image
+
 extern TTGOClass *ttgo; // ttgo lib
 
 bool bootLoop = true; // this stops the animation loop

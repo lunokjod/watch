@@ -1,15 +1,17 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
+#include <LilyGoWatch.h>
 
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TTGOClass *ttgo; // access to ttgo specific libs
 extern TFT_eSPI *tft;
+
+
 
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 #include "../app/LogView.hpp"
 
-extern TTGOClass *ttgo; // access to ttgo specific libs
 
 extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
 
