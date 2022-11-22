@@ -421,7 +421,7 @@ static void UITickTask(void* args) {
         if ( ESP_ERR_TIMEOUT == what ) {
             FPS--;
             if ( FPS < 1 ) { FPS =1; }
-            lUILog("UI: Tick timeout! (fps: %d)\n",FPS);
+            if ( false == directDraw ) { lUILog("UI: Tick timeout! (fps: %d)\n",FPS); }
         }
     }
     vTaskDelete(NULL); // unreachable code
