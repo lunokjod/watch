@@ -29,9 +29,9 @@ bool ActiveRect::InRadius(int16_t px, int16_t py, int16_t x,int16_t y,int16_t r)
 bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,int16_t w) {
     if ( px < x ) { return false; }
     if ( py < y ) { return false; }
-    if ( px > (x+w) ) { return false; } // @TODO this maybe is wrong!!!
+    if ( px > (x+w) ) { return false; }
     if ( py > (y+h) ) { return false; }
-    //Serial.printf("ActiveRect: Event: Thumb PX: %d PY: %d INRECT between X: %d Y: %d H: %d W: %d\n",px,py,x,y,x+h,y+w);
+    //Serial.printf("ActiveRect: Event: Thumb PX: %d PY: %d INRECT between X: %d Y: %d W: %d H: %d\n",px,py,x,y,x+w,y+h);
     return true;
 }
 

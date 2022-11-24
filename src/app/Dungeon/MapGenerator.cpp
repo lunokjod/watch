@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include "Dungeon.hpp"
 #include "../LogView.hpp"
 
@@ -55,7 +56,7 @@ void DungeonLevelGenerator(void *data) {
         thisLevel->darknessMap = new TFT_eSprite(tft);
         thisLevel->darknessMap->setColorDepth(16); // :( only 255 values needed but the sprites 8 bit are a crap! (drawpixel don't work)
         thisLevel->darknessMap->createSprite(thisLevel->width,thisLevel->height);
-        thisLevel->darknessMap->fillSprite(0); // clean whole map with dark!
+        thisLevel->darknessMap->fillSprite(255); // clean whole map with dark!
     }
 
 
@@ -85,15 +86,16 @@ void DungeonLevelGenerator(void *data) {
     int horizontalPaths=thisLevel->horizontalPaths;
     while(horizontalPaths>0) {
         int32_t x=0;
-        int32_t y=random(0,floorMap->width());
+        int32_t y=random(0,floorMap->height());
         if ( 255 == floorMap->readPixel(x,y) ) { // put track on empty place
-            floorMap->drawFastHLine(x,y-1,floorMap->height()-x,0); // floor
-            floorMap->drawFastHLine(x,y,floorMap->height()-x,0); // floor
-            floorMap->drawFastHLine(x,y+1,floorMap->height()-x,0); // floor
+            floorMap->drawFastHLine(x,y-1,floorMap->width()-x,0); // floor
+            floorMap->drawFastHLine(x,y,floorMap->width()-x,0); // floor
+            floorMap->drawFastHLine(x,y+1,floorMap->width()-x,0); // floor
             lAppLog("H Path %d generated X: %d Y: %d\n", horizontalPaths,x,y);
             horizontalPaths--;
         }
-        delay(1);
+        yield();
+        //delay(1);
     }
     lAppLog("Generating paths (vertical)....\n");
     int verticalPaths=thisLevel->verticalPaths;
@@ -107,22 +109,27 @@ void DungeonLevelGenerator(void *data) {
             lAppLog("V Path %d generated X: %d Y: %d\n", verticalPaths,x,y);
             verticalPaths--;
         }
-        delay(1);
     }
-    lAppLog("Generating rooms....\n");
+    lAppLog("Building rooms....\n");
     // build rooms
     int rooms=thisLevel->rooms;    
     while(rooms>0) {
         int32_t w=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
         int32_t h=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
-        int32_t x=random(0,(floorMap->width()-w)-thisLevel->minRoomSize);
+
+            // from 0 to end of world but with minimal and maximal size
+        int32_t x=random(0,thisLevel->width)+random(thisLevel->minRoomSize,(thisLevel->maxRoomSize-w)-thisLevel->minRoomSize);
+
         int32_t y=random(0,(floorMap->height()-h)-thisLevel->minRoomSize);
+
+
         if ( 0 == floorMap->readPixel(x,y) ) { // room must have a path
             floorMap->fillRoundRect(x,y,w,h,thisLevel->roomRadius,0); // mark as floor
             lAppLog("Room %d generated H: %d W: %d\n", rooms,h,w);
             rooms--;
         }
-        delay(1);
+        yield();
+        //delay(1);
     }
     lAppLog("Removing small holes...\n");
     // remove stupid 1x1 holes
@@ -157,18 +164,18 @@ void DungeonLevelGenerator(void *data) {
             if ( 0 == color ) {
                 uint16_t colorLeft = floorMap->readPixel(x-1,y);
                 if ( 255 == colorLeft ) { // empty space
-                    lLog("Left wall X: %d Y: %d ",x,y);
+                    //lLog("Left wall X: %d Y: %d ",x,y);
                     wallMap->drawPixel(x-1,y,17); // put wall here!
                 }
                 uint16_t colorRight = floorMap->readPixel(x+1,y);
                 if ( 255 == colorRight ) { // empty space
-                    lLog("Right wall X: %d Y: %d ",x,y);
+                    //lLog("Right wall X: %d Y: %d ",x,y);
                     wallMap->drawPixel(x+1,y,16); // put wall here!
                 }
             }
         }
     }
-    lLog("\n");
+    //lLog("\n");
     lAppLog("Generating walls (up/down)....\n");
     // put up/down walls 
     for(int32_t y=0;y<floorMap->height();y++) {
@@ -177,18 +184,18 @@ void DungeonLevelGenerator(void *data) {
             if ( 0 == color ) {
                 uint16_t colorUp = floorMap->readPixel(x,y-1);
                 if ( 255 == colorUp ) { // empty space?
-                    lLog("Up wall X: %d Y: %d ",x,y);
+                    //lLog("Up wall X: %d Y: %d ",x,y);
                     wallMap->drawPixel(x,y-1,12); // put wall here!
                 }
                 uint16_t colorDown = floorMap->readPixel(x,y+1);
                 if ( 255 == colorDown ) { // empty space
-                    lLog("Down wall X: %d Y: %d ",x,y);
+                    //lLog("Down wall X: %d Y: %d ",x,y);
                     wallMap->drawPixel(x,y+1,12); // put wall here!
                 }
             }
         }
     }
-    lLog("\n");
+    //lLog("\n");
     lAppLog("Generating wall details...\n");
     for(int32_t y=0;y<wallMap->height();y++) {
         for(int32_t x=0;x<wallMap->width();x++) {
@@ -269,6 +276,7 @@ void DungeonLevelGenerator(void *data) {
                 if ( 27 > random(1,100)) {          // probability of hole
                     uint32_t holeversion = 14 + random(0,1);
                     wallMap->drawPixel(x,y,holeversion);
+                    //esp_task_wdt_reset();
                     delay(1);
                 }
                 // only on internal faces (if no floor, no decoration)
@@ -310,32 +318,49 @@ void DungeonLevelGenerator(void *data) {
                     delay(1);
                 }
             }
-
-
             if ( 0 == floorColor ) {                // is a basic tile floor? then random floor tile
                 if ( 8  > random(1,100)) { 
                     floorMap->drawPixel(x,y,29); // spikes
                     delay(1);
-                }
-                if ( ( 0 == ( x % 4) ) && ( 0 == ( y % 4) ) ) {
-                    if ( 30  > random(1,100)) {
-                        objectsMap->drawPixel(x,y,65); // COLUMNS
-                        wallMap->drawPixel(x,y,66); // COLUMNS
-                        topMap->drawPixel(x,y-1,51); // COLUMNS
+                    if ( ( 0 == ( x % 4) ) && ( 0 == ( y % 4) ) ) {
+                        if ( 30  > random(1,100)) {
+                            floorMap->drawPixel(x,y,1); // change ground to other than 0 (claim the space)
+                            objectsMap->drawPixel(x,y,65); // COLUMNS
+                            wallMap->drawPixel(x,y,66); // COLUMNS
+                            topMap->drawPixel(x,y-1,51); // COLUMNS
+                            delay(1);
+                        }
+                    }
+                    if ( 30  > random(1,100)) { 
+                        uint32_t nuColor = random(0,8);
+                        floorMap->drawPixel(x,y,nuColor);
                         delay(1);
                     }
                 }
 
-                if ( 30  > random(1,100)) { 
-                    uint32_t nuColor = random(0,8);
-                    floorMap->drawPixel(x,y,nuColor);
-                    delay(1);
-                }
            }
         }
     }
+    lAppLog("Determine the player spawnpoint\n");
+    bool keepSearching=true;
+    while(keepSearching) {
+        delay(15);
+        int16_t candidateX=random(0,thisLevel->width-1);
+        int16_t candidateY=random(0,thisLevel->height-1);
+        uint16_t floorColor = floorMap->readPixel(candidateX,candidateY);
+        if ( 0 == floorColor) {
+            thisLevel->PlayerBeginX = candidateX;
+            thisLevel->PlayerBeginY = candidateY;
+            keepSearching=false;
+            lAppLog("Player Spawnpoint X: %d Y: %d\n",thisLevel->PlayerBeginX,thisLevel->PlayerBeginY);
+
+            break; // bah
+        }
+    }
     lAppLog("Dungeon generated!\n");
+    //delay(20000);
     thisLevel->valid=true;
     thisLevel->inProgress=false;
+    thisLevel->running = true;
     vTaskDelete(NULL);
 };

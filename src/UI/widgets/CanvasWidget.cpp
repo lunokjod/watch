@@ -4,21 +4,26 @@
 extern TFT_eSPI *tft;
 #include "../../app/LogView.hpp"
 
-CanvasWidget::CanvasWidget(int16_t h, int16_t w) {
+CanvasWidget::CanvasWidget(int16_t h, int16_t w,int8_t colorDepth) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
-    RebuildCanvas(h,w);
+    RebuildCanvas(h,w,colorDepth);
 }
-
-void CanvasWidget::RebuildCanvas(int16_t h, int16_t w) {
+bool CanvasWidget::RebuildCanvas(int16_t h, int16_t w, int8_t colorDepth) {
     lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
     if ( nullptr != canvas ) {
         canvas->deleteSprite();
         delete canvas;
+        return false;
     }
     canvas = new TFT_eSprite(tft);
-    canvas->setColorDepth(16);
+    canvas->setColorDepth(colorDepth);
+    this->colorDepth = colorDepth;
     canvas->createSprite(w,h);
+    if ( 4 == colorDepth ) {
+        canvas->createPalette(default_4bit_palette);
+    }
     canvas->fillSprite(MASK_COLOR); // by default use transparent
+    return true;
 }
 
 CanvasWidget::~CanvasWidget() {

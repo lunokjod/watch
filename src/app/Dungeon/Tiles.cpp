@@ -164,3 +164,5 @@ const unsigned char * DungeonTileSets[] = {
     
 
 };
+
+const uint32_t DungeonTileSetsSize = sizeof(DungeonTileSets)/sizeof(DungeonTileSets[0]);
