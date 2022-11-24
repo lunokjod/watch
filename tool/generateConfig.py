@@ -4,7 +4,13 @@ import string
 import random
 import uuid
 import socket
+import configparser
 from os.path import exists
+
+Import('env')
+build_type = env.GetProjectOption("build_type")
+
+print(" * lunokWatch build script")
 
 h_name = socket.gethostname()
 IP_addres = socket.gethostbyname(h_name)
@@ -57,16 +63,23 @@ templateFile.close()
 buildCount = 0
 openweatherKey = "PLEASE_SET_OPENWEATHER KEY"
 
-if not os.path.exists(counterFile):
+if "debug" == build_type:
+    print(" -> Debug build increment buildcount")
+    if not os.path.exists(counterFile):
+        with open(counterFile,'w') as f:
+            f.write(buildCount)
+    with open(counterFile,'r') as f:
+        buildCount = int(f.read())
+        buildCount+=1 
     with open(counterFile,'w') as f:
-        f.write(buildCount)
-with open(counterFile,'r') as f:
-    buildCount = int(f.read())
-    buildCount+=1 
-with open(counterFile,'w') as f:
-    f.write(str(buildCount))
-with open(openWeatherFile,'r') as f:
-    openweatherKey = f.read()
+        f.write(str(buildCount))
+    with open(openWeatherFile,'r') as f:
+        openweatherKey = f.read()
+else:
+    print(" -> Release build don't increment the buildcont")
+    with open(counterFile,'r') as f:
+        buildCount = int(f.read())
+    
 
 openweatherKey = openweatherKey.replace('\n','').replace('\r','').strip()
 outputData = templateData.replace("@@LUNOKIOT_GENERATED_FILE_WARNING@@", str("DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE on build time USE .template instead"))
