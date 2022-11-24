@@ -74,7 +74,13 @@ esp_event_loop_handle_t uiEventloopHandle;
 
 void ScreenWake() {
     if ( false == ttgo->bl->isOn() ) {
+#ifdef LUNOKIOT_SERIAL
+        Serial.end();
+#endif
         setCpuFrequencyMhz(240);
+#ifdef LUNOKIOT_SERIAL
+        Serial.begin(LUNOKIOT_SERIAL_SPEED);
+#endif
         if ( ttgo->rtc->isValid() ) { ttgo->rtc->syncToSystem(); }
         ttgo->displayWakeup();
         UINextTimeout = millis()+UITimeout;
@@ -99,7 +105,13 @@ void ScreenSleep() {
         ttgo->touchToSleep();
         Serial.flush();
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+#ifdef LUNOKIOT_SERIAL
+        Serial.end();
+#endif
         setCpuFrequencyMhz(80);
+#ifdef LUNOKIOT_SERIAL
+        Serial.begin(LUNOKIOT_SERIAL_SPEED);
+#endif
     }
 }
 
