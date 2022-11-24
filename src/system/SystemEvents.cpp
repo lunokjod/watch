@@ -310,8 +310,7 @@ void AXPIntHandler()
     ttgo->power->clearIRQ();
 }
 
-void WakeUpReason()
-{ // this function decides the system must wake or sleep
+bool WakeUpReason() { // this function decides the system must wake or sleep
 
 // if call return, the system remains active but with the screen off (must call DoSleep in other place)
 //
@@ -322,68 +321,67 @@ void WakeUpReason()
 // BMA432 int
 
     esp_sleep_wakeup_cause_t wakeup_reason;
-
+    uint64_t GPIO_reason = 0;
+    uint64_t impliedGPIO = -1;
+    bool continueSleep=true; // by default return to sleep
     wakeup_reason = esp_sleep_get_wakeup_cause();
-    TakeSamples();
     lEvLog("ESP32 Wake up from: ");
-    switch (wakeup_reason)
-    {
-    case ESP_SLEEP_WAKEUP_EXT0:
+    if ( ESP_SLEEP_WAKEUP_UNDEFINED == wakeup_reason) {
+        //!< In case of deep sleep, reset was not caused by exit from deep sleep
+        lEvLog("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
+    } else if ( ESP_SLEEP_WAKEUP_ALL == wakeup_reason) { 
+        //!< Not a wakeup cause, used to disable all wakeup sources with esp_sleep_disable_wakeup_source
+    } else if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason) {
+        //!< Wakeup caused by external signal using RTC_IO
         lEvLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
-        return;
-        break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-    {
+        continueSleep=false; // don't want to sleep more
+    } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {
+        //!< Wakeup caused by external signal using RTC_CNTL
         lEvLog("Interrupt triggered on ext1 <-- ");
-        uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-        if (GPIO_SEL_37 == GPIO_reason)
-        {
+        GPIO_reason = esp_sleep_get_ext1_wakeup_status();
+        impliedGPIO = (log(GPIO_reason))/log(2);
+        if (GPIO_SEL_37 == GPIO_reason) {
             lEvLog("(RTC) PCF8563\n");
-        }
-        else if (GPIO_SEL_38 == GPIO_reason)
-        {
+        } else if (GPIO_SEL_38 == GPIO_reason) {
             lEvLog("(TOUCH) FocalTech\n");
-        }
-        else if (GPIO_SEL_39 == GPIO_reason)
-        {
+        } else if (GPIO_SEL_39 == GPIO_reason) {
             lEvLog("(BMA) BMA423\n");
-            //return;
+        } else if (0 == GPIO_reason) {
+            lLog("@TODO Wakeup in ext1 ins't a GPIO event?\n");
+        } else {
+            lLog("WARNING: Unexpected: GPIO %u Reason: %u\n",impliedGPIO, GPIO_reason);
+            // lLog((log(GPIO_reason))/log(2), 0);            
         }
-        else
-        {
-            // Serial.printf("unexpected (?) GPIO %d reason: %u\n", impliedGPIO, GPIO_reason);
-            lLog("WARNING: Unexpected: GPIO\n");
-            // lLog((log(GPIO_reason))/log(2), 0);
-        }
-        /*
-        uint64_t impliedGPIO = (log(GPIO_reason))/log(2);
-        if ( 37 == impliedGPIO) { Serial.println("(RTC) PCF8563"); }
-        else if ( 38 == impliedGPIO) { Serial.println("(TOUCH) FocalTech"); }
-        else if ( 39 == impliedGPIO) { Serial.println("(ACCEL) BMA423"); }
-        else {
-            Serial.printf("unexpected (?) GPIO %d reason: %u\n", impliedGPIO, GPIO_reason);
-            Serial.print("GPIO that triggered the wake up: GPIO ");
-            Serial.println((log(GPIO_reason))/log(2), 0);
-        }
-        */
-    }
-    break;
-    case ESP_SLEEP_WAKEUP_TIMER:
+        continueSleep=false; // don't want to sleep more
+    } else if ( ESP_SLEEP_WAKEUP_TIMER == wakeup_reason) {
+        //!< Wakeup caused by timer
         lEvLog("Wakeup caused by timer\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        return;
-        break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-        lEvLog("Wakeup caused by touchpad\n");
-        break;
-    case ESP_SLEEP_WAKEUP_ULP:
-        lEvLog("Wakeup caused by ULP program\n");
-        break;
-    default:
-        lEvLog("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
-        break;
+        continueSleep=false; // don't want to sleep more
+    } else if ( ESP_SLEEP_WAKEUP_TOUCHPAD == wakeup_reason) {
+        //!< Wakeup caused by touchpad
+    } else if ( ESP_SLEEP_WAKEUP_ULP == wakeup_reason) {
+        //!< Wakeup caused by ULP program
+    } else if ( ESP_SLEEP_WAKEUP_GPIO == wakeup_reason) {
+        //!< Wakeup caused by GPIO (light sleep only)
+    } else if ( ESP_SLEEP_WAKEUP_UART == wakeup_reason) {
+        //!< Wakeup caused by UART (light sleep only)
+    } else if ( ESP_SLEEP_WAKEUP_WIFI == wakeup_reason) {
+        //!< Wakeup caused by WIFI (light sleep only)
+    } else if ( ESP_SLEEP_WAKEUP_COCPU == wakeup_reason) {
+        //!< Wakeup caused by COCPU int
+    } else if ( ESP_SLEEP_WAKEUP_COCPU_TRAP_TRIG == wakeup_reason) {
+        //!< Wakeup caused by COCPU crash
+    } else if ( ESP_SLEEP_WAKEUP_BT == wakeup_reason) {
+        //!< Wakeup caused by BT (light sleep only)
     }
-    DoSleep();
+
+    if ( continueSleep ) {
+        TakeSamples();
+        DoSleep();
+        return true;
+    }
+    return false;
 }
 
 uint16_t doSleepThreads = 0;
@@ -968,10 +966,9 @@ static void SystemLoopTask(void *args) {
     unsigned long nextIntTick = 0; // inquiry interrupts
     unsigned long nextLogMark = 0; // do a log mark
     size_t markCount = 0;
-    while (true)
-    {
+    while (true) {
         esp_task_wdt_reset();
-        delay(10);
+        delay(10); // useless in tasks
         // check for AXP int's
         if (irqAxp) {
             ttgo->power->readIRQ();
@@ -980,48 +977,56 @@ static void SystemLoopTask(void *args) {
                 lEvLog("AXP202: Battery charging\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isChargingDoneIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery fully charged\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattEnterActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery active\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattExitActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery free\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery present\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery removed\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattTempLowIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature low\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isBattTempHighIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature high\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isVbusPlugInIRQ()) {
                 ttgo->power->clearIRQ();
@@ -1029,6 +1034,7 @@ static void SystemLoopTask(void *args) {
                 lEvLog("AXP202: Power source\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isVbusRemoveIRQ()) {
                 ttgo->power->clearIRQ();
@@ -1036,21 +1042,25 @@ static void SystemLoopTask(void *args) {
                 lEvLog("AXP202: No power\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isPEKShortPressIRQ()) {
+                irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button short press\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                continue;
             }
             else if (ttgo->power->isPEKLongtPressIRQ()) {
+                irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button long press\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                continue;
             } else {
-                //ttgo->power->clearIRQ();
-                lLog("@TODO unknown interrupt call from AXP202 ?...\n");
+                //ttgo->power->clearIRQ(); <= if this is enabled, the AXP turns dizzy
+                lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
+                continue;
             }
         }
         // check the BMA int's
@@ -1120,7 +1130,7 @@ void SystemEventsStart()
 {
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 10,                           // maybe so big
+        .queue_size = 20,                           // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
         .task_priority = uxTaskPriorityGet(NULL),   // when the freeRTOS wants
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
