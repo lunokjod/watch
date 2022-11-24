@@ -396,9 +396,8 @@ static void DoSleepTask(void *args)
     }*/
     lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
     bool done = xSemaphoreTake(DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
-    if (false == done)
-    {
-        lEvLog("ESP32: DoSleep DISCARDED: already in progress...\n");
+    if (false == done) {
+        lEvLog("ESP32: DoSleep DISCARDED: already in progress?\n");
         vTaskDelete(NULL);
     }
 
@@ -431,10 +430,7 @@ static void DoSleepTask(void *args)
         }
     }
     WiFi.mode(WIFI_OFF);
-    if (retries < MAXRETRIES)
-    {
-        lEvLog("ESP32: WiFi released, DoSleep continue...\n");
-    }
+    if (retries < MAXRETRIES) { lEvLog("ESP32: WiFi released, DoSleep continue...\n"); }
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
@@ -455,10 +451,8 @@ static void DoSleepTask(void *args)
     vTaskDelete(NULL);
 }
 
-void DoSleep()
-{
-    if (false == systemSleep)
-    {
+void DoSleep() {
+    if (false == systemSleep) {
         systemSleep = true;
         xTaskCreate(DoSleepTask, "SLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
     }
@@ -467,8 +461,7 @@ void DoSleep()
 static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     const char *nowActivity = ttgo->bma->getActivity();
-    if (0 != strcmp(currentActivity, nowActivity))
-    {
+    if (0 != strcmp(currentActivity, nowActivity)) {
         unsigned long endBMAActivity = millis();
         unsigned long totalBMAActivity = endBMAActivity - beginBMAActivity;
         uint32_t endStepsBMAActivity = stepCount;
@@ -978,8 +971,7 @@ static void SystemLoopTask(void *args) {
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isChargingDoneIRQ()) {
+            } else if (ttgo->power->isChargingDoneIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery fully charged\n");
                 irqAxp = false;
@@ -1058,7 +1050,7 @@ static void SystemLoopTask(void *args) {
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
             } else {
-                //ttgo->power->clearIRQ(); <= if this is enabled, the AXP turns dizzy
+                ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy
                 lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
                 continue;
             }
@@ -1077,15 +1069,18 @@ static void SystemLoopTask(void *args) {
             if (ttgo->bma->isStepCounter()) {
                 irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             } else if (ttgo->bma->isActivity()) {
                 irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             } else if (ttgo->bma->isAnyNoMotion()) {
                 irqBMA = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             } else {
-                lLog("@TODO unknown interrupt call from BMA423 ?...\n");
-                // this intentionally creates a infinite loop and WATCHDOG interrupt
+                lLog("@TODO unknown unprocessed interrupt call from BMA423!\n");
+                continue;
             }
         }
         /*
@@ -1108,14 +1103,14 @@ static void SystemLoopTask(void *args) {
             }
             delay(10);
         }*/
-
+#ifdef LUNOKIOT_DEBUG
         // log mark
         if (millis() > nextLogMark) {
             lEvLog("-- MARK (%d) --\n", markCount);
             markCount++;
             nextLogMark = millis() + 120000;
         }
-
+#endif
         //  system tick
         if (millis() > nextSySTick) {
             if (true == ttgo->bl->isOn()) {
@@ -1154,7 +1149,7 @@ void SystemEventsStart()
     esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, SystemEventPMUPower, nullptr, NULL);
     esp_event_handler_instance_register_with(systemEventloopHandler, ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, AnyEventSystem, nullptr, NULL);
     // Create the event source task with the same priority as the current task
-    xTaskCreate(SystemLoopTask, "STask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreate(SystemLoopTask, "lSTask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
     lEvLog("lunokIoT: User event loop running\n");
 
     // get the freeRTOS event loop
