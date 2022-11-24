@@ -133,4 +133,10 @@ const float WOMAN_STEP_PROPORTION = 0.413;
 extern SemaphoreHandle_t UISemaphore;
 #define LUNOKIOT_UI_SHORT_WAIT 5
 
+#ifdef LUNOKIOT_SERIAL
+#ifndef LUNOKIOT_SERIAL_SPEED
+#define LUNOKIOT_SERIAL_SPEED 115200
+#endif
+#endif
+
 #endif
