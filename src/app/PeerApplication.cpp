@@ -64,7 +64,9 @@ void PeerApplication::OnDataRecv(const uint8_t * mac, const uint8_t *incomingDat
     lIoTESPNowDataPackage *receiveData = (lIoTESPNowDataPackage*)incomingData;
     if ( 0 == strncmp(LUNOKIOT_ESPNOW_EMOJI,receiveData->command,strlen(LUNOKIOT_ESPNOW_EMOJI))) {
         memcpy(lastPeerMAC,mac,6);
+#ifdef LILYGO_WATCH_2020_V3
         ttgo->shake();
+#endif
         lastPeerEmojiID=receiveData->emojiID;
         newNotification=true;
     }
