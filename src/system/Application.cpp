@@ -120,9 +120,11 @@ void LaunchApplicationTask(void * data) {
 }
 
 void LaunchApplication(LunokIoTApplication *instance, bool animation) {
-    if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
-        lUILog("Application: %p Already running, stop launch\n", currentApplication);
-        return;
+    if ( nullptr != instance ) {
+        if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
+            lUILog("Application: %p Already running, stop launch\n", currentApplication);
+            return;
+        }
     }
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();
     thisLaunch->instance = instance;
