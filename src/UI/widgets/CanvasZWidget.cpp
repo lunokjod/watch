@@ -55,13 +55,13 @@ void CanvasZWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, float 
     }
     TFT_eSprite * backup = canvas;
     canvas = scaledCopy;
-    canvas = backup;
     if ( directDraw ) { // if availaible, use it!
         scaledCopy->pushSprite(x,y);
     }
     if ( nullptr != endCanvas ) {
-        CanvasWidget::DrawTo(endCanvas,x,y);
+        CanvasWidget::DrawTo(endCanvas,x,y,maskColor);
     }
+    canvas = backup;
     scaledCopy->deleteSprite();
     delete scaledCopy;
 }
