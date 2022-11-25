@@ -92,10 +92,12 @@ DungeonGameApplication::DungeonGameApplication() {
     //lavaBackground->canvas->pushImage(0,0,16,16,(uint16_t *)img_lava.pixel_data);
 }
 void DungeonGameApplication::ManageSplashScreen() {
+    UINextTimeout = millis()+UITimeout; // no sleep if user is actively use
+
     if (false == currentLevel.valid ) {
         if ( 0 == waitGeneratorTimeout ) {
             waitGeneratorTimestamp=0;
-            waitGeneratorTimeout=millis()+(30*1000);
+            waitGeneratorTimeout=millis()+(20*1000);
         } else {
             if ( millis() > waitGeneratorTimeout ) {
                 lAppLog("Map generator timeout, retrying...\n");
@@ -288,23 +290,22 @@ void DungeonGameApplication::Redraw() {
                     tempBuffer->DrawTo(floorLayer->canvas,x,y);
                     directDraw=true;
                     delete tempBuffer;
-                //} else {
-                //    floorLayer->canvas->fillRect(x,y,tileW*NormalScale,tileH*NormalScale,TFT_BLACK);
+
+                    // floor sprite rotation
+                    if ( 52 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,53); }
+                    else if ( 53 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,54); }
+                    else if ( 54 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,52); }
+                    
+                    if ( 58 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,59); }
+                    else if ( 59 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,60); }
+                    else if ( 60 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,58); }
+                    
+                    if ( 29 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,30); }
+                    else if ( 30 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,31); }
+                    else if ( 31 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,32); }
+                    else if ( 32 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,29); }
                 }
 
-                // floor sprite rotation
-                if ( 52 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,53); }
-                else if ( 53 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,54); }
-                else if ( 54 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,52); }
-                
-                if ( 58 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,59); }
-                else if ( 59 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,60); }
-                else if ( 60 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,58); }
-                
-                if ( 29 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,30); }
-                else if ( 30 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,31); }
-                else if ( 31 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,32); }
-                else if ( 32 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,29); }
                 
 
 
@@ -341,22 +342,15 @@ void DungeonGameApplication::Redraw() {
                     tempBuffer->DrawTo(wallLayer->canvas,x,y,1.0,false,TFT_BLACK);
                     directDraw=true;
                     delete tempBuffer;
-                }
 
-                // walls anim
-                if ( 52 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,53); }
-                else if ( 53 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,54); }
-                else if ( 54 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,52); }
-                if ( 55 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,56); }
-                else if ( 56 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,57); }
-                else if ( 57 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,55); }
-                if ( 58 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,59); }
-                else if ( 59 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,60); }
-                else if ( 60 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,58); }
-                if ( 29 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,30); }
-                else if ( 30 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,31); }
-                else if ( 31 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,32); }
-                else if ( 32 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,29); }
+                    // walls anim
+                    if ( 55 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,56); }
+                    else if ( 56 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,57); }
+                    else if ( 57 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,55); }                    
+                    if ( 61 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,62); }
+                    else if ( 62 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,63); }
+                    else if ( 63 ==  wallColor ) { currentLevel.wallMap->drawPixel(tileX,tileY,61); }
+                }
 
 
                 // top
