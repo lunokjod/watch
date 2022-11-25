@@ -13,14 +13,15 @@ typedef struct {
     bool inProgress=false;    // in progress to be up
     bool valid=false;    
     uint8_t mapType=0;          // 0 at this time of code maturity :-( (only one procedural map generator type)
-    uint16_t width=15;          // default map width
-    uint16_t height=15;         // default height
-    uint8_t rooms=2;            // number of rooms
-    uint8_t roomRadius=0;       // want circular corner?
-    uint8_t minRoomSize=4;      // minimum room size
-    uint8_t maxRoomSize=6;     // maximum
+    uint16_t width=32;          // default map width
+    uint16_t height=32;         // default height
+    uint8_t rooms=3;            // number of rooms
+    uint8_t roomRadius=3;       // want circular corner?
+    uint8_t minRoomSize=5;      // minimum room size
+    uint8_t maxRoomSize=10;     // maximum
     uint8_t horizontalPaths=1;  // number of tracks left to right
     uint8_t verticalPaths=1;    // tracks up down
+
     TFT_eSprite *floorMap=nullptr;
     TFT_eSprite *objectsMap=nullptr;
     TFT_eSprite *wallMap=nullptr;
@@ -83,15 +84,18 @@ const static char *LoadSentences[] = {
 
 class DungeonGameApplication: public LunokIoTApplication {
     public:
-        const float DragScale=1.0;
-        const float HalfScale=1.0;
-        const float NormalScale=1.0;
-        unsigned long renderTime=1000/3;
+        const float NormalScale=3.2;
+        unsigned long renderTime=1000/2;
         unsigned long animationTimeout=0;
 
         TFT_eSprite * lastShoot=nullptr;
+
         CanvasZWidget * gameScreen = nullptr;
-        CanvasZWidget * composerLayer = nullptr;
+        CanvasZWidget * objectLayer = nullptr;
+        CanvasZWidget * floorLayer = nullptr;
+        CanvasZWidget * wallLayer = nullptr;
+        CanvasZWidget * topLayer = nullptr;
+
         TFT_eSprite * dragScreenCopy=nullptr;
 
         bool loadedSpawnPoint=false;
@@ -112,7 +116,7 @@ class DungeonGameApplication: public LunokIoTApplication {
         void NoticesBanner(const char *what);       // send messages to splash
         size_t PoToCXMap=0;                         // points to last processed coordinate X of map 
         size_t PoToCYMap=0;                         // points to last processed coordinate Y of map 
-        static const size_t CNumTileProcess=6;     // maximum number of tiles processed simultaneously
+        static const size_t CNumTileProcess=225;     // maximum number of tiles processed simultaneously
  
 
 

@@ -161,7 +161,6 @@ const unsigned char * DungeonTileSets[] = {
 
     coulmn_base.pixel_data, // 65
     column_mid.pixel_data,
-    
 
 };
 

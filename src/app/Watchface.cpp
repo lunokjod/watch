@@ -1,22 +1,27 @@
 #include "Watchface.hpp"
 
+#include <Arduino.h>
+
 #include "../lunokiot_config.hpp"
 
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-extern TTGOClass *ttgo; // ttgo library shit ;)
+#include <LilyGoWatch.h> // thanks for the warnings :/
+extern TTGOClass *ttgo;
+//#include <libraries/TFT_eSPI/TFT_eSPI.h> // TFT_eSPI lib
+extern TFT_eSPI * tft;
+
 #include <Arduino_JSON.h>
 #include <HTTPClient.h>
+#include <ArduinoNvs.h>
+
 
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
-#include "../UI/widgets/ButtonWidget.hpp"
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/GraphWidget.hpp"
+//#include "../UI/widgets/GraphWidget.hpp"
 #include "../UI/UI.hpp"
 
-#include <ArduinoNvs.h>
+#include "MainMenu.hpp"
 
+// resource images
 #include "../static/img_watchface0.c"
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
@@ -41,9 +46,10 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../static/img_weather_800.c"
 
 #include "../system/SystemEvents.hpp"
-#include "MainMenu.hpp"
-#include "LogView.hpp"
 
+#include "LogView.hpp" // for log functions
+
+// network timed tasks
 NetworkTaskDescriptor * WatchfaceApplication::ntpTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::weatherTask = nullptr;
 NetworkTaskDescriptor * WatchfaceApplication::geoIPTask = nullptr;

@@ -40,6 +40,7 @@ void lRawLog(const char *fmt, ...) {
         Serial.printf(buf);
     #endif
     if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+        /* @TODO disabled for check memory issues
         if ( nullptr != LogViewApplication::LogTextBuffer ) {
             LogViewApplication::LogTextBuffer->printf(buf);
             int16_t x = LogViewApplication::LogTextBuffer->getCursorX();
@@ -49,7 +50,7 @@ void lRawLog(const char *fmt, ...) {
                 LogViewApplication::LogTextBuffer->setCursor(x,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
             }
             LogViewApplication::dirty=true;
-        }
+        }*/
         xSemaphoreGive( lLogSemaphore );
     } else {
         #ifdef LUNOKIOT_DEBUG_UI
@@ -67,7 +68,7 @@ LogViewApplication::LogViewApplication() {
     // build the area for log
     ViewBuffer = new TFT_eSprite(tft);
     ViewBuffer->setColorDepth(1);
-    ViewBuffer->createSprite(TFT_WIDTH,TFT_HEIGHT-70);
+    ViewBuffer->createSprite(120,80);
     ViewBuffer->fillSprite(TFT_BLACK);
     if ( nullptr != LogViewApplication::LogTextBuffer ) {
         offsetY = LogTextBuffer->height()-ViewBuffer->height();
