@@ -3,7 +3,6 @@
 #include "MainMenu.hpp"
 #include "../lunokiot_config.hpp"
 #include "../static/img_mainmenu_back.xbm"
-#include "Watchface.hpp"
 #include "../static/img_mainmenu_options.xbm"
 #include "SettingsMenu.hpp"
 
@@ -79,7 +78,7 @@ typedef struct {
 
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
-    {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+    {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
     {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, []() { LaunchApplication(new DungeonGameApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },

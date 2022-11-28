@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "Bluetooth.hpp"
+#include <NimBLEDevice.h>
 #include "../static/img_back_32.xbm"
 #include "../static/img_lock_32.xbm"
 #include "../static/img_trash_32.xbm"
 
-#include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 
@@ -24,7 +24,7 @@ uint32_t BluetoothApplication::SetBLERandomPin() {
 
 BluetoothApplication::BluetoothApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     
     btnGeneratePIN=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){

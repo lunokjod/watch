@@ -3,7 +3,6 @@
 #include "SetTimeZone.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_timezone_32.xbm"
-#include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include <ArduinoNvs.h>
@@ -20,7 +19,7 @@ SetTimeZoneApplication::~SetTimeZoneApplication() {
 
 SetTimeZoneApplication::SetTimeZoneApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
 
     switchDaylight=new SwitchWidget(10,10, [&,this]() { }, canvas->color24to16(0x555f68));

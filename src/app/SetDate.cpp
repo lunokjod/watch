@@ -6,7 +6,6 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../static/img_calendar_32.xbm"
 #include "../static/img_back_32.xbm"
 #include "../static/img_settime_32.xbm"
-#include "Watchface.hpp"
 #include "LogView.hpp"
 
 SetDateApplication::~SetDateApplication() {
@@ -30,7 +29,7 @@ SetDateApplication::SetDateApplication() {
     day->InternalRedraw();
     month->InternalRedraw();
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
         lAppLog("SetTime: RTC and localtime sync\n");

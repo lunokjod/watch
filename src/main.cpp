@@ -9,12 +9,12 @@
 #include "system/SystemEvents.hpp" // the "heart"
 #include "UI/UI.hpp" // UI optional stuff for user interaction
 #include "system/Tasks.hpp"
+#include "system/Network.hpp"
 
 #include "UI/BootSplash.hpp" // convenient hardcoded, quick and dirty splash screen
 
 #include "system/Application.hpp" // UI App definitions
 
-#include "app/Watchface.hpp" // main app
 #include "app/Steps.hpp" // Step manager
 
 #include "app/LogView.hpp" // adds lLog(...)

@@ -4,7 +4,6 @@
 #include "BLEMonitor.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_bluetooth_32.xbm"
-#include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 #include <esp_task_wdt.h>

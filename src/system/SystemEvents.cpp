@@ -24,13 +24,13 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../app/Shutdown.hpp"
 #include "../app/Provisioning2.hpp"
 
-#include "../app/Watchface.hpp"
-
 #include <HTTPClient.h>
 
 #include "../app/LogView.hpp"
 
 #include <cmath>
+
+
 extern bool UIRunning;
 bool systemSleep = false;
 // Event loops
@@ -84,6 +84,7 @@ unsigned long timeBMAActivityNone = 0;
 bool irqAxp = false;
 bool irqBMA = false;
 bool irqRTC = false;
+#include <NimBLECharacteristic.h>
 
 extern NimBLECharacteristic *battCharacteristic;
 /*
@@ -804,141 +805,85 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
         nextSensorsTick = millis() + (1000 / 8);
     }
 }
-
-static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
-
+// called when system is up
+static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("lunokIoT: System event: up and running...\n");
-    /*
-    #ifdef LUNOKIOT_WIFI_ENABLED
-        if ( provisioned ) {
-            Serial.println("lunokIoT: Device provisioned: Launching 'WatchfaceApplication'...");
-            LaunchApplication(new WatchfaceApplication());
-            return;
-        }
-        Serial.println("lunokIoT: Device not provisioned: Launching 'Provisioning2Application'...");
-        LaunchApplication(new Provisioning2Application());
-    #else
-    */
-    // lLog("lunokIoT: Launching 'WatchfaceApplication'...\n");
-    LaunchApplication(new WatchfaceApplication(), false);
-    //#endif
+    LaunchWatchface(false);
 }
 
-static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
+static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-guides/event-handling.html#event-ids-and-corresponding-data-structures
     bool identified = false;
-    if (WIFI_PROV_EVENT == base)
-    {
-        if (WIFI_PROV_INIT == id)
-        {
+    if (WIFI_PROV_EVENT == base) {
+        if (WIFI_PROV_INIT == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Initialized\n", base);
             identified = true;
-        }
-        else if (WIFI_PROV_START == id)
-        {
+        } else if (WIFI_PROV_START == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Started\n", base);
             identified = true;
-        }
-        else if (WIFI_PROV_CRED_RECV == id)
-        {
+        } else if (WIFI_PROV_CRED_RECV == id) {
             wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)event_data;
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Received Wi-Fi credentials SSID: '%s' PASSWORD: '%s'\n", base, (const char *)wifi_sta_cfg->ssid, (const char *)wifi_sta_cfg->password);
             identified = true;
-        }
-        else if (WIFI_PROV_CRED_FAIL == id)
-        {
+        } else if (WIFI_PROV_CRED_FAIL == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Bad credentials (WPA password)\n", base);
             identified = true;
-        }
-        else if (WIFI_PROV_CRED_SUCCESS == id)
-        {
+        } else if (WIFI_PROV_CRED_SUCCESS == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Credentials success\n", base);
             identified = true;
-        }
-        else if (WIFI_PROV_END == id)
-        {
+        } else if (WIFI_PROV_END == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: End\n", base);
             identified = true;
-        }
-        else if (WIFI_PROV_DEINIT == id)
-        {
+        } else if (WIFI_PROV_DEINIT == id) {
             lNetLog("FreeRTOS event:'%s' WiFi provisioning: Deinit\n", base);
             identified = true;
         }
     }
-    else if (WIFI_EVENT == base)
-    {
-        if (WIFI_EVENT_SCAN_DONE == id)
-        {
+    else if (WIFI_EVENT == base) {
+        if (WIFI_EVENT_SCAN_DONE == id) {
             wifi_event_sta_scan_done_t *scanData = (wifi_event_sta_scan_done_t *)event_data;
             const char *scanDoneStr = (scanData->status ? "failed" : "done");
             lNetLog("FreeRTOS event:'%s' WiFi Scan %d %s (found: %d)\n", base, scanData->scan_id, scanDoneStr, scanData->number);
             identified = true;
-        }
-        else if (WIFI_EVENT_STA_START == id)
-        {
+        } else if (WIFI_EVENT_STA_START == id) {
             lNetLog("FreeRTOS event:'%s' WiFi STA: Start\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_STA_STOP == id)
-        {
+        } else if (WIFI_EVENT_STA_STOP == id) {
             lNetLog("FreeRTOS event:'%s' WiFi STA: Stop\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_STA_CONNECTED == id)
-        {
+        } else if (WIFI_EVENT_STA_CONNECTED == id) {
             lNetLog("FreeRTOS event:'%s' WiFi STA: Connected\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_STA_DISCONNECTED == id)
-        {
+        } else if (WIFI_EVENT_STA_DISCONNECTED == id) {
             lNetLog("FreeRTOS event:'%s' WiFi STA: Disconnected\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_AP_START == id)
-        {
+        } else if (WIFI_EVENT_AP_START == id) {
             lNetLog("FreeRTOS event:'%s' WiFi AP: Start\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_AP_STOP == id)
-        {
+        } else if (WIFI_EVENT_AP_STOP == id) {
             lNetLog("FreeRTOS event:'%s' WiFi AP: Stop\n", base);
             identified = true;
-        }
-        else if (WIFI_EVENT_AP_STACONNECTED == id)
-        {
+        } else if (WIFI_EVENT_AP_STACONNECTED == id) {
             wifi_event_ap_staconnected_t *apStaData = (wifi_event_ap_staconnected_t *)event_data;
             lNetLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x connected\n", base, apStaData->mac[0], apStaData->mac[1], apStaData->mac[2], apStaData->mac[3], apStaData->mac[4], apStaData->mac[5]);
             identified = true;
-        }
-        else if (WIFI_EVENT_AP_STADISCONNECTED == id)
-        {
+        } else if (WIFI_EVENT_AP_STADISCONNECTED == id) {
             wifi_event_ap_stadisconnected_t *apStaData = (wifi_event_ap_stadisconnected_t *)event_data;
             lNetLog("FreeRTOS event:'%s' WiFi AP: Client %02x:%02x:%02x:%02x:%02x:%02x disconnected\n", base, apStaData->mac[0], apStaData->mac[1], apStaData->mac[2], apStaData->mac[3], apStaData->mac[4], apStaData->mac[5]);
             identified = true;
         }
-    }
-    else if (IP_EVENT == base)
-    {
-        if (IP_EVENT_STA_GOT_IP == id)
-        {
+    } else if (IP_EVENT == base) {
+        if (IP_EVENT_STA_GOT_IP == id) {
             lNetLog("FreeRTOS event:'%s' Network: IP Obtained\n", base);
             identified = true;
-        }
-        else if (IP_EVENT_STA_LOST_IP == id)
-        {
+        } else if (IP_EVENT_STA_LOST_IP == id) {
             lNetLog("FreeRTOS event:'%s' Network: IP Lost\n", base);
             identified = true;
-        }
-        else if (IP_EVENT_AP_STAIPASSIGNED == id)
-        {
+        } else if (IP_EVENT_AP_STAIPASSIGNED == id) {
             ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
             esp_ip4_addr_t newIP = assignedIP->ip;
             unsigned char octet[4] = {0, 0, 0, 0};
-            for (int i = 0; i < 4; i++)
-            {
+            for (int i = 0; i < 4; i++) {
                 octet[i] = (newIP.addr >> (i * 8)) & 0xFF;
             }
             lNetLog("FreeRTOS event:'%s' Network: STA IP Assigned: %d.%d.%d.%d\n", base, octet[0], octet[1], octet[2], octet[3]);
@@ -946,8 +891,7 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
         }
     }
 
-    if (false == identified)
-    {
+    if (false == identified) {
         lLog("@TODO lunokIoT: unamanged FreeRTOS event:'%s' id: '%d' \n", base, id);
     }
 }

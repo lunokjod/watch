@@ -8,7 +8,6 @@ extern TFT_eSPI *tft;
 #include "Provisioning2.hpp"
 #include "../system/Application.hpp"
 
-#include "Watchface.hpp"
 #include "Shutdown.hpp"
 
 #include "../static/img_back_32.xbm"
@@ -122,7 +121,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             break;
         case ARDUINO_EVENT_PROV_END:
             lLog("Provisioning Ends\n");
-            LaunchApplication(new WatchfaceApplication());
+            LaunchWatchface();
             break;
         default:
             break;
@@ -252,7 +251,7 @@ Provisioning2Application::Provisioning2Application() {
              ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
 
     backBtn=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
 
     clearProvBtn=new ButtonImageXBMWidget(5,5,70,70,[&,this](){

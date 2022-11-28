@@ -3,7 +3,6 @@
 #include <Arduino.h>
 //#include <LilyGoWatch.h>
 #include "../system/Application.hpp"
-#include "Watchface.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"

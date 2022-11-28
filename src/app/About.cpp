@@ -110,7 +110,7 @@ AboutApplication::AboutApplication() {
     directDraw=true;
     canvas->fillSprite(TFT_BLACK);
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
     textBuffer = new TFT_eSprite(tft);
     textBuffer->setColorDepth(1);

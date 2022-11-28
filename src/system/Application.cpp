@@ -5,13 +5,19 @@
 extern TTGOClass *ttgo; // access to ttgo specific libs
 extern TFT_eSPI *tft;
 
-
-
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 #include "../app/LogView.hpp"
 
+#include "../app/Watchface2.hpp"
+
+// elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
+typedef LunokIoTApplication* WatchfaceMaker();
+template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
+WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
+LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); }
+void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
 
 extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
 

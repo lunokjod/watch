@@ -544,7 +544,7 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
     };
     void onAuthenticationComplete(ble_gap_conn_desc* desc) {
         lNetLog("BLE: Authentication complete\n");
-        //LaunchApplication(new WatchfaceApplication());
+        //LaunchWatchface();
     }
     void onDisconnect(BLEServer* pServer) {
         lNetLog("BLE: Client disconnect\n");

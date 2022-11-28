@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "Playground3.hpp"
-#include "Watchface.hpp"
 
 PlaygroundApplication3::~PlaygroundApplication3() {
     if ( nullptr != hourGauge ) {

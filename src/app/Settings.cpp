@@ -15,10 +15,9 @@ extern TFT_eSprite *overlay;
 #include "../static/img_bluetooth_32.xbm"
 #include "../static/img_help_32.xbm"
 
-#include "Watchface.hpp"
-
 #include "../system/Network.hpp"
 #include "LogView.hpp"
+#include "Watchface2.hpp"
 
 SettingsApplication::~SettingsApplication() {
     // on destroy
@@ -26,12 +25,12 @@ SettingsApplication::~SettingsApplication() {
     NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
     NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-    if ( nullptr != WatchfaceApplication::ntpTask ) { 
-        WatchfaceApplication::ntpTask->enabled = ntpCheck->switchEnabled;
+    if ( nullptr != Watchface2Application::ntpTask ) { 
+        Watchface2Application::ntpTask->enabled = ntpCheck->switchEnabled;
     }
     NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-    if ( nullptr != WatchfaceApplication::weatherTask ) {
-        WatchfaceApplication::weatherTask->enabled = openweatherCheck->switchEnabled;
+    if ( nullptr != Watchface2Application::weatherTask ) {
+        Watchface2Application::weatherTask->enabled = openweatherCheck->switchEnabled;
     }
     delete btnHelp;
     delete ntpCheck;

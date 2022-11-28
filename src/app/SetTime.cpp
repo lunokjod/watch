@@ -11,7 +11,6 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../static/img_calendar_32.xbm"
 #include "../static/img_back_32.xbm"
 #include "../static/img_settime_32.xbm"
-#include "Watchface.hpp"
 
 SetTimeApplication::~SetTimeApplication() {
     if ( nullptr != hour ) { delete hour; }
@@ -34,7 +33,7 @@ SetTimeApplication::SetTimeApplication() {
     minute->selectedValue = currentMin;
     minute->InternalRedraw();
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     setTimeButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
         //Serial.println("SetTime: RTC and localtime sync");

@@ -4,7 +4,6 @@
 #include "../lunokiot_config.hpp"
 
 #include "../static/img_mainmenu_back.xbm"
-#include "Watchface.hpp"
 #include "MainMenu.hpp"
 #include "../static/img_mainmenu_options.xbm"
 #include "Settings.hpp"
@@ -41,7 +40,7 @@ typedef struct {
 } MainMenuApplicationEntry;
 
 MainMenuApplicationEntry SettingsApps[] = {
-    {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchApplication(new WatchfaceApplication()); } },
+    {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsApplication()); } },
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, []() { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, []() { LaunchApplication(new BluetoothApplication()); } },

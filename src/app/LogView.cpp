@@ -5,7 +5,6 @@ extern TFT_eSPI *tft;
 
 #include "LogView.hpp"
 #include "../static/img_back_32.xbm"
-#include "Watchface.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
 #include "../UI/UI.hpp"

@@ -3,7 +3,6 @@
 #include "BLEMonitor.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_bluetooth_32.xbm"
-#include "Watchface.hpp"
 #include "BLEDevice.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
@@ -87,7 +86,7 @@ BLEMonitorApplication::~BLEMonitorApplication()
 BLEMonitorApplication::BLEMonitorApplication()
 {
     btnBack = new ButtonImageXBMWidget(
-        5, TFT_HEIGHT - 69, 64, 64, [&, this]() { LaunchApplication(new WatchfaceApplication()); },
+        5, TFT_HEIGHT - 69, 64, 64, [&, this]() { LaunchWatchface(); },
         img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, canvas->color24to16(0x353e45), false);
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreate(BLEMonitorTask, "bMonTA", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask);

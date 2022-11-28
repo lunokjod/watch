@@ -127,7 +127,7 @@ void StepsApplication::CreateStats() {
 }
 StepsApplication::StepsApplication() {
     btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchApplication(new WatchfaceApplication());
+        LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
 
     btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
