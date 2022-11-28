@@ -14,6 +14,7 @@
 #include "LogView.hpp"
 #include "StepsSetup.hpp"
 
+extern TTGOClass *ttgo; // ttgo lib
 uint8_t userTall = 197;
 uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
@@ -60,7 +61,7 @@ void InstallStepManager() {
 
 
                     // reset all counters
-                    
+                    ttgo->bma->resetStepCounter();
                     beginStepsBMAActivity=0; // sorry current activity is discarded
                     beginBMAActivity=0;
                     
