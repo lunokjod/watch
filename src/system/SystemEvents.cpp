@@ -329,24 +329,24 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
     lEvLog("ESP32 Wake up from: ");
     if ( ESP_SLEEP_WAKEUP_UNDEFINED == wakeup_reason) {
         //!< In case of deep sleep, reset was not caused by exit from deep sleep
-        lEvLog("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
+        lLog("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
     } else if ( ESP_SLEEP_WAKEUP_ALL == wakeup_reason) { 
         //!< Not a wakeup cause, used to disable all wakeup sources with esp_sleep_disable_wakeup_source
     } else if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason) {
         //!< Wakeup caused by external signal using RTC_IO
-        lEvLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
+        lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
         continueSleep=false; // don't want to sleep more
     } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {
         //!< Wakeup caused by external signal using RTC_CNTL
-        lEvLog("Interrupt triggered on ext1 <-- ");
+        lLog("Interrupt triggered on ext1 <-- ");
         GPIO_reason = esp_sleep_get_ext1_wakeup_status();
         impliedGPIO = (log(GPIO_reason))/log(2);
         if (GPIO_SEL_37 == GPIO_reason) {
-            lEvLog("(RTC) PCF8563\n");
+            lLog("(RTC) PCF8563\n");
         } else if (GPIO_SEL_38 == GPIO_reason) {
-            lEvLog("(TOUCH) FocalTech\n");
+            lLog("(TOUCH) FocalTech\n");
         } else if (GPIO_SEL_39 == GPIO_reason) {
-            lEvLog("(BMA) BMA423\n");
+            lLog("(BMA) BMA423\n");
         } else if (0 == GPIO_reason) {
             lLog("@TODO Wakeup in ext1 ins't a GPIO event?\n");
         } else {
@@ -356,7 +356,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         continueSleep=false; // don't want to sleep more
     } else if ( ESP_SLEEP_WAKEUP_TIMER == wakeup_reason) {
         //!< Wakeup caused by timer
-        lEvLog("Wakeup caused by timer\n");
+        lLog("Wakeup caused by timer\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         continueSleep=false; // don't want to sleep more
     } else if ( ESP_SLEEP_WAKEUP_TOUCHPAD == wakeup_reason) {
