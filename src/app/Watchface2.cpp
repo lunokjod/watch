@@ -445,8 +445,8 @@ Watchface2Application::Watchface2Application() {
     // inner quarter
     innerSphere = new CanvasZWidget(canvas->width()/2,canvas->height()/2,1.0,8);
     innerSphere->canvas->fillSprite(TFT_BLACK);
-    innerSphere->canvas->fillCircle(0,0,90,tft->color24to16(0x182858));
-    innerSphere->canvas->fillCircle(0,0,40,TFT_BLACK);
+    innerSphere->canvas->fillCircle(0,0,95,tft->color24to16(0x182858));
+    innerSphere->canvas->fillCircle(0,0,45,TFT_BLACK);
     innerSphere->DrawTo(colorBuffer->canvas,middleX,middleY,1.0,false,TFT_BLACK);
 
     colorBuffer->DrawTo(canvas,0,0); // for splash
@@ -499,6 +499,7 @@ bool Watchface2Application::Tick() {
 
         if ( weatherSyncDone ) {
             // weather icon
+            canvas->setBitmapColor(ThCol(mark),TFT_BLACK);
             //watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
             if ( -1 != weatherId ) {
                 if ( ( 200 <= weatherId ) && ( 300 > weatherId ) ) {
@@ -592,8 +593,10 @@ bool Watchface2Application::Tick() {
         [&,this](int x,int y, int cx, int cy, int angle, int step, void* payload){
             if ( int(correctedHoureAngle) == angle) {
                 canvas->fillCircle(x,y,9,TFT_BLACK);
-                canvas->drawLine(x,y,cx,cy, tft->color24to16(0xa0a8c0));
-                canvas->fillCircle(x,y,8,tft->color24to16(0xa0a8c0));
+                canvas->drawLine(x,y,cx,cy, ThCol(highlight));
+                canvas->fillCircle(x,y,8,ThCol(highlight));
+                //canvas->drawLine(x,y,cx,cy, tft->color24to16(0xa0a8c0));
+                //canvas->fillCircle(x,y,8,tft->color24to16(0xa0a8c0));
                 return false;
             }
             return true;
@@ -614,7 +617,8 @@ bool Watchface2Application::Tick() {
         canvas->fillCircle(middleX,middleY,10,ThCol(clock_hands_second)); // second cap
         canvas->fillCircle(middleX,middleY,9,TFT_BLACK);
         canvas->fillCircle(middleX,middleY,8,tft->color24to16(0x787ca0)); // minute cap
-        canvas->fillCircle(middleX,middleY,3,tft->color24to16(0xa0a8c0)); // hour cap
+        canvas->fillCircle(middleX,middleY,4,TFT_BLACK);
+        canvas->fillCircle(middleX,middleY,3,ThCol(highlight)); // hour cap
 
         // time 
         canvas->setTextFont(0);
