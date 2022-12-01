@@ -636,7 +636,7 @@ bool Watchface2Application::Tick() {
         canvas->drawString(textBuffer, middleX-20,middleY);
 
         // date
-        sprintf(textBuffer,"%02d/%02d",timeinfo->tm_mday,timeinfo->tm_mon);
+        sprintf(textBuffer,"%02d/%02d",timeinfo->tm_mday,timeinfo->tm_mon+1);
         canvas->setTextDatum(BL_DATUM);
         //canvas->setTextColor(TFT_BLACK);
         //canvas->drawString(textBuffer, middleX+22,middleY+2);
