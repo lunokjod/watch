@@ -8,33 +8,32 @@
 extern TTGOClass *ttgo; // ttgo lib
 
 BatteryApplication::~BatteryApplication() {
-    if ( nullptr != BattPCEvent ) {
-        delete BattPCEvent;
-        BattPCEvent = nullptr;
-    }
-    if ( nullptr != btnBack ) {
-        delete btnBack;
-        btnBack = nullptr;
-    }
+    delete BattPCEvent;
+    delete BattChargeEvent;
+    delete BattFullEvent;
 }
 
 BatteryApplication::BatteryApplication() {
-    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        this->dirtyFrame = true;    // first full redraw must be
-        LaunchWatchface();
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
-
+    TemplateApplication();
     // this KVO launch callback every time PMU_EVENT_BATT_PC differs from last (change detection)
     BattPCEvent = new EventKVO([&, this](){
         this->dirtyFrame = true; // mark as dirty for full redraw the next Tick
     },PMU_EVENT_BATT_PC);
+    BattChargeEvent = new EventKVO([&, this](){
+        this->dirtyFrame = true;
+    },PMU_EVENT_BATT_CHARGING); // show charging animation
+    BattFullEvent = new EventKVO([&, this](){
+        charging=false;
+        LaunchWatchface(); // battery full, return to watchface
+    },PMU_EVENT_BATT_FULL);
+
+    charging = ttgo->power->isChargeing();
     Tick();
 }
 bool BatteryApplication::Tick() {
-    btnBack->Interact(touched,touchX, touchY); // user touch the button?
-
-    if ( this->dirtyFrame ) { // only refresh when dirty
-        if (millis() > nextRedraw ) {
+    TemplateApplication::Tick();
+    if (millis() > nextRedraw ) {
+        if ( this->dirtyFrame ) { // only refresh when dirty
             canvas->fillSprite(TFT_BLACK);
             canvas->pushImage(TFT_WIDTH-90,40,img_battery_empty_160.width,img_battery_empty_160.height, (uint16_t *)img_battery_empty_160.pixel_data);
             if ( -1 != batteryPercent ) {
@@ -45,7 +44,6 @@ bool BatteryApplication::Tick() {
                         battColor = TFT_RED;
                 } else if ( batteryPercent < 35 ) { battColor = TFT_YELLOW; }
                 else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
-                const int16_t battHeight = 133;
                 int16_t calculatedBattCanvasHeight = (batteryPercent*battHeight/100);
                 int16_t restBattCanvasHeight = battHeight - calculatedBattCanvasHeight;
                 canvas->fillRect(TFT_WIDTH-80,58+restBattCanvasHeight,69,calculatedBattCanvasHeight,battColor);
@@ -60,14 +58,29 @@ bool BatteryApplication::Tick() {
                 if ( battTextHeight > 140 ) { battTextHeight = 140; }
                 canvas->drawString(textBuffer, 75, battTextHeight);
             }
-            if ( ttgo->power->isChargeing() ) {
-                canvas->drawXBitmap(TFT_WIDTH-80+17+1,58+33+1,img_power_64_bits, img_power_64_width, img_power_64_height, TFT_BLACK);
-                canvas->drawXBitmap(TFT_WIDTH-80+17,58+33,img_power_64_bits, img_power_64_width, img_power_64_height, TFT_WHITE);
-            }
-            btnBack->DrawTo(canvas);
-           nextRedraw=millis()+(1000/1);
+            charging = ttgo->power->isChargeing();
+            this->dirtyFrame = false;
         }
-        this->dirtyFrame = false;
+        if ( charging ) {
+            int16_t calculatedBattCanvasHeight = (chargingAnimOffset*battHeight/100);
+            int16_t restBattCanvasHeight = battHeight - calculatedBattCanvasHeight;
+            canvas->fillRect(TFT_WIDTH-80,58+restBattCanvasHeight,69,calculatedBattCanvasHeight,TFT_GREEN);
+
+            canvas->drawXBitmap(TFT_WIDTH-80+17+1,58+33+1,img_power_64_bits, img_power_64_width, img_power_64_height, TFT_BLACK);
+            canvas->drawXBitmap(TFT_WIDTH-80+17,58+33,img_power_64_bits, img_power_64_width, img_power_64_height, TFT_WHITE);
+
+            chargingAnimOffset+=10;
+            if ( chargingAnimOffset > 100 ) {
+                chargingAnimOffset=0;
+                this->dirtyFrame=true;
+            }
+        }
+        TemplateApplication::Tick();
+        nextRedraw=millis()+(1000/3);
+        return true;
     }
-    return true;
+    if ( vbusPresent ) {
+        UINextTimeout = millis()+UITimeout; // if plugged in, don't turn off automatically
+    }
+    return false;
 }

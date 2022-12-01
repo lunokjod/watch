@@ -6,6 +6,8 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+#include "../UI/AppTemplate.hpp"
+
 #include "../system/Datasources/kvo.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
@@ -13,13 +15,18 @@
 #include "../static/img_back_32.xbm" // back buton image
 #include "../system/SystemEvents.hpp"   // the event bus
 
-class BatteryApplication: public LunokIoTApplication {
+class BatteryApplication: public TemplateApplication {
     private:
         bool dirtyFrame = true;
         unsigned long nextRedraw=0;
+        uint16_t chargingAnimOffset=0;
+        bool charging=false;
+        const int16_t battHeight = 133;
     public:
         // PMU_EVENT_BATT_PC
         EventKVO * BattPCEvent = nullptr;
+        EventKVO * BattChargeEvent = nullptr;
+        EventKVO * BattFullEvent = nullptr;
 
         /* @TODO monitor other events
         PMU_EVENT_BATT_CHARGING,
@@ -33,7 +40,6 @@ class BatteryApplication: public LunokIoTApplication {
         PMU_EVENT_BATT_NOTFOUND,
         */
 
-        ButtonImageXBMWidget * btnBack = nullptr;
         BatteryApplication();
         ~BatteryApplication();
         bool Tick();

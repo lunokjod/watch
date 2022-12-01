@@ -27,6 +27,7 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include <HTTPClient.h>
 
 #include "../app/LogView.hpp"
+#include "../app/Battery.hpp"
 
 #include <cmath>
 
@@ -518,6 +519,7 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
 
     if ( vbusPresent ) { // is plugged?
         ttgo->setBrightness(255); // full light!!!
+        LaunchApplication(new BatteryApplication());
     } else {
         uint8_t userBright = NVS.getInt("lBright"); // restore user light
         if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
@@ -994,7 +996,7 @@ static void SystemLoopTask(void *args) {
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
             } else {
-                ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy
+                ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
                 lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
                 continue;
             }
