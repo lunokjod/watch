@@ -719,8 +719,19 @@ bool Watchface2Application::Tick() {
             canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
         }
         free(textBuffer);
-        //canvas->pushSprite(0,0);
-        //directDraw=true;
+        const int16_t margin=15;
+        canvas->setTextFont(0);
+        canvas->setTextSize(2);
+        canvas->setTextColor(ThCol(mark));
+        canvas->setTextDatum(TC_DATUM);
+        canvas->drawString("12", TFT_WIDTH/2, margin);
+        canvas->setTextDatum(CR_DATUM);
+        canvas->drawString("3", TFT_WIDTH-margin, TFT_HEIGHT/2);
+        canvas->setTextDatum(BC_DATUM);
+        canvas->drawString("6", TFT_WIDTH/2, TFT_HEIGHT-margin);
+        canvas->setTextDatum(CL_DATUM);
+        canvas->drawString("9", margin, TFT_HEIGHT/2);
+
         nextRefresh=millis()+(1000/4);
         return true;
     }
