@@ -9,6 +9,9 @@
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
 
+unsigned long StopwatchApplication::pauseTime=0;
+unsigned long StopwatchApplication::starTime=0;
+
 StopwatchApplication::~StopwatchApplication() {
     delete resetBtn;
     delete pauseBtn;

@@ -19,8 +19,8 @@ class StopwatchApplication: public TemplateApplication {
         ButtonImageXBMWidget * startBtn = nullptr;
         bool blink=false;
     public:
-        unsigned long pauseTime=0;
-        unsigned long starTime = 0;
+        static unsigned long pauseTime;
+        static unsigned long starTime;
         StopwatchApplication();
         ~StopwatchApplication();
         bool Tick();
