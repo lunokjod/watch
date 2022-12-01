@@ -53,6 +53,9 @@
 #include "../static/img_mainmenu_dungeon.xbm"
 #include "Dungeon/Dungeon.hpp"
 
+#include "../static/img_mainmenu_stopwatch.xbm"
+#include "Stopwatch.hpp"
+
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
 #include "Playground0.hpp"
@@ -84,9 +87,10 @@ MainMenuApplicationEntry AllApps[] = {
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, []() { LaunchApplication(new DungeonGameApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
-    {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, []() { LaunchApplication(new CalculatorApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
     {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, []() { LaunchApplication(new SettingsMenuApplication()); } },
+    {"Stopwatch",img_mainmenu_stopwatch_bits, img_mainmenu_stopwatch_height, img_mainmenu_stopwatch_width, []() { LaunchApplication(new StopwatchApplication()); } },
+    {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, []() { LaunchApplication(new CalculatorApplication()); } },
     {"Peers",img_mainmenu_chat_bits, img_mainmenu_chat_height, img_mainmenu_chat_width, []() { LaunchApplication(new PeerApplication()); } },
 //    {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, []() { LaunchApplication(new NotificacionsApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, []() { LaunchApplication(new AboutApplication()); } },
