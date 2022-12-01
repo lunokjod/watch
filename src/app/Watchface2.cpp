@@ -380,7 +380,7 @@ void Watchface2Application::Handlers() {
 
 Watchface2Application::~Watchface2Application() {
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, Watchface2Application::FreeRTOSEventReceived);
-    directDraw=false;
+    //directDraw=false;
     delete bottomRightButton;
     delete hourHandCanvas;
     delete minuteHandCanvas;
@@ -450,7 +450,7 @@ Watchface2Application::Watchface2Application() {
     innerSphere->DrawTo(colorBuffer->canvas,middleX,middleY,1.0,false,TFT_BLACK);
 
     colorBuffer->DrawTo(canvas,0,0); // for splash
-    directDraw=true;
+    //directDraw=true;
     Handlers();
 }
 
@@ -470,7 +470,7 @@ bool Watchface2Application::Tick() {
     if ( millis() > nextRefresh ) {
         //hourHandCanvas->DrawTo(canvas,middleX,middleY);
         //minuteHandCanvas->DrawTo(canvas,middleX,middleY);
-        directDraw=false;
+        //directDraw=false;
         colorBuffer->DrawTo(canvas,0,0);
 
         // time mark
@@ -719,9 +719,10 @@ bool Watchface2Application::Tick() {
             canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
         }
         free(textBuffer);
-        canvas->pushSprite(0,0);
-        directDraw=true;
+        //canvas->pushSprite(0,0);
+        //directDraw=true;
         nextRefresh=millis()+(1000/4);
+        return true;
     }
     return false;
 }

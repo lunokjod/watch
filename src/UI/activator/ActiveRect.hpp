@@ -44,6 +44,7 @@ class ActiveRect {
         std::function<void ()> tapActivityCallback=nullptr;
 
         // tools
+        void Trigger();
         static void _LaunchCallbackTask(void * callbackData);
         static bool InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,int16_t w);
         static bool InRadius(int16_t px, int16_t py, int16_t x,int16_t y,int16_t r);

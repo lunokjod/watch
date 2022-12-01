@@ -34,7 +34,9 @@ bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,in
     //Serial.printf("ActiveRect: Event: Thumb PX: %d PY: %d INRECT between X: %d Y: %d W: %d H: %d\n",px,py,x,y,x+w,y+h);
     return true;
 }
-
+void ActiveRect::Trigger() {
+    xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+}
 void ActiveRect::_LaunchCallbackTask(void * callbackData) {
     delay(5); // to get correct values (triggers taskdelay that triggers yeld)
     std::function<void ()> *runMe = reinterpret_cast<std::function<void ()>*>(callbackData);

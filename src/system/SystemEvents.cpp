@@ -614,13 +614,15 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
         lEvLog("Event: user wants to put device to sleep\n");
         ScreenSleep();
         LaunchApplication(nullptr);
+        //LaunchWatchface(false);
         DoSleep();
     }
     else
     {
         lEvLog("Event: user wants to get a screen\n");
-        ScreenWake();
+        //esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         xTaskCreate(_SendEventWakeTask, "", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        ScreenWake();
     }
     /*
     lastPEK = millis()+50;

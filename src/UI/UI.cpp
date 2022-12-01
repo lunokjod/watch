@@ -101,7 +101,7 @@ void ScreenSleep() {
         ttgo->bl->off();
         lUILog("UI: Put screen to sleep now\n");
         ttgo->displaySleep();
-        delay(50);
+        delay(1);
         ttgo->touchToSleep();
         Serial.flush();
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
@@ -331,16 +331,15 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 changes = currentApplication->Tick();
                 if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
                 if ( changes ) { // Tick() returned true
+                    // dump the current ap to the TFT
                     appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-                    if ( false == directDraw ) {
-                        // dump the current ap to the TFT
-                        appView->pushSprite(0,0); // push appView to tft
-                    }
-                } else {
+                    appView->pushSprite(0,0); // push appView to tft
+                }
+                #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
+                else {
                     
                     // no changes in this frame
 
-                    #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
                     // don't allow screenshoots meanwhile directDraw is enabled
                     if ( false == directDraw ) {
                         if ( false == touched ) { touchDownTimeMS=0; }
@@ -355,9 +354,9 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                                 lUILog("UI: Saved screenshoots: %d\n",ScreenShots.size());
                             }
                         }
-                    }                    
-                    #endif
+                    }
                 }
+                #endif
             }
         }
         xSemaphoreGive( UISemaphore );
