@@ -56,6 +56,11 @@
 #include "../static/img_mainmenu_stopwatch.xbm"
 #include "Stopwatch.hpp"
 
+#ifdef LILYGO_WATCH_2020_V3
+#include "../static/img_mainmenu_mic.xbm"
+#include "Mic.hpp"
+#endif
+
 #ifdef LUNOKIOT_DEBUG_UI
 #include "Playground.hpp"
 #include "Playground0.hpp"
@@ -84,6 +89,9 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
+#ifdef LILYGO_WATCH_2020_V3
+//    {"Mic test",img_mainmenu_mic_bits, img_mainmenu_mic_height, img_mainmenu_mic_width, []() { LaunchApplication(new MicApplication()); } },
+#endif
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, []() { LaunchApplication(new DungeonGameApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
