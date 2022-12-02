@@ -34,9 +34,16 @@ bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,in
     //Serial.printf("ActiveRect: Event: Thumb PX: %d PY: %d INRECT between X: %d Y: %d W: %d H: %d\n",px,py,x,y,x+w,y+h);
     return true;
 }
+
 void ActiveRect::Trigger() {
-    xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+    BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+    if ( res != pdTRUE ) {
+        lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
+        lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+        lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+    }
 }
+
 void ActiveRect::_LaunchCallbackTask(void * callbackData) {
     delay(5); // to get correct values (triggers taskdelay that triggers yeld)
     std::function<void ()> *runMe = reinterpret_cast<std::function<void ()>*>(callbackData);
@@ -64,12 +71,7 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
         // no callback, nothing to do
         if ( nullptr != tapActivityCallback ) {
             // launch the callback!
-            BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
-            if ( res != pdTRUE ) {
-                lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
-                lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-                lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
-            }
+            Trigger();
         }
     }
     lastInteraction=false;
