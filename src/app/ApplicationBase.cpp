@@ -32,6 +32,7 @@ bool ApplicationBase::Tick() {
 
         // draw your interface widgets here!!!
         //mywidget->DrawTo(canvas);
+        TemplateApplication::Tick(); // redraw back button
 
         nextRefresh=millis()+(1000/12); // 8 FPS is enought for GUI
         return true;
