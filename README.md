@@ -14,7 +14,9 @@
 
 * Note: under heavy development (not ready for everyday use)
 
-* You can set WiFi credentials ("Home>Settings>Prov") via QR using android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap (select WiFi provisioning using WiFi)
+* You can set WiFi credentials ("Home>Settings>Prov") via QR using:
+  * Android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap (select WiFi provisioning using WiFi)
+  * Apple iOS: https://apps.apple.com/us/app/esp-softap-provisioning/id1474040630
 
 * The BluetoothLE pairing can be archieved via "Home>Settings>Pair" can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
 

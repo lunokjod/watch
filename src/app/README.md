@@ -55,12 +55,12 @@
 ![steps0](../../doc/img_steps0.png)
 ![steps1](../../doc/img_steps1.png)
 
-* @TODO 
+* @TODO (more apps not listed here)
 
 # Develop new application:
 
  * Duplicate files named:
- ```src/app/ApplicationBase.hpp``` & ```src/app/ApplicationBase.cpp``` set name at your discretion (recomended add "Appliction" at end)
+  [src/app/ApplicationBase.hpp](ApplicationBase.hpp) & [src/app/ApplicationBase.cpp](ApplicationBase.cpp) set name at your discretion (recomended add "Application" at end)
 
  * Edit both files and change all references to "ApplicationBase" and change to "YourDesiredNameApplication"
 
