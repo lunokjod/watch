@@ -17,6 +17,7 @@ class GraphWidget : public CanvasWidget{
         CanvasWidget *graph;
         GraphWidget(int16_t h=100, int16_t w=220, int64_t minValue=0, int64_t maxValue=100, uint32_t markColor=TFT_YELLOW, uint32_t backgroundColor=CanvasWidget::MASK_COLOR, uint32_t outColor=TFT_RED);
         bool PushValue(int64_t value);
+        void DirectDraw(int16_t x,int16_t y);
         void DrawTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0);
         ~GraphWidget();
 };

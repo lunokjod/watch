@@ -81,9 +81,9 @@ void setup() { // you know that!!! (see ArduinoFW)
 
 #ifdef LILYGO_WATCH_2020_V3
   // haptic announce (@TODO user choice "silent boot")
+#ifndef LUNOKIOT_SILENT_BOOT
   ttgo->motor_begin();
   delay(10); // need for shake works
-#ifndef LUNOKIOT_SILENT_BOOT
   ttgo->shake();
 #endif
 #endif

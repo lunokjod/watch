@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "GraphWidget.hpp"
-
+#include "../../app/LogView.hpp"
 
 GraphWidget::GraphWidget(int16_t h, int16_t w, int64_t minValue, int64_t maxValue, uint32_t markColor, uint32_t backgroundColor, uint32_t outColor)
                 : CanvasWidget(h,w), minValue(minValue),maxValue(maxValue),
@@ -43,6 +43,12 @@ GraphWidget::~GraphWidget() {
     delete graph;
 }
 
+
+void GraphWidget::DirectDraw(int16_t x,int16_t y) {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
+    graph->DirectDraw(x,y);
+    //graph->ca->pushSprite(x,y,Drawable::MASK_COLOR);
+}
 void GraphWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y) {
     canvas->fillSprite(backgroundColor);
     graph->DrawTo(canvas);

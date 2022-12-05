@@ -57,6 +57,7 @@
 #include "../static/Dungeon/wall_banner_red.c"
 #include "../static/Dungeon/wall_banner_yellow.c"
 #include "../static/Dungeon/wall_goo.c"
+#include "../static/Dungeon/wall_goo_base.c"
 
 #include "../static/Dungeon/crate.c"
 #include "../static/Dungeon/skull.c"
@@ -81,6 +82,7 @@
 #include "../static/Dungeon/wall_fountain_top.c"
 #include "../static/Dungeon/coulmn_base.c"
 #include "../static/Dungeon/column_mid.c"
+#include "../static/Dungeon/column_top.c"
 
 const unsigned char * DungeonTileSets[] = {
     floor_1.pixel_data,
@@ -161,6 +163,8 @@ const unsigned char * DungeonTileSets[] = {
 
     coulmn_base.pixel_data, // 65
     column_mid.pixel_data,
+    wall_goo_base.pixel_data, //67
+    column_top.pixel_data, 
 
 };
 

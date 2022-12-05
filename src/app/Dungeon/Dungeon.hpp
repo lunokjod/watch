@@ -16,11 +16,11 @@ typedef struct {
     uint16_t width=32;          // default map width
     uint16_t height=32;         // default height
     uint8_t rooms=3;            // number of rooms
-    uint8_t roomRadius=3;       // want circular corner?
+    uint8_t roomRadius=0;       // want circular corner?
     uint8_t minRoomSize=5;      // minimum room size
     uint8_t maxRoomSize=10;     // maximum
-    uint8_t horizontalPaths=1;  // number of tracks left to right
-    uint8_t verticalPaths=1;    // tracks up down
+    uint8_t horizontalPaths=3;  // number of tracks left to right
+    uint8_t verticalPaths=3;    // tracks up down
 
     TFT_eSprite *floorMap=nullptr;
     TFT_eSprite *objectsMap=nullptr;
@@ -84,9 +84,14 @@ const static char *LoadSentences[] = {
 
 class DungeonGameApplication: public LunokIoTApplication {
     public:
-        const float NormalScale=3.2;
+        const float NormalScale=2.8;
         unsigned long renderTime=1000/2;
         unsigned long animationTimeout=0;
+
+        bool zeroSet = false;
+        float zeroDegX = 0;
+        float zeroDegY = 0;
+        float zeroDegZ = 0;
 
         TFT_eSprite * lastShoot=nullptr;
 

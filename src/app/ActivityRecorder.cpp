@@ -32,7 +32,7 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
         this->btnMatch->enabled = false;
 
         countdownOffset=0;
-        playbackGraph->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+        //playbackGraph->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
 
         if ( nullptr != recordX ) {
             free(recordX);
@@ -312,7 +312,7 @@ bool ActivityRecorderApplication::Tick() {
             //this->accZGraph->graph->canvas->fillSprite(this->accZGraph->backgroundColor);
             recordOffset = 0;
             Serial.println("ActivityRecorder: End activity recording.");
-            playbackGraph->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
+            //commented by new graphwidget playbackGraph->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
             //playbackGraphMed->graph->canvas->fillSprite(CanvasWidget::MASK_COLOR);
             //countdownOffset = lastRecordOffset;
         } else {

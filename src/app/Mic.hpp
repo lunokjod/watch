@@ -8,13 +8,15 @@
 class MicApplication : public TemplateApplication {
     private:
         unsigned long nextRefresh=0;
+        unsigned long graphRedraw=0;
     public:
-        i2s_config_t i2s_config;
-        i2s_pin_config_t i2s_cfg;
+        bool recThread = true;
+        bool recThreadDead = false;
         GraphWidget * audioWaveGraph;
         MicApplication();
         ~MicApplication();
         bool Tick();
+        static void _RecordThread(void *args);
 };
 
 #endif

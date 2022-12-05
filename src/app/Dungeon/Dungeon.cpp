@@ -131,8 +131,8 @@ void DungeonGameApplication::ManageSplashScreen() {
     } else {
 
         if ( false == loadedSpawnPoint ) {
-            offsetX=(currentLevel.PlayerBeginX*(tileW*NormalScale))*-1;
-            offsetY=(currentLevel.PlayerBeginY*(tileH*NormalScale))*-1;
+            offsetX=((currentLevel.PlayerBeginX*tileW)*NormalScale)*-1;
+            offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale)*-1;
             tft->fillScreen(TFT_BLACK);
             loadedSpawnPoint=true;
             lAppLog("User location X: %d Y: %d px: %d py: %d\n",currentLevel.PlayerBeginX,currentLevel.PlayerBeginY,offsetX,offsetY);
@@ -142,14 +142,18 @@ void DungeonGameApplication::ManageSplashScreen() {
 }
 
 bool DungeonGameApplication::Tick() {
-    ManageSplashScreen();
     // waiting for the scenery building
-    if ( false == currentLevel.running ) { return false; }
-
-//    Serial.printf("degX: %f degY: %f degZ: %f\n",round(degX),round(degY),round(degZ));
-//    if ( ( degY > 160 ) && ( degY < 200 )) { offsetY++; }
-//    if ( ( degY < 160 ) && ( degY > 120 )) { offsetY--; }
-
+    if ( false == currentLevel.running ) {
+        ManageSplashScreen();
+        return false;
+    }
+    if ( false == zeroSet ) { // set the zero
+        zeroDegX = degX;
+        zeroDegY = degY;
+        zeroDegZ = degZ;
+        zeroSet = true;
+        return false;
+    }
     if ( touched ) {
         animationTimeout=millis()+renderTime; // don't redraw meanwhile drag
         UINextTimeout = millis()+UITimeout; // no sleep if user is actively use
@@ -163,6 +167,8 @@ bool DungeonGameApplication::Tick() {
             //tft->setPivot(0,0);
             //gameScreen->canvas->setPivot(0,0);
             //gameScreen->DrawTo(0,0,0.7,true);
+
+            zeroSet=false; // force to reset the new ground zero
             return false;
         } else {
             // draw MEANWHILE touch
@@ -211,6 +217,21 @@ bool DungeonGameApplication::Tick() {
         }
     }
     if ( millis() > animationTimeout ) {
+        float turnX = round(degX-zeroDegX);
+        float turnY = round(degY-zeroDegY);
+        float turnZ = round(degZ-zeroDegZ);
+
+       if ( ( abs(turnX)>10 ) || ( abs(turnY)>10 )) {
+        Serial.printf("diffX: %f diffY: %f\n",turnX,turnY);
+        /*
+        Y+ = right
+        X+ = up
+        */
+        offsetX+=turnY;
+        offsetY+=(turnX*-1);
+        dirty=true;
+       }
+
         Redraw();
         animationTimeout=millis()+(renderTime*2);
     } else {
@@ -401,13 +422,13 @@ void DungeonGameApplication::Redraw() {
         gameScreen->DrawTo(0,0,NormalScale,false);
         dirty=false;
     }
-
-    Serial.printf("DisX: %d DisY: %d\n",disX,disY);
-    for(int16_t y=0;y<=floorLayer->canvas->width()+(tileH*2);y+=(tileH*NormalScale)) {
-        for(int16_t x=0;x<=floorLayer->canvas->height()+(tileW*2);x+=(tileW*NormalScale)) {
+    /* GRID
+    //Serial.printf("DisX: %d DisY: %d\n",disX,disY);
+    for(int16_t y=0;y<=(floorLayer->canvas->width())*NormalScale;y+=(tileH*NormalScale)) {
+        for(int16_t x=0;x<=(floorLayer->canvas->height())*NormalScale;x+=(tileW*NormalScale)) {
             tft->drawRect(x,y,tileW*NormalScale,tileH*NormalScale,TFT_YELLOW);
         }
-    }
+    }*/
 
     unsigned long endMS=millis();
     renderTime=(endMS-beginMS);

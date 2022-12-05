@@ -35,8 +35,6 @@ void SplashFanfare() {
     lUILog("Audio: Not initialized due Silent boot is enabled\n");
     return;
 #endif
-
-#ifdef LILYGO_WATCH_2020_V3
     // Audio fanfare x'D
     lUILog("Audio: Initialize\n");
     ttgo->enableAudio();
@@ -69,10 +67,8 @@ void SplashFanfare() {
     delete out;
     delete mp3;
 
-    ttgo->disableAudio();
-
     i2s_driver_uninstall(I2S_NUM_0);
-#endif
+    ttgo->disableAudio();
 }
 #endif
 
