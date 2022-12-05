@@ -266,7 +266,15 @@ void DungeonLevelGenerator(void *data) {
                 } else if ( 17 == wallUpColor ) { // is right
                     topMap->drawPixel(x,y-1,21);
                 } else {
-                    topMap->drawPixel(x,y-1,18); // by default 
+                    uint16_t wallRightColor = wallMap->readPixel(x+1,y);
+                    uint16_t wallLeftColor = wallMap->readPixel(x-1,y);
+                    if ( ( 12 == wallLeftColor ) && ( 12 == wallRightColor ) ) {
+                        topMap->drawPixel(x,y-1,18); // by default full
+                    } else if ( 12 == wallLeftColor ) {
+                        topMap->drawPixel(x,y-1,69); // bite left
+                    } else if ( 12 == wallRightColor ) {
+                        topMap->drawPixel(x,y-1,70); // bite right
+                    }
                 }
             }            
             else if ( 16 == wallColor ) {

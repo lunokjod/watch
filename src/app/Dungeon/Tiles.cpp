@@ -83,6 +83,8 @@
 #include "../static/Dungeon/coulmn_base.c"
 #include "../static/Dungeon/column_mid.c"
 #include "../static/Dungeon/column_top.c"
+#include "../static/Dungeon/wall_corner_top_right.c"
+#include "../static/Dungeon/wall_corner_top_left.c"
 
 const unsigned char * DungeonTileSets[] = {
     floor_1.pixel_data,
@@ -165,6 +167,9 @@ const unsigned char * DungeonTileSets[] = {
     column_mid.pixel_data,
     wall_goo_base.pixel_data, //67
     column_top.pixel_data, 
+
+    wall_corner_top_right.pixel_data, // 69
+    wall_corner_top_left.pixel_data,  // 70
 
 };
 
