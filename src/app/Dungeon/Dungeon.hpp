@@ -13,15 +13,17 @@ typedef struct {
     bool inProgress=false;    // in progress to be up
     bool valid=false;    
     uint8_t mapType=0;          // 0 at this time of code maturity :-( (only one procedural map generator type)
-    uint16_t width=32;          // default map width
-    uint16_t height=32;         // default height
-    uint8_t rooms=3;            // number of rooms
-    uint8_t roomRadius=0;       // want circular corner?
-    uint8_t minRoomSize=5;      // minimum room size
-    uint8_t maxRoomSize=10;     // maximum
+    uint16_t width=38;          // default map width
+    uint16_t height=38;         // default height
+    uint8_t rooms=8;            // number of rooms
+    uint8_t roomRadius=0;       // want circular corner? (lot of gitches)
+    uint8_t minRoomSize=4;      // minimum room size
+    uint8_t maxRoomSize=6;     // maximum
     uint8_t horizontalPaths=3;  // number of tracks left to right
     uint8_t verticalPaths=3;    // tracks up down
-
+    uint8_t chestNumber=8;      // number of chests (empty/full/trap)
+    uint8_t coinNumber=12;      // coins on level
+    uint8_t middleColumnsProv=30; // probability of inner column
     TFT_eSprite *floorMap=nullptr;
     TFT_eSprite *objectsMap=nullptr;
     TFT_eSprite *wallMap=nullptr;
@@ -84,7 +86,7 @@ const static char *LoadSentences[] = {
 
 class DungeonGameApplication: public LunokIoTApplication {
     public:
-        const float NormalScale=2.8;
+        const float NormalScale=3.0;
         unsigned long renderTime=1000/2;
         unsigned long animationTimeout=0;
 
@@ -93,7 +95,7 @@ class DungeonGameApplication: public LunokIoTApplication {
         float zeroDegY = 0;
         float zeroDegZ = 0;
 
-        TFT_eSprite * lastShoot=nullptr;
+        //TFT_eSprite * lastShoot=nullptr;
 
         CanvasZWidget * gameScreen = nullptr;
         CanvasZWidget * objectLayer = nullptr;
@@ -121,10 +123,10 @@ class DungeonGameApplication: public LunokIoTApplication {
         void NoticesBanner(const char *what);       // send messages to splash
         size_t PoToCXMap=0;                         // points to last processed coordinate X of map 
         size_t PoToCYMap=0;                         // points to last processed coordinate Y of map 
-        static const size_t CNumTileProcess=225;     // maximum number of tiles processed simultaneously
+        //static const size_t CNumTileProcess=225;     // maximum number of tiles processed simultaneously
  
 
-
+/*
         float lavaBackgroundScale = 1.0;
         bool lavaDirection=false;
         int16_t lavaAngle=0;
@@ -134,9 +136,9 @@ class DungeonGameApplication: public LunokIoTApplication {
         //CanvasWidget * layer2 = nullptr;
         //CanvasWidget * layer3 = nullptr;
         //CanvasWidget * shadowLayer = nullptr;
-
+*/
     public:
-        const uint8_t tileW       = 16; // the typical scenery size
+        const uint8_t tileW       = 16; // the scenery tile size
         const uint8_t tileH       = 16;
         DungeonGameApplication();
         virtual ~DungeonGameApplication();

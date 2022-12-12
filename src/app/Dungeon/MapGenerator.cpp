@@ -80,6 +80,37 @@ void DungeonLevelGenerator(void *data) {
     TFT_eSprite * objectsMap = thisLevel->objectsMap;
     
 
+    lAppLog("Generating rooms....\n");
+    // build rooms
+    int rooms=thisLevel->rooms;    
+    while(rooms>0) {
+        int32_t w=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
+        int32_t h=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
+
+        // from 3 to end of world-3 but with minimal and maximal size
+        int32_t x=random(3,thisLevel->width-6)+random(thisLevel->minRoomSize,(thisLevel->maxRoomSize-w)-thisLevel->minRoomSize);
+        int32_t y=random(3,((thisLevel->height-6)-h)-thisLevel->minRoomSize);
+
+        bool isEmptyPlace=true;
+        // try to get empty space
+        for(int16_t pey=y;pey<y+h;pey++) {
+            if ( false == isEmptyPlace ) { break; }
+            for(int16_t pex=x;pex<x+w;pex++) {
+                if ( 255 != floorMap->readPixel(pex,pey) ) {
+                    isEmptyPlace=false;
+                    break;
+                }
+            }
+        }
+        if ( isEmptyPlace ) { // room have space
+            floorMap->fillRoundRect(x,y,w,h,thisLevel->roomRadius,0); // mark as floor
+            lAppLog("Room %d generated X: %d Y: %d H: %d W: %d\n", rooms,x,y,h,w);
+            rooms--;
+        }
+        //yield();
+        delay(5);
+    }
+
     lAppLog("Generating paths (horizontal)....\n");
     int horizontalPaths=thisLevel->horizontalPaths;
     while(horizontalPaths>0) {
@@ -128,37 +159,8 @@ void DungeonLevelGenerator(void *data) {
         }
         delay(2);
     }
-    lAppLog("Building rooms....\n");
-    // build rooms
-    int rooms=thisLevel->rooms;    
-    while(rooms>0) {
-        int32_t w=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
-        int32_t h=random(thisLevel->minRoomSize,thisLevel->maxRoomSize);
 
-        // from 0 to end of world but with minimal and maximal size
-        int32_t x=random(3,thisLevel->width-6)+random(thisLevel->minRoomSize,(thisLevel->maxRoomSize-w)-thisLevel->minRoomSize);
-        int32_t y=random(3,((thisLevel->height-6)-h)-thisLevel->minRoomSize);
-
-        bool isEmptyPlace=true;
-        /*
-        for(int16_t pey=y;pey<y+h;pey++) {
-            if ( false == isEmptyPlace ) { break; }
-            for(int16_t pex=x;pex<x+w;pex++) {
-                if ( 255 != floorMap->readPixel(pex,pey) ) {
-                    isEmptyPlace=false;
-                    break;
-                }
-            }
-        }*/
-        if ( isEmptyPlace ) { // room have space
-            floorMap->fillRoundRect(x,y,w,h,thisLevel->roomRadius,0); // mark as floor
-            lAppLog("Room %d generated X: %d Y: %d H: %d W: %d\n", rooms,x,y,h,w);
-            rooms--;
-        }
-        //yield();
-        delay(5);
-    }
-    
+    // this must build "gates" between rooms and paths
     lAppLog("Removing small holes...\n");
     // remove stupid holes using colindant values
     for(int32_t y=0;y<floorMap->height();y++) {
@@ -166,18 +168,17 @@ void DungeonLevelGenerator(void *data) {
             uint16_t color = floorMap->readPixel(x,y);
             if ( 255 == color ) { // find empty
                 uint16_t colorUp = floorMap->readPixel(x,y-1);
-                if ( 0 == colorUp ) {
-                    uint16_t colorDown = floorMap->readPixel(x,y+1);
-                    if ( 0 == colorDown ) {
-                        floorMap->drawPixel(x,y,0); // add floor on hole
-                    }
-                }
+                uint16_t colorDown = floorMap->readPixel(x,y+1);
                 uint16_t colorLeft = floorMap->readPixel(x-1,y);
-                if ( 0 == colorLeft ) {
-                    uint16_t colorRight = floorMap->readPixel(x+1,y);
-                    if ( 0 == colorRight ) {
-                        floorMap->drawPixel(x,y,0); // add floor on hole
-                    }
+                uint16_t colorRight = floorMap->readPixel(x+1,y);
+                if ( ( 0 == colorUp ) && ( 0 == colorDown ) ) {
+                    floorMap->drawPixel(x,y,0); // new leftright path
+                    floorMap->drawPixel(x,y+1,0); // new leftright path
+                    floorMap->drawPixel(x,y-1,0); // new leftright path
+                } else if ( ( 0 == colorLeft ) && ( 0 == colorRight ) ) {
+                    floorMap->drawPixel(x,y,0); // new updown path
+                    floorMap->drawPixel(x+1,y,0); // new updown path
+                    floorMap->drawPixel(x-1,y,0); // new updown path
                 }
             }
         }
@@ -274,6 +275,8 @@ void DungeonLevelGenerator(void *data) {
                         topMap->drawPixel(x,y-1,69); // bite left
                     } else if ( 12 == wallRightColor ) {
                         topMap->drawPixel(x,y-1,70); // bite right
+                    } else {
+                        topMap->drawPixel(x,y-1,18); // fuck! why?
                     }
                 }
             }            
@@ -322,20 +325,34 @@ void DungeonLevelGenerator(void *data) {
                 }
                 // only on internal faces (if no floor, no decoration)
                 uint16_t floorDownColor = floorMap->readPixel(x,y+1);
-                if ( 0 == floorDownColor ) {
+                if ( 0 == floorDownColor ) { // the down is floor? (inner)
                     if ( 18  > random(1,100)) {          // probability of wall column
-                        floorMap->drawPixel(x,y+1,49);
-                        wallMap->drawPixel(x,y,50);
-                        topMap->drawPixel(x,y-1,51);
+                        // only if have walls to the sides
+                        uint16_t wallRightColor = wallMap->readPixel(x+1,y);
+                        uint16_t wallLeftColor = wallMap->readPixel(x-1,y);
+                        if ( ( 12 == wallRightColor )&&( 12 == wallLeftColor )) {
+                            floorMap->drawPixel(x,y+1,49);
+                            wallMap->drawPixel(x,y,50);
+                            topMap->drawPixel(x,y-1,51);
+                            delay(1);
+                        }
+                    } else if ( 8 > random(1,100)) {
+                        wallMap->drawPixel(x,y,43);             // green flag
                         delay(1);
                     } else if ( 8 > random(1,100)) {
-                        wallMap->drawPixel(x,y,43);             // flag
+                        wallMap->drawPixel(x,y,44);             // blue flag
+                        delay(1);
+                    } else if ( 8 > random(1,100)) {
+                        wallMap->drawPixel(x,y,45);             // red flag
+                        delay(1);
+                    } else if ( 8 > random(1,100)) {
+                        wallMap->drawPixel(x,y,46);             // yellow flag
                         delay(1);
                     } else if ( 6  > random(1,100)) {          // probability of goo
                         wallMap->drawPixel(x,y,42);
                         floorMap->drawPixel(x,y+1,67);  // goo floor
                         delay(1);
-                    } else if ( 3  > random(1,100)) {          // probability of blue fountain
+                    } else if ( 5  > random(1,100)) {          // probability of blue fountain
                         // CHECK THE WALLS OF THE SIDE
                         uint16_t wallRightMap = wallMap->readPixel(x+1,y);
                         uint16_t wallLeftMap = wallMap->readPixel(x-1,y);
@@ -345,10 +362,11 @@ void DungeonLevelGenerator(void *data) {
                             topMap->drawPixel(x,y-1,64);
                             delay(1);
                         }
-                    } else if ( 3  > random(1,100)) {          // probability of red fountain
+                    } else if ( 5  > random(1,100)) {          // probability of red fountain
                         // CHECK THE WALLS OF THE SIDE
                         uint16_t wallRightMap = wallMap->readPixel(x+1,y);
                         uint16_t wallLeftMap = wallMap->readPixel(x-1,y);
+                        //@TODO check fountains to avoid glitch
                         if ( (12 == wallRightMap ) && (12 == wallLeftMap ) ) {
                             floorMap->drawPixel(x,y+1,58);
                             wallMap->drawPixel(x,y,61);
@@ -358,36 +376,81 @@ void DungeonLevelGenerator(void *data) {
                     }
                 }
             }
+            floorColor = floorMap->readPixel(x,y);
+            objectColor = objectsMap->readPixel(x,y);
             if ( ( 0 == floorColor ) && ( 255 == objectColor )) {
 
                 if ( 2  > random(1,100)) { 
                     objectsMap->drawPixel(x,y,47); // crates
                 } else if ( 2  > random(1,100)) { 
                     objectsMap->drawPixel(x,y,48); // skulls
-                }
-                
-                if ( 30  > random(1,100)) {  // randomize floor
-                    uint32_t nuFloor = random(0,8);
-                    floorMap->drawPixel(x,y,nuFloor);
                 } else if ( 3  > random(1,100)) { 
                     floorMap->drawPixel(x,y,10); // hole
                 } else if ( 3  > random(1,100)) { 
                     uint16_t topColor = topMap->readPixel(x,y);
-                    if ( 255 == topColor ) { // nothing on top?
+                    uint16_t wallColor = wallMap->readPixel(x,y);
+                    if ( ( 255 == topColor )&&( 255 == wallColor )) { // nothing on top?
                         floorMap->drawPixel(x,y,29); // spikes
                     }
-                } else if ( 10  > random(1,100)) {
+                } else if ( thisLevel->middleColumnsProv  > random(1,100)) { // inner column
                     if ( ( 0 == ( x % 4) ) && ( 0 == ( y % 4) ) ) {
-                        objectsMap->drawPixel(x,y,65); // don't change ground (transp column foot)
-                        wallMap->drawPixel(x,y-1,66); // COLUMNS
-                        topMap->drawPixel(x,y-2,68); // COLUMNS
+                        wallColor = wallMap->readPixel(x,y-1);
+                        topColor = topMap->readPixel(x,y-2);
+                        if ( ( 255 == wallColor ) && ( 255 == topColor ) ) {
+                            objectsMap->drawPixel(x,y,65); // don't change ground (transp column foot)
+                            wallMap->drawPixel(x,y-1,66); // column wall
+                            topMap->drawPixel(x,y-2,68); // column top
+                        }
                     }
                 }
-
-
+                floorColor = floorMap->readPixel(x,y);
+                if ( 0 == floorColor ) {
+                    if ( 30  > random(1,100)) {  // randomize floor
+                        uint32_t nuFloor = random(0,8);
+                        floorMap->drawPixel(x,y,nuFloor);
+                    }
+                }
            }
         }
     }
+    lAppLog("Chests...\n");
+    int current=thisLevel->chestNumber;
+    // change some tiles to add more visual richness
+    while(current > 0) {
+        delay(15);
+        int16_t x=random(0,thisLevel->width-1);
+        int16_t y=random(0,thisLevel->height-1);
+
+        uint16_t floorColor = floorMap->readPixel(x,y);
+        uint16_t wallColor = wallMap->readPixel(x,y);
+        uint16_t topColor = topMap->readPixel(x,y);
+        uint16_t objectColor = objectsMap->readPixel(x,y);
+        if ( ( 0 == floorColor ) && ( 255 == objectColor )
+                && ( 255 == topColor ) && ( 255 == wallColor ) ) {
+            objectsMap->drawPixel(x,y,33);
+            current--;
+        }
+    }
+
+    lAppLog("Coins...\n");
+    current=thisLevel->coinNumber;
+    // change some tiles to add more visual richness
+    while(current > 0) {
+        delay(15);
+        int16_t x=random(0,thisLevel->width-1);
+        int16_t y=random(0,thisLevel->height-1);
+
+        uint16_t floorColor = floorMap->readPixel(x,y);
+        uint16_t wallColor = wallMap->readPixel(x,y);
+        uint16_t topColor = topMap->readPixel(x,y);
+        uint16_t objectColor = objectsMap->readPixel(x,y);
+        if ( ( 0 == floorColor ) && ( 255 == objectColor )
+                && ( 255 == topColor ) && ( 255 == wallColor ) ) {
+            objectsMap->drawPixel(x,y,71);
+            current--;
+        }
+    }
+
 
     lAppLog("Determine the player spawnpoint\n");
     bool keepSearching=true;

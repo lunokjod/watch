@@ -86,6 +86,11 @@
 #include "../static/Dungeon/wall_corner_top_right.c"
 #include "../static/Dungeon/wall_corner_top_left.c"
 
+#include "../static/Dungeon/coin_anim_f3.c"
+#include "../static/Dungeon/coin_anim_f2.c"
+#include "../static/Dungeon/coin_anim_f1.c"
+#include "../static/Dungeon/coin_anim_f0.c"
+
 const unsigned char * DungeonTileSets[] = {
     floor_1.pixel_data,
     floor_2.pixel_data,
@@ -123,21 +128,21 @@ const unsigned char * DungeonTileSets[] = {
     floor_spikes_anim_f2.pixel_data,
     floor_spikes_anim_f3.pixel_data,
 
-    chest_empty_open_anim_f0.pixel_data,
-    chest_empty_open_anim_f1.pixel_data, // 34
+    chest_empty_open_anim_f0.pixel_data, // 33
+    chest_empty_open_anim_f1.pixel_data,
     chest_empty_open_anim_f2.pixel_data,
-    chest_full_open_anim_f0.pixel_data,
+    chest_full_open_anim_f0.pixel_data, // 36
     chest_full_open_anim_f1.pixel_data,
     chest_full_open_anim_f2.pixel_data,
-    chest_mimic_open_anim_f0.pixel_data,
+    chest_mimic_open_anim_f0.pixel_data, // 39
     chest_mimic_open_anim_f1.pixel_data,
     chest_mimic_open_anim_f2.pixel_data, // 41
 
     wall_goo.pixel_data,
 
-    wall_banner_green.pixel_data,
+    wall_banner_green.pixel_data, // 43
     wall_banner_blue.pixel_data,
-    wall_banner_red.pixel_data,
+    wall_banner_red.pixel_data, // 45
     wall_banner_yellow.pixel_data,
     crate.pixel_data,
     skull.pixel_data, // 48
@@ -170,6 +175,11 @@ const unsigned char * DungeonTileSets[] = {
 
     wall_corner_top_right.pixel_data, // 69
     wall_corner_top_left.pixel_data,  // 70
+
+    coin_anim_f0.pixel_data, // 71 
+    coin_anim_f1.pixel_data,
+    coin_anim_f2.pixel_data,
+    coin_anim_f3.pixel_data,    // 74
 
 };
 

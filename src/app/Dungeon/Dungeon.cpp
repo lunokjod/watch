@@ -387,6 +387,39 @@ void DungeonGameApplication::Redraw() {
                 }
 
             }
+            uint16_t objectColor = currentLevel.objectsMap->readPixel(tileX,tileY);
+            if ( ( 255 != objectColor) && ( 0xFFFF != objectColor) ) {
+                bool animated=false;
+                // coin?
+                if ( 71 ==  objectColor ) { currentLevel.objectsMap->drawPixel(tileX,tileY,72); animated=true; }
+                else if ( 72 ==  objectColor ) { currentLevel.objectsMap->drawPixel(tileX,tileY,73); animated=true; }
+                else if ( 73 ==  objectColor ) { currentLevel.objectsMap->drawPixel(tileX,tileY,74); animated=true; }
+                else if ( 74 ==  objectColor ) { currentLevel.objectsMap->drawPixel(tileX,tileY,71); animated=true; }
+                if ( ( dirty )||( animated )) {    
+                    //Serial.printf("tX: %d tY: %d\n",tileX,tileY);
+                    const unsigned char *ptr=DungeonTileSets[objectColor]; // current tile ptr            
+                    CanvasZWidget *tempBuffer = new CanvasZWidget(tileH,tileW);
+                    tempBuffer->canvas->setSwapBytes(true);
+                    tempBuffer->canvas->pushImage(0,0,tileH,tileW,(uint16_t *)ptr);
+                    objectLayer->canvas->setPivot(0,0); // to set the incoming title
+                    tempBuffer->canvas->setPivot(0,0);
+
+                    // dump current
+                    if ( dirty ) { // dump to buffer
+                        directDraw=false;
+                        tempBuffer->DrawTo(objectLayer->canvas,x,y,1.0,false,TFT_BLACK);
+                        directDraw=true;
+                    } else if ( animated ) { // direct update
+    //tempBuffer->canvas->setPivot(0,0);
+    //tft->setPivot(x*NormalScale,y*NormalScale);
+    //tempBuffer->canvas->pushRotated(0,TFT_BLACK);
+
+//AAAAAAAAAAAAAAAAAAAAAAAAAA
+                        tempBuffer->DrawTo(x*NormalScale,y*NormalScale,NormalScale,false,TFT_BLACK);
+                    }
+                    delete tempBuffer;
+                }
+            }
 
             if ( dirty ) {
                 // top
