@@ -49,6 +49,9 @@
 #include "../app/LogView.hpp"
 #include <esp_task_wdt.h>
 
+
+
+bool wifiOverride=false; // this var disables the wifi automatic disconnection
 int BLEscanTime = 5; //In seconds
 unsigned long BLENextscanTime = 0;
 BLEServer *pServer = nullptr;
@@ -116,11 +119,16 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
 /*
  * Search for update system network task
  */
-char * latestBuildFoundString = nullptr;
+extern char * latestBuildFoundString;
+#include "../app/OTAUpdate.hpp"
 
 void SystemUpdateAvailiable() {
-    lLog("@TODO notify user for update\n");
-    lLog("@TODO availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+    uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
+    uint32_t remoteVersion = atoi(latestBuildFoundString);
+    if ( remoteVersion > myVersion ) {
+        lNetLog("OTA: new version availiable: %d, current: %d :) Launching Update...\n",remoteVersion,myVersion);
+        LaunchApplication(new OTAUpdateApplication(),true);
+    }
 }
 
 
@@ -147,14 +155,14 @@ void SearchUpdateAsNetworkTask() {
                     String serverPath = LastVersionURL;
                     if (https.begin(*client, serverPath)) {
                         // HTTPS
-                        lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
+                        //lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
                         // start connection and send HTTP header
                         int httpCode = https.GET();
 
                         // httpCode will be negative on error
                         if (httpCode > 0) {
                             // HTTP header has been send and Server response header has been handled
-                            lNetLog("SearchUpdate: https get code: %d\n", httpCode);
+                            //lNetLog("SearchUpdate: https get code: %d\n", httpCode);
                             // file found at server
                             if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
                                 String payload = https.getString();
@@ -192,8 +200,6 @@ void SearchUpdateAsNetworkTask() {
     }
 }
 
-
-
 /*
  * The network scheduler loop
  * Check all network tasks and determine if must be launched
@@ -209,7 +215,7 @@ static void NetworkHandlerTask(void* args) {
 
         if ( systemSleep ) { continue; } // fuck off... giveup/sleep in progress... (shaded area)
         if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
-        
+        if ( true == wifiOverride ) { continue; }
         if ( millis() > nextConnectMS ) { // begin connection?
             if ( false == NVS.getInt("WifiEnabled") ) {
                 nextConnectMS = millis()+ReconnectPeriodMs;
@@ -350,7 +356,7 @@ static void NetworkHandlerTask(void* args) {
 bool NetworkHandler() {
     provisioned = (bool)NVS.getInt("provisioned"); // initial value load
 #ifdef LUNOKIOT_WIFI_ENABLED
-    xTaskCreate(NetworkHandlerTask, "lwifi", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreate(NetworkHandlerTask, "lwifi", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
 #ifdef LUNOKIOT_UPDATES_ENABLED
     SearchUpdateAsNetworkTask();
 #endif

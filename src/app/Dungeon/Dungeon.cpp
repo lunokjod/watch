@@ -29,6 +29,7 @@ DungeonGameApplication::~DungeonGameApplication() {
         delete currentLevel.objectsMap;
         currentLevel.darknessMap->deleteSprite();
         delete currentLevel.darknessMap;
+        delete currentLevel.player;
     }
     /*
     if ((NULL != MapGeneratorHandle) && ( currentLevel.running )) {
@@ -74,6 +75,7 @@ DungeonGameApplication::DungeonGameApplication() {
     
     // launch map generator meanwhile the app is loading
     currentLevel.valid=false;
+    loadedSpawnPoint=false;
     lAppLog("Starting map generator...\n");
     xTaskCreate(DungeonLevelGenerator, "", LUNOKIOT_TASK_STACK_SIZE, &currentLevel, uxTaskPriorityGet(NULL), &MapGeneratorHandle);
 
@@ -83,6 +85,9 @@ DungeonGameApplication::DungeonGameApplication() {
     canvas->pushImage(0,0,img_splash_dungeon.width,img_splash_dungeon.height, (uint16_t *)img_splash_dungeon.pixel_data);
 //    canvas->pushImage(0,0,img_palette_test.width,img_palette_test.height, (uint16_t *)img_palette_test.pixel_data);
     canvas->setSwapBytes(false);
+
+    canvas->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
+
 
     tft->setTextColor(TFT_WHITE,tft->color24to16(0x191919));
     tft->setTextDatum(BC_DATUM);
@@ -96,7 +101,7 @@ void DungeonGameApplication::ManageSplashScreen() {
     if (false == currentLevel.valid ) {
         if ( 0 == waitGeneratorTimeout ) {
             waitGeneratorTimestamp=0;
-            waitGeneratorTimeout=millis()+(20*1000);
+            waitGeneratorTimeout=millis()+(25*1000);
         } else {
             if ( millis() > waitGeneratorTimeout ) {
                 lAppLog("Map generator timeout, retrying...\n");
@@ -109,6 +114,9 @@ void DungeonGameApplication::ManageSplashScreen() {
                 vTaskDelete(MapGeneratorHandle);
                 MapGeneratorHandle=NULL;
                 currentLevel.running=false;
+                loadedSpawnPoint=false;
+                tft->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
+
                 lAppLog("Starting map generator (retry %d)...\n",generationRetries);
                 generationRetries++;
                 if ( generationRetries > 5) {
@@ -127,17 +135,13 @@ void DungeonGameApplication::ManageSplashScreen() {
                 waitGeneratorTimestamp=millis()+1800;
                 currentSentence++;
             }
-        }
-    } else {
 
-        if ( false == loadedSpawnPoint ) {
-            offsetX=((currentLevel.PlayerBeginX*tileW)*NormalScale)*-1;
-            offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale)*-1;
-            tft->fillScreen(TFT_BLACK);
-            loadedSpawnPoint=true;
-            lAppLog("User location X: %d Y: %d px: %d py: %d\n",currentLevel.PlayerBeginX,currentLevel.PlayerBeginY,offsetX,offsetY);
+            // show dungeon generation layers
+            currentLevel.floorMap->pushSprite(0,0,255);
+            currentLevel.objectsMap->pushSprite(0,0,255);
+            currentLevel.wallMap->pushSprite(0,0,255);
+            currentLevel.topMap->pushSprite(0,0,255);
         }
-
     }
 }
 
@@ -152,6 +156,18 @@ bool DungeonGameApplication::Tick() {
         zeroDegY = degY;
         zeroDegZ = degZ;
         zeroSet = true;
+        return false;
+    }
+    if ( false == loadedSpawnPoint ) {
+        //offsetX=((currentLevel.PlayerBeginX*tileW)*NormalScale);
+        //offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale);
+        offsetX=((currentLevel.PlayerBeginX*tileW)*NormalScale)*-1;
+        offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale)*-1;
+        tft->fillScreen(TFT_BLACK);
+        loadedSpawnPoint=true;
+        lAppLog("User location X: %d Y: %d px: %d py: %d\n",currentLevel.PlayerBeginX,currentLevel.PlayerBeginY,offsetX,offsetY);
+        dirty=true;
+        Redraw();
         return false;
     }
     if ( touched ) {
@@ -179,15 +195,15 @@ bool DungeonGameApplication::Tick() {
             //lEvLog("UI: Continuous touch X: %d Y: %d CX: %d CY: %d \n",touchX,touchY,touchDragVectorX,touchDragVectorY);
             tft->setPivot(0,0);
             gameScreen->canvas->setPivot(0,0);
-            //gameScreen->canvas->pushSprite(touchDragVectorX,touchDragVectorY);
+            
             gameScreen->DrawTo(calculatedX,calculatedY,NormalScale,false);
-
             // ERASERS
             // spiral design to divide the effort of refresh
             tft->fillRect(calculatedX,0,TFT_WIDTH-calculatedX,calculatedY,TFT_BLACK); // up eraser
             tft->fillRect(0,0,calculatedX,calculatedY2,TFT_BLACK); // left window
             tft->fillRect(calculatedX2,calculatedY,TFT_WIDTH-calculatedX2,TFT_HEIGHT-calculatedY,TFT_BLACK); // right window
             tft->fillRect(0,calculatedY2,calculatedX2,TFT_HEIGHT-calculatedY2,TFT_BLACK); // down window
+
             return false;
         }
     } else {
@@ -217,23 +233,22 @@ bool DungeonGameApplication::Tick() {
         }
     }
     if ( millis() > animationTimeout ) {
+        /*
         float turnX = round(degX-zeroDegX);
         float turnY = round(degY-zeroDegY);
         float turnZ = round(degZ-zeroDegZ);
 
        if ( ( abs(turnX)>10 ) || ( abs(turnY)>10 )) {
         Serial.printf("diffX: %f diffY: %f\n",turnX,turnY);
-        /*
-        Y+ = right
-        X+ = up
-        */
+        //Y+ = right
+        //X+ = up
         offsetX+=turnY;
         offsetY+=(turnX*-1);
         dirty=true;
-       }
+       }*/
 
         Redraw();
-        animationTimeout=millis()+(renderTime*2);
+        animationTimeout=millis()+(renderTime*1.25);
     } else {
         if ( dirty ) {
             Redraw();
@@ -410,11 +425,6 @@ void DungeonGameApplication::Redraw() {
                         tempBuffer->DrawTo(objectLayer->canvas,x,y,1.0,false,TFT_BLACK);
                         directDraw=true;
                     } else if ( animated ) { // direct update
-    //tempBuffer->canvas->setPivot(0,0);
-    //tft->setPivot(x*NormalScale,y*NormalScale);
-    //tempBuffer->canvas->pushRotated(0,TFT_BLACK);
-
-//AAAAAAAAAAAAAAAAAAAAAAAAAA
                         tempBuffer->DrawTo(x*NormalScale,y*NormalScale,NormalScale,false,TFT_BLACK);
                     }
                     delete tempBuffer;

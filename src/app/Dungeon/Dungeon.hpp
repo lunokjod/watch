@@ -5,25 +5,65 @@
 #include "../../UI/widgets/CanvasWidget.hpp"
 #include "../../UI/widgets/CanvasZWidget.hpp"
 
+class PlayerClass {
+    private:
+    protected:
+        int16_t x=0;
+        int16_t y=0;
+
+    public:
+        virtual bool Draw();
+        void SetPos(int16_t x, int16_t y) {
+            this->x = x;
+            this->y = y;
+        }
+        PlayerClass() {};
+        ~PlayerClass() {};
+};
+
+class ElfMalePlayer: public PlayerClass {
+    public:
+        bool Draw() { return false; }
+};
+
 // used by map generator
 typedef struct {
-    bool running=false;         // is the service running?
+    bool running=false;                 // is the service running?
+    PlayerClass *player=nullptr;
     int16_t PlayerBeginX=0;
     int16_t PlayerBeginY=0;
     bool inProgress=false;    // in progress to be up
     bool valid=false;    
-    uint8_t mapType=0;          // 0 at this time of code maturity :-( (only one procedural map generator type)
-    uint16_t width=38;          // default map width
-    uint16_t height=38;         // default height
-    uint8_t rooms=8;            // number of rooms
+    uint8_t mapType=0;          // 0 at this time (only one procedural dungeon type map generator)
+
+    /* big map */
+    uint16_t width=220;          // default map width in tiles
+    uint16_t height=140;         // default height
+    uint16_t rooms=190;           // number of rooms
     uint8_t roomRadius=0;       // want circular corner? (lot of gitches)
-    uint8_t minRoomSize=4;      // minimum room size
-    uint8_t maxRoomSize=6;     // maximum
-    uint8_t horizontalPaths=3;  // number of tracks left to right
-    uint8_t verticalPaths=3;    // tracks up down
+    uint8_t minRoomSize=5;      // minimum room size
+    uint8_t maxRoomSize=11;      // maximum
+    uint8_t horizontalPaths=2;  // number of tracks left to right
+    uint8_t verticalPaths=1;    // tracks up down
+    uint16_t chestNumber=32;      // number of chests (empty/full/trap)
+    uint16_t coinNumber=128;      // coins on level
+    uint16_t cratesNumber=256;    // crates on level
+    uint16_t columns=756;        // number of inner columns
+
+    /* normal map
+    uint16_t width=64;          // default map width in tiles
+    uint16_t height=64;         // default height
+    uint8_t rooms=16;           // number of rooms
+    uint8_t roomRadius=0;       // want circular corner? (lot of gitches)
+    uint8_t minRoomSize=5;      // minimum room size
+    uint8_t maxRoomSize=7;      // maximum
+    uint8_t horizontalPaths=2;  // number of tracks left to right
+    uint8_t verticalPaths=2;    // tracks up down
     uint8_t chestNumber=8;      // number of chests (empty/full/trap)
-    uint8_t coinNumber=12;      // coins on level
-    uint8_t middleColumnsProv=30; // probability of inner column
+    uint8_t coinNumber=32;      // coins on level
+    uint8_t cratesNumber=28;    // crates on level
+    uint8_t columns=48;
+    */
     TFT_eSprite *floorMap=nullptr;
     TFT_eSprite *objectsMap=nullptr;
     TFT_eSprite *wallMap=nullptr;
@@ -33,60 +73,14 @@ typedef struct {
 } levelDescriptor;
 
 
-const static char *LoadSentences[] = { 
-    "loading...",
-    "this can take a while",
-    "gathering random...",
-    "summoning demons...",
-    "enslaving souls",
-    "hiding spells...",
-    "oah! a secret book?",
-    "feeding cockroaches",
-    "killing kitties...",
-    "electing floor colors",
-    "writing scroll of power",
-    "cleaning healing bottles",
-    "turning lead into gold",
-    "poisoning powerups",
-    "moisting walls...",
-    "(phone rings loud)",
-    "moma calling!?",
-    "Yep?",
-    "uh....",
-    "mmm",
-    "sure...",
-    "mom, I'm on work!",
-    "er... yes",
-    "see you!",
-    "(phone hungs)",
-    "meh... slow load",
-    "mmm a tabern...",
-    "can see frogs on map?",
-    "where is my dragon?",
-    "",
-    "cogito, ergo sum",
-    "be patient!",
-    "",
-    "...",
-    "",
-    "Look behind you,","a Three-Headed","Monkey!!!!",
-    "",
-    "still here?",
-    "",
-    "lol!!! x'D",
-    "",
-    "mi mind","is going,","Dave",
-    "",
-    "Klaatu barada nikto",
-    "",
-    "oh kmon!!!",
-    "ALL YOUR","BASE ARE","BELONG TO US",
-    "Or be a Teapot!",
-};
 
 class DungeonGameApplication: public LunokIoTApplication {
     public:
-        const float NormalScale=3.0;
+        //const float NormalScale=0.5; // 32x32 (unusable)
+        //const float NormalScale=1.25; // 12x12
+        //const float NormalScale=1.666; // 9x9
+        //const float NormalScale=1.85; // 8x8
+        const float NormalScale=2.5; // 6x6
         unsigned long renderTime=1000/2;
         unsigned long animationTimeout=0;
 
@@ -145,4 +139,62 @@ class DungeonGameApplication: public LunokIoTApplication {
         bool Tick();
 };
 
+
+const static char *LoadSentences[] = { 
+    "loading...",
+    "this can take a while",
+    "gathering random...",
+    "summoning demons...",
+    "enslaving souls",
+    "hiding spells...",
+    "oah! a secret book?",
+    "feeding cockroaches",
+    "killing kitties...",
+    "electing floor colors",
+    "writing scroll of power",
+    "cleaning healing bottles",
+    "turning lead into gold",
+    "poisoning powerups",
+    "moisting walls...",
+    "meh... slow load",
+    "can see frogs on map?",
+    "where is my dragon?",
+    "",
+    "(phone rings loud)",
+    "moma calling!?",
+    "Yep?",
+    "uh....",
+    "aha...",
+    "yep...",
+    "...",
+    "sure...",
+    "mom... I'm on work!",
+    "...",
+    "er...",
+    "(love you too...)",
+    "yes!",
+    "ya ya...",
+    "yep...",
+    "se...",
+    "(phone hungs)",
+    "...",
+    "Oh sh*t!",
+    "be patient!",
+    "",
+    "...",
+    "",
+    "Look behind you,","a Three-Headed","Monkey!!!!",
+    "",
+    "still here?",
+    "",
+    "lol!!! x'D",
+    "",
+    "mi mind","is going,","Dave",
+    "",
+    "Klaatu barada nikto",
+    "",
+    "oh kmon!!!",
+    "ALL YOUR","BASE ARE","BELONG TO US",
+    "Or be a Teapot!",
+};
 #endif

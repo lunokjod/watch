@@ -95,6 +95,7 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * Menú must remember the last used or better: reorder the list with user preferences (app usage counters)
  * viewport
  * animations
+ * alternative digital watchface 
  * hive mode (wireless mesh, share info with other lunokIoT, without infrastructure)
 ## Important build flags
  platform.ini file contains the build flags, the more relevant are:
@@ -119,7 +120,7 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * Try to build again
 ### Clock don't show nothing on screen
  * is a V3 device?
- * if are other model, edit platformio.ini and change "build_flags = -DLILYGO_WATCH_2020_V3" to fit with
+ * Review the build list of platformio and select RELEASE and your version V_1,V_2,V_3...
 
 ## Know problems
  * Touch are unstable meanwhile calibration is running (some seconds after boot)

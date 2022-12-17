@@ -28,11 +28,11 @@ const char *AboutBoxTextScroll[] = {
     LUNOKIOT_BUILD_STRING,
     "",
     "",
-    "blah blah blah",
-    "yak yak yak",
-    "@TODO",
-    "thirdparty",
-    "credits",
+
+    "",
+    "lunokWatch is",
+    "open-source",
+    "software",
     "",
 
     "",
@@ -68,6 +68,15 @@ const char *AboutBoxTextScroll[] = {
     "",
     "Bosch",
     "bma423",
+
+    "",
+    "",
+    "",
+    "Game tileset",
+    "--------",
+    "dungeontileset-ii", // https://0x72.itch.io/dungeontileset-ii
+    "from:",
+    "Robert",
     "",
     "",
     "",

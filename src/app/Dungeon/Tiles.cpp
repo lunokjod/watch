@@ -182,5 +182,18 @@ const unsigned char * DungeonTileSets[] = {
     coin_anim_f3.pixel_data,    // 74
 
 };
-
 const uint32_t DungeonTileSetsSize = sizeof(DungeonTileSets)/sizeof(DungeonTileSets[0]);
+
+#include "../static/Dungeon/elf_m_idle_anim_f0.c"
+#include "../static/Dungeon/elf_m_idle_anim_f1.c"
+#include "../static/Dungeon/elf_m_idle_anim_f2.c"
+#include "../static/Dungeon/elf_m_idle_anim_f3.c"
+
+const unsigned char * DungeonPeopleSets[] = {
+    elf_m_idle_anim_f0.pixel_data,
+    elf_m_idle_anim_f1.pixel_data,
+    elf_m_idle_anim_f2.pixel_data,
+    elf_m_idle_anim_f3.pixel_data,
+};
+const uint32_t DungeonPeopleSetsSize = sizeof(DungeonPeopleSets)/sizeof(DungeonPeopleSets[0]);
+

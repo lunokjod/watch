@@ -34,10 +34,11 @@ const char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/
 
 #define LUNOKIOT_TASK_STACK_SIZE 1024*4 // usual task
 #define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task
+#define LUNOKIOT_NETWORK_STACK_SIZE 1024*16  // Wifi/OTA
 #define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32    // full TCP/IP Stacks
 
 
-extern RTC_DATA_ATTR uint32_t bootCount; // @TODO don't work? why?
+//extern RTC_DATA_ATTR uint32_t bootCount; // @TODO don't work? why?
 
 extern bool systemSleep; // turns true when system is in "gray state" (just after wakeup/sleep)
 extern unsigned long currentBootTime;

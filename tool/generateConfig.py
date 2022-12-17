@@ -45,23 +45,23 @@ openWeatherFile = basePath + "/openWeatherKey.txt"
 
 # check files
 template_exists = exists(templateFilename)
-weatherkey_exists = exists(openWeatherFile)
+#weatherkey_exists = exists(openWeatherFile)
 if False == template_exists:
         print("")
         print("-----------> NO template file found for generate header, ABORT BUILD")
         print("")
         exit(100)
-if False == weatherkey_exists:
-        print("")
-        print("-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD")
-        print("")
-        exit(100)
+#if False == weatherkey_exists:
+#        print("")
+#        print("-----------> NO WEATHER KEY FILE FOUND, ABORT BUILD")
+#        print("")
+#        exit(100)
 
 templateFile = open(templateFilename, "r")
 templateData = templateFile.read() 
 templateFile.close()
 buildCount = 0
-openweatherKey = "PLEASE_SET_OPENWEATHER KEY"
+openweatherKey = "PLEASE_SET_OPENWEATHER_KEY"
 
 if "debug" == build_type:
     print(" -> Debug build increment buildcount")
@@ -75,7 +75,7 @@ if "debug" == build_type:
         f.write(str(buildCount))
     with open(openWeatherFile,'r') as f:
         openweatherKey = f.read()
-else:
+elif "release" == build_type:
     print(" -> Release build don't increment the buildcont")
     with open(counterFile,'r') as f:
         buildCount = int(f.read())
@@ -85,10 +85,13 @@ openweatherKey = openweatherKey.replace('\n','').replace('\r','').strip()
 outputData = templateData.replace("@@LUNOKIOT_GENERATED_FILE_WARNING@@", str("DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE on build time USE .template instead"))
 outputData = outputData.replace("@@BUILD_NUMBER@@", str(buildCount))
 outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
-outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
-outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", str(get_ip()))
+if "debug" == build_type:
+    outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
+    outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", str(get_ip()))
+else:
+    outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", "")
+    outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", "127.0.0.1")
 outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
-
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))
 #outputData = outputData.replace("@@LUNOKIOT_OTA_HOST@@", str(get_ip()))
