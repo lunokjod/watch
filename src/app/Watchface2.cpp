@@ -136,8 +136,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
 
 bool Watchface2Application::ParseWeatherData() {
 
-    if (nullptr == weatherReceivedData)
-    {
+    if (nullptr == weatherReceivedData) {
         lNetLog("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''\n");
         weatherId = -1;
         return false;
@@ -253,13 +252,11 @@ void Watchface2Application::Handlers()
             // GMT +8 = 28800
             // GMT -1 = -3600
             // GMT 0 = 0
-            while (false == getLocalTime(&timeinfo, 100))
-            {
+            while (false == getLocalTime(&timeinfo, 100)) {
                 delay(100);
             }
             lNetLog("Watchface: NTP Received\n");
-            if (getLocalTime(&timeinfo))
-            {
+            if (getLocalTime(&timeinfo))  {
                 lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon, 1900 + timeinfo.tm_year);
                 ttgo->rtc->syncToRtc();
                 RTC_Date d = ttgo->rtc->getDateTime();
