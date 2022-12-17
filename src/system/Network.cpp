@@ -137,63 +137,64 @@ void SearchUpdateAsNetworkTask() {
     if ( nullptr == SearchUpdateNetworkTask ) {
         SearchUpdateNetworkTask = new NetworkTaskDescriptor();
         SearchUpdateNetworkTask->name = (char *)"Check updates";
-        SearchUpdateNetworkTask->everyTimeMS = (((1000*60)*60)*24*7); // once a week x'D (continue dreaming!)
+        SearchUpdateNetworkTask->everyTimeMS = (((1000*60)*60)*24*3); // every 3 days
         SearchUpdateNetworkTask->_lastCheck=millis();
         SearchUpdateNetworkTask->_nextTrigger=0; // launch NOW if no synched never again
         SearchUpdateNetworkTask->callback = [&]() {
+            //lNetLog("Checking for updates...\n");
             // @NOTE to get the PEM from remote server:
             // openssl s_client -connect raw.githubusercontent.com:443 -showcerts </dev/null | openssl x509 -outform pem > raw_githubusercontent_com.pem
             // echo "" | openssl s_client -showcerts -connect raw.githubusercontent.com:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >raw_githubusercontent_com.pem
             WiFiClientSecure *client = new WiFiClientSecure;
             if (nullptr != client ) {
                 client->setCACert((const char*)githubPEM_start);
-                { // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
-                    HTTPClient https;
-                    https.setConnectTimeout(8*1000);
-                    https.setTimeout(8*1000);
-                    //https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
-                    String serverPath = LastVersionURL;
-                    if (https.begin(*client, serverPath)) {
-                        // HTTPS
-                        //lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
-                        // start connection and send HTTP header
-                        int httpCode = https.GET();
+                HTTPClient https;
+                https.setConnectTimeout(8*1000);
+                https.setTimeout(8*1000);
+                https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+                //lNetLog("GET: %s...\n",LastVersionURL);
 
-                        // httpCode will be negative on error
-                        if (httpCode > 0) {
-                            // HTTP header has been send and Server response header has been handled
-                            //lNetLog("SearchUpdate: https get code: %d\n", httpCode);
-                            // file found at server
-                            if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-                                String payload = https.getString();
-                                if ( nullptr != latestBuildFoundString ) {
-                                    free(latestBuildFoundString);
-                                    latestBuildFoundString = nullptr;
-                                }
-                                latestBuildFoundString = (char*)ps_malloc(payload.length()+1);
-                                strcpy(latestBuildFoundString,payload.c_str());
-                                if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
-                                    lNetLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
-                                    SystemUpdateAvailiable();
-                                }
+                String serverPath = LastVersionURL;
+                if (https.begin(*client, serverPath)) {
+                    // HTTPS
+                    //lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
+                    // start connection and send HTTP header
+                    int httpCode = https.GET();
+
+                    // httpCode will be negative on error
+                    if (httpCode > 0) {
+                        // HTTP header has been send and Server response header has been handled
+                        //lNetLog("SearchUpdate: https get code: %d\n", httpCode);
+                        // file found at server
+                        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+                            String payload = https.getString();
+                            if ( nullptr != latestBuildFoundString ) {
+                                free(latestBuildFoundString);
+                                latestBuildFoundString = nullptr;
+                            }
+                            latestBuildFoundString = (char*)ps_malloc(payload.length()+1);
+                            strcpy(latestBuildFoundString,payload.c_str());
+                            if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
+                                lNetLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
+                                SystemUpdateAvailiable();
                             }
                         } else {
-                            lNetLog("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
-                            https.end();
-                            delete client;
-                            return false;
+                            lNetLog("SearchUpdate: http get rough response: %s\n", https.errorToString(httpCode).c_str());
                         }
-                        https.end();
                     } else {
-                        lNetLog("SearchUpdate: Unable to connect\n");
-                        delete client;
-                        return false;
+                        lNetLog("SearchUpdate: http get failed, error: %s\n", https.errorToString(httpCode).c_str());
                     }
+                    https.end();
+                } else {
+                    lNetLog("SearchUpdate: Unable to connect\n");
+                    delete client;
+                    return false;
                 }
+                lNetLog("SearchUpdate: end\n");
                 delete client;
                 return true;
             }
-            lNetLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
+            lNetLog("SearchUpdate: Unable to create WiFiClientSecure\n");
             return false;
         };
         AddNetworkTask(SearchUpdateNetworkTask);
