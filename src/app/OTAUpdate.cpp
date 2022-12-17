@@ -8,6 +8,10 @@
 #include "esp_wifi.h"
 #include <esp_https_ota.h>
 
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/GaugeWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
+
 #include "../static/img_update_48.xbm"
 
 #include "freertos/FreeRTOS.h"
@@ -24,7 +28,7 @@ extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_
 extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 extern bool wifiOverride;
 
-int OTAbytesPerSecond=0;
+//int OTAbytesPerSecond=0;
 #define OTASTEP_IDLE -1
 #define OTASTEP_NO_WIFI 0
 #define OTASTEP_ALREADYUPDATED 1
@@ -38,6 +42,10 @@ int OTAbytesPerSecond=0;
 #define OTASTEP_IMAGE_DOWNLOAD_DONE 8
 
 int8_t OTAStep=OTASTEP_IDLE;
+
+GraphWidget * OTADownloadSpeed=nullptr;
+long OTADownloadTimeLapse=0;
+int32_t OTADownloadSample=0;
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     switch (evt->event_id) {
@@ -55,7 +63,16 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         break;
     case HTTP_EVENT_ON_DATA:
         //lAppLog("HTTP_EVENT_ON_DATA, len=%d\n", evt->data_len);
-        OTAbytesPerSecond=evt->data_len;
+        if ( millis() > OTADownloadTimeLapse ) {
+            OTADownloadSpeed->PushValue(0); // add space
+            OTADownloadSpeed->PushValue(OTADownloadSample);
+            OTADownloadSpeed->PushValue(0); // add space
+            //lAppLog("OTADownloadSample: %d\n",OTADownloadSample);
+            OTADownloadSample=0;
+            OTADownloadTimeLapse=millis()+300;
+        } else {
+            OTADownloadSample+=evt->data_len;
+        }
         break;
     case HTTP_EVENT_ON_FINISH:
         lAppLog("HTTP_EVENT_ON_FINISH\n");
@@ -68,11 +85,16 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 }
 
 OTAUpdateApplication::OTAUpdateApplication() {
+    OTAStep=OTASTEP_IDLE;
     canvas->fillSprite(ThCol(background)); // use theme colors
-    progressBar = new GaugeWidget(30, 30, 180);
+
+    OTADownloadSpeed = new GraphWidget(40,180,0,18*1024,TFT_BLUE,Drawable::MASK_COLOR,TFT_YELLOW);
+
+    //progressBar = new GaugeWidget(30, 30, 180);
+    progressBar = new GaugeWidget(55, 55, 130);
 //uint32_t wgaugeColor=ThCol(button), uint32_t markColor=ThCol(middle), uint32_t needleColor=ThCol(highlight), uint32_t incrementColor=ThCol(max));
 
-    updateBtn = new ButtonImageXBMWidget(120-40,120-40, 80, 80, [&,this](){
+    updateBtn = new ButtonImageXBMWidget(120-50,120-50, 100, 100, [&,this](){
         updateBtn->SetEnabled(false);
         if ( nullptr == latestBuildFoundString ) {
             lAppLog("OTA: WiFi working?\n");
@@ -88,7 +110,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
             return;
         }
         OTAStep=OTASTEP_CONNECTING;
-        lAppLog("OTA: Trying to get Wifi...\n");
+        lAppLog("OTA: Trying to get WiFi...\n");
         wifiOverride=true;
         WiFi.begin();
         esp_wifi_set_ps(WIFI_PS_NONE); // disable wifi powersave
@@ -98,7 +120,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
             if ( WL_CONNECTED == currStat) { break; }
         }
         if ( millis() >= timeout ) {
-            lAppLog("OTA: Timeout trying to start wifi!\n");
+            lAppLog("OTA: Timeout trying to start WiFi!\n");
             updateBtn->SetEnabled(true);
             OTAStep=OTASTEP_NO_WIFI;
             return;
@@ -111,10 +133,10 @@ OTAUpdateApplication::OTAUpdateApplication() {
         lAppLog("OTA: System update availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
         // implement https OTA https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_https_ota.html
         char firmwareURL[256];
-        const char * myDeviceName = "esp32"; // generic;
 
+        const char * myDeviceName = "esp32"; // generic;
         #ifdef LILYGO_WATCH_2020_V3
-        myDeviceName = "ttgo-t-watch_2020_v3"; 
+        myDeviceName = "ttgo-t-watch_2020_v3";
         #endif
         #ifdef LILYGO_WATCH_2020_V2
         myDeviceName = "ttgo-t-watch_2020_v2"; 
@@ -159,7 +181,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
             lAppLog("image header verification failed\n");
             goto ota_end;
         }*/
-        while (1) {
+        while (true) {
             err = esp_https_ota_perform(https_ota_handle);
             if (err != ESP_ERR_HTTPS_OTA_IN_PROGRESS) {
                 break;
@@ -204,14 +226,14 @@ ota_end:
         wifiOverride=false;
         updateBtn->SetEnabled(true);
         OTAStep=OTASTEP_IDLE;
-    },img_update_48_bits, img_update_48_height, img_update_48_width,TFT_WHITE,TFT_BLACK,false);
+    },img_update_48_bits, img_update_48_height, img_update_48_width); //,TFT_WHITE,TFT_BLACK,false);
     updateBtn->taskStackSize=LUNOKIOT_APP_STACK_SIZE;
 
     canvas->setTextFont(0);
-    canvas->setTextColor(TFT_WHITE);
+    //canvas->setTextColor(ThCol(dark));
     canvas->setTextSize(4);
     canvas->setTextDatum(CC_DATUM);
-
+    bufferForText=(char*)ps_malloc(256);
     Tick();
 }
 
@@ -222,6 +244,9 @@ OTAUpdateApplication::~OTAUpdateApplication() {
     }
     delete updateBtn;
     delete progressBar;
+    delete OTADownloadSpeed;
+    OTADownloadSpeed=nullptr;
+    free(bufferForText);
     WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_OFF);
@@ -240,7 +265,6 @@ bool OTAUpdateApplication::Tick() {
 
     if ( millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background)); // use theme colors
-
         if ( updateBtn->GetEnabled() ) {
             if ( backTap ) {
                 btnBack->DirectDraw();
@@ -263,17 +287,18 @@ bool OTAUpdateApplication::Tick() {
                 int percentDone=percentDone =(imageDownloaded*100)/imageSize;
                 sprintf(percentAsString,"%d%%", percentDone);
                 //lAppLog("PERCENT: '%s'\n", percentAsString);
+                sprintf(bufferForText,"%d / %d", imageDownloaded, imageSize);
+                
             }
-            progressBar->DrawTo(canvas);
 
-            canvas->setTextSize(4);
-            canvas->setTextDatum(CC_DATUM);
-            canvas->drawString(percentAsString,canvas->width()/2, canvas->height()/2);
+        } else { sprintf(bufferForText,"awaiting data"); }
+        if ( OTASTEP_IDLE!=OTAStep ) {
+            progressBar->DrawTo(canvas);
         }
 
         const char * whatAreYouDoing="Please wait...";
         if ( OTASTEP_NO_WIFI==OTAStep ) {
-            whatAreYouDoing="No WiFi Error!";
+            whatAreYouDoing="No updates seen";
         } else if ( OTASTEP_ALREADYUPDATED==OTAStep ) {
             whatAreYouDoing="Updated!";
         } else if ( OTASTEP_CONNECTING==OTAStep ) {
@@ -285,20 +310,43 @@ bool OTAUpdateApplication::Tick() {
         } else if ( OTASTEP_HTTPS_ERROR==OTAStep ) {
             whatAreYouDoing="HTTPS Error!";
         } else if ( OTASTEP_IMAGE_DOWNLOAD==OTAStep ) {
-            whatAreYouDoing="Downloading...";
+            whatAreYouDoing="Download";
         } else if ( OTASTEP_IMAGE_ERROR==OTAStep ) {
             whatAreYouDoing="Firmware Error!";
         } else if ( OTASTEP_IMAGE_DOWNLOAD_DONE==OTAStep ) {
             whatAreYouDoing="Done!";
         }
 
-        if ( OTASTEP_IDLE!=OTAStep ) {
+        if ( ( OTASTEP_IDLE!=OTAStep ) ) { //&& ( OTASTEP_IMAGE_DOWNLOAD!=OTAStep ) ) {
             canvas->setTextSize(2);
-            canvas->setTextDatum(BC_DATUM);
-            canvas->drawString(whatAreYouDoing,canvas->width()/2, canvas->height()-40);
+            canvas->setTextDatum(TC_DATUM);
+            canvas->setTextColor(ThCol(text));
+            canvas->drawString(whatAreYouDoing,canvas->width()/2,20); // canvas->height()-20);
         }
+
         if ( updateBtn->GetEnabled() ) {
             updateBtn->DrawTo(canvas);
+            // draw news/changes circle over button
+            uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
+            uint32_t remoteVersion = atoi(latestBuildFoundString);
+            if ( remoteVersion > myVersion ) {
+                canvas->fillCircle(updateBtn->x,updateBtn->y,10,TFT_BLACK);
+                canvas->fillCircle(updateBtn->x,updateBtn->y,8,TFT_WHITE);
+                canvas->drawCircle(updateBtn->x,updateBtn->y,6,TFT_BLACK);
+                canvas->fillCircle(updateBtn->x,updateBtn->y,5,TFT_GREEN);
+            }
+        } else {
+            OTADownloadSpeed->DrawTo(canvas,30,canvas->height()-70);
+            canvas->setTextSize(2);
+            canvas->setTextDatum(BC_DATUM);
+            canvas->setTextColor(ThCol(text));
+            canvas->drawString(bufferForText,canvas->width()/2, canvas->height()-5);
+            //canvas->drawString(bufferForText,canvas->width()/2, canvas->height()-5);
+
+            canvas->setTextSize(4);
+            canvas->setTextDatum(CC_DATUM);
+            canvas->drawString(percentAsString,canvas->width()/2, canvas->height()/2);
+
         }
         nextRefresh=millis()+(1000/6);
         return true;

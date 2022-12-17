@@ -62,6 +62,7 @@ $ pio run -e Release-twatch2020_V3 -t upload
   * Man in the middle resistant (BLE)
  * Color themes
  * Screen orientation
+ * OTA update (wireless)
 
  
 ## Full application list:
@@ -86,7 +87,6 @@ $ pio run -e Release-twatch2020_V3 -t upload
 * espNow (locate other family watches)
 * Touch on sleep
 * Custom activities (hidden app availiable for testing)
-* OTA shit
 * feedbacked apps (what do you need?)
 * LocalCloud, a support app for the watch (companion app or something)
 * Web installer: https://espressif.github.io/esptool-js/
@@ -108,7 +108,7 @@ $ pio run -e Release-twatch2020_V3 -t upload
 * **-DLUNOKIOT_DEBUG_NETWORK** Network specific debug messages
 * **-DLUNOKIOT_SILENT_BOOT** dont shake and no fanfare sound when start/stop
 * **-DLUNOKIOT_WIFI_ENABLED** start the wifi timed connection subsystem
-  * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github (blocked development until OTA)
+  * **-DLUNOKIOT_UPDATES_ENABLED** check lastbuild on github and warn about the update
 * **-DLUNOKIOT_BLE_ENABLED** start the ble subsystem
 * **-DLUNOKIOT_SCREENSHOOT_ENABLED** Allow to do screenshoots (touch 5 seconds to use it)
 * **-DLUNOKIOT_SERIAL** Enable serial comms via UART 115200bps (output log)
