@@ -51,6 +51,7 @@ const int16_t QRSize = 240;
 #define PIXELSIZE2 QRSize/SIDELEN // with wide black borders
 #define PROV_QR_VERSION         "v1"
 
+extern bool wifiOverride;
 
 Provisioning2Application *lastProvisioning2Instance = nullptr;
 
@@ -207,6 +208,7 @@ Provisioning2Application::~Provisioning2Application() {
         free(currentQRData);
         currentQRData = nullptr;
     }
+    wifiOverride=false;
 }
 
 
@@ -239,6 +241,7 @@ void Provisioning2Application::GenerateCredentials() {
 }
 
 Provisioning2Application::Provisioning2Application() {
+    wifiOverride=true;
     lastProvisioning2Instance = this;
     WiFi.begin();
     // get my name

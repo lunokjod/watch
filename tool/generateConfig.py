@@ -88,10 +88,11 @@ outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
 if "debug" == build_type:
     outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
     outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", str(get_ip()))
-else:
+else: # clover the openweather key and localcloud node
     outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", "")
     outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", "127.0.0.1")
 outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
+
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))
 #outputData = outputData.replace("@@LUNOKIOT_OTA_HOST@@", str(get_ip()))
