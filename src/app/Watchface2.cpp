@@ -397,20 +397,17 @@ void Watchface2Application::Handlers()
         {
             weatherSyncDone = false;
             bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
-            if (false == oweatherValue)
-            {
+            if (false == oweatherValue) {
                 lNetLog("Watchface: Openweather Sync disabled\n");
                 return true;
             }
-            if (0 == strlen(openWeatherMapApiKey.c_str()))
-            {
+            if (0 == openWeatherMapApiKey.length()) {
                 lNetLog("Watchface: Openweather Cannot get weather without API KEY https://openweathermap.org/api\n");
                 return true;
             }
             bool getDone = Watchface2Application::GetSecureNetworkWeather();
             // @TODO parse online is not optimal for battery and posible harmfull (remote attack using parser bug)
-            if (getDone)
-            {
+            if (getDone) {
                 bool parseDone = Watchface2Application::ParseWeatherData();
                 weatherSyncDone = parseDone;
                 return parseDone;
