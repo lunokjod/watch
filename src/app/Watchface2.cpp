@@ -86,9 +86,51 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     const char urlFormatString[] = "https://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&APPID=%s";
     sprintf(url,urlFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
     lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));
+    WiFiClientSecure *client = new WiFiClientSecure;
+    if(nullptr == client) {
+        lNetLog("GetSecureNetworkWeather: ERROR: Unable to create WiFiClientSecure\n");
+        return false;
+    }
+    client -> setCACert((const PROGMEM char *)openweatherPEM_start);
+    {
+        HTTPClient weatherClient;
+        if (false == weatherClient.begin(*client, url)) {  // HTTPS
+            lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
+            delete client;
+            return false;
+        }
+        int httpResponseCode = weatherClient.GET();
+        free(url);
+        lNetLog("Watchface: GetSecureNetworkWeather: HTTP response code: %d\n", httpResponseCode);
+        if (httpResponseCode < 1) {
+            weatherClient.end();
+            delete client;
+            return false;
+        }
+        // clean old buffer if needed
+        if (nullptr != weatherReceivedData) {
+            free(weatherReceivedData);
+            weatherReceivedData = nullptr;
+        }
+        String payload = weatherClient.getString(); // fuck strings
+        
+        lNetLog("Watchface: GetSecureNetworkWeather: free weatherClient\n");
+        weatherClient.end();
+        delete client;
 
+        // Generate the received data buffer
+        if (nullptr == weatherReceivedData) {
+            lNetLog("Allocate: weatherReceivedData size: %d\n",payload.length());
+            weatherReceivedData = (char *)ps_malloc(payload.length() + 1);
+            strcpy(weatherReceivedData, payload.c_str());
+        }
+    }
+    lNetLog("HTTP: %s\n",weatherReceivedData);
+    return true;
+
+
+    /*
     HTTPClient *weatherClient = new HTTPClient();
-    FreeSpace();
     weatherClient->begin(url,(const PROGMEM char *)openweatherPEM_start);
     int httpResponseCode = weatherClient->GET();
     free(url);
@@ -117,7 +159,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     }
     lNetLog("HTTP: %s\n",weatherReceivedData);
     return true;
-
+    */
 
 
 
@@ -216,7 +258,6 @@ bool Watchface2Application::GetSecureNetworkWeather() {
                             free(weatherReceivedData);
                             weatherReceivedData = nullptr;
                         }
-                        lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
                         weatherReceivedData = (char *)ps_malloc(payload.length() + 1);
                         lLog("BBBBBBBB\n");
                         strcpy(weatherReceivedData, payload.c_str());
@@ -510,9 +551,8 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        //AddNetworkTask(weatherTask);
-        delete weatherTask;
-        lNetLog("@DEBUG @WIP DISABLED OPENWEATHER\n");
+        weatherTask->desiredStack = LUNOKIOT_PROVISIONING_STACK_SIZE;
+        AddNetworkTask(weatherTask);
     }
 #endif
 }
@@ -599,18 +639,13 @@ Watchface2Application::Watchface2Application()
     Handlers();
 }
 
-void Watchface2Application::FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
-    // Serial.printf("AWWW YEAHHHH event:'%s' id: '%d' \n",base, id);
+void Watchface2Application::FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     Watchface2Application *self = reinterpret_cast<Watchface2Application *>(handler_args);
-    if (WIFI_EVENT == base)
-    {
-        if (WIFI_EVENT_STA_START == id)
-        {
+    if (WIFI_EVENT == base) {
+        if (WIFI_EVENT_STA_START == id) {
             self->wifiEnabled = true;
         }
-        else if (WIFI_EVENT_STA_STOP == id)
-        {
+        else if (WIFI_EVENT_STA_STOP == id) {
             self->wifiEnabled = false;
         }
     }

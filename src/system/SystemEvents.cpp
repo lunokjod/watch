@@ -754,6 +754,9 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "AP TSF reset";
             }
             lNetLog("FreeRTOS event:'%s' WiFi STA: Disconnected Reason: '%s'\n", base,ReasonText);
+
+            lSysLog("FreeRTOS event: Forced poweroff WiFi after disconnect\n");
+            WiFi.mode(WIFI_OFF); 
             identified = true;
         } else if (WIFI_EVENT_AP_START == id) {
             lNetLog("FreeRTOS event:'%s' WiFi AP: Start\n", base);
@@ -1327,6 +1330,8 @@ void BootReason() {
  */
 void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
     FreeSpace();
+    lLog("\n");
+    lLog(" ====== /!\\/!\\/!\\ ======\n");
     lLog("\n");
     lSysLog("MEMORY ERROR: Unable to allocate %d bytes requested by: '%s' (flags: %x)\n",size,function_name,caps);
     lLog("\n");

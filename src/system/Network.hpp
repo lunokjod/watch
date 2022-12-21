@@ -4,7 +4,7 @@
 #include <functional>
 #include <list>
 #include <NimBLEDevice.h>
-
+#include "../lunokiot_config.hpp"
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -34,6 +34,7 @@ class NetworkTaskDescriptor {
         unsigned long everyTimeMS = -1; // lapse in millis
         unsigned long _nextTrigger = -1; // -1 means first launch in next time window or 0 for inmediate
         unsigned long _lastCheck = -1;  // reserved
+        uint32_t desiredStack = LUNOKIOT_NETWORK_STACK_SIZE;
         void * payload = nullptr;   // @TODO this may be useless
         std::function<bool ()> callback = nullptr; // lambda power
 };
