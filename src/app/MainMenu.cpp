@@ -56,6 +56,8 @@
 #include "../static/img_mainmenu_stopwatch.xbm"
 #include "Stopwatch.hpp"
 
+#include "Settings.hpp"
+
 #ifdef LILYGO_WATCH_2020_V3
 #include "../static/img_mainmenu_mic.xbm"
 #include "Mic.hpp"
@@ -96,10 +98,8 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
-
 //    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
 //    {"Update",img_mainmenu_update_bits, img_mainmenu_update_height, img_mainmenu_update_width, []() { LaunchApplication(new OTAUpdateApplication()); } },
-
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, []() { LaunchApplication(new DungeonGameApplication()); } },
 #ifdef LILYGO_WATCH_2020_V3
 //    {"Mic test",img_mainmenu_mic_bits, img_mainmenu_mic_height, img_mainmenu_mic_width, []() { LaunchApplication(new MicApplication()); } },

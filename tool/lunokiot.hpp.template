@@ -5,40 +5,61 @@
  * @@LUNOKIOT_GENERATED_FILE_WARNING@@
  */
 
+
+// force esp-idf debug to appear if flags are enabled
+#ifdef LUNOKIOT_DEBUG
+#include <esp_log.h>
+#ifdef LUNOKIOT_DEBUG_SYSTEM
+#ifdef CORE_DEBUG_LEVEL
+#undef CORE_DEBUG_LEVEL
+#endif
+#define CORE_DEBUG_LEVEL ESP_LOG_VERBOSE
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#endif
+#endif
+
+
 #include <Arduino.h>
-//#include <LilyGoWatch.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
 #include <esp_event.h>
 #include <esp_event_base.h>
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
-
 #include "system/Application.hpp"
 
-#define uS_TO_S_FACTOR 1000000
+#define uS_TO_S_FACTOR 1000000 // micros in a second
 
 #define LUNOKIOT_WAKE_TIME_S 60 // used for wakeup the device every X seconds to get samples
 
+const TickType_t LUNOKIOT_SYSTEM_HEARTBEAT_TIME = (1500 / portTICK_PERIOD_MS); // system heartbeat in times per second
+const TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
+const TickType_t LUNOKIOT_TIMEDTASKS_LOOP_TIME = (1000 / portTICK_PERIOD_MS); //  system message loops
+const TickType_t LUNOKIOT_SYSTEM_INTERRUPTS_TIME = (50 / portTICK_PERIOD_MS); // system AXP interrupt controller in times per second
+
 
 #define LUNOKIOT_BUILD_NUMBER @@BUILD_NUMBER@@
-const char LUNOKIOT_BUILD_STRING[] = "@@BUILD_NUMBER@@";
-#define LUNOKIOT_KEY "@@LUNOKIOT_KEY@@"
-//#define LUNOKIOT_SERIAL "@@LUNOKIOT_SERIALNUMBER@@"
-//#define LUNOKIOT_UNIQUEID "@@LUNOKIOT_UNIQUEID@@"
-//#define LUNOKIOT_OTA_HOST "@@LUNOKIOT_OTA_HOST@@"
+const PROGMEM char LUNOKIOT_BUILD_STRING[] = "@@BUILD_NUMBER@@";
+const PROGMEM char LUNOKIOT_KEY[] = "@@LUNOKIOT_KEY@@";
 
-const char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt"; // this number determine if update is available online
-#define LUNOKIOT_LOCAL_CLOUD_URL "http://@@LUNOKIOT_LOCAL_CLOUD@@:@@LUNOKIOT_LOCAL_CLOUD_PORT@@" // ./thttpd -p 6969 -d ../site -D
+#define LUNOKIOT_UPDATE_TIMEOUT (8*1000)
+const PROGMEM char LUNOKIOT_UPDATE_LOCAL_URL[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:4443"; // ./thttpd -p 8080 -d ../site -D
+const PROGMEM char LUNOKIOT_LOCAL_CLOUD_URL[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:@@LUNOKIOT_LOCAL_CLOUD_PORT@@"; // ./thttpd -p 6969 -d ../site -D
 
+#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+const PROGMEM char LastVersionURL[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:4443/ota/.buildCount.txt";
+#else
+const PROGMEM char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjod/watch/devel/tool/.buildCount.txt"; // this number determine if update is available online
+#endif
+
+
+#define LUNOKIOT_LIL_STACK_SIZE     512 // app killer thread
+#define LUNOKIOT_TINY_STACK_SIZE 1024*2 // small task
 #define LUNOKIOT_TASK_STACK_SIZE 1024*4 // usual task
 #define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task
-#define LUNOKIOT_NETWORK_STACK_SIZE 1024*16  // Wifi/OTA
-#define LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE 1024*32    // full TCP/IP Stacks
-
-
-//extern RTC_DATA_ATTR uint32_t bootCount; // @TODO don't work? why?
+#define LUNOKIOT_NETWORK_STACK_SIZE 1024*16  // WiFi
+#define LUNOKIOT_PROVISIONING_STACK_SIZE 1024*32    // BLE/OTA/Provisioning/webserver
+#define LUNOKIOT_NETWORK_TASK_STACK_SIZE 1024*22
 
 extern bool systemSleep; // turns true when system is in "gray state" (just after wakeup/sleep)
 extern unsigned long currentBootTime;
@@ -104,9 +125,9 @@ extern int16_t touchDragVectorX; // drag vectorX
 extern int16_t touchDragVectorY; // drag vectorY
 
 // Obtained by generateConfig.py from file: openWeatherKey.txt
-const String openWeatherMapApiKey = "@@OPENWEATHER_APIKEY@@";
+const PROGMEM char openWeatherMapApiKey[] = "@@OPENWEATHER_APIKEY@@";
 
-const uint8_t BaseBackLightBrightness = 32; // minimal bright
+const PROGMEM uint8_t BaseBackLightBrightness = 32; // minimal bright
 
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
 extern uint8_t userTall; 
@@ -114,14 +135,14 @@ extern bool userMaleFemale;
 extern float stepDistanceCm;
 
 // network flags
-const unsigned long NetworkTimeout = 3*1000; // time until wifi is killed by timeout in milliseconds
-const unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
+const PROGMEM unsigned long NetworkTimeout = 3*1000; // time until wifi is killed by timeout in milliseconds
+const PROGMEM unsigned long ReconnectPeriodMs = (60*1000)*30; // timed WiFi network connection (fetch data)
 extern bool provisioned; // need to do advanced network tasks
 
 
 /* Median step by sex */
-const float MAN_STEP_PROPORTION = 0.415;
-const float WOMAN_STEP_PROPORTION = 0.413;
+const PROGMEM float MAN_STEP_PROPORTION = 0.415;
+const PROGMEM float WOMAN_STEP_PROPORTION = 0.413;
 
 // event timewait
 #define LUNOKIOT_EVENT_DONTCARE_TIME_TICKS 5

@@ -70,8 +70,6 @@ void SimpleWatchfaceApplication::NTPSync(void * data) {
         WiFi.disconnect(true);
         delay(100);
         WiFi.mode(WIFI_OFF);
-        //@TODO esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-
         ntpSyncDone = true;
     }
     Serial.println("NTP sync dies here");
@@ -110,7 +108,7 @@ SimpleWatchfaceApplication::SimpleWatchfaceApplication() {
     secondHandCanvas->canvas->setPivot(6,106);
 
     if ( false == ntpSyncDone ) {
-        xTaskCreate(SimpleWatchfaceApplication::NTPSync, "", LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL);
+        xTaskCreate(SimpleWatchfaceApplication::NTPSync, "", LUNOKIOT_PROVISIONING_STACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL);
     }
 
 }

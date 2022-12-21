@@ -40,13 +40,15 @@ static void TimedHandlerTask(void* args) {
     unsigned long nextConnectMS = 0;
     unsigned long beginConnected = -1;
     unsigned long beginIdle = -1;
+
+
+    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {
-        delay(2*1000); // allow other tasks to do their chance :)
+        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_TIMEDTASKS_LOOP_TIME ); // wait a ittle bit
         if ( systemSleep ) { continue; } // fuck off... giveup/sleep in progress... (shaded area)
 
         if ( false == ntpSyncDone ) {
-            lEvLog("TimedTasks: Not runnig due no NTP sync or manual set timedate isn't done\n");
-            delay(10*1000);
+            //lEvLog("TimedTasks: Not runnig due no NTP sync or manual set timedate isn't done\n");
             continue;
         }
 
@@ -67,7 +69,7 @@ static void TimedHandlerTask(void* args) {
                     }
                 }
             }
-        }        
+        }
     }
     vTaskDelete(NULL);
 }

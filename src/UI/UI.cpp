@@ -22,10 +22,11 @@
 #include "AudioOutputI2S.h"
 #endif
 
-extern TTGOClass *ttgo; // ttgo lib
+extern TTGOClass *ttgo; // ttgo library shit ;)
+extern TFT_eSPI * tft;
 
-extern const uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
-extern const uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
+extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
+extern const PROGMEM uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
 // default theme and palette
 const TemplateColorPalette * currentColorPalette = &DefaultThemeColorPalette;
@@ -87,9 +88,10 @@ void ScreenWake() {
         #if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
         ttgo->touchWakup();
         #endif
-        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
-        delay(1); // get time to queue digest ;)
-        SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
+        // AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+        //delay(1); // get time to queue digest ;)
+        //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
         FPS = MAXFPS;
         UINextTimeout = millis()+UITimeout;
@@ -103,8 +105,9 @@ void ScreenSleep() {
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
+        /// AAAAAAAAAAAAAAAAAAAAAAAAAAAA watchface kill must be placed here!
         Serial.flush();
-        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 #ifdef LUNOKIOT_SERIAL
         Serial.end();
 #endif
@@ -387,9 +390,11 @@ void AlertLedEnable(bool enabled, uint32_t ledColor, uint32_t x, uint32_t y) {
 }
 
 static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    lUILog("UIEventStop\n");
     UIRunning = false;
 }
 static void UIEventContinue(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    lUILog("UIEventContinue\n");
     UIRunning = true;
 }
 
@@ -421,23 +426,36 @@ static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, 
     ttgo->setBrightness(255); // by default, user overrides this on LaunchApplication
 }
 
+
+
+
+
+
+
+
+TaskHandle_t UITickTaskHandler = NULL;              // save the handler
 static void UITickTask(void* args) {
     FPS = MAXFPS;
+    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {
-        delay(1000/FPS);
+        const TickType_t LUNOKIOT_UI_TICK_TIME = (FPS / portTICK_PERIOD_MS); // try to get the promised speed
+        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_UI_TICK_TIME ); // wait a ittle bit
+
         if ( false == UIRunning ) { continue; }
         if ( systemSleep ) { continue; }
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
+
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
-        if ( ESP_ERR_TIMEOUT == what ) {
+        // Dynamic FPS... the apps receives less events per second AAAAAAAAAAAAAAAAAAAAAAAAAAAa
+        if (( ESP_OK != what )||( isDelayed )) {
             FPS--;
-            if ( FPS < 1 ) { FPS =1; }
-            if ( false == directDraw ) { lUILog("UI: Tick timeout! (fps: %d)\n",FPS); }
+            if ( FPS < 1 ) { FPS=1; }
+            //if ( false == directDraw ) { lUILog("UI: Tick delay! (fps: %d)\n",FPS); }
         }
     }
-    vTaskDelete(NULL); // unreachable code
+    lEvLog("UITickTask: is dead!!!\n");
+    vTaskDelete(NULL);
 }
-
 
 
 void UIStart() {
@@ -446,40 +464,40 @@ void UIStart() {
 
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 5,
+        .queue_size = 8,
         .task_name = "uiTask", // task will be created
-        .task_priority = uxTaskPriorityGet(NULL),
+        .task_priority = tskIDLE_PRIORITY-1, //uxTaskPriorityGet(NULL),
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
-        .task_core_id = tskNO_AFFINITY
+        .task_core_id = 1, //tskNO_AFFINITY
     };
     // Create the event loops
-    ESP_ERROR_CHECK(esp_event_loop_create(&uiEventloopConfig, &uiEventloopHandle));
+    esp_event_loop_create(&uiEventloopConfig, &uiEventloopHandle);
 
     // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
     // The loop handle is provided as an argument in order for this example to display the loop the handler is being run on.
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL));
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL);
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL);
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL);
+//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL);
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL));
-
+// Useless if is sended later than whake x'D
+//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL);
+//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL);
 
     // Create the event source task with the same priority as the current task
-    xTaskCreate(UITickTask, "UITick", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreate(UITickTask, "UITick", LUNOKIOT_TASK_STACK_SIZE, NULL,-5, &UITickTaskHandler);
 
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-    UINextTimeout = millis()+UITimeout;
+//    UINextTimeout = millis()+UITimeout;
 
 }
-
+/*
 void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D
     esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, (void*)point, sizeof(point), LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
     if ( ESP_ERR_TIMEOUT == what ) {
         //Serial.println("UI: Poin2D: Change Notification timeout");
     }
-}
+}*/
 /*
 
 

@@ -9,6 +9,12 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 
 #include "../static/img_poweroff_fullscreen.c"
 
+#include "driver/uart.h"
+#include "../app/LogView.hpp"
+//@TODO https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/system.html?highlight=memory#_CPPv429esp_register_shutdown_handler18shutdown_handler_t
+
+extern uint32_t systemStatsRebootCounter;
+
 ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(restart), savedata(savedata) {
     if ( savedata ) {
         SaveDataBeforeShutdown();
@@ -58,17 +64,20 @@ bool ShutdownApplication::Tick() {
     bright-=8;
     if ( bright > -1 ) { ttgo->setBrightness(bright); }
     if ( milisFromBegin > 2200 ) {
+        systemStatsRebootCounter++;
         ttgo->setBrightness(0);
         ttgo->tft->fillScreen(TFT_BLACK);
         if ( restart ) {
-            Serial.println("System restart NOW!");
-            Serial.flush();
-            delay(10);
+            lEvLog("ESP32: System restart NOW!\n");
+            //Serial.flush();
+            //delay(10);
+            uart_wait_tx_idle_polling(UART_NUM_0);
             ESP.restart();
         } else {
-            Serial.println("System shutdown NOW!");
-            Serial.flush();
-            delay(10);
+            lEvLog("ESP32: System shutdown NOW!\n");
+            //Serial.flush();
+            //delay(10);
+            uart_wait_tx_idle_polling(UART_NUM_0);
             ttgo->shutdown();
         }
     }

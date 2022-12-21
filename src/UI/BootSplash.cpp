@@ -27,8 +27,8 @@ bool bootLoopEnds = false; // this is used by the splash to know bootLoop is end
 TFT_eSprite *splashLoadingBar = nullptr;
 
 #ifdef LILYGO_WATCH_2020_V3
-extern const uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
-extern const uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
+extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
+extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT

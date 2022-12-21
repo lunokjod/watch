@@ -12,6 +12,8 @@ extern TFT_eSPI *tft;
 
 #include "../app/Watchface2.hpp"
 
+#include "SystemEvents.hpp"
+
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
@@ -47,7 +49,8 @@ LunokIoTApplication::~LunokIoTApplication() {
         this->canvas = nullptr;
     }
     lUILog("LunokIoTApplication: %p deleted\n", this);
-#ifdef LUNOKIOT_DEBUG
+    /*
+    #ifdef LUNOKIOT_DEBUG
     // In multitask environment is complicated to automate this... but works as advice that something went wrong
     if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 
         lUILog("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
@@ -55,31 +58,35 @@ LunokIoTApplication::~LunokIoTApplication() {
     if ( this->lastApplicationPSRAMFree != ESP.getFreePsram()) { 
         lUILog("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
     }
-#endif
+    #endif
+    */
 }
 
 bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the full screen redraw
 
-class LaunchApplicationDescriptor {
-    public:
-        LunokIoTApplication *instance;
-        bool animation;
-};
-
+// This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTask(void * data) {
+    lUILog("------------------- R I P ---------------\n");
+    FreeSpace();
     lUILog("KillApplicationTask: %p closing...\n", data);
     LunokIoTApplication *instance = (LunokIoTApplication *)data;
     delete instance;
     lUILog("KillApplicationTask: %p has gone\n", data);
+    FreeSpace();
+    lUILog("-----------------------------------------\n");
     vTaskDelete(NULL);
 }
-
 void LaunchApplicationTask(void * data) {
     LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
+    LaunchApplicationTaskSync(dataDesc,false);
+    vTaskDelete(NULL); // get out of my cicken!!!
+}
+void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched) {
+//    LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
 
-    LunokIoTApplication *instance = dataDesc->instance; // get app instance loaded
-    bool animation = dataDesc->animation;
-
+    LunokIoTApplication *instance = appDescriptor->instance; // get app instance loaded
+    bool animation = appDescriptor->animation;
+    delete appDescriptor;
     //delay(10); // do a little delay to launch it (usefull to get a bit of 'yeld()') and launcher call task ends
 
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
@@ -97,20 +104,26 @@ void LaunchApplicationTask(void * data) {
             if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
             TFT_eSprite *appView = instance->canvas;
             if ( animation ) { // Launch new app effect (zoom out)
+                //taskDISABLE_INTERRUPTS();
+                //vTaskSuspendAll();
+                //taskENTER_CRITICAL(NULL);
                 for(float scale=0.1;scale<0.4;scale+=0.04) {
                     TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
                     //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
                     scaledImg->deleteSprite();
                     delete scaledImg;
                 }
                 for(float scale=0.4;scale<0.7;scale+=0.15) {
                     TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
                     //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->width())/2);
+                    scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
                     scaledImg->deleteSprite();
                     delete scaledImg;
                 }
+                //taskEXIT_CRITICAL(NULL);
+                //xTaskResumeAll();
+                //taskENABLE_INTERRUPTS();
             }
             // push full image
             appView->pushSprite(0,0);
@@ -118,23 +131,30 @@ void LaunchApplicationTask(void * data) {
         xSemaphoreGive( UISemaphore ); // free
 
         if ( nullptr != ptrToCurrent ) {
-            // kill app in other thread (some apps takes much time)
-            xTaskCreate(KillApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr);
+            if (synched ) {
+                delete ptrToCurrent;
+            } else {
+                // kill app in other thread (some apps takes much time)
+                xTaskCreate(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, -15, nullptr);
+            }
         }
     }
-    vTaskDelete(NULL); // get out of my cicken!!!
 }
 
-void LaunchApplication(LunokIoTApplication *instance, bool animation) {
+void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced) {
     if ( nullptr != instance ) {
         if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
-            lUILog("Application: %p Already running, stop launch\n", currentApplication);
+            lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
             return;
         }
     }
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();
     thisLaunch->instance = instance;
     thisLaunch->animation = animation;
-    // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
-    xTaskCreate(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, uxTaskPriorityGet(NULL), nullptr);
+    if ( synced ) {
+        LaunchApplicationTaskSync(thisLaunch,true); // forced sync
+    } else {
+        // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
+        xTaskCreate(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, uxTaskPriorityGet(NULL), nullptr);
+    }
 }

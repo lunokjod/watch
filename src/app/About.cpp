@@ -1,6 +1,6 @@
-//#include <Arduino.h>
-//#include <LilyGoWatch.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <Arduino.h>
+#include <LilyGoWatch.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 #include "Settings.hpp"
 #include "../static/img_back_32.xbm"

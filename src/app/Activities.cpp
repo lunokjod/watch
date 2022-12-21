@@ -1,7 +1,7 @@
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
-//#include <Arduino.h>
-//#include <LilyGoWatch.h>
+#include <Arduino.h>
+#include <LilyGoWatch.h>
 #include "../lunokiot_config.hpp"
 
 #include "Activities.hpp"

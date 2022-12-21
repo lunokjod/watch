@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include "../UI/AppTemplate.hpp"
 #include "OTAUpdate.hpp"
+#include "../system/SystemEvents.hpp"
 #include "esp_wifi.h"
 #include <esp_https_ota.h>
 
@@ -23,9 +24,16 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 
+esp_https_ota_handle_t https_ota_handle = NULL;
+
 char * latestBuildFoundString = nullptr;
-extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
-extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
+extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+#else
+extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_server_pem_start");
+extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_server_pem_end");
+#endif
 extern bool wifiOverride;
 
 //int OTAbytesPerSecond=0;
@@ -48,15 +56,18 @@ long OTADownloadTimeLapse=0;
 int32_t OTADownloadSample=0;
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
+    if ( nullptr == OTADownloadSpeed ) {
+        return ESP_OK;
+    }
     switch (evt->event_id) {
     case HTTP_EVENT_ERROR:
         lAppLog("HTTP_EVENT_ERROR\n");
         break;
     case HTTP_EVENT_ON_CONNECTED:
-        lAppLog("HTTP_EVENT_ON_CONNECTED\n");
+        //lAppLog("HTTP_EVENT_ON_CONNECTED\n");
         break;
     case HTTP_EVENT_HEADER_SENT:
-        lAppLog("HTTP_EVENT_HEADER_SENT\n");
+        //lAppLog("HTTP_EVENT_HEADER_SENT\n");
         break;
     case HTTP_EVENT_ON_HEADER:
         //lAppLog("HTTP_EVENT_ON_HEADER, key=%s, value=%s\n", evt->header_key, evt->header_value);
@@ -69,7 +80,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
             OTADownloadSpeed->PushValue(0); // add space
             //lAppLog("OTADownloadSample: %d\n",OTADownloadSample);
             OTADownloadSample=0;
-            OTADownloadTimeLapse=millis()+300;
+            OTADownloadTimeLapse=millis()+100;
         } else {
             OTADownloadSample+=evt->data_len;
         }
@@ -85,21 +96,28 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 }
 
 OTAUpdateApplication::OTAUpdateApplication() {
+    FreeSpace();
     OTAStep=OTASTEP_IDLE;
-    canvas->fillSprite(ThCol(background)); // use theme colors
 
-    OTADownloadSpeed = new GraphWidget(40,180,0,18*1024,TFT_BLUE,Drawable::MASK_COLOR,TFT_YELLOW);
+    canvas->fillSprite(backgroundColor); // use theme colors
+    OTADownloadSpeed = new GraphWidget(40,180,0,8*1024,TFT_BLUE,Drawable::MASK_COLOR,TFT_YELLOW);
+    progressBar = new GaugeWidget(55, 45, 130);
 
-    //progressBar = new GaugeWidget(30, 30, 180);
-    progressBar = new GaugeWidget(55, 55, 130);
-//uint32_t wgaugeColor=ThCol(button), uint32_t markColor=ThCol(middle), uint32_t needleColor=ThCol(highlight), uint32_t incrementColor=ThCol(max));
-
-    updateBtn = new ButtonImageXBMWidget(120-50,120-50, 100, 100, [&,this](){
+    updateBtn = new ButtonImageXBMWidget(120-50,120-50, 100, 100, [this](){
         updateBtn->SetEnabled(false);
+        OTAStep=OTASTEP_IDLE;
+        backgroundColor=ThCol(background);
         if ( nullptr == latestBuildFoundString ) {
             lAppLog("OTA: WiFi working?\n");
             updateBtn->SetEnabled(true);
             OTAStep=OTASTEP_NO_WIFI;
+            backgroundColor=TFT_RED;
+            return;
+        }
+        if ( nullptr == latestBuildFoundString ) {
+            updateBtn->SetEnabled(true);
+            lAppLog("OTA: need check first\n");
+            OTAStep=OTASTEP_IDLE;
             return;
         }
         uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
@@ -121,19 +139,21 @@ OTAUpdateApplication::OTAUpdateApplication() {
         }
         if ( millis() >= timeout ) {
             lAppLog("OTA: Timeout trying to start WiFi!\n");
+            backgroundColor=TFT_RED;
             updateBtn->SetEnabled(true);
             OTAStep=OTASTEP_NO_WIFI;
             return;
         }
-        lAppLog("OTA: WiFi becomes Online\n");
+        lAppLog("OTA: WiFi connected\n");
         OTAStep=OTASTEP_ONLINE;
-        delay(1000);
+        delay(500); // take your time
         esp_err_t ota_finish_err = ESP_OK;
         // -DLUNOKIOT_UPDATES_ENABLED
         lAppLog("OTA: System update availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
         // implement https OTA https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_https_ota.html
         char firmwareURL[256];
 
+        // device ID's
         const char * myDeviceName = "esp32"; // generic;
         #ifdef LILYGO_WATCH_2020_V3
         myDeviceName = "ttgo-t-watch_2020_v3";
@@ -145,14 +165,26 @@ OTAUpdateApplication::OTAUpdateApplication() {
         myDeviceName = "ttgo-t-watch_2020_v1"; 
         #endif
 
+
+#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+        lAppLog("OTA: Using local URL for updates\n");
+        //sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LocalOTAURL,latestBuildFoundString,myDeviceName);
+
+        sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LUNOKIOT_UPDATES_LOCAL_URL,latestBuildFoundString,myDeviceName);
+#else
         sprintf(firmwareURL,"https://raw.githubusercontent.com/lunokjod/watch/devel/ota/lunokWatch_%s_%s.bin",latestBuildFoundString,myDeviceName);
+#endif
         esp_http_client_config_t config = {
             .url = firmwareURL,
             .cert_pem = (const char *)githubPEM_start,
             .user_agent = "Wget/1.21.2",
             .timeout_ms = 5000,
             .event_handler = _http_event_handler,
-            .keep_alive_enable = true,
+//#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+//            .transport_type = HTTP_TRANSPORT_OVER_TCP,
+            .skip_cert_common_name_check=true,
+//#endif
+            //.keep_alive_enable = true,
         };
         OTAStep=OTASTEP_CHECKING;
         lAppLog("OTA: Getting new firmware from: '%s'...\n",firmwareURL);
@@ -161,16 +193,16 @@ OTAUpdateApplication::OTAUpdateApplication() {
         };
         esp_err_t err = esp_https_ota_begin(&ota_config, &https_ota_handle);
         if (err != ESP_OK) {
-            lAppLog("OTA: ESP HTTPS OTA Begin failed: %s\n",esp_err_to_name(err));
+            lAppLog("OTA: ESP HTTPS OTA Begin failed: %s (%d)\n",esp_err_to_name(err),err);
+            backgroundColor=TFT_RED;
             OTAStep=OTASTEP_HTTPS_ERROR;
             goto ota_end;
         }
-
-
         esp_app_desc_t app_desc;
         err = esp_https_ota_get_img_desc(https_ota_handle, &app_desc);
         if (err != ESP_OK) {
             lAppLog("OTA: esp_https_ota_read_img_desc failed\n");
+            backgroundColor=TFT_RED;
             OTAStep=OTASTEP_IMAGE_ERROR;
             goto ota_end;
         }
@@ -198,25 +230,34 @@ OTAUpdateApplication::OTAUpdateApplication() {
         if (esp_https_ota_is_complete_data_received(https_ota_handle) != true) {
             // the OTA image was not completely received and user can customise the response to this situation.
             lAppLog("OTA: Complete data was not received.\n");
+            backgroundColor=TFT_RED;
             OTAStep=OTASTEP_IMAGE_DOWNLOAD_ERROR;
         }
 
 ota_end:
         ota_finish_err = esp_https_ota_finish(https_ota_handle);
         if ((err == ESP_OK) && (ota_finish_err == ESP_OK)) {
-            https_ota_handle=NULL;
+            //https_ota_handle=NULL;
             OTAStep=OTASTEP_IMAGE_DOWNLOAD_DONE;
+            delay(100);
+            WiFi.disconnect();
+            delay(100);
+            WiFi.mode(WIFI_OFF);
+            esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+            wifiOverride=false;
             lAppLog("OTA: ESP_HTTPS_OTA upgrade successful. Rebooting ...\n");
             LaunchApplication(new ShutdownApplication(true,true));
             return;
         } else {
             if (ota_finish_err == ESP_ERR_OTA_VALIDATE_FAILED) {
-                lAppLog("OTA: Image validation failed, image is corrupted\n");
+                lAppLog("OTA: Image validation failed\n");
+                backgroundColor=TFT_RED;
                 OTAStep=OTASTEP_IMAGE_DOWNLOAD_ERROR;
             }
             lAppLog("OTA: ESP_HTTPS_OTA upgrade failed %d\n", ota_finish_err);
-            esp_https_ota_abort(https_ota_handle);
-            https_ota_handle=NULL;
+            //esp_https_ota_abort(https_ota_handle);
+            backgroundColor=TFT_RED;
+            //https_ota_handle=NULL;
         }
         delay(100);
         WiFi.disconnect();
@@ -226,21 +267,27 @@ ota_end:
         wifiOverride=false;
         updateBtn->SetEnabled(true);
         OTAStep=OTASTEP_IDLE;
+        FreeSpace();
     },img_update_48_bits, img_update_48_height, img_update_48_width); //,TFT_WHITE,TFT_BLACK,false);
-    updateBtn->taskStackSize=LUNOKIOT_APP_STACK_SIZE;
+    updateBtn->taskStackSize=LUNOKIOT_PROVISIONING_STACK_SIZE;
+    
+    //updateBtn->SetEnabled(false);
+    //if ( nullptr != latestBuildFoundString ) { updateBtn->SetEnabled(true); }
 
     canvas->setTextFont(0);
     //canvas->setTextColor(ThCol(dark));
     canvas->setTextSize(4);
     canvas->setTextDatum(CC_DATUM);
     bufferForText=(char*)ps_malloc(256);
+    if ( nullptr == latestBuildFoundString ) { LaunchWatchface(true); }
     Tick();
 }
 
 OTAUpdateApplication::~OTAUpdateApplication() {
     if ( NULL != https_ota_handle ) {
         esp_https_ota_abort(https_ota_handle);
-        https_ota_handle=NULL;
+        //https_ota_handle=NULL;
+        OTAStep=OTASTEP_IDLE;
     }
     delete updateBtn;
     delete progressBar;
@@ -264,7 +311,7 @@ bool OTAUpdateApplication::Tick() {
 
 
     if ( millis() > nextRefresh ) {
-        canvas->fillSprite(ThCol(background)); // use theme colors
+        canvas->fillSprite(backgroundColor); // use theme colors
         if ( updateBtn->GetEnabled() ) {
             if ( backTap ) {
                 btnBack->DirectDraw();
@@ -275,7 +322,7 @@ bool OTAUpdateApplication::Tick() {
 
         //imageSize=360;
         //imageDownloaded=180;
-        if ( imageSize > 0 ) {
+        if ( ( imageSize > 0 ) && (imageDownloaded > 0 )) {
             
             int16_t newAngle = (imageDownloaded*360)/imageSize;
             if ( progressBar->selectedAngle != newAngle) {
@@ -287,14 +334,12 @@ bool OTAUpdateApplication::Tick() {
                 int percentDone=percentDone =(imageDownloaded*100)/imageSize;
                 sprintf(percentAsString,"%d%%", percentDone);
                 //lAppLog("PERCENT: '%s'\n", percentAsString);
-                sprintf(bufferForText,"%d / %d", imageDownloaded, imageSize);
-                
+                if ( imageSize > (1024*1024) ) { sprintf(bufferForText,"%.2f MB / %.2f MB", float(imageDownloaded/1024.0/1024), float(imageSize/1024.0/1024.0)); }
+                else if ( imageSize > 1024 ) { sprintf(bufferForText,"%.2f KB / %.2f KB", float(imageDownloaded/1024.0), float(imageSize/1024.0)); }
+                else { sprintf(bufferForText,"%d B / %d B", imageDownloaded, imageSize); }
             }
 
         } else { sprintf(bufferForText,"awaiting data"); }
-        if ( OTASTEP_IDLE!=OTAStep ) {
-            progressBar->DrawTo(canvas);
-        }
 
         const char * whatAreYouDoing="Please wait...";
         if ( OTASTEP_NO_WIFI==OTAStep ) {
@@ -316,19 +361,25 @@ bool OTAUpdateApplication::Tick() {
         } else if ( OTASTEP_IMAGE_DOWNLOAD_DONE==OTAStep ) {
             whatAreYouDoing="Done!";
         }
+        if ( false == updateBtn->GetEnabled() ) { progressBar->DrawTo(canvas); }
 
         if ( ( OTASTEP_IDLE!=OTAStep ) ) { //&& ( OTASTEP_IMAGE_DOWNLOAD!=OTAStep ) ) {
             canvas->setTextSize(2);
             canvas->setTextDatum(TC_DATUM);
             canvas->setTextColor(ThCol(text));
             canvas->drawString(whatAreYouDoing,canvas->width()/2,20); // canvas->height()-20);
+            UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
         }
 
         if ( updateBtn->GetEnabled() ) {
             updateBtn->DrawTo(canvas);
             // draw news/changes circle over button
             uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
-            uint32_t remoteVersion = atoi(latestBuildFoundString);
+            uint32_t remoteVersion = 0;
+            if ( nullptr != latestBuildFoundString ) {
+                remoteVersion = atoi(latestBuildFoundString);
+            }
+            
             if ( remoteVersion > myVersion ) {
                 canvas->fillCircle(updateBtn->x,updateBtn->y,10,TFT_BLACK);
                 canvas->fillCircle(updateBtn->x,updateBtn->y,8,TFT_WHITE);
@@ -345,7 +396,7 @@ bool OTAUpdateApplication::Tick() {
 
             canvas->setTextSize(4);
             canvas->setTextDatum(CC_DATUM);
-            canvas->drawString(percentAsString,canvas->width()/2, canvas->height()/2);
+            canvas->drawString(percentAsString,canvas->width()/2, (canvas->height()/2)-10);
 
         }
         nextRefresh=millis()+(1000/6);

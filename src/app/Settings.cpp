@@ -21,6 +21,7 @@ extern TFT_eSprite *overlay;
 
 SettingsApplication::~SettingsApplication() {
     // on destroy
+    // set the switch values
     NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
     NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
@@ -42,11 +43,18 @@ SettingsApplication::~SettingsApplication() {
 SettingsApplication::SettingsApplication() {
 
     wifiCheck=new SwitchWidget(80,110,[&,this](){
+        // this delay is to get the current value of switch :( due multitasking env
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        /*
         delay(30);
         //@TODO the value is inverted due callback is called BEFORE change of bool
         bool inverVal = (!wifiCheck->switchEnabled);
         ntpCheck->SetEnabled(inverVal);
         openweatherCheck->SetEnabled(inverVal);
+        */
+        ntpCheck->SetEnabled(wifiCheck->switchEnabled);
+        openweatherCheck->SetEnabled(wifiCheck->switchEnabled);
     });
 #ifdef LUNOKIOT_WIFI_ENABLED
     wifiCheck->switchEnabled=NVS.getInt("WifiEnabled");
@@ -138,6 +146,7 @@ bool SettingsApplication::Tick() {
         canvas->setTextFont(0);
         canvas->setTextSize(2);
         canvas->setTextDatum(TL_DATUM);
+
         uint16_t textColor = ThCol(text);
         if ( false == wifiCheck->switchEnabled ) { textColor = ThCol(text_alt); }
         canvas->setTextColor(textColor);

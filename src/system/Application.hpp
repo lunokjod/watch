@@ -2,8 +2,9 @@
 #define __LUNOKIOT__APPLICATION__SUPPORT__
 
 #include <Arduino.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
-
+//#include <TTGO.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <LilyGoWatch.h>
 /*
  * Basic application with UI
  */
@@ -22,10 +23,16 @@ class LunokIoTApplication {
 };
 
 
+class LaunchApplicationDescriptor {
+    public:
+        LunokIoTApplication *instance;
+        bool animation;
+};
+
 /*
  * Push the application to foreground
  */
-void LaunchApplication(LunokIoTApplication *instance,bool animation=true);
+void LaunchApplication(LunokIoTApplication *instance,bool animation=true,bool synced=false);
 void LaunchWatchface(bool animation=true);
-
+void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched=false);
 #endif

@@ -95,7 +95,6 @@ outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
 
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))
-#outputData = outputData.replace("@@LUNOKIOT_OTA_HOST@@", str(get_ip()))
 
 outFile = open(outputFilename, "w")
 outFile.write(outputData)

@@ -16,8 +16,8 @@ IO... rgb565le               3            16
 IO... bgr565be               3            16
 IO... bgr565le               3            16
 */
-extern const uint8_t rick_start[] asm("_binary_asset_test_raw_start");
-extern const uint8_t rick_end[] asm("_binary_asset_test_raw_end");
+extern const PROGMEM uint8_t rick_start[] asm("_binary_asset_test_raw_start");
+extern const PROGMEM uint8_t rick_end[] asm("_binary_asset_test_raw_end");
 
 PlaygroundApplication8::~PlaygroundApplication8() {
     directDraw=false;

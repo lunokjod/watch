@@ -1,10 +1,12 @@
 #include "Calculator.hpp"
+#include <Arduino.h>
+#include <LilyGoWatch.h>
 
 #include "../UI/UI.hpp"
 #include "../static/img_happy_48.xbm" // center smiley to see the orientation
 #include <ArduinoNvs.h> // persistent values
 
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
 #include "LogView.hpp"
 

@@ -13,7 +13,7 @@ void Point2D::Set(int16_t px, int16_t py) {
         last_y=y;
         x=px;
         y=py;
-        //Serial.printf("%p AAAAAAAAAAAAAAA: X: %d Y: %d AX: %d AY: %d\n", this, x, y, last_x, last_y);
+        //Serial.printf("%p: X: %d Y: %d AX: %d AY: %d\n", this, x, y, last_x, last_y);
         // notify to the UI loop
         _UINotifyPoint2DChange(this);
         // esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);

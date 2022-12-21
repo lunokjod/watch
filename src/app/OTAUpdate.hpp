@@ -9,14 +9,14 @@
 
 class OTAUpdateApplication : public TemplateApplication {
     private:
+        uint32_t backgroundColor=ThCol(background);
         unsigned long nextRefresh=0;
-        unsigned long nextProgressbarRefresh=0;
+        //unsigned long nextProgressbarRefresh=0;
         ButtonImageXBMWidget *updateBtn=nullptr;
         GaugeWidget * progressBar=nullptr;
         //GraphWidget * OTADownloadSpeed=nullptr;
         int imageSize=0;
         int imageDownloaded=0;
-        esp_https_ota_handle_t https_ota_handle = NULL;
         char percentAsString[5] = "0%";
         char *bufferForText = nullptr;
 

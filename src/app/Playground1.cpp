@@ -20,7 +20,7 @@ PlaygroundApplication1::~PlaygroundApplication1() {
 
 PlaygroundApplication1::PlaygroundApplication1() {
     testNotification = new NotificationWidget([](){
-        Serial.println("AAAAAA");
+        //Serial.println("test");
     },(char*)"hello this is a test");
 
     testNotification1 = new NotificationWidget([](){

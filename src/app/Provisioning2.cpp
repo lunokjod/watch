@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
 
-//#include <LilyGoWatch.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <LilyGoWatch.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
 
 #include "Provisioning2.hpp"
@@ -88,40 +88,40 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             //Serial.println(IPAddress(sys_event->event_info.got_ip.ip_info.ip.addr));
             break;
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            lLog("Provisioning: Disconnected. Connecting to the AP again... \n");
+            lAppLog("Provisioning: Disconnected. Connecting to the AP again... \n");
             break;
         case ARDUINO_EVENT_PROV_START:
-            lLog("Provisioning: Up and ready! use ESP provisining app\n");
+            lAppLog("Provisioning: Up and ready! use ESP provisining app\n");
             break;
         case ARDUINO_EVENT_PROV_CRED_RECV: { 
-            lLog("Provisioning: Received Wi-Fi credentials:\n");
-            lLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
-            lLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
+            lAppLog("Provisioning: Received Wi-Fi credentials:\n");
+            lAppLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
+            lAppLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {
-            lLog("Provisioning: Failed, reason:\n");
+            lAppLog("Provisioning: Failed, reason:\n");
             if(sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR) {
-                lLog("Wi-Fi AP password incorrect\n");
+                lAppLog("Wi-Fi AP password incorrect\n");
             } else {
-                lLog("Wi-Fi AP not found\n");
+                lAppLog("Wi-Fi AP not found\n");
             }
             Provisioning2DestroyNVS();
-            NVS.setInt("provisioned",0);
+            NVS.setInt("provisioned",0,false);
             provisioned = false;
             Provisioning2Deinit();
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-            lLog("Provisioning Successful\n");
+            lAppLog("Provisioning Successful\n");
             if ( nullptr != lastProvisioning2Instance ) {
                 lastProvisioning2Instance->provisioningStarted = false;
-                NVS.setInt("provisioned",1, true);
+                NVS.setInt("provisioned",1, false);
                 provisioned = true;
             }
             break;
         case ARDUINO_EVENT_PROV_END:
-            lLog("Provisioning Ends\n");
+            lAppLog("Provisioning Ends\n");
             LaunchWatchface();
             break;
         default:
@@ -271,29 +271,28 @@ Provisioning2Application::Provisioning2Application() {
         // https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFiProv/examples/WiFiProv
 
         if ( provisioningStarted ) {
-            lLog("Provisioning: %p: Rejected (already runing)\n",this);
+            lAppLog("Provisioning: %p: Rejected (already runing)\n",this);
             return;
         }
-        lLog("Provisioning: %p: Starting provisioning procedure...\n",this);
+        lAppLog("Provisioning: %p: Starting provisioning procedure...\n",this);
         GenerateCredentials();
         GenerateQRCode();
         provisioningStarted = true;
-        lLog("Provisioning: SSID: '%s' PASSWORD: '%s' POP: '%s'\n", service_name, service_key, pop);
+        lAppLog("Provisioning: SSID: '%s' PASSWORD: '%s' POP: '%s'\n", service_name, service_key, pop);
         if ( useBluetooth ) {
-            lLog("Provisioning: Using Bluetooth...\n");
-
+            lAppLog("Provisioning: Using Bluetooth...\n");
             // https://github.com/espressif/esp-idf/blob/master/examples/provisioning/wifi_prov_mgr/main/app_main.c#L240
             WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BTDM, WIFI_PROV_SECURITY_1,pop,service_name,service_key);
         } else {
             // SoftAP provisioning
             //WiFi.begin();
-            lLog("Provisioning: Using WiFi...\n");
+            lAppLog("Provisioning: Using WiFi...\n");
             WiFiProv.beginProvision(WIFI_PROV_SCHEME_SOFTAP, WIFI_PROV_SCHEME_HANDLER_NONE, WIFI_PROV_SECURITY_1,pop,service_name,service_key);
         }
         WiFi.onEvent(Provisioning2_SysProvEvent);
 
     },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,canvas->color24to16(0x2347bc));
-    startProvBtn->taskStackSize=LUNOKIOT_TASK_PROVISIONINGSTACK_SIZE;
+    startProvBtn->taskStackSize=LUNOKIOT_PROVISIONING_STACK_SIZE;
     Tick();
 }
 bool Provisioning2Application::Tick() {

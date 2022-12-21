@@ -6,6 +6,9 @@
 #include <list>
 #include <functional>
 
+#include "../app/LogView.hpp"
+#include <freertos/portable.h>
+#include <freertos/task.h>
 /*
  * Event loop for the system
  */
@@ -45,13 +48,6 @@ enum {
     BMA_EVENT_DIRECTION         // pose/orientation
 };
 
-/*
- * Interrupt handler installer
- */
-void AXPIntHandler();
-void BMPIntHandler();
-void RTCIntHandler();
-
 // Force get samples from sensors
 void TakeSamples();
 
@@ -60,10 +56,54 @@ void SystemEventsStart();
 // Announce the end of boot
 void SystemEventBootEnd();
 
+static inline void FreeSpace() {
+    uint32_t minHeap = xPortGetMinimumEverFreeHeapSize();
+    uint32_t freeHeap = xPortGetFreeHeapSize(); // portable of heap_caps_get_free_size(MALLOC_CAP_8BIT)
+    size_t largestHeap = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    UBaseType_t stackMax = uxTaskGetStackHighWaterMark(NULL);
+    //uint16_t stackBegin = uxTaskGetStackHighWaterMark2(NULL);
+
+    if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.3f MByte\n", float(stackMax/1024.0/1024.0)); }
+    else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.3f KByte\n", float(stackMax/1024.0)); }
+    else { lSysLog("ESP32: Free stack: %u Byte\n",stackMax); }
+
+    if ( freeHeap > (1024*1024) ) { lSysLog("ESP32: Free HEAP: %.3f MByte\n", float(freeHeap/1024.0/1024.0)); }
+    else if ( freeHeap > 1024 ) { lSysLog("ESP32: Free HEAP: %.3f KByte\n", float(freeHeap/1024.0)); }
+    else { lSysLog("ESP32: Free HEAP: %u Byte\n",freeHeap); }
+
+    //lSysLog("ESP32: Stack window size: %u Bytes Range 0x%x~0x%x\n",stackMax,stackBegin,stackMax);
+
+    if ( largestHeap > (1024*1024) ) { lSysLog("ESP32: Most allocable data (fragmentation): %.3f MByte\n", float(largestHeap/1024.0/1024.0)); }
+    else if ( largestHeap > 1024 ) { lSysLog("ESP32: Most allocable data: (fragmentation) %.3f KByte\n", float(largestHeap/1024.0)); }
+    else { lSysLog("ESP32: Most allocable data: (fragmentation) %u Byte\n",largestHeap); }
+
+    bool done = heap_caps_check_integrity_all(true);
+    lSysLog("ESP32: Heap integrity: %s\n",(done?"good":"WARNING: CORRUPTED!!!"));
+
+    //lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap() / 1024);
+    //lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram() / 1024);
+/*
+    size_t memcnt=esp_himem_get_phys_size();
+    size_t memfree=esp_himem_get_free_size();
+    lLog("ESP32: Himem has %dKiB of memory, %dKiB of which is free. Testing the free memory...\n", (int)memcnt/1024, (int)memfree/1024);
+
+
+
+heap_caps_get_total_size
+heap_caps_get_free_size
+heap_caps_get_minimum_free_size
+xPortGetMinimumEverFreeHeapSize
+heap_caps_get_minimum_free_size()
+ uxTaskGetSnapshotAll()
+*/
+
+}
+
 /*
  * Low power related functions
  */
 void DoSleep();
 void SaveDataBeforeShutdown();
+void BootReason();
 
 #endif

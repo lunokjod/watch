@@ -49,6 +49,8 @@
 #include "../app/LogView.hpp"
 #include <esp_task_wdt.h>
 
+extern char * latestBuildFoundString;
+#include "../app/OTAUpdate.hpp"
 
 
 bool wifiOverride=false; // this var disables the wifi automatic disconnection
@@ -71,8 +73,8 @@ std::list <lBLEDevice*>BLEKnowDevices;
 EventKVO * battPercentPublish = nullptr; 
 EventKVO * battTempPublish = nullptr; 
 EventKVO * envTempPublish = nullptr; 
-extern const uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
-extern const uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
+extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 
 bool bleEnabled = false;
 bool bleServiceRunning = false;
@@ -119,8 +121,6 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
 /*
  * Search for update system network task
  */
-extern char * latestBuildFoundString;
-#include "../app/OTAUpdate.hpp"
 
 void SystemUpdateAvailiable() {
     uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
@@ -140,22 +140,31 @@ void SearchUpdateAsNetworkTask() {
         SearchUpdateNetworkTask->everyTimeMS = (((1000*60)*60)*24*3); // every 3 days
         SearchUpdateNetworkTask->_lastCheck=millis();
         SearchUpdateNetworkTask->_nextTrigger=0; // launch NOW if no synched never again
-        SearchUpdateNetworkTask->callback = [&]() {
-            //lNetLog("Checking for updates...\n");
+        SearchUpdateNetworkTask->callback = []() {
+            lNetLog("Checking for updates...\n");
             // @NOTE to get the PEM from remote server:
             // openssl s_client -connect raw.githubusercontent.com:443 -showcerts </dev/null | openssl x509 -outform pem > raw_githubusercontent_com.pem
             // echo "" | openssl s_client -showcerts -connect raw.githubusercontent.com:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >raw_githubusercontent_com.pem
-            WiFiClientSecure *client = new WiFiClientSecure;
+            #ifdef LUNOKIOT_UPDATES_LOCAL_URL
+                WiFiClient*client = new WiFiClient;
+            #else
+                WiFiClientSecure *client = new WiFiClientSecure;
+            #endif
             if (nullptr != client ) {
-                client->setCACert((const char*)githubPEM_start);
                 HTTPClient https;
-                https.setConnectTimeout(8*1000);
-                https.setTimeout(8*1000);
+                https.setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
+                https.setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
                 https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
-                //lNetLog("GET: %s...\n",LastVersionURL);
+                // $ python3 -m http.server --bind 127.0.0.1 8080
 
-                String serverPath = LastVersionURL;
-                if (https.begin(*client, serverPath)) {
+                #ifndef LUNOKIOT_UPDATES_LOCAL_URL // IFNODEF
+                //https.keep_alive_enable = true;
+                client->setCACert((const char*)githubPEM_start);
+                #endif
+                //String serverPath = LastVersionURL;
+                bool mustUpdate = false;
+                lNetLog("SearchUpdate: Using URL '%s'\n",LastVersionURL);
+                if (https.begin(*client, String(LastVersionURL))) {
                     // HTTPS
                     //lNetLog("SearchUpdate: https get '%s'...\n", serverPath.c_str());
                     // start connection and send HTTP header
@@ -176,7 +185,7 @@ void SearchUpdateAsNetworkTask() {
                             strcpy(latestBuildFoundString,payload.c_str());
                             if ( 0 != strcmp(LUNOKIOT_BUILD_STRING,latestBuildFoundString)) {
                                 lNetLog("SearchUpdate: Received: '%s' current: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
-                                SystemUpdateAvailiable();
+                                mustUpdate=true;
                             }
                         } else {
                             lNetLog("SearchUpdate: http get rough response: %s\n", https.errorToString(httpCode).c_str());
@@ -192,6 +201,12 @@ void SearchUpdateAsNetworkTask() {
                 }
                 lNetLog("SearchUpdate: end\n");
                 delete client;
+                if ( mustUpdate ) {
+                    lLog("@TODO LAUNCH UPDATE\n");
+                    lLog("@TODO LAUNCH UPDATE\n");
+                    lLog("@TODO LAUNCH UPDATE\n");
+                    //SystemUpdateAvailiable();
+                }
                 return true;
             }
             lNetLog("SearchUpdate: Unable to create WiFiClientSecure\n");
@@ -206,23 +221,37 @@ void SearchUpdateAsNetworkTask() {
  * Check all network tasks and determine if must be launched
  * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
  */
+bool networkTaskRunning = false; // is network task running?
+bool networkTaskResult = false; // result from last
+void NetworkTaskCallTask(void *data) {
+    NetworkTaskDescriptor * task = (NetworkTaskDescriptor *)data;
+    lNetLog("-[ NET TASK BEGIN ] ------------------------------------\n");
+    FreeSpace();
+    networkTaskResult = task->callback();
+    FreeSpace();
+    lNetLog("-[ NET TASK END   ] ------------------------------------\n");
+    networkTaskRunning=false;
+    vTaskDelete(NULL);
+}
 static void NetworkHandlerTask(void* args) {
     delay(8000); // arbitrary wait before begin first connection
     unsigned long nextConnectMS = 0;
     unsigned long beginConnected = -1;
     unsigned long beginIdle = -1;
     while(true) {
-        delay(1000); // allow other tasks to do their chance :)
+        delay(1000); // allow other tasks to do their shit :)
 
         if ( systemSleep ) { continue; } // fuck off... giveup/sleep in progress... (shaded area)
         if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
         if ( true == wifiOverride ) { continue; }
+        
         if ( millis() > nextConnectMS ) { // begin connection?
             if ( false == NVS.getInt("WifiEnabled") ) {
                 nextConnectMS = millis()+ReconnectPeriodMs;
                 continue;
             }
-            //check the pending tasks... if no one, don't connect
+
+            //check the pending tasks... if no one pending, don't connect
             lNetLog("Network: Timed WiFi connection procedure begin\n");
             bool mustStart = false;
 
@@ -238,14 +267,15 @@ static void NetworkHandlerTask(void* args) {
                         }
                     } 
                 }
-                tsk->_lastCheck = millis();
+                tsk->_lastCheck = millis(); // mark as revised
             }
             if ( mustStart ) {
-                lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
-                if ( bleEnabled ) { StopBLE(); }
-                delay(100);
+                //lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
+                //if ( bleEnabled ) { StopBLE(); }
+                //delay(100);
                 WiFi.begin();
                 WiFi.setAutoReconnect(false);
+                delay(100);
             } else {
                 lNetLog("Network: No tasks pending for this period... don't launch WiFi\n");
                 for (auto const& tsk : networkPendingTasks) {
@@ -257,85 +287,61 @@ static void NetworkHandlerTask(void* args) {
         }
 
         wl_status_t currStat = WiFi.status();
-        /*
-        if ( WL_IDLE_STATUS == currStat) {
-            if ( -1 == beginIdle ) {
-                beginIdle = millis();
-            } else {
-                unsigned long idleMS = millis()-beginIdle;
-                if ( idleMS > NetworkTimeout ) {
-                    Serial.printf("Network: WiFi TIMEOUT (idle) at %d sec\n", idleMS/1000);
-                    WiFi.disconnect();
-                    WiFi.mode(WIFI_OFF);
-                    beginIdle=-1;
-                    continue;
-                }
-                Serial.printf("Network: WiFi idle: %d sec\n", idleMS/1000);
-            }
-            continue;
-        } else */
-        delay(10);
+
         if ( WL_CONNECTED == currStat) {
             if ( -1 == beginConnected ) {
                 beginConnected = millis();
             } else {
                 unsigned long connectedMS = millis()-beginConnected;
-                /*
-                if ( connectedMS > NetworkTimeout ) {
-                    Serial.println("Network: WiFi online TIMEOUT");
-                    WiFi.disconnect(true);
-                    delay(100);
-                    WiFi.mode(WIFI_OFF);
-                    beginConnected=-1;
-                    continue;
-                }*/
-                //CHECK THE tasks
 
-                std::list<NetworkTaskDescriptor *> failedTasks = {};
+                //CHECK THE tasks
+                //std::list<NetworkTaskDescriptor *> failedTasks = {};
                 for (auto const& tsk : networkPendingTasks) {
                     if ( -1 == tsk->_nextTrigger ) {
                         tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                     } else {
                         if ( millis() > tsk->_nextTrigger ) {
-                            delay(150);
+                            delay(1000);
+
                             lNetLog("NetworkTask: Running task '%s'...\n", tsk->name);
-                            bool res = tsk->callback();
-                            if ( res ) {
+                            networkTaskRunning=true;
+                            TaskHandle_t taskHandle;
+                            BaseType_t taskOK = xTaskCreate(NetworkTaskCallTask,"",LUNOKIOT_NETWORK_TASK_STACK_SIZE,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle);
+                            if ( pdPASS != taskOK ) {
+                                lNetLog("NetworkTask: ERROR Trying to run task: '%s'\n", tsk->name);
                                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                                 tsk->_lastCheck = millis();
-                            } else { 
-                                failedTasks.push_back(tsk);
-                                lNetLog("NetworkTask: Task '%s' FAILED (wait a bit)\n", tsk->name);
+                                continue;
                             }
-                        }
-                    }
-                }
-                if ( failedTasks.size() > 0 ) {
-                    lNetLog("NetworkTask: Retrying failed tasks...\n");
-                    delay(1000);
-                    for (auto const& tsk : failedTasks) {
-                        if ( -1 == tsk->_nextTrigger ) {
-                            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
-                        } else {
-                            if ( millis() > tsk->_nextTrigger ) {
-                                delay(250);
-                                lNetLog("NetworkTask: Running task (more slow) '%s'...\n", tsk->name);
-                                bool res = tsk->callback();
-                                if ( res ) {
-                                    tsk->_nextTrigger = millis()+tsk->everyTimeMS;
-                                    tsk->_lastCheck = millis();
-                                } else { 
-                                    lNetLog("NetworkTask: Task '%s' FAILED (retry on next network event)\n", tsk->name);
+                            unsigned long taskTimeout = millis()+15000;
+                            bool taskAborted=false;
+                            while(networkTaskRunning) { //@TODO must implement timeout
+                                delay(1000); // one second
+                                if ( networkTaskRunning ) {
+                                    lNetLog("NetworkTask: Waiting task '%s'...\n", tsk->name);
+                                }
+                                if ( millis() > taskTimeout ) {
+                                    taskAborted = true;
+                                    lNetLog("NetworkTask: Abort task '%s' by TIMEOUT!\n", tsk->name);
+                                    vTaskDelete(taskHandle);
+                                    break;
                                 }
                             }
+                            if ( false == taskAborted ) {
+                                lNetLog("NetworkTask: Task end '%s' Result: '%s'\n", tsk->name, (networkTaskResult?"OK":"ERROR"));
+                            }
+
+                            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                            tsk->_lastCheck = millis();
+                            delay(150);
                         }
                     }
                 }
                 WiFi.disconnect();
-                delay(100);
+                delay(500);
                 WiFi.mode(WIFI_OFF);
                 connectedMS = millis()-beginConnected;
-                lNetLog("Network: WiFi connection: %d sec\n", connectedMS/1000);
+                lNetLog("Network: WiFi connection time: %d sec\n", connectedMS/1000);
             }
             continue;
         }
@@ -354,21 +360,31 @@ static void NetworkHandlerTask(void* args) {
  * * Push to the scheduler using AddNetworkTask()
  * * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
  */
-bool NetworkHandler() {
-    provisioned = (bool)NVS.getInt("provisioned"); // initial value load
-#ifdef LUNOKIOT_WIFI_ENABLED
-    xTaskCreate(NetworkHandlerTask, "lwifi", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
-#ifdef LUNOKIOT_UPDATES_ENABLED
-    SearchUpdateAsNetworkTask();
-#endif
-#endif
-#ifdef LUNOKIOT_BLE_ENABLED
-    BLESetupHooks();
-#endif
 
-#ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
-    StartLocalCloudClient();
-#endif
+//StackType_t NetworkTaskStack[ LUNOKIOT_NETWORK_TASK_STACK_SIZE ];
+//StaticTask_t NetworkTaskBuffer;
+bool NetworkHandler() {
+    lNetLog("NetworkHandler\n");
+    provisioned = (bool)NVS.getInt("provisioned"); // initial value load
+
+    #ifdef LUNOKIOT_WIFI_ENABLED
+        if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); }
+        lNetLog("WiFi: Network tasks handler\n");
+        //xTaskCreateStatic(NetworkHandlerTask, "lNetTsk", LUNOKIOT_NETWORK_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NetworkTaskStack, &NetworkTaskBuffer);
+        xTaskCreate(NetworkHandlerTask, "lNetTsk", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        #ifdef LUNOKIOT_UPDATES_ENABLED
+            //SearchUpdateAsNetworkTask();
+        #endif
+    #endif
+
+    #ifdef LUNOKIOT_BLE_ENABLED
+        lNetLog("BLE: System hooks\n");
+        BLESetupHooks();
+    #endif
+
+    #ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
+        StartLocalCloudClient();
+    #endif
 
     if ( provisioned ) { return true; }
     return false;
@@ -387,9 +403,8 @@ static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void*
 }
 
 void BLESetupHooks() {
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, BLEWake, nullptr, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, BLEDown, nullptr, NULL));
-
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, BLEWake, nullptr, NULL);
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, BLEDown, nullptr, NULL);
 }
 bool networkActivity = false;
 extern TFT_eSprite *screenShootCanvas;    // the last screenshoot

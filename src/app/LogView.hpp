@@ -1,7 +1,11 @@
 #ifndef __LUNOKIOT__LOGVIEW_APP__
 #define __LUNOKIOT__LOGVIEW_APP__
 
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <esp_timer.h>
+#include <esp_log.h>
+
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <LilyGoWatch.h>
 extern TFT_eSPI *tft;
 
 #include "../UI/AppTemplate.hpp"
@@ -10,9 +14,26 @@ extern TFT_eSPI *tft;
 
 extern SemaphoreHandle_t lLogAsBlockSemaphore;
 
+//const PROGMEM char * me = "lunokIoT";
+
 void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 // main log tool
 #define lLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+// system log
+
+// Info log
+#ifdef LUNOKIOT_DEBUG
+#define liLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[%lld][ *i ] ",esp_timer_get_time()); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+#else 
+#define liLog(...)
+#endif
+
+// system log
+#ifdef LUNOKIOT_DEBUG_SYSTEM
+#define lSysLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[%lld][lunokIoT] ",esp_timer_get_time()); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+#else 
+#define lSysLog(...)
+#endif
 
 // other log flavours
 #ifdef LUNOKIOT_DEBUG_APPLICATION
@@ -40,7 +61,7 @@ void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 #endif
 
 #ifdef LUNOKIOT_DEBUG_UI_DEEP
-#define lUIDeepLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[UI] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+#define lUIDeepLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[UI+] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lUIDeepLog(...)
 #endif
