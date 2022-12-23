@@ -5,7 +5,7 @@ static const struct {
   unsigned int 	 height;
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   unsigned char	 pixel_data[120 * 90 * 2 + 1];
-} img_sample2_120 = {
+} img_sample2_120 = PROGMEM {
   120, 90, 2,
   "\040\000@\000`\000\241\010\341\020!\031b!\242\061\202)\040\031\300\010\200\000\200\000\200"
   "\000\240\000\240\000\200\000`\000`\000`\000@\000@\000`\000@\000\040\000@\000`\010\300\020A)\302\071#B#"

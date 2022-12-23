@@ -9,21 +9,76 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
-#include "../system/Tasks.hpp"
+//#include "../system/Tasks.hpp"
 #include <ArduinoNvs.h>
 #include "LogView.hpp"
 #include "StepsSetup.hpp"
+#include "../system/SystemEvents.hpp"
+#include <Ticker.h>
+Ticker StepTicker;
 
 extern TTGOClass *ttgo; // ttgo lib
 uint8_t userTall = 197;
 uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
 float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
-TimedTaskDescriptor * stepsManager = nullptr;
+//TimedTaskDescriptor * stepsManager = nullptr;
 uint8_t lastStepsDay = 0; // impossible day to force next trigger (0~6)
 extern uint32_t lastBootStepCount;
 
+void StepManagerCallback() {
+    time_t now;
+    struct tm * tmpTime;
+    time(&now);
+    tmpTime = localtime(&now);
+    // the last register is from yesterday?
+    if ( lastStepsDay != tmpTime->tm_wday ) {
+        // run beyond the midnight
+        //if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
+            lEvLog("StepManagerCallback: Rotating stepcounter...\n");
+            
+            // my weeks begins on monday not sunday
+            int correctedDay = tmpTime->tm_wday-2; // use the last day recorded to save on it
+            if ( correctedDay == -2 ) { correctedDay = 5; }
+            else if ( correctedDay == -1 ) { correctedDay = 6; }
+            weekSteps[correctedDay] = stepCount;
+            stepCount = 0;
+            lastBootStepCount = 0;
+            NVS.setInt("stepCount",0,false);
+            lastStepsDay = tmpTime->tm_wday; // set the last register is today in raw
+
+
+            // reset all counters
+            ttgo->bma->resetStepCounter();
+            beginStepsBMAActivity=0; // sorry current activity is discarded
+            beginBMAActivity=0;
+            
+            stepsBMAActivityStationary = 0; // clean all
+            timeBMAActivityStationary = 0;
+            stepsBMAActivityWalking = 0;
+            timeBMAActivityWalking = 0;
+            stepsBMAActivityRunning = 0;
+            timeBMAActivityRunning = 0;
+            stepsBMAActivityInvalid = 0;
+            timeBMAActivityInvalid = 0;
+            stepsBMAActivityNone = 0;
+            timeBMAActivityNone = 0;
+
+            for(int a=0;a<7;a++) { // Obtain the last days steps
+                char keyName[16] = {0};
+                sprintf(keyName,"lWSteps_%d",a);
+                //lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
+                NVS.setInt(keyName,weekSteps[a],false);
+            }
+            NVS.setInt("lstWeekStp",lastStepsDay,false);
+            lEvLog("StepManagerCallback: Ends\n");
+    }
+
+}
 void InstallStepManager() {
+    StepTicker.attach(60*40,StepManagerCallback);
+    return;
+    /*
     if ( nullptr == stepsManager ) {
         for(int a=0;a<7;a++) { // Obtain the last days steps
             char keyName[16] = {0};
@@ -91,7 +146,8 @@ void InstallStepManager() {
             return true;
         };
         AddTimedTask(stepsManager);
-    } 
+    }
+    */
 }
 
 StepsApplication::~StepsApplication() {

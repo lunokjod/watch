@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-extern TTGOClass *ttgo; // ttgo library shit ;)
+extern TTGOClass *ttgo; // ttgo library
 #include <ArduinoNvs.h>
 
 #include "SystemEvents.hpp"
@@ -46,7 +46,6 @@ bool systemSleep = false;
 esp_event_loop_handle_t systemEventloopHandler;
 ESP_EVENT_DEFINE_BASE(SYSTEM_EVENTS);
 
-bool provisioned = false;
 int hallData = 0;         // hall sensor data
 bool vbusPresent = false; // USB connected?
 int batteryPercent;       // -1 if no batt
@@ -368,6 +367,7 @@ static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
 
+extern bool provisioned;
 void SaveDataBeforeShutdown() {
     NVS.setInt("provisioned", provisioned, false);
 
@@ -392,8 +392,7 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("stepCount", stepCount, false);
     delay(50);
     bool saved = NVS.commit();
-    if (false == saved)
-    {
+    if (false == saved) {
         lLog("NVS: Unable to commit!! (data lost!?)\n");
     }
     NVS.close();
@@ -628,6 +627,13 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
 // called when system is up
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Up and running!\n");
+    FreeSpace();
+    if ( ( NVS.getInt("WifiEnabled") ) && ( false == provisioned ) ) {
+        // wifi is enabled but no provisioned? Launch the prov to suggest the user to do it
+        LaunchApplication(new Provisioning2Application());
+        return;
+    }
+     
     LaunchWatchface(false);
 }
 
@@ -1356,8 +1362,8 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 10,                           // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+3, // uxTaskPriorityGet(NULL),   // when the freeRTOS wants
-        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
+        .task_priority = tskIDLE_PRIORITY-1,        // a little bit faster
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                            // to core 0
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
 
@@ -1397,9 +1403,7 @@ void SystemEventsStart() {
 /*
  * Eyecandy notification of boot end
  */
-void SystemEventBootEnd()
-{
-    provisioned = NVS.getInt("provisioned"); // update the value
+void SystemEventBootEnd() {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 

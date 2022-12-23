@@ -5,7 +5,7 @@ static const struct {
   unsigned int 	 height;
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   unsigned char	 pixel_data[73 * 75 * 2 + 1];
-} img_watchface0_notification = {
+} img_watchface0_notification = PROGMEM {
   73, 75, 2,
   "\001\000\001\000\"\000D\000d\000\205\010\205\010\206\010\206\010\206\010\206\010\206\010\246\010"
   "\246\010\246\010\246\010\246\010\246\010\246\010\246\010\246\010\246\010\246\010\246"

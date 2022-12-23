@@ -52,7 +52,10 @@
 extern char * latestBuildFoundString;
 #include "../app/OTAUpdate.hpp"
 
-
+#include <Ticker.h>
+Ticker BootNetworkTicker; // first shoot
+Ticker NetworkTicker; // loop every 5 minutes
+extern bool provisioned;
 bool wifiOverride=false; // this var disables the wifi automatic disconnection
 int BLEscanTime = 5; //In seconds
 unsigned long BLENextscanTime = 0;
@@ -233,15 +236,127 @@ void NetworkTaskCallTask(void *data) {
     networkTaskRunning=false;
     vTaskDelete(NULL);
 }
+
+// any task needs to start?
+bool NetworkTaskIsPending() {
+    bool mustStart = false;
+    // determine if need to start wifi in this period
+    for (auto const& tsk : networkPendingTasks) {
+        if ( false == tsk->enabled ) { continue; } // isnt enabled, ignore
+        //need to run now or in the next? (0/-1)
+        if ( ( -1 == tsk->_nextTrigger ) || ( millis() > tsk->_nextTrigger )) { // launch now or in the next iteration?
+            lNetLog("NetworkTask: Pending task '%s'\n", tsk->name);
+            mustStart = true;
+        }
+        tsk->_lastCheck = millis(); // mark as revised
+    }
+    return mustStart;
+}
+void NetworkTasksCheck() {
+    if ( systemSleep ) { return; }
+    if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
+    if ( false == NVS.getInt("WifiEnabled") ) { liLog("WiFi: WiFi disabled by user\n"); return; }
+
+    if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); return; }
+    if ( false == NetworkTaskIsPending() ) { lNetLog("Network: No pending Timed Tasks\n"); return; }
+    // Tasks pending!!!
+    lNetLog("Network: Timed Tasks WiFi procedure begin\n");
+    FreeSpace();
+
+    String WSSID = NVS.getString("provSSID");
+    String WPass = NVS.getString("provPWD");
+    if ( 0 == WSSID.length() ) {
+        lNetLog("WARNING: Provisioned data not set?\n");
+        provisioned=false;
+        return;
+    }
+    lNetLog("WiFi SSID: '%s' pass: '%s'\n",WSSID.c_str(),WPass.c_str());
+    wifiOverride=true;
+    wl_status_t currStat = WiFi.begin(WSSID.c_str(),WPass.c_str());
+    if ( WL_CONNECT_FAILED == currStat ) {
+        lNetLog("WiFi: Connect failed\n");
+        wifiOverride=false;
+        return;
+    }
+    FreeSpace();
+
+    bool connected=false;
+    unsigned long timeout = millis()+15000; 
+    while(timeout>millis()) {
+        lNetLog("Network: WiFi Try to connect (%d)...\n",currStat);
+        if ( WL_CONNECTED == currStat) { connected=true; break; }
+        delay(1000);
+        currStat = WiFi.status();
+    }
+    if (false == connected) {
+        wifiOverride=false;
+        WiFi.disconnect();
+        WiFi.mode(WIFI_OFF);
+        lNetLog("Network: WiFi timeout! (more luck next time!)\n");
+        return;
+    }
+    // party continues!!! (now are online)
+
+    // Run pending tasks...
+    for (auto const& tsk : networkPendingTasks) {
+        if ( -1 == tsk->_nextTrigger ) {
+            tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+        } else {
+            if ( millis() > tsk->_nextTrigger ) {
+                delay(1000);
+
+                lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
+                networkTaskRunning=true;
+                TaskHandle_t taskHandle;
+                BaseType_t taskOK = xTaskCreate(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle);
+                if ( pdPASS != taskOK ) {
+                    lNetLog("NetworkTask: ERROR Trying to run task: '%s'\n", tsk->name);
+                    tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                    tsk->_lastCheck = millis();
+                    continue;
+                }
+                unsigned long taskTimeout = millis()+15000;
+                bool taskAborted=false;
+                while(networkTaskRunning) { //@TODO must implement timeout
+                    delay(1000); // one second
+                    if ( networkTaskRunning ) {
+                        lNetLog("NetworkTask: Waiting task '%s'...\n", tsk->name);
+                    }
+                    if ( millis() > taskTimeout ) {
+                        taskAborted = true;
+                        lNetLog("NetworkTask: Abort task '%s' by TIMEOUT!\n", tsk->name);
+                        if ( eDeleted != eTaskGetState(taskHandle) ) {
+                            vTaskDelete(taskHandle);
+                        }
+                        break;
+                    }
+                }
+                if ( false == taskAborted ) {
+                    lNetLog("NetworkTask: Task end '%s' Result: '%s'\n", tsk->name, (networkTaskResult?"OK":"ERROR"));
+                }
+
+                tsk->_nextTrigger = millis()+tsk->everyTimeMS;
+                tsk->_lastCheck = millis();
+                delay(150);
+            }
+        }
+    }
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
+    wifiOverride=false;
+    lNetLog("Network: Pending tasks done!\n");
+}
+/*
 static void NetworkHandlerTask(void* args) {
     delay(8000); // arbitrary wait before begin first connection
     unsigned long nextConnectMS = 0;
     unsigned long beginConnected = -1;
     unsigned long beginIdle = -1;
     while(true) {
-        delay(1000); // allow other tasks to do their shit :)        
+        delay(1000); // allow other tasks to do their shit :)  (precision don't care)      
         if ( millis() > nextConnectMS ) { // begin connection?
-            nextConnectMS = millis()+ReconnectPeriodMs;
+            nextConnectMS = millis()+ReconnectPeriodMs; // only enters one time
+
             if ( systemSleep ) { continue; } // fuck off... giveup/sleep in progress... (shaded area)
             if ( false == provisioned ) { continue; } // nothing to do without provisioning :(
             if ( wifiOverride ) { continue; }
@@ -249,27 +364,14 @@ static void NetworkHandlerTask(void* args) {
 
             //check the pending tasks... if no one pending, don't connect
             lNetLog("Network: Timed WiFi connection procedure begin\n");
-            bool mustStart = false;
-            // determine if need to start wifi in this period
-            for (auto const& tsk : networkPendingTasks) {
-                if ( false == tsk->enabled ) { continue; } // isnt enabled, ignore
-                //need to run now or in the next? (0/-1)
-                if ( -1 == tsk->_nextTrigger ) { // launch now or in the next iteration?
-                    tsk->_nextTrigger = millis()+tsk->everyTimeMS;
-                } else {
-                    if ( millis() > tsk->_nextTrigger ) { // must be triggered?
-                        lNetLog("NetworkTask: Pending task '%s'\n", tsk->name);
-                        mustStart = true;
-                    }
-                }
-                tsk->_lastCheck = millis(); // mark as revised
-            }
-
+            bool mustStart = NetworkTaskIsPending();
             // yeah, need connect
             if ( mustStart ) {
                 //lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
                 //if ( bleEnabled ) { StopBLE(); }
                 //delay(100);
+                //wl_status_t currentWiFiStat = WiFi.status();
+
                 WiFi.begin();
                 WiFi.setAutoReconnect(false);
                 delay(100);
@@ -319,7 +421,9 @@ static void NetworkHandlerTask(void* args) {
                                 if ( millis() > taskTimeout ) {
                                     taskAborted = true;
                                     lNetLog("NetworkTask: Abort task '%s' by TIMEOUT!\n", tsk->name);
-                                    vTaskDelete(taskHandle);
+                                    if ( eDeleted != eTaskGetState(taskHandle) ) {
+                                        vTaskDelete(taskHandle);
+                                    }
                                     break;
                                 }
                             }
@@ -347,7 +451,7 @@ static void NetworkHandlerTask(void* args) {
     }
     vTaskDelete(NULL); // never return
 }
-
+*/
 /*
  * Create the task for network scheduler
  * How it works?
@@ -361,13 +465,19 @@ static void NetworkHandlerTask(void* args) {
 //StaticTask_t NetworkTaskBuffer;
 bool NetworkHandler() {
     lNetLog("NetworkHandler\n");
-    provisioned = (bool)NVS.getInt("provisioned"); // initial value load
-
     #ifdef LUNOKIOT_WIFI_ENABLED
+        provisioned = NVS.getInt("provisioned");
         if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); }
         lNetLog("WiFi: Network tasks handler\n");
+        if ( provisioned ) {
+            lNetLog("WiFi: Provisioned :) Task runs in few seconds...\n");
+            BootNetworkTicker.once(8,NetworkTasksCheck);
+        }
+        NetworkTicker.attach(60*5,NetworkTasksCheck); // every 5 minutes (new Network Tasks)
+
         //xTaskCreateStatic(NetworkHandlerTask, "lNetTsk", LUNOKIOT_NETWORK_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NetworkTaskStack, &NetworkTaskBuffer);
-        xTaskCreate(NetworkHandlerTask, "lNetTsk", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        //xTaskCreate(NetworkHandlerTask, "lNetTsk", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        
         #ifdef LUNOKIOT_UPDATES_ENABLED
             //SearchUpdateAsNetworkTask();
         #endif

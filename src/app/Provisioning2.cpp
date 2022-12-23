@@ -52,6 +52,7 @@ const int16_t QRSize = 240;
 #define PROV_QR_VERSION         "v1"
 
 extern bool wifiOverride;
+bool provisioned=false;
 
 Provisioning2Application *lastProvisioning2Instance = nullptr;
 
@@ -63,9 +64,9 @@ void Provisioning2DestroyNVS() {
     WiFi.mode(WIFI_OFF);
     if ( ESP_OK == erased ) {
         lLog("Provisioning: NVS: Provisioning data destroyed\n");
-        NVS.setInt("provisioned",0);
+        NVS.setInt("provisioned",0,false);
         provisioned=false;
-        LaunchApplication(new ShutdownApplication(true));
+        LaunchApplication(new ShutdownApplication(true,true));
     }
 }
 
@@ -73,7 +74,7 @@ void Provisioning2Deinit() {
     wifi_prov_mgr_stop_provisioning();
     wifi_prov_mgr_deinit();
     WiFi.removeEvent(Provisioning2_SysProvEvent);
-    WiFi.disconnect(true);
+    WiFi.disconnect(true,true);
     delay(100);
     WiFi.mode(WIFI_OFF);
     if ( nullptr != lastProvisioning2Instance ) {
@@ -97,6 +98,11 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             lAppLog("Provisioning: Received Wi-Fi credentials:\n");
             lAppLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
             lAppLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
+            char buffr[65];
+            snprintf(buffr,64,"%s",sys_event->event_info.prov_cred_recv.ssid);
+            NVS.setString("provSSID",buffr,false);
+            snprintf(buffr,64,"%s",sys_event->event_info.prov_cred_recv.password);
+            NVS.setString("provPWD",buffr,false);
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {
@@ -118,6 +124,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
                 lastProvisioning2Instance->provisioningStarted = false;
                 NVS.setInt("provisioned",1, false);
                 provisioned = true;
+                LaunchApplication(new ShutdownApplication(true,true));
             }
             break;
         case ARDUINO_EVENT_PROV_END:
@@ -302,7 +309,8 @@ bool Provisioning2Application::Tick() {
         if ( nullptr != currentQRRendered ) {
             if ( false == qrVisible ) {
                 currentQRRendered->pushRotated(canvas,0);
-                //ttgo->setBrightness(40);
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                ttgo->setBrightness(20);
                 qrVisible = true;
                 return true;
             }

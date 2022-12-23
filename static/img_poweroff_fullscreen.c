@@ -5,7 +5,7 @@ static const struct PROGMEM {
   unsigned int 	 height;
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   unsigned char	 pixel_data[240 * 240 * 2 + 1];
-} img_poweroff_fullscreen = {
+} img_poweroff_fullscreen = PROGMEM {
   240, 240, 2,
   "\206\061\206\061\206\061\206\061\206\061\206\061\206\061\206\061e)\206\061\206\061"
   "e)\206\061\206\061\206\061\206\061\206\061\206\061e)\206\061e)\206\061\206\061\206"

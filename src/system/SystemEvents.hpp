@@ -80,6 +80,9 @@ static inline void FreeSpace() {
     bool done = heap_caps_check_integrity_all(true);
     lSysLog("ESP32: Heap integrity: %s\n",(done?"good":"WARNING: CORRUPTED!!!"));
 
+    UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
+    lSysLog("ESP32: Tasks: %u\n",tasksNumber);
+
     //lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap() / 1024);
     //lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram() / 1024);
 /*

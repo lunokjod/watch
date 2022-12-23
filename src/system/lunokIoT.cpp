@@ -10,7 +10,7 @@
 #include "UI/BootSplash.hpp"
 #include "SystemEvents.hpp"
 
-#include "system/Tasks.hpp"
+//#include "system/Tasks.hpp"
 #include "system/Network.hpp"
 #include "app/Steps.hpp" // Step manager
 #include "app/LogView.hpp"
@@ -62,8 +62,9 @@ LunokIoT::LunokIoT() {
     #ifndef LUNOKIOT_SILENT_BOOT
     lSysLog("lunokIoT: Motor enabled\n");
     ttgo->motor_begin();
-    delay(10); // need for shake works
+    delay(20); // need for shake works
     ttgo->shake();
+    delay(20);
     #endif
     #endif
     
@@ -92,7 +93,7 @@ LunokIoT::LunokIoT() {
 
     UIStart();  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
 
-    TimedTaskHandler();
+    //TimedTaskHandler();
     NetworkHandler();   // already provisioned? start the network timed tasks loop
     InstallStepManager();
 

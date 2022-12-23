@@ -5,7 +5,7 @@ static const struct {
   unsigned int 	 height;
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   unsigned char	 pixel_data[512 * 310 * 2 + 1];
-} img_testView = {
+} img_testView = PROGMEM {
   512, 310, 2,
   "$\000$\000$\000#\000C\000D\000D\010E\010E\010E\010E\010E\010E\010E\010E\010D\010E\010D\000e\000e\010"
   "e\010e\010\205\010e\000e\010\205\010e\010e\010e\010e\010e\010e\010e\010E\010E\010E\010D\000"

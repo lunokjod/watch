@@ -5,7 +5,7 @@ static const struct {
   unsigned int 	 height;
   unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
   unsigned char	 pixel_data[240 * 240 * 2 + 1];
-} img_daynightCycle2 = {
+} img_daynightCycle2 = PROGMEM {
   240, 240, 2,
   "`\321`\321`\321\200\331\241\331`\321`\321`\321`\321`\321\200\321\200\321"
   "\241\321`\321`\321\200\321\200\321\200\321\240\321\240\321\300\331\300\331"
