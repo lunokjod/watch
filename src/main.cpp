@@ -17,7 +17,7 @@
 #undef LOG_LOCAL_LEVEL
 #endif
 
-#define CORE_DEBUG_LEVEL 3
+#define CORE_DEBUG_LEVEL 5
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #endif
 
@@ -27,5 +27,7 @@
 
 #include "lunokIoT.hpp"
 
-void setup() { LoT(); } // thats all, folks! 
+void setup() {
+    LoT(); // thats all, folks! 
+}
 void loop() { vTaskDelete( NULL ); }

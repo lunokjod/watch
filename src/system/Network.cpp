@@ -252,13 +252,7 @@ bool NetworkTaskIsPending() {
     }
     return mustStart;
 }
-void NetworkTasksCheck() {
-    if ( systemSleep ) { return; }
-    if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
-    if ( false == NVS.getInt("WifiEnabled") ) { liLog("WiFi: WiFi disabled by user\n"); return; }
-
-    if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); return; }
-    if ( false == NetworkTaskIsPending() ) { lNetLog("Network: No pending Timed Tasks\n"); return; }
+void NetworkTaskRun(void *data) {
     // Tasks pending!!!
     lNetLog("Network: Timed Tasks WiFi procedure begin\n");
     FreeSpace();
@@ -268,18 +262,18 @@ void NetworkTasksCheck() {
     if ( 0 == WSSID.length() ) {
         lNetLog("WARNING: Provisioned data not set?\n");
         provisioned=false;
-        return;
+        vTaskDelete(NULL);
     }
-    lNetLog("WiFi SSID: '%s' pass: '%s'\n",WSSID.c_str(),WPass.c_str());
+    //lNetLog("WiFi SSID: '%s' pass: '%s'\n",WSSID.c_str(),WPass.c_str());
     wifiOverride=true;
     wl_status_t currStat = WiFi.begin(WSSID.c_str(),WPass.c_str());
     if ( WL_CONNECT_FAILED == currStat ) {
         lNetLog("WiFi: Connect failed\n");
         wifiOverride=false;
-        return;
+        vTaskDelete(NULL);
     }
+    delay(300);
     FreeSpace();
-
     bool connected=false;
     unsigned long timeout = millis()+15000; 
     while(timeout>millis()) {
@@ -293,7 +287,7 @@ void NetworkTasksCheck() {
         WiFi.disconnect();
         WiFi.mode(WIFI_OFF);
         lNetLog("Network: WiFi timeout! (more luck next time!)\n");
-        return;
+        vTaskDelete(NULL);
     }
     // party continues!!! (now are online)
 
@@ -345,6 +339,20 @@ void NetworkTasksCheck() {
     WiFi.mode(WIFI_OFF);
     wifiOverride=false;
     lNetLog("Network: Pending tasks done!\n");
+    vTaskDelete(NULL);
+}
+void NetworkTasksCheck() {
+    if ( systemSleep ) { return; }
+    if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
+    if ( false == NVS.getInt("WifiEnabled") ) { liLog("WiFi: WiFi disabled by user\n"); return; }
+
+    if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); return; }
+    if ( false == NetworkTaskIsPending() ) { lNetLog("Network: No pending Timed Tasks\n"); return; }
+
+    BaseType_t taskOK = xTaskCreate(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL);
+    if ( pdPASS != taskOK ) {
+        lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
+    }
 }
 /*
 static void NetworkHandlerTask(void* args) {

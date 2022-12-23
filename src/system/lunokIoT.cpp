@@ -110,8 +110,10 @@ void LunokIoT::InitLogs() {
     // Get serial comms with you
     #ifdef LUNOKIOT_SERIAL
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
-        Serial.setDebugOutput(true);
-        esp_log_level_set("*", ESP_LOG_VERBOSE);
+        #ifdef LUNOKIOT_DEBUG_ESP32
+            Serial.setDebugOutput(true);
+            esp_log_level_set("*", ESP_LOG_VERBOSE);
+        #endif
     #endif
 }
 

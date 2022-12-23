@@ -1357,6 +1357,9 @@ void SystemEventsStart() {
     if ( ESP_OK != shutdownRegistered ) {
         lSysLog("WARNING: Unable to register shutdown handler\n");
     }
+
+    //esp_task_wdt_isr_user_handler
+
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {

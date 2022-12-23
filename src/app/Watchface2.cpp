@@ -381,6 +381,7 @@ void Watchface2Application::Handlers()
         ntpTask->_lastCheck = millis();
         // if ( false == ntpSyncDone ) {
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
+        ntpTask->desiredStack = LUNOKIOT_APP_STACK_SIZE;
         //}
         ntpTask->callback = [&, this]()
         {
