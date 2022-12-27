@@ -76,8 +76,15 @@ std::list <lBLEDevice*>BLEKnowDevices;
 EventKVO * battPercentPublish = nullptr; 
 EventKVO * battTempPublish = nullptr; 
 EventKVO * envTempPublish = nullptr; 
+
+#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+// Use alternative keys
+extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_server_pem_start");
+extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_server_pem_end");
+#else
 extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
 extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
+#endif
 
 bool bleEnabled = false;
 bool bleServiceRunning = false;
@@ -125,8 +132,12 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
  * Search for update system network task
  */
 
-void SystemUpdateAvailiable() {
-    uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
+void SystemUpdateAvailiable(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    if ( nullptr == latestBuildFoundString) {
+        lNetLog("OTA: Version must be checked online before launch\n");
+        return;
+    }
+    const uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
     uint32_t remoteVersion = atoi(latestBuildFoundString);
     if ( remoteVersion > myVersion ) {
         lNetLog("OTA: new version availiable: %d, current: %d :) Launching Update...\n",remoteVersion,myVersion);
@@ -148,21 +159,20 @@ void SearchUpdateAsNetworkTask() {
             // @NOTE to get the PEM from remote server:
             // openssl s_client -connect raw.githubusercontent.com:443 -showcerts </dev/null | openssl x509 -outform pem > raw_githubusercontent_com.pem
             // echo "" | openssl s_client -showcerts -connect raw.githubusercontent.com:443 | sed -n "1,/Root/d; /BEGIN/,/END/p" | openssl x509 -outform PEM >raw_githubusercontent_com.pem
-            #ifdef LUNOKIOT_UPDATES_LOCAL_URL
-                WiFiClient*client = new WiFiClient;
-            #else
+            //#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+                //WiFiClient*client = new WiFiClient;
+            //#else
                 WiFiClientSecure *client = new WiFiClientSecure;
-            #endif
+            //#endif
             if (nullptr != client ) {
                 HTTPClient https;
                 https.setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
                 https.setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
                 https.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
-                // $ python3 -m http.server --bind 127.0.0.1 8080
-
-                #ifndef LUNOKIOT_UPDATES_LOCAL_URL // IFNODEF
-                //https.keep_alive_enable = true;
                 client->setCACert((const char*)githubPEM_start);
+                #ifdef LUNOKIOT_UPDATES_LOCAL_URL
+                    lNetLog("WARNING: Insecure updates due local self-signed certificate (-DLUNOKIOT_UPDATES_LOCAL_URL)\n");
+                    client->setInsecure();
                 #endif
                 //String serverPath = LastVersionURL;
                 bool mustUpdate = false;
@@ -200,15 +210,12 @@ void SearchUpdateAsNetworkTask() {
                 } else {
                     lNetLog("SearchUpdate: Unable to connect\n");
                     delete client;
-                    return false;
+                    return true; // fake success return to do not call me again until next loop (isnt prioritary)
                 }
                 lNetLog("SearchUpdate: end\n");
                 delete client;
                 if ( mustUpdate ) {
-                    lLog("@TODO LAUNCH UPDATE\n");
-                    lLog("@TODO LAUNCH UPDATE\n");
-                    lLog("@TODO LAUNCH UPDATE\n");
-                    //SystemUpdateAvailiable();
+                    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_UPDATE, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
                 }
                 return true;
             }
@@ -298,7 +305,7 @@ void NetworkTaskRun(void *data) {
         } else {
             if ( millis() > tsk->_nextTrigger ) {
                 delay(1000);
-
+                UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
                 lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
                 networkTaskRunning=true;
                 TaskHandle_t taskHandle;
@@ -336,7 +343,9 @@ void NetworkTaskRun(void *data) {
         }
     }
     WiFi.disconnect();
+    delay(200);
     WiFi.mode(WIFI_OFF);
+    delay(200);
     wifiOverride=false;
     lNetLog("Network: Pending tasks done!\n");
 
@@ -391,8 +400,14 @@ bool NetworkHandler() {
         }
         NetworkTicker.attach(60*5,NetworkTasksCheck); // every 5 minutes (new Network Tasks)
 
+        esp_err_t registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_UPDATE, SystemUpdateAvailiable, nullptr, NULL);
+        if ( ESP_OK != registered ) {
+            lSysLog("NetworkHandler: ERROR: Unable register UPDATE manager\n");
+        }
+
+        
         #ifdef LUNOKIOT_UPDATES_ENABLED
-            //SearchUpdateAsNetworkTask();
+            SearchUpdateAsNetworkTask();
         #endif
     #endif
 

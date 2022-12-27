@@ -24,15 +24,21 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 
+#include "../static/img_wifi_24.xbm"
+
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo; // ttgo library shit ;)
+
+
 esp_https_ota_handle_t https_ota_handle = NULL;
 
 char * latestBuildFoundString = nullptr;
 #ifdef LUNOKIOT_UPDATES_LOCAL_URL
-extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
-extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
-#else
 extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_server_pem_start");
 extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_server_pem_end");
+#else
+extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
+extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 #endif
 extern bool wifiOverride;
 
@@ -90,13 +96,13 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         break;
     case HTTP_EVENT_DISCONNECTED:
         lAppLog("HTTP_EVENT_DISCONNECTED\n");
+        OTAStep=OTASTEP_NO_WIFI;
         break;
     }
     return ESP_OK;
 }
 
 OTAUpdateApplication::OTAUpdateApplication() {
-    FreeSpace();
     OTAStep=OTASTEP_IDLE;
 
     canvas->fillSprite(backgroundColor); // use theme colors
@@ -109,15 +115,14 @@ OTAUpdateApplication::OTAUpdateApplication() {
         backgroundColor=ThCol(background);
         if ( nullptr == latestBuildFoundString ) {
             lAppLog("OTA: WiFi working?\n");
-            updateBtn->SetEnabled(true);
             OTAStep=OTASTEP_NO_WIFI;
             backgroundColor=TFT_RED;
+            updateBtn->SetEnabled(true);
             return;
         }
         if ( nullptr == latestBuildFoundString ) {
             updateBtn->SetEnabled(true);
             lAppLog("OTA: need check first\n");
-            OTAStep=OTASTEP_IDLE;
             return;
         }
         uint32_t myVersion = LUNOKIOT_BUILD_NUMBER;
@@ -132,12 +137,13 @@ OTAUpdateApplication::OTAUpdateApplication() {
         wifiOverride=true;
         WiFi.begin();
         esp_wifi_set_ps(WIFI_PS_NONE); // disable wifi powersave
-        long timeout = millis()+(20*1000);
+        unsigned long timeout = millis()+(25*1000);
         while ( timeout > millis() ) {
             wl_status_t currStat = WiFi.status();
             if ( WL_CONNECTED == currStat) { break; }
+            delay(100);
         }
-        if ( millis() >= timeout ) {
+        if ( millis() > timeout ) {
             lAppLog("OTA: Timeout trying to start WiFi!\n");
             backgroundColor=TFT_RED;
             updateBtn->SetEnabled(true);
@@ -151,7 +157,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
         // -DLUNOKIOT_UPDATES_ENABLED
         lAppLog("OTA: System update availiable: '%s' running: '%s'\n",latestBuildFoundString,LUNOKIOT_BUILD_STRING);
         // implement https OTA https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_https_ota.html
-        char firmwareURL[256];
+        char *firmwareURL = (char *)ps_malloc(512);
 
         // device ID's
         const char * myDeviceName = "esp32"; // generic;
@@ -165,12 +171,12 @@ OTAUpdateApplication::OTAUpdateApplication() {
         myDeviceName = "ttgo-t-watch_2020_v1"; 
         #endif
 
-
+        FreeSpace();
 #ifdef LUNOKIOT_UPDATES_LOCAL_URL
         lAppLog("OTA: Using local URL for updates\n");
         //sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LocalOTAURL,latestBuildFoundString,myDeviceName);
 
-        sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LUNOKIOT_UPDATES_LOCAL_URL,latestBuildFoundString,myDeviceName);
+        sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LUNOKIOT_UPDATE_LOCAL_URL_STRING,latestBuildFoundString,myDeviceName);
 #else
         sprintf(firmwareURL,"https://raw.githubusercontent.com/lunokjod/watch/devel/ota/lunokWatch_%s_%s.bin",latestBuildFoundString,myDeviceName);
 #endif
@@ -180,11 +186,11 @@ OTAUpdateApplication::OTAUpdateApplication() {
             .user_agent = "Wget/1.21.2",
             .timeout_ms = 5000,
             .event_handler = _http_event_handler,
-//#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+#ifdef LUNOKIOT_UPDATES_LOCAL_URL
 //            .transport_type = HTTP_TRANSPORT_OVER_TCP,
             .skip_cert_common_name_check=true,
-//#endif
-            //.keep_alive_enable = true,
+#endif
+            .keep_alive_enable = true,
         };
         OTAStep=OTASTEP_CHECKING;
         lAppLog("OTA: Getting new firmware from: '%s'...\n",firmwareURL);
@@ -266,6 +272,7 @@ ota_end:
         esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
         wifiOverride=false;
         updateBtn->SetEnabled(true);
+        free(firmwareURL);
         OTAStep=OTASTEP_IDLE;
         FreeSpace();
     },img_update_48_bits, img_update_48_height, img_update_48_width); //,TFT_WHITE,TFT_BLACK,false);
@@ -280,6 +287,14 @@ ota_end:
     canvas->setTextDatum(CC_DATUM);
     bufferForText=(char*)ps_malloc(256);
     if ( nullptr == latestBuildFoundString ) { LaunchWatchface(true); }
+
+    #ifdef LILYGO_WATCH_2020_V3
+        ttgo->shake();
+    #endif
+    imageSize=0;
+    imageDownloaded=0;
+    UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
+
     Tick();
 }
 
@@ -287,7 +302,6 @@ OTAUpdateApplication::~OTAUpdateApplication() {
     if ( NULL != https_ota_handle ) {
         esp_https_ota_abort(https_ota_handle);
         //https_ota_handle=NULL;
-        OTAStep=OTASTEP_IDLE;
     }
     delete updateBtn;
     delete progressBar;
@@ -298,6 +312,7 @@ OTAUpdateApplication::~OTAUpdateApplication() {
     delay(100);
     WiFi.mode(WIFI_OFF);
     esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+    OTAStep=OTASTEP_IDLE;
     wifiOverride=false;
 }
 
@@ -305,20 +320,26 @@ OTAUpdateApplication::~OTAUpdateApplication() {
 bool OTAUpdateApplication::Tick() {
     btnBack->SetEnabled( updateBtn->GetEnabled() );
     
-    bool backTap = btnBack->Interact(touched,touchX, touchY); 
+    btnBack->Interact(touched,touchX, touchY); 
     
     updateBtn->Interact(touched,touchX, touchY); 
 
+    UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
 
     if ( millis() > nextRefresh ) {
         canvas->fillSprite(backgroundColor); // use theme colors
-        if ( updateBtn->GetEnabled() ) {
-            if ( backTap ) {
-                btnBack->DirectDraw();
-            } else {
-                btnBack->DrawTo(canvas);
-            }
+
+        wl_status_t whatBoutWifi = WiFi.status();
+        if (WL_NO_SHIELD != whatBoutWifi) {
+            int16_t posX = TFT_WIDTH-38;
+            int16_t posY = 18;
+            uint32_t dotColor = ThCol(background);
+            if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }            
+            canvas->fillCircle(posX, posY, 5, dotColor);
+            canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
         }
+
+
 
         //imageSize=360;
         //imageDownloaded=180;
@@ -343,7 +364,7 @@ bool OTAUpdateApplication::Tick() {
 
         const char * whatAreYouDoing="Please wait...";
         if ( OTASTEP_NO_WIFI==OTAStep ) {
-            whatAreYouDoing="No updates seen";
+            whatAreYouDoing="No WiFi";
         } else if ( OTASTEP_ALREADYUPDATED==OTAStep ) {
             whatAreYouDoing="Updated!";
         } else if ( OTASTEP_CONNECTING==OTAStep ) {
@@ -362,13 +383,14 @@ bool OTAUpdateApplication::Tick() {
             whatAreYouDoing="Done!";
         }
         if ( false == updateBtn->GetEnabled() ) { progressBar->DrawTo(canvas); }
-
+        btnBack->DrawTo(canvas);
+        
         if ( ( OTASTEP_IDLE!=OTAStep ) ) { //&& ( OTASTEP_IMAGE_DOWNLOAD!=OTAStep ) ) {
             canvas->setTextSize(2);
             canvas->setTextDatum(TC_DATUM);
             canvas->setTextColor(ThCol(text));
             canvas->drawString(whatAreYouDoing,canvas->width()/2,20); // canvas->height()-20);
-            UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
+            //UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
         }
 
         if ( updateBtn->GetEnabled() ) {

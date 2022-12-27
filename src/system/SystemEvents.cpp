@@ -42,6 +42,8 @@ extern TTGOClass *ttgo; // ttgo library
 #include <freertos/portable.h>
 //https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
 
+bool normalBoot=true;
+
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
 
 uint32_t systemStatsBootCounter = 0;
@@ -239,7 +241,10 @@ static void DoSleepTask(void *args) {
             break;
         }
     }
+    WiFi.disconnect(true);
+    delay(200);
     WiFi.mode(WIFI_OFF);
+    delay(200);
     if (retries < MAXRETRIES) { lEvLog("ESP32: WiFi released, DoSleep continue...\n"); }
     LaunchApplication(nullptr,false,true); // Synched App Stop
     // AXP202 interrupt gpio_35
@@ -407,34 +412,31 @@ void SaveDataBeforeShutdown() {
     Serial.flush();
 }
 
-static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
+static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     LaunchApplication(new ShutdownApplication());
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
-void _SendEventWakeTask(void *data)
-{
+void _SendEventWakeTask(void *data) {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     vTaskDelete(NULL);
 }
-static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
+static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
 
     /*
     static unsigned long lastPEK = 0;
     if ( millis() > lastPEK ) {
         */
-    if (ttgo->bl->isOn())
-    {
+    if (ttgo->bl->isOn()) {
         lEvLog("Event: user wants to put device to sleep\n");
+        FreeSpace();
         ScreenSleep();
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         DoSleep();
     }
-    else
-    {
+    else {
         lEvLog("Event: user wants to get a screen\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        FreeSpace();
         ScreenWake();
     }
     /*
@@ -615,6 +617,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Stop\n");
+
 }
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -1228,7 +1231,7 @@ static void RTCInterruptController(void *args) {
 
 
 void BootReason() {
-    bool normalBoot = false;
+    normalBoot = false;
     lEvLog("Boot reason: ");
     esp_reset_reason_t lastBootStatus = esp_reset_reason();
     if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
@@ -1245,13 +1248,11 @@ void BootReason() {
     else { lLog("UNHANDLED UNKNOWN\n"); }
     if ( false == normalBoot ){
         lEvLog("/!\\ /!\\ /!\\ WARNING: Last boot FAIL\n");
+    }
+    if ( true == normalBoot ) {
         #ifdef LILYGO_WATCH_2020_V3
             ttgo->shake();
-            delay(200);
-            ttgo->shake();
-            delay(200);
-            ttgo->shake();
-            delay(200);
+            //delay(200);
         #endif
     }
 }
@@ -1264,7 +1265,6 @@ void BootReason() {
  * @param function_name function which generated the failure
  */
 void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
-    FreeSpace();
     lLog("\n");
     lLog(" ====== /!\\/!\\/!\\ ======\n");
     lLog("\n");
@@ -1292,9 +1292,9 @@ void SystemEventsStart() {
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 10,                           // maybe so big?
+        .queue_size = 8,                            // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY,          // a little bit faster
+        .task_priority = tskIDLE_PRIORITY+4,        // a little bit faster
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                           // to core 1
     };                                              // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t

@@ -43,7 +43,7 @@ const PROGMEM char LUNOKIOT_BUILD_STRING[] = "@@BUILD_NUMBER@@";
 const PROGMEM char LUNOKIOT_KEY[] = "@@LUNOKIOT_KEY@@";
 
 #define LUNOKIOT_UPDATE_TIMEOUT (8*1000)
-const PROGMEM char LUNOKIOT_UPDATE_LOCAL_URL[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:4443"; // ./thttpd -p 8080 -d ../site -D
+const PROGMEM char LUNOKIOT_UPDATE_LOCAL_URL_STRING[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:4443"; // ./thttpd -p 8080 -d ../site -D
 const PROGMEM char LUNOKIOT_LOCAL_CLOUD_URL[] = "https://@@LUNOKIOT_LOCAL_CLOUD@@:@@LUNOKIOT_LOCAL_CLOUD_PORT@@"; // ./thttpd -p 6969 -d ../site -D
 
 #ifdef LUNOKIOT_UPDATES_LOCAL_URL

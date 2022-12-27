@@ -467,7 +467,7 @@ void UIStart() {
         .queue_size = 8,
         .task_name = "uiTask", // task will be created
         .task_priority = tskIDLE_PRIORITY-1, //uxTaskPriorityGet(NULL),
-        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE,
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
         .task_core_id = 0, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 

@@ -54,7 +54,11 @@ SettingsApplication::SettingsApplication() {
         openweatherCheck->SetEnabled(inverVal);
         */
         ntpCheck->SetEnabled(wifiCheck->switchEnabled);
-        openweatherCheck->SetEnabled(wifiCheck->switchEnabled);
+        if ( 0 == strlen(openWeatherMapApiKey)) {
+            openweatherCheck->SetEnabled(false);
+        } else {
+            openweatherCheck->SetEnabled(wifiCheck->switchEnabled);
+        }
     });
 #ifdef LUNOKIOT_WIFI_ENABLED
     wifiCheck->switchEnabled=NVS.getInt("WifiEnabled");
@@ -86,7 +90,9 @@ SettingsApplication::SettingsApplication() {
     openweatherCheck->switchEnabled=NVS.getInt("OWeatherEnabled");
     openweatherCheck->enabled=wifiCheck->switchEnabled;
     openweatherCheck->InternalRedraw();
-
+    if ( 0 == strlen(openWeatherMapApiKey)) {
+        openweatherCheck->SetEnabled(false);
+    }
     // build overlay as help screen
     overlay->fillSprite(TFT_BLACK);
     const uint8_t margin = 32;

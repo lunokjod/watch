@@ -14,6 +14,45 @@ extern TFT_eSPI *tft;
 const unsigned long AboutBoxTextScrollDelay = 1000/16;
 //const unsigned long 
 size_t AboutBoxTextScrollOffset = 0;
+/* @TODO show all of them!
+Dependency Graph
+|-- TTGO TWatch Library @ 1.4.2
+|   |-- Wire @ 2.0.0
+|   |-- SPI @ 2.0.0
+|   |-- SPIFFS @ 2.0.0
+|   |   |-- FS @ 2.0.0
+|   |-- FS @ 2.0.0
+|   |-- SD @ 2.0.0
+|   |   |-- FS @ 2.0.0
+|   |   |-- SPI @ 2.0.0
+|   |-- Ticker @ 2.0.0
+|-- ArduinoNvs @ 2.5.0
+|-- QRCode @ 0.0.1
+|-- Arduino_JSON @ 0.1.0
+|-- NimBLE-Arduino @ 1.4.1
+|-- ESP8266Audio @ 1.9.7
+|   |-- SPIFFS @ 2.0.0
+|   |   |-- FS @ 2.0.0
+|   |-- FS @ 2.0.0
+|   |-- HTTPClient @ 2.0.0
+|   |   |-- WiFi @ 2.0.0
+|   |   |-- WiFiClientSecure @ 2.0.0
+|   |   |   |-- WiFi @ 2.0.0
+|   |-- SD @ 2.0.0
+|   |   |-- FS @ 2.0.0
+|   |   |-- SPI @ 2.0.0
+|   |-- SPI @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- WiFiProv @ 2.0.0
+|   |-- WiFi @ 2.0.0
+|   |-- SimpleBLE @ 2.0.0
+|-- Ticker @ 2.0.0
+|-- HTTPClient @ 2.0.0
+|   |-- WiFi @ 2.0.0
+|   |-- WiFiClientSecure @ 2.0.0
+|   |   |-- WiFi @ 2.0.0
+|-- ESP32 BLE Arduino @ 2.0.0
+*/
 const char *AboutBoxTextScroll[] = {
     "A short time ago",
     "in a galaxy far,",

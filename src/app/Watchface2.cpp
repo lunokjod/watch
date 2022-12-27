@@ -77,55 +77,55 @@ char *weatherReceivedData = nullptr;
 
 char *weatherCity = nullptr;
 char *weatherCountry = nullptr;
+const PROGMEM char urlOpenWeatherFormatString[] = "https://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
 
 bool Watchface2Application::GetSecureNetworkWeather() {
-    bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
-    if (false == oweatherValue) {
-        lNetLog("Watchface: Openweather Sync disabled by NVS\n");
-        return true;
-    }
-    char *url = (char *)ps_malloc(180); 
-    const char urlFormatString[] = "https://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&APPID=%s";
-    sprintf(url,urlFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
+    char *url = (char *)ps_malloc(140); // usually ~120
+    sprintf(url,urlOpenWeatherFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
     lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));
     WiFiClientSecure *client = new WiFiClientSecure;
     if(nullptr == client) {
         lNetLog("GetSecureNetworkWeather: ERROR: Unable to create WiFiClientSecure\n");
+        free(url);
         return false;
     }
-    client -> setCACert((const PROGMEM char *)openweatherPEM_start);
-    {
-        HTTPClient weatherClient;
-        if (false == weatherClient.begin(*client, url)) {  // HTTPS
-            lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
-            delete client;
-            return false;
-        }
-        int httpResponseCode = weatherClient.GET();
+
+    HTTPClient weatherClient;
+    weatherClient.setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
+    weatherClient.setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
+    weatherClient.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    client->setCACert((const char*)openweatherPEM_start);
+    if (false == weatherClient.begin(*client, String(url))) {  // HTTPS
+        lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
+        delete client;
         free(url);
-        lNetLog("Watchface: GetSecureNetworkWeather: HTTP response code: %d\n", httpResponseCode);
-        if (httpResponseCode < 1) {
-            weatherClient.end();
-            delete client;
-            return false;
-        }
-        // clean old buffer if needed
-        if (nullptr != weatherReceivedData) {
-            free(weatherReceivedData);
-            weatherReceivedData = nullptr;
-        }
-        String payload = weatherClient.getString(); // fuck strings
-        
-        lNetLog("Watchface: GetSecureNetworkWeather: free weatherClient\n");
+        return false;
+    }
+    int httpResponseCode = weatherClient.GET();
+    lNetLog("Watchface: GetSecureNetworkWeather: HTTP response code: %d\n", httpResponseCode);
+    if (httpResponseCode < 1) {
         weatherClient.end();
         delete client;
+        free(url);
+        return false;
+    }
+    // clean old buffer if needed
+    if (nullptr != weatherReceivedData) {
+        free(weatherReceivedData);
+        weatherReceivedData = nullptr;
+    }
+    String payload = weatherClient.getString(); // fuck strings
+    
 
-        // Generate the received data buffer
-        if (nullptr == weatherReceivedData) {
-            lNetLog("Allocate: weatherReceivedData size: %d\n",payload.length());
-            weatherReceivedData = (char *)ps_malloc(payload.length() + 1);
-            strcpy(weatherReceivedData, payload.c_str());
-        }
+    lNetLog("Watchface: GetSecureNetworkWeather: free weatherClient\n");
+    weatherClient.end();
+    delete client;
+    free(url);
+    // Generate the received data buffer
+    if (nullptr == weatherReceivedData) {
+        lNetLog("Allocate: weatherReceivedData size: %d\n",payload.length());
+        weatherReceivedData = (char *)ps_malloc(payload.length() + 1);
+        strcpy(weatherReceivedData, payload.c_str());
     }
     lNetLog("HTTP: %s\n",weatherReceivedData);
     return true;
@@ -537,7 +537,7 @@ void Watchface2Application::Handlers()
                 lNetLog("Watchface: Openweather Sync disabled by NVS\n");
                 return true;
             }
-            lNetLog("Openweather KEY; '%s'\n",openWeatherMapApiKey);
+            lNetLog("Openweather KEY: '%s'\n",openWeatherMapApiKey);
             if (0 == strlen(openWeatherMapApiKey)) {
                 lNetLog("Watchface: Openweather Cannot get weather without API KEY https://openweathermap.org/api\n");
                 return true;
@@ -779,7 +779,8 @@ bool Watchface2Application::Tick()
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
         wl_status_t whatBoutWifi = WiFi.status();
-        if (WL_NO_SHIELD != whatBoutWifi) {
+        if ( (WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi) ) {
+            lAppLog("whatBoutWifi: %d\n", whatBoutWifi);
             int16_t posX = 51;
             int16_t posY = 189;
             uint32_t dotColor = ThCol(background);

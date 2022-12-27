@@ -142,6 +142,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
 }
 
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced) {
+    UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
     if ( nullptr != instance ) {
         if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
             lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
