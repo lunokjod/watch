@@ -2,5 +2,7 @@
 #define __LUNOKIOT__BOOT_SCREEN__
 
 void SplashAnnounce();
+void SplashAnnounceBegin();
 void SplashAnnounceEnd();
+
 #endif

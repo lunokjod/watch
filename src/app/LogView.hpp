@@ -78,7 +78,7 @@ class LogViewApplication: public TemplateApplication {
         static bool dirty;
         static TFT_eSprite * LogTextBuffer;
         static const uint8_t TextHeight=9;
-        static const uint8_t TextWidth=9;
+        static const uint8_t TextWidth=40;
         LogViewApplication();
         ~LogViewApplication();
         bool Tick();

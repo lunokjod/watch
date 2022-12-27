@@ -53,6 +53,8 @@ const char *ntpServer = "pool.ntp.org";
 bool ntpSyncDone = false;
 bool weatherSyncDone = false;
 
+extern float PMUBattDischarge;
+
 // manipulate the angle data from UI
 // extern int16_t downTouchX;
 // extern int16_t downTouchY;
@@ -656,8 +658,7 @@ bool Watchface2Application::Tick()
 {
     bottomRightButton->Interact(touched, touchX, touchY);
 
-    if (millis() > nextRefresh)
-    {
+    if (millis() > nextRefresh) {
         // hourHandCanvas->DrawTo(canvas,middleX,middleY);
         // minuteHandCanvas->DrawTo(canvas,middleX,middleY);
         // directDraw=false;
@@ -689,8 +690,7 @@ bool Watchface2Application::Tick()
 
         // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
 
-        if (weatherSyncDone)
-        {
+        if (weatherSyncDone) {
             // weather icon
             canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
             // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
@@ -727,7 +727,7 @@ bool Watchface2Application::Tick()
             // temperature
             if (-1000 != weatherTemp)
             {
-                sprintf(textBuffer, "%2.1fc", weatherTemp);
+                sprintf(textBuffer, "%2.1f ºC", weatherTemp);
                 int16_t posX = 150;
                 int16_t posY = 74;
                 canvas->setTextFont(0);
@@ -747,8 +747,7 @@ bool Watchface2Application::Tick()
                 canvas->drawString(weatherMain, 120, 40);
             }
 
-            if (nullptr != weatherDescription)
-            {
+            if (nullptr != weatherDescription) {
                 canvas->setTextFont(0);
                 canvas->setTextSize(1);
                 canvas->setTextDatum(CC_DATUM);
@@ -761,17 +760,14 @@ bool Watchface2Application::Tick()
         }
 
         // connectivity notifications
-        if (bleEnabled)
-        {
+        if (bleEnabled) {
             int16_t posX = 36;
             int16_t posY = 171;
             uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-            if (bleServiceRunning)
-            {
+            if (bleServiceRunning) {
                 dotColor = ThCol(medium);
             }
-            if (blePeer)
-            {
+            if (blePeer) {
                 dotColor = ThCol(low);
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
@@ -782,11 +778,14 @@ bool Watchface2Application::Tick()
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
-        if (wifiEnabled)
-        {
+        wl_status_t whatBoutWifi = WiFi.status();
+        if (WL_NO_SHIELD != whatBoutWifi) {
             int16_t posX = 51;
             int16_t posY = 189;
-            canvas->fillCircle(posX, posY, 5, ThCol(low));
+            uint32_t dotColor = ThCol(background);
+            if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }
+            
+            canvas->fillCircle(posX, posY, 5, dotColor);
             canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
         }
 
@@ -920,8 +919,7 @@ bool Watchface2Application::Tick()
         canvas->setTextWrap(false, false);
 
         // batt pc
-        if (batteryPercent > -1)
-        {
+        if (batteryPercent > -1) {
             uint32_t battColor = TFT_DARKGREY;
             posX = 26;
             posY = 149;
@@ -951,6 +949,17 @@ bool Watchface2Application::Tick()
             canvas->setTextDatum(CL_DATUM);
             canvas->drawString(textBuffer, posX + 10, posY + 1);
             canvas->fillCircle(posX, posY, 5, battColor); // Alarm: red dot
+            if ( PMUBattDischarge > 0.0 ) {
+                char *mahBuffer = (char *)ps_malloc(64);
+                sprintf(mahBuffer,"%.2f mAh",PMUBattDischarge);
+                canvas->setTextFont(0);
+                canvas->setTextSize(1);
+                canvas->setTextColor(ThCol(text));
+                canvas->setTextDatum(BL_DATUM);
+                canvas->drawString(mahBuffer, posX+8, posY-10);
+                free(mahBuffer);            
+            }
+
         }
         else
         {

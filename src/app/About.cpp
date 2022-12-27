@@ -105,7 +105,6 @@ const char *AboutBoxTextScroll[] = {
     "",
 };
 AboutApplication::~AboutApplication() {
-    if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != colorBuffer ) { delete colorBuffer; }
     if ( nullptr != textBuffer ) {
         textBuffer->deleteSprite();
@@ -118,9 +117,6 @@ AboutApplication::~AboutApplication() {
 AboutApplication::AboutApplication() {
     directDraw=true;
     canvas->fillSprite(TFT_BLACK);
-    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchWatchface();
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
     textBuffer = new TFT_eSprite(tft);
     textBuffer->setColorDepth(1);
     textBuffer->createSprite(TFT_WIDTH,120+18);
@@ -139,14 +135,15 @@ AboutApplication::AboutApplication() {
     btnBack->DrawTo(canvas);
     canvas->pushSprite(0,0);
     */
-drawOneSecond=millis()+1000;
+    drawOneSecond=millis()+1000;
 }
 
 bool AboutApplication::Tick() {
+    UINextTimeout = millis()+UITimeout; // disable screen timeout
     // draw the UI during the first second
     if ( drawOneSecond > millis() ) {
         // final interface
-        lAppLog("AboutApplication: First run half draw (for splash effect)\n");
+        //lAppLog("AboutApplication: First run half draw (for splash effect)\n");
         canvas->fillRect(0,0,TFT_WIDTH,30,TFT_BLACK);
         canvas->fillRect(0,150,TFT_WIDTH,15,TFT_BLACK);
         canvas->fillRect(0,TFT_HEIGHT-74,TFT_WIDTH,74,canvas->color24to16(0x212121));

@@ -259,11 +259,6 @@ Provisioning2Application::Provisioning2Application() {
 
     snprintf(service_name, 32, "%s%02X%02X%02X",
              ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
-
-    backBtn=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
-        LaunchWatchface();
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
-
     clearProvBtn=new ButtonImageXBMWidget(5,5,70,70,[&,this](){
         Provisioning2DestroyNVS();
     },img_trash_48_bits,img_trash_48_height,img_trash_48_width,TFT_WHITE,TFT_RED);
@@ -309,11 +304,15 @@ bool Provisioning2Application::Tick() {
         if ( nullptr != currentQRRendered ) {
             if ( false == qrVisible ) {
                 currentQRRendered->pushRotated(canvas,0);
-                TTGOClass *ttgo = TTGOClass::getWatch();
-                ttgo->setBrightness(20);
                 qrVisible = true;
                 return true;
             }
+        }
+        if ( touched ) {
+            TTGOClass *ttgo = TTGOClass::getWatch();
+            uint8_t bright = (255/ttgo->tft->width())*touchX;
+            //lAppLog("BRIGHT: %u\n",bright);
+            ttgo->setBrightness(bright);
         }
         return false;
     }
@@ -323,13 +322,13 @@ bool Provisioning2Application::Tick() {
     }
     //backBtn->enabled = provisioned;
     clearProvBtn->enabled = provisioned;
-    backBtn->Interact(touched,touchX,touchY);
+    btnBack->Interact(touched,touchX,touchY);
     clearProvBtn->Interact(touched,touchX,touchY);
     startProvBtn->Interact(touched,touchX,touchY);
     wifiOrBLE->Interact(touched,touchX,touchY);
     if (millis() > nextRedraw ) {
         canvas->fillSprite(canvas->color24to16(0x212121));
-        backBtn->DrawTo(canvas);
+        btnBack->DrawTo(canvas);
         clearProvBtn->DrawTo(canvas);
         startProvBtn->DrawTo(canvas);
         wifiOrBLE->DrawTo(canvas);

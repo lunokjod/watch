@@ -32,10 +32,10 @@
 
 #define LUNOKIOT_WAKE_TIME_S 60 // used for wakeup the device every X seconds to get samples
 
-const TickType_t LUNOKIOT_SYSTEM_HEARTBEAT_TIME = (1500 / portTICK_PERIOD_MS); // system heartbeat in times per second
-const TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
-const TickType_t LUNOKIOT_TIMEDTASKS_LOOP_TIME = (1000 / portTICK_PERIOD_MS); //  system message loops
-const TickType_t LUNOKIOT_SYSTEM_INTERRUPTS_TIME = (30 / portTICK_PERIOD_MS); // system AXP interrupt controller in times per second
+const PROGMEM float LUNOKIOT_SYSTEM_HEARTBEAT_TIME = 1500; // system heartbeat in times per second
+const PROGMEM TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
+const PROGMEM TickType_t LUNOKIOT_TIMEDTASKS_LOOP_TIME = (1000 / portTICK_PERIOD_MS); //  system message loops
+const PROGMEM TickType_t LUNOKIOT_SYSTEM_INTERRUPTS_TIME = (40 / portTICK_PERIOD_MS); // system AXP interrupt controller in times per second
 
 
 #define LUNOKIOT_BUILD_NUMBER @@BUILD_NUMBER@@
@@ -114,7 +114,7 @@ extern int16_t accZ;
  * UI shit
  */
 extern uint32_t FPS;
-const uint32_t MAXFPS = 18;
+const PROGMEM uint32_t MAXFPS = 18;
 
 extern int16_t touchX; // X coordinate from last sample
 extern int16_t touchY; // Y coordinate from last sample
@@ -150,6 +150,8 @@ const PROGMEM float WOMAN_STEP_PROPORTION = 0.413;
 #define LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS 1000
 #define LUNOKIOT_EVENT_MANDATORY_TIME_TICKS portMAX_DELAY
 
+#define LUNOKIOT_PMU_MONITOR 5
+#define COULOMB_TO_MAH (0.27777777777778)
 // UI LockTimes
 extern SemaphoreHandle_t UISemaphore;
 #define LUNOKIOT_UI_SHORT_WAIT 5

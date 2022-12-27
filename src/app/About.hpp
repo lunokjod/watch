@@ -2,13 +2,13 @@
 #define __LUNOKIOT__ABOUT_APP__
 #include <Arduino.h>
 //#include <LilyGoWatch.h>
-#include "../system/Application.hpp"
+#include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 
-class AboutApplication: public LunokIoTApplication {
+class AboutApplication: public TemplateApplication {
     private:
         unsigned long drawOneSecond=0;
         unsigned long nextRedraw=0;
@@ -18,7 +18,6 @@ class AboutApplication: public LunokIoTApplication {
         TFT_eSprite * textBuffer = nullptr;
         CanvasWidget * colorBuffer = nullptr;
         CanvasWidget * perspectiveTextBuffer = nullptr;
-        ButtonImageXBMWidget * btnBack = nullptr;
         AboutApplication();
         ~AboutApplication();
         bool Tick();

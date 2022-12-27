@@ -77,6 +77,7 @@ void StepManagerCallback() {
 }
 void InstallStepManager() {
     StepTicker.attach(60*40,StepManagerCallback);
+    
     return;
     /*
     if ( nullptr == stepsManager ) {

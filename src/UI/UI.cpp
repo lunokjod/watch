@@ -467,10 +467,12 @@ void UIStart() {
         .queue_size = 8,
         .task_name = "uiTask", // task will be created
         .task_priority = tskIDLE_PRIORITY-1, //uxTaskPriorityGet(NULL),
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
-        .task_core_id = 1, //tskNO_AFFINITY
+        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE,
+        .task_core_id = 0, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
-    // Create the event loops
+
+    UINextTimeout = millis()+UITimeout;
+     // Create the event loops
     esp_event_loop_create(&uiEventloopConfig, &uiEventloopHandle);
 
     // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
@@ -478,18 +480,15 @@ void UIStart() {
     esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL);
     esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL);
     esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL);
-//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL);
+    //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL);
 
-// Useless if is sended later than whake x'D
-//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL);
-//    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL);
+    // Useless if is sended later than whake x'D
+    //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL);
+    //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL);
 
     // Create the event source task with the same priority as the current task
-    xTaskCreate(UITickTask, "UITick", LUNOKIOT_TASK_STACK_SIZE, NULL,-5, &UITickTaskHandler);
-
+    xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,-5, &UITickTaskHandler);
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-//    UINextTimeout = millis()+UITimeout;
-
 }
 /*
 void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D

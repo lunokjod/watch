@@ -33,11 +33,13 @@ enum {
     PMU_EVENT_BATT_TEMP_HIGH, // o_Ou
     PMU_EVENT_BATT_NOTFOUND,  // no battery
     PMU_EVENT_BATT_PC,        // battery load percent
+    PMU_EVENT_REPORT,         // see pmu/axp202*
 
     PMU_EVENT_POWER,          // usb connected
     PMU_EVENT_NOPOWER,        // no usb
     PMU_EVENT_PEK_SHORT,      // reserved by system to sleep/wake
     PMU_EVENT_PEK_LONG,       // reserved by system to launch ordered powerdown
+    PMU_EVENT_TIMER_TIMEOUT,   // @TODO some kind of timer in the AXP202
     PMU_EVENT_TEMPERATURE,    // battery temperature
 
     BMP_EVENT_MOVE,             // movement detected

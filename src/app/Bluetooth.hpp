@@ -2,16 +2,15 @@
 #define __LUNOKIOT__BLUETOOTH_APP__
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "../system/Application.hpp"
+#include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-class BluetoothApplication: public LunokIoTApplication {
+class BluetoothApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;
         uint32_t generatedPin=-1;
     public:
-        ButtonImageXBMWidget * btnBack = nullptr;
         ButtonImageXBMWidget * btnGeneratePIN = nullptr;
         ButtonImageXBMWidget * btnRemoveBonding = nullptr;
         uint32_t SetBLERandomPin();

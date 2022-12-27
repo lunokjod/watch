@@ -36,35 +36,38 @@ void lRawLog(const char *fmt, ...) {
     va_start(args, fmt);
     static char buf[1024];
     int resLen = vsnprintf(buf, 1024, fmt, args);
+
     #ifdef LUNOKIOT_DEBUG
-        Serial.printf(buf);
+        if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+            Serial.printf(buf);
+            /* @TODO too slow code
+            if ( nullptr != LogViewApplication::LogTextBuffer ) {
+                LogViewApplication::LogTextBuffer->printf(buf);
+                int16_t x = LogViewApplication::LogTextBuffer->getCursorX();
+                int16_t y = LogViewApplication::LogTextBuffer->getCursorY();
+                if ( y > (LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight) ) {
+                    LogViewApplication::LogTextBuffer->scroll(0,LogViewApplication::TextHeight*-1);
+                    LogViewApplication::LogTextBuffer->setCursor(x,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
+                }
+                LogViewApplication::dirty=true;
+            }*/
+            xSemaphoreGive( lLogSemaphore );
+        } else {
+            #ifdef LUNOKIOT_DEBUG_UI
+                Serial.println("[UI] Timeout! last message wasn't included on visual log due draw timeout");
+            #endif
+        }
     #endif
-    if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-        /* @TODO disabled for check memory issues
-        if ( nullptr != LogViewApplication::LogTextBuffer ) {
-            LogViewApplication::LogTextBuffer->printf(buf);
-            int16_t x = LogViewApplication::LogTextBuffer->getCursorX();
-            int16_t y = LogViewApplication::LogTextBuffer->getCursorY();
-            if ( y > (LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight) ) {
-                LogViewApplication::LogTextBuffer->scroll(0,LogViewApplication::TextHeight*-1);
-                LogViewApplication::LogTextBuffer->setCursor(x,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
-            }
-            LogViewApplication::dirty=true;
-        }*/
-        xSemaphoreGive( lLogSemaphore );
-    } else {
-        #ifdef LUNOKIOT_DEBUG_UI
-            Serial.println("[UI] Timeout! last message wasn't included on visual log due draw timeout");
-        #endif
-    }
+
     va_end(args);
 }
 LogViewApplication::~LogViewApplication() {
-    ViewBuffer->deleteSprite();
-    delete ViewBuffer;
+    //ViewBuffer->deleteSprite();
+    //delete ViewBuffer;
 }
 
 LogViewApplication::LogViewApplication() {
+    /*
     // build the area for log
     ViewBuffer = new TFT_eSprite(tft);
     ViewBuffer->setColorDepth(1);
@@ -77,14 +80,16 @@ LogViewApplication::LogViewApplication() {
         ViewBuffer->setPivot(0,0);
         ViewBuffer->fillSprite(TFT_BLACK);
         LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
-    }
+    }*/
     Tick();
 }
 
 bool LogViewApplication::Tick() {
 
     UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
-    btnBack->Interact(touched,touchX, touchY);
+    
+    //btnBack->Interact(touched,touchX, touchY);
+    return TemplateApplication::Tick();
 
     if ( touched ) {
         if ( ActiveRect::InRect(touchX,touchY,0,0,ViewBuffer->height(),ViewBuffer->width()) ) {
@@ -126,7 +131,7 @@ bool LogViewApplication::Tick() {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
         canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
         btnBack->DrawTo(canvas);
-
+        /*
         if ( nullptr != LogViewApplication::LogTextBuffer ) {
             ViewBuffer->setPivot(0,0);
             if ( LogViewApplication::dirty ) {
@@ -137,7 +142,7 @@ bool LogViewApplication::Tick() {
             }
             canvas->setPivot(0,0);
             ViewBuffer->pushRotated(canvas,0,TFT_BLACK);
-        }
+        }*/
         nextRedraw=millis()+(1000/3);
         return true;
     }

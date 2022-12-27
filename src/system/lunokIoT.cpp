@@ -10,6 +10,8 @@
 #include "UI/BootSplash.hpp"
 #include "SystemEvents.hpp"
 
+#include "PMU/AXP202.hpp"
+
 //#include "system/Tasks.hpp"
 #include "system/Network.hpp"
 #include "app/Steps.hpp" // Step manager
@@ -32,7 +34,7 @@ LunokIoT::LunokIoT() {
     NVS.begin(); // need NVS to get the current settings
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
-    lUILog("User screen rotation: %d\n", rotation);
+    //lUILog("User screen rotation: %d\n", rotation);
     tft->setRotation(rotation); // user selected rotation (0 by default)
 
     size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
@@ -40,8 +42,13 @@ LunokIoT::LunokIoT() {
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
 
-    BootReason();
+    #ifdef LILYGO_WATCH_2020_V3
+    ttgo->motor_begin();
+    #endif
 
+    BootReason();
+    // here comes!
+    SplashAnnounceBegin();
     userTall= NVS.getInt("UserTall");        // get how high is the user
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
 
@@ -53,29 +60,19 @@ LunokIoT::LunokIoT() {
         // BIOLOGICAL MALE PROPS
         stepDistanceCm = userTall * MAN_STEP_PROPORTION;
     }
-
+    delay(50);
     // first logged message
     lSysLog("System initializing...\n");
 
-    #ifdef LILYGO_WATCH_2020_V3
-    // haptic announce (@TODO user choice "silent boot")
-    #ifndef LUNOKIOT_SILENT_BOOT
-    lSysLog("lunokIoT: Motor enabled\n");
-    ttgo->motor_begin();
-    delay(20); // need for shake works
-    ttgo->shake();
-    delay(20);
-    #endif
-    #endif
-    
     // get if are in summertime
     int daylight = NVS.getInt("summerTime");
     // get the GMT timezone
     long timezone = NVS.getInt("timezoneTime");
     // announce values to log
+    delay(50);
     lEvLog("RTC: Config: Summer time: %s GMT: %d\n",(daylight?"true":"false"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
-
+    delay(50);
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
         lEvLog("RTC: The timedate seems valid\n");
@@ -88,21 +85,33 @@ LunokIoT::LunokIoT() {
         ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
         }
     }
+    delay(50);
     // Launch the lunokiot message bus
     SystemEventsStart();
+    delay(50);
 
     UIStart();  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
 
-    //TimedTaskHandler();
     NetworkHandler();   // already provisioned? start the network timed tasks loop
+    delay(50);
     InstallStepManager();
+    delay(50);
 
-    // here comes!
+    StartPMUMonitor();
+
+    delay(50);
     SplashAnnounceEnd();
 
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
+    FreeSpace();
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
+    /* disable multitask?
+    portMUX_TYPE mutex = portMUX_INITIALIZER_UNLOCKED;
+    portENTER_CRITICAL(&mutex);
+    vTaskDelay(8000 / portTICK_PERIOD_MS);
+    portEXIT_CRITICAL(&mutex);
+    */
 };
 
 

@@ -36,6 +36,14 @@ extern TTGOClass *ttgo; // ttgo library
 #include <esp_heap_caps.h>
 #include <esp_timer.h>
 
+#include <NimBLECharacteristic.h>
+
+#include "esp_heap_task_info.h"
+#include <freertos/portable.h>
+//https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
+
+Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
+
 uint32_t systemStatsBootCounter = 0;
 uint32_t systemStatsRebootCounter = 0;
 uint32_t systemStatsCrashCounter = 0;
@@ -92,11 +100,14 @@ unsigned long timeBMAActivityNone = 0;
 bool irqAxp = false;
 bool irqBMA = false;
 bool irqRTC = false;
-#include <NimBLECharacteristic.h>
+
 
 extern NimBLECharacteristic *battCharacteristic;
 
-
+void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callback due priority and recomends a queue :)
+    if (false == ttgo->bl->isOn()) { return; } // only when screen is on
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
+}
 
 bool WakeUpReason() { // this function decides the system must wake or sleep
 
@@ -188,8 +199,9 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
-static void DoSleepTask(void *args)
-{
+static void DoSleepTask(void *args) {
+    int64_t howMuchTIme = esp_timer_get_next_alarm();
+    lEvLog("ESP32: NEXT ALARM: %lld\n",howMuchTIme);
     /*
     if ( networkActivity ) {
         Serial.println("ESP32: DoSleep DISCARDED due network activity");
@@ -220,8 +232,7 @@ static void DoSleepTask(void *args)
         lNetLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
         retries--;
-        if (0 == retries + 1)
-        {
+        if (0 == retries + 1) {
             lNetLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
             WiFi.disconnect(true);
             delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
@@ -237,7 +248,7 @@ static void DoSleepTask(void *args)
     // bma interrupt gpio_39
 
     esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * LUNOKIOT_WAKE_TIME_S); // periodical wakeup to take samples
-    esp_sleep_enable_ext0_wakeup(AXP202_INT, 0);
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, 0);
 //GPIO_SEL_37 |
     esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 //    esp_sleep_enable_ext1_wakeup( BMA423_INT1 & RTC_INT_PIN, ESP_EXT1_WAKEUP_ANY_HIGH);
@@ -264,7 +275,7 @@ static void DoSleepTask(void *args)
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        xTaskCreate(DoSleepTask, "SLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        xTaskCreate(DoSleepTask, "lSLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
     }
 }
 
@@ -336,17 +347,13 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
 
 static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
-    if (0 != strcmp(SYSTEM_EVENTS, base))
-    {
+    if (0 != strcmp(SYSTEM_EVENTS, base)) {
         lLog("WARNING! unkown base: '%s' args: %p id: %d data: %p\n", base, handler_args, id, event_data);
         return;
     }
-    if (SYSTEM_EVENT_TICK == id)
-    {
-        return;
-    }
+    if (SYSTEM_EVENT_TICK == id) { return; }
     // tasks for any activity?
-    //lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
+    lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
 }
 
 static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
@@ -569,29 +576,21 @@ void TakeBMPSample()
 
 unsigned long nextSlowSensorsTick = 0;
 unsigned long nextSensorsTick = 0;
-static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
-
-    if (millis() > nextSlowSensorsTick)
-    { // poll some sensors ( slow pooling )
+static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    if (millis() > nextSlowSensorsTick) { // poll some sensors ( slow pooling )
         hallData = hallRead();
 
         // @TODO obtain more AXP202 info
         vbusPresent = ttgo->power->isVBUSPlug();
         // basic Battery info
-        if (ttgo->power->isBatteryConnect())
-        {
+        if (ttgo->power->isBatteryConnect()) {
             int nowBatteryPercent = ttgo->power->getBattPercentage();
-            if (nowBatteryPercent != batteryPercent)
-            {
+            if (nowBatteryPercent != batteryPercent) {
                 batteryPercent = nowBatteryPercent;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
             }
-        }
-        else
-        {
-            if (-1 != batteryPercent)
-            {
+        } else {
+            if (-1 != batteryPercent) {
                 batteryPercent = -1;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_NOTFOUND, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             }
@@ -600,8 +599,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 
         // begin tick report
         float nowAXPTemp = ttgo->power->getTemp();
-        if (nowAXPTemp != axpTemp)
-        {
+        if (nowAXPTemp != axpTemp) {
             axpTemp = nowAXPTemp;
             // lEvLog("AXP202: Temperature: %.1fºC\n", axpTemp);
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
@@ -609,8 +607,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
         nextSlowSensorsTick = millis() + 3000;
     }
 
-    if (millis() > nextSensorsTick)
-    { // poll some other sensors ( normal pooling )
+    if (millis() > nextSensorsTick) { // poll some other sensors ( normal pooling )
         TakeSamples();
         nextSensorsTick = millis() + (1000 / 8);
     }
@@ -633,7 +630,6 @@ static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t 
         LaunchApplication(new Provisioning2Application());
         return;
     }
-     
     LaunchWatchface(false);
 }
 
@@ -761,8 +757,8 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
             }
             lNetLog("FreeRTOS event:'%s' WiFi STA: Disconnected Reason: '%s'\n", base,ReasonText);
 
-            lSysLog("FreeRTOS event: Forced poweroff WiFi after disconnect\n");
-            WiFi.mode(WIFI_OFF); 
+            //lSysLog("FreeRTOS event: Forced poweroff WiFi after disconnect\n");
+            //WiFi.mode(WIFI_OFF); 
             identified = true;
         } else if (WIFI_EVENT_AP_START == id) {
             lNetLog("FreeRTOS event:'%s' WiFi AP: Start\n", base);
@@ -804,51 +800,6 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//                                          This loop is the HEART of system <3 <3 <3
-TaskHandle_t systemTickTaskHandle = NULL;             // save the handler for tick the system
-static void SystemTickTask(void *args) {
-    size_t markCount = 0;                             // get count of marks
-
-    unsigned long nextLogMark = 0;                    // timestamp for print -- MARK -- on log
-    TickType_t nextSySTick = xTaskGetTickCount();     // get the current ticks
-
-    while(true) {
-        BaseType_t isDelayed = xTaskDelayUntil( &nextSySTick, LUNOKIOT_SYSTEM_HEARTBEAT_TIME ); // wait a ittle bit
-        // Tell the world the heartbeat
-        if (true == ttgo->bl->isOn()) { esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS); }
-
-        #ifdef LUNOKIOT_DEBUG
-        // log mark
-        if (millis() > nextLogMark) {
-            lSysLog("-- MARK (%u) --\n",markCount);
-            if ( pdFALSE == isDelayed ) {
-                lEvLog("SystemTick: delayed\n");
-            }
-            markCount++;
-            nextLogMark = millis() + 120000;
-        }
-        #endif
-    }
-    lEvLog("SystemTickTask is dead!\n");
-    vTaskDelete(NULL);
-}
-
 TaskHandle_t AXPInterruptControllerHandle = NULL;
 static void AXPInterruptController(void *args) {
     lSysLog("AXP interrupt handler \n");
@@ -859,12 +810,7 @@ static void AXPInterruptController(void *args) {
             AXP202_BATT_CUR_ADC1 |
             AXP202_BATT_VOL_ADC1,
         true);
-
-    pinMode(AXP202_INT, INPUT_PULLUP);
-    attachInterrupt(
-        AXP202_INT, []
-        { irqAxp = true; },
-        FALLING);
+    ttgo->powerAttachInterrupt([]{ irqAxp = true; });
 
     ttgo->power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ | AXP202_PEK_LONGPRESS_IRQ |
                                AXP202_BATT_LOW_TEMP_IRQ | AXP202_BATT_OVER_TEMP_IRQ |
@@ -878,8 +824,10 @@ static void AXPInterruptController(void *args) {
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {   
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+        //if ( pdFALSE == isDelayed ) { continue; }
         // check for AXP int's
         if (irqAxp) {
+            FreeSpace();
             ttgo->power->readIRQ();
             if (ttgo->power->isChargingIRQ()) {
                 ttgo->power->clearIRQ();
@@ -893,77 +841,73 @@ static void AXPInterruptController(void *args) {
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattEnterActivateIRQ()) {
+            } else if (ttgo->power->isBattEnterActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery active\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattExitActivateIRQ()) {
+            } else if (ttgo->power->isBattExitActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery free\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattPlugInIRQ()) {
+            } else if (ttgo->power->isBattPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery present\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattRemoveIRQ()) {
+            } else if (ttgo->power->isBattRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery removed\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattTempLowIRQ()) {
+            } else if (ttgo->power->isBattTempLowIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature low\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isBattTempHighIRQ()) {
+            } else if (ttgo->power->isBattTempHighIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature high\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isVbusPlugInIRQ()) {
+            } else if (ttgo->power->isVbusPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = true;
                 lEvLog("AXP202: Power source\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isVbusRemoveIRQ()) {
+            } else if (ttgo->power->isVbusRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = false;
                 lEvLog("AXP202: No power\n");
                 irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isPEKShortPressIRQ()) {
+            } else if (ttgo->power->isPEKShortPressIRQ()) {
                 irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button short press\n");
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
-            }
-            else if (ttgo->power->isPEKLongtPressIRQ()) {
+            } else if (ttgo->power->isPEKLongtPressIRQ()) {
                 irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button long press\n");
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                continue;
+            } else if (ttgo->power->isTimerTimeoutIRQ()) {
+                irqAxp = false;
+                ttgo->power->clearIRQ();
+                lEvLog("AXP202: Event Timer timeout\n");
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
             } else {
                 irqAxp = false;
@@ -1135,7 +1079,8 @@ static void BMAInterruptController(void *args) {
     // Warning : Need to use feature, you must first enable the accelerometer
     // Warning : Need to use feature, you must first enable the accelerometer
     ttgo->bma->enableAccel();
-
+    ttgo->bma423AttachInterrupt([]{ irqBMA = true; });
+        /*
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(
         BMA423_INT1, []
@@ -1143,7 +1088,7 @@ static void BMAInterruptController(void *args) {
         // Set interrupt to set irq value to 1
         irqBMA = true; },
         RISING); // It must be a rising edge
-
+    */
     ttgo->bma->enableFeature(BMA423_STEP_CNTR, true);
     ttgo->bma->enableFeature(BMA423_ANY_MOTION, true);
     ttgo->bma->enableFeature(BMA423_NO_MOTION, true);
@@ -1205,10 +1150,13 @@ static void RTCInterruptController(void *args) {
 
 
     //pinMode(RTC_INT_PIN, INPUT_PULLDOWN);
+    ttgo->rtcAttachInterrupt([]{irqRTC = true;});
+    /*
     pinMode(RTC_INT_PIN, INPUT_PULLUP);
     attachInterrupt(RTC_INT_PIN, [] {
         irqRTC = true;
     }, FALLING);
+    */
     //if ( ttgo->rtc->alarmActive() ) { ttgo->rtc->disableAlarm(); }
     //if ( ttgo->rtc->isTimerEnable() ) { ttgo->rtc->disableTimer(); }
     
@@ -1278,53 +1226,34 @@ static void RTCInterruptController(void *args) {
 }
 
 
-TaskHandle_t systemLoopTaskHandle = NULL;              // save the handler
-static void SystemLoopTask(void *args) {
-    FreeSpace();
-    // Start the tick loop
-    xTaskCreate(SystemTickTask, "lTick", LUNOKIOT_TASK_STACK_SIZE, nullptr, tskIDLE_PRIORITY, &systemTickTaskHandle);
-
-    // Start the AXP interrupt controller loop
-    xTaskCreate(AXPInterruptController, "intAXP", LUNOKIOT_APP_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &AXPInterruptControllerHandle);
-
-    // Start the BMA interrupt controller loop
-    xTaskCreate(BMAInterruptController, "intBMA", LUNOKIOT_APP_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &BMAInterruptControllerHandle);
-
-    // Start the BMA interrupt controller loop
-    xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_APP_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &RTCInterruptControllerHandle);
-
-/*
-    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-    while(true) {   
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_LOOP_TIME ); // wait a ittle bit
-    }*/
-    FreeSpace();
-    vTaskDelete(NULL);
-}
-
-//#include <esp32/himem.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_heap_task_info.h"
-#include <freertos/portable.h>
-//https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
-
 
 void BootReason() {
+    bool normalBoot = false;
     lEvLog("Boot reason: ");
     esp_reset_reason_t lastBootStatus = esp_reset_reason();
     if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
-    else if ( ESP_RST_POWERON == lastBootStatus) { lLog("'Normal poweron'\n"); }
+    else if ( ESP_RST_POWERON == lastBootStatus) { lLog("'Normal poweron'\n"); normalBoot = true; }
     else if ( ESP_RST_EXT == lastBootStatus) { lLog("'External pin'\n"); }
-    else if ( ESP_RST_SW == lastBootStatus) { lLog("'Normal restart'\n"); }
+    else if ( ESP_RST_SW == lastBootStatus) { lLog("'Normal restart'\n"); normalBoot = true; }
     else if ( ESP_RST_PANIC == lastBootStatus) { lLog("'System panic'\n"); }
     else if ( ESP_RST_INT_WDT == lastBootStatus) { lLog("'Watchdog interrupt'\n"); }
     else if ( ESP_RST_TASK_WDT == lastBootStatus) { lLog("'Watchdog TIMEOUT'\n"); }
     else if ( ESP_RST_WDT == lastBootStatus) { lLog("'Watchdog reset'\n"); }
-    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n"); }
+    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n") normalBoot = true; }
     else if ( ESP_RST_BROWNOUT == lastBootStatus) { lLog("'Brownout'\n"); }
     else if ( ESP_RST_SDIO == lastBootStatus) { lLog("'Reset over SDIO'\n"); }
     else { lLog("UNHANDLED UNKNOWN\n"); }
+    if ( false == normalBoot ){
+        lEvLog("/!\\ /!\\ /!\\ WARNING: Last boot FAIL\n");
+        #ifdef LILYGO_WATCH_2020_V3
+            ttgo->shake();
+            delay(200);
+            ttgo->shake();
+            delay(200);
+            ttgo->shake();
+            delay(200);
+        #endif
+    }
 }
 
 
@@ -1357,7 +1286,7 @@ void SystemEventsStart() {
     if ( ESP_OK != shutdownRegistered ) {
         lSysLog("WARNING: Unable to register shutdown handler\n");
     }
-
+    delay(50);
     //esp_task_wdt_isr_user_handler
 
     lSysLog("System event loop\n");
@@ -1365,46 +1294,111 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 10,                           // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY-1,        // a little bit faster
+        .task_priority = tskIDLE_PRIORITY,          // a little bit faster
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
-        .task_core_id = 1                            // to core 0
-    };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
+        .task_core_id = 1                           // to core 1
+    };                                              // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
+    delay(50);
 
     // Create my own event loop
-    esp_event_loop_create(&lunokIoTSystemEventloopConfig, &systemEventloopHandler);
+    esp_err_t loopCreated = esp_event_loop_create(&lunokIoTSystemEventloopConfig, &systemEventloopHandler);
+    if ( ESP_FAIL == loopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create LunokIoT Event Queue (fail)\n");
+    } else if ( ESP_ERR_NO_MEM == loopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create LunokIoT Event Queue (no mem)\n");
+    } else if ( ESP_ERR_INVALID_ARG == loopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create LunokIoT Event Queue (invalid args)\n");
+    }
+    delay(50);
 
     // get the freeRTOS event loop
     lSysLog("freeRTOS event loop\n");
-    esp_event_loop_create_default();
-    esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived, NULL);
-    //lEvLog("lunokIoT: System event loop running\n");
-
-    // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
-    // The loop handle is provided as an argument in order for this example to display the loop the handler is being run on.
+    esp_err_t espLoopCreated = esp_event_loop_create_default();
+    if ( ESP_FAIL == espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create ESP32 Event Queue (fail)\n");
+    } else if ( ESP_ERR_NO_MEM == espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create ESP32 Event Queue (no mem)\n");
+    } else if ( ESP_ERR_INVALID_ARG == espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable to create ESP32 Event Queue (invalid args)\n");
+    }
+    delay(50);
+    esp_err_t registered = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on ESP32 queue ANY_BASE ANY_ID\n");
+    }
   
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, SystemEventWake, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, SystemEventStop, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, SystemEventReady, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, SystemEventTick, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, AXPEventPEKShort, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, AXPEventPEKLong, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, SystemEventTimer, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, SystemEventPMUPower, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, SystemEventPMUPower, nullptr, NULL);
-    esp_event_handler_instance_register_with(systemEventloopHandler, ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, AnyEventSystem, nullptr, NULL);
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, SystemEventWake, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: WAKE\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, SystemEventStop, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: STOP\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, SystemEventReady, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: READY\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, SystemEventTick, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: TICK\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, AXPEventPEKShort, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: PEK short\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, AXPEventPEKLong, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: PEK long\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: Step counter\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: Activity\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: No motion\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, SystemEventTimer, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: TIMER\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, SystemEventPMUPower, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: POWER\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, SystemEventPMUPower, nullptr, NULL);
+    if ( ESP_OK != espLoopCreated ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: NO POWER\n");
+    }
 
+    lSysLog("PMU interrupts\n");
+    // Start the AXP interrupt controller loop
+    xTaskCreate(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &AXPInterruptControllerHandle);
+    delay(50);
 
-    lSysLog("System loop task\n");
-    // Create the event source task with the same priority as the current task
-    xTaskCreate(SystemLoopTask, "lSTask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &systemLoopTaskHandle);
-    // tskIDLE_PRIORITY 
+    lSysLog("IMU interrupts\n");
+    // Start the BMA interrupt controller loop
+    xTaskCreate(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &BMAInterruptControllerHandle);
+    delay(50);
+
+    lSysLog("RTC interrupts\n");
+    // Start the BMA interrupt controller loop
+    xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &RTCInterruptControllerHandle);
+    delay(50);
+
+    // Start the tick loop
+    LunokIoTSystemTicker.attach_ms(LUNOKIOT_SYSTEM_HEARTBEAT_TIME,LunokIoTSystemTickerCallback);
+    delay(50);
+
 }
 
 /*
- * Eyecandy notification of boot end
+ * Notification of boot end (only one time per boot)
  */
 void SystemEventBootEnd() {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
