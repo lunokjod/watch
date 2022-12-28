@@ -457,6 +457,28 @@ static void UITickTask(void* args) {
     vTaskDelete(NULL);
 }
 
+void UITickStart() {
+    if ( NULL == UITickTaskHandler ) {
+        BaseType_t res = xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,-5, &UITickTaskHandler);
+        if ( pdPASS != res ) { UITickTaskHandler = NULL; return; }
+        lUILog("Tick enabled\n");
+    }
+}
+void UITickEnd() {
+    if ( NULL != UITickTaskHandler ) {
+        vTaskDelete(UITickTaskHandler);
+        UITickTaskHandler=NULL;
+        lUILog("Tick disabled\n");
+    }
+}
+
+static void UITickStartCallback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    UITickStart();
+}
+
+static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    UITickEnd();
+}
 
 void UIStart() {
     //ttgo->tft->setSwapBytes(true);
@@ -485,9 +507,18 @@ void UIStart() {
     // Useless if is sended later than whake x'D
     //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, UIEventContinue, nullptr, NULL);
     //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL);
+    
 
-    // Create the event source task with the same priority as the current task
-    xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,-5, &UITickTaskHandler);
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UITickStartCallback, nullptr, NULL);
+
+    //UITickStart();
+    //AAAAAAAAAAAAAAAAAAa
+    // disable ticks
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, UITickStopCallback, nullptr, NULL);
+    // enable ticks
+    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, UITickStartCallback, nullptr, NULL);
+    //esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, UITickStartCallback, nullptr, NULL);
+
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 }
 /*

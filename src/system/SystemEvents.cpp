@@ -111,6 +111,15 @@ void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callbac
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
 }
 
+void LunokIoTSystemTickerStop() {
+    LunokIoTSystemTicker.detach();
+}
+
+void LunokIoTSystemTickerStart() {
+    // Start the tick loop
+    LunokIoTSystemTicker.attach_ms(LUNOKIOT_SYSTEM_HEARTBEAT_TIME,LunokIoTSystemTickerCallback);
+}
+
 bool WakeUpReason() { // this function decides the system must wake or sleep
 
 // if call return, the system remains active but with the screen off (must call DoSleep in other place)
@@ -195,6 +204,9 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         DoSleep();
         return true;
     }
+    // Start the tick loop
+    LunokIoTSystemTickerStart();
+
     return false;
 }
 
@@ -202,8 +214,11 @@ uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
 static void DoSleepTask(void *args) {
-    int64_t howMuchTIme = esp_timer_get_next_alarm();
-    lEvLog("ESP32: NEXT ALARM: %lld\n",howMuchTIme);
+    // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_timer.html
+    // what about change all timers to:
+    // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/freertos.html#timer-api
+
+
     /*
     if ( networkActivity ) {
         Serial.println("ESP32: DoSleep DISCARDED due network activity");
@@ -222,9 +237,14 @@ static void DoSleepTask(void *args) {
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
     ScreenSleep();
+    LunokIoTSystemTickerStop();
+    
+    int64_t howMuchTime = esp_timer_get_next_alarm();
+    int64_t nowTime = esp_timer_get_time();
+    lEvLog("ESP32: NEXT ALARM in: %lld ms\n",(howMuchTime-nowTime)/1000);
 
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-
+    delay(50);
     // Serial.printf("WIFI STATUS: %d\n", WiFi.status());
     const size_t MAXRETRIES = 3;
     size_t retries = MAXRETRIES;
@@ -1390,9 +1410,7 @@ void SystemEventsStart() {
     // Start the BMA interrupt controller loop
     xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &RTCInterruptControllerHandle);
     delay(50);
-
-    // Start the tick loop
-    LunokIoTSystemTicker.attach_ms(LUNOKIOT_SYSTEM_HEARTBEAT_TIME,LunokIoTSystemTickerCallback);
+    LunokIoTSystemTickerStart();
     delay(50);
 
 }
