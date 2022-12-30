@@ -236,7 +236,7 @@ static void DoSleepTask(void *args) {
 
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
-    ScreenSleep();
+    //ScreenSleep();
     LunokIoTSystemTickerStop();
     
     int64_t howMuchTime = esp_timer_get_next_alarm();
@@ -246,10 +246,11 @@ static void DoSleepTask(void *args) {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     delay(50);
     // Serial.printf("WIFI STATUS: %d\n", WiFi.status());
-    const size_t MAXRETRIES = 3;
-    size_t retries = MAXRETRIES;
+    //const size_t MAXRETRIES = 3;
+    //size_t retries = MAXRETRIES;
     // Serial.printf("WIFISTATUS: %d\n",WiFi.status());
     // while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
+    /*
     while (WL_CONNECTED == WiFi.status()) {
         lNetLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
         delay(2000);
@@ -260,12 +261,15 @@ static void DoSleepTask(void *args) {
             delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
             break;
         }
+    }*/
+    if (WL_NO_SHIELD != WiFi.status() ) {
+        lNetLog("WiFi: Must be disabled now!\n");
+        WiFi.disconnect(true,true);
+        delay(200);
+        WiFi.mode(WIFI_OFF);
+        delay(200);
     }
-    WiFi.disconnect(true);
-    delay(200);
-    WiFi.mode(WIFI_OFF);
-    delay(200);
-    if (retries < MAXRETRIES) { lEvLog("ESP32: WiFi released, DoSleep continue...\n"); }
+    //if (retries < MAXRETRIES) { lEvLog("ESP32: WiFi released, DoSleep continue...\n"); }
     LaunchApplication(nullptr,false,true); // Synched App Stop
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
@@ -850,7 +854,6 @@ static void AXPInterruptController(void *args) {
         //if ( pdFALSE == isDelayed ) { continue; }
         // check for AXP int's
         if (irqAxp) {
-            FreeSpace();
             ttgo->power->readIRQ();
             if (ttgo->power->isChargingIRQ()) {
                 ttgo->power->clearIRQ();
@@ -1398,17 +1401,17 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    xTaskCreate(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &AXPInterruptControllerHandle);
+    xTaskCreate(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle);
     delay(50);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreate(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &BMAInterruptControllerHandle);
+    xTaskCreate(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle);
     delay(50);
 
     lSysLog("RTC interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+8, &RTCInterruptControllerHandle);
+    xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle);
     delay(50);
     LunokIoTSystemTickerStart();
     delay(50);

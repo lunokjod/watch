@@ -305,6 +305,10 @@ void NetworkTaskRun(void *data) {
         } else {
             if ( millis() > tsk->_nextTrigger ) {
                 delay(1000);
+                if ( WL_CONNECTED != WiFi.status() ) {
+                    lNetLog("NetworkTask: ERROR: No connectivity, Network Tasks cannot run\n");
+                    break;
+                }
                 UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
                 lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
                 networkTaskRunning=true;
@@ -316,6 +320,8 @@ void NetworkTaskRun(void *data) {
                     tsk->_lastCheck = millis();
                     continue;
                 }
+
+
                 unsigned long taskTimeout = millis()+15000;
                 bool taskAborted=false;
                 while(networkTaskRunning) { //@TODO must implement timeout
@@ -338,7 +344,7 @@ void NetworkTaskRun(void *data) {
 
                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
                 tsk->_lastCheck = millis();
-                delay(150);
+                //delay(150);
             }
         }
     }
@@ -347,7 +353,7 @@ void NetworkTaskRun(void *data) {
     WiFi.mode(WIFI_OFF);
     delay(200);
     wifiOverride=false;
-    lNetLog("Network: Pending tasks done!\n");
+    lNetLog("Network: Pending tasks end!\n");
 
 
     lNetLog("Restoring BLE previous config...\n");
@@ -369,7 +375,7 @@ void NetworkTasksCheck() {
         delay(100);
     }
 
-    BaseType_t taskOK = xTaskCreate(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,tskIDLE_PRIORITY, NULL);
+    BaseType_t taskOK = xTaskCreate(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         lNetLog("Network: BLE last state restored\n");

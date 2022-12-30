@@ -72,8 +72,14 @@ ESP_EVENT_DEFINE_BASE(UI_EVENTS);
 esp_event_loop_handle_t uiEventloopHandle;
 
 
+SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
 
 void ScreenWake() {
+    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if (false == done) {
+        lEvLog("Unable to obtain the Screen Lock!\n");
+        return;
+    }
     if ( false == ttgo->bl->isOn() ) {
 #ifdef LUNOKIOT_SERIAL
         Serial.end();
@@ -96,12 +102,18 @@ void ScreenWake() {
         FPS = MAXFPS;
         UINextTimeout = millis()+UITimeout;
     }
+    xSemaphoreGive(ScreenSemaphore);
 }
 
 void ScreenSleep() {
+    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if (false == done) {
+        lEvLog("Unable to obtain the Screen Lock!\n");
+        return;
+    }
     if ( true == ttgo->bl->isOn() ) {
         ttgo->bl->off();
-        lUILog("UI: Put screen to sleep now\n");
+        lUILog("Put screen to sleep now\n");
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
@@ -116,6 +128,7 @@ void ScreenSleep() {
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
 #endif
     }
+    xSemaphoreGive(ScreenSemaphore);
 }
 
 
@@ -459,7 +472,7 @@ static void UITickTask(void* args) {
 
 void UITickStart() {
     if ( NULL == UITickTaskHandler ) {
-        BaseType_t res = xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,-5, &UITickTaskHandler);
+        BaseType_t res = xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler);
         if ( pdPASS != res ) { UITickTaskHandler = NULL; return; }
         lUILog("Tick enabled\n");
     }
@@ -468,7 +481,7 @@ void UITickEnd() {
     if ( NULL != UITickTaskHandler ) {
         vTaskDelete(UITickTaskHandler);
         UITickTaskHandler=NULL;
-        lUILog("Tick disabled\n");
+        lUILog("Tick disabled (app loses Tick now)\n");
     }
 }
 
@@ -488,9 +501,9 @@ void UIStart() {
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 8,
         .task_name = "uiTask", // task will be created
-        .task_priority = tskIDLE_PRIORITY-1, //uxTaskPriorityGet(NULL),
+        .task_priority = uxTaskPriorityGet(NULL), // tskIDLE_PRIORITY-1,
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
-        .task_core_id = 0, //tskNO_AFFINITY // PRO_CPU // APP_CPU
+        .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 
     UINextTimeout = millis()+UITimeout;
@@ -511,8 +524,6 @@ void UIStart() {
 
     esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UITickStartCallback, nullptr, NULL);
 
-    //UITickStart();
-    //AAAAAAAAAAAAAAAAAAa
     // disable ticks
     esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, UITickStopCallback, nullptr, NULL);
     // enable ticks

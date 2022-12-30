@@ -135,7 +135,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                 delete ptrToCurrent;
             } else {
                 // kill app in other thread (some apps takes much time)
-                xTaskCreate(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, -15, nullptr);
+                xTaskCreate(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr);
             }
         }
     }

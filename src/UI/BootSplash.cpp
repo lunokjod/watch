@@ -124,7 +124,7 @@ void SplashAnnounce() {
     ttgo->tft->fillScreen(ThCol(boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
     ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
-    xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), NULL);
 
 #ifdef LUNOKIOT_DEBUG
     // text stuff

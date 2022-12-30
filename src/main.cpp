@@ -17,7 +17,7 @@
 #undef LOG_LOCAL_LEVEL
 #endif
 
-#define CORE_DEBUG_LEVEL 5
+#define CORE_DEBUG_LEVEL 0
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #endif
 
