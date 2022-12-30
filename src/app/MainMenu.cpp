@@ -83,6 +83,8 @@
 #include "../static/img_mainmenu_update.xbm"
 #include "OTAUpdate.hpp"
 
+#include "../static/img_mainmenu_lamp.xbm"
+#include "Lamp.hpp"
 
 #include "LogView.hpp"
 
@@ -98,12 +100,14 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
+//    {"Log", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new LogViewApplication()); } },
 //    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
 //    {"Update",img_mainmenu_update_bits, img_mainmenu_update_height, img_mainmenu_update_width, []() { LaunchApplication(new OTAUpdateApplication()); } },
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, []() { LaunchApplication(new DungeonGameApplication()); } },
 #ifdef LILYGO_WATCH_2020_V3
 //    {"Mic test",img_mainmenu_mic_bits, img_mainmenu_mic_height, img_mainmenu_mic_width, []() { LaunchApplication(new MicApplication()); } },
 #endif
+    {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, []() { LaunchApplication(new LampApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, []() { LaunchApplication(new BrightnessApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, []() { LaunchApplication(new StepsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  []() { LaunchApplication(new BatteryApplication()); } },
