@@ -780,12 +780,12 @@ bool Watchface2Application::Tick()
         }
         wl_status_t whatBoutWifi = WiFi.status();
         if ( (WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi) ) {
-            lAppLog("whatBoutWifi: %d\n", whatBoutWifi);
+            lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
             int16_t posX = 51;
             int16_t posY = 189;
             uint32_t dotColor = ThCol(background);
             if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }
-            
+            else if ( WL_CONNECT_FAILED == whatBoutWifi ) { dotColor = ThCol(high); }
             canvas->fillCircle(posX, posY, 5, dotColor);
             canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
         }

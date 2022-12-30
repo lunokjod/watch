@@ -382,8 +382,11 @@ bool OTAUpdateApplication::Tick() {
         } else if ( OTASTEP_IMAGE_DOWNLOAD_DONE==OTAStep ) {
             whatAreYouDoing="Done!";
         }
-        if ( false == updateBtn->GetEnabled() ) { progressBar->DrawTo(canvas); }
-        btnBack->DrawTo(canvas);
+        if ( updateBtn->GetEnabled() ) {
+            btnBack->DrawTo(canvas);
+        } else {
+            progressBar->DrawTo(canvas);
+        }
         
         if ( ( OTASTEP_IDLE!=OTAStep ) ) { //&& ( OTASTEP_IMAGE_DOWNLOAD!=OTAStep ) ) {
             canvas->setTextSize(2);
