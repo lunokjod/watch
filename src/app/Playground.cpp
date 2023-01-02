@@ -7,7 +7,6 @@
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo library shit ;)
 
-
 PlaygroundApplication::~PlaygroundApplication() {
     directDraw = false;
 

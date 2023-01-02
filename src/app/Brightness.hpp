@@ -9,6 +9,7 @@ class BrightnessApplication: public TemplateApplication {
     private:
         GaugeWidget * brightGauge = nullptr;
     public:
+        const char *AppName() override { return "Screen brightness"; };
         BrightnessApplication();
         ~BrightnessApplication();
         bool Tick();

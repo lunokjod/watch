@@ -16,10 +16,12 @@ class LunokIoTApplication {
         virtual ~LunokIoTApplication();
         virtual bool Tick(); // the UI callback to manage input and screen
         TFT_eSprite *NewScreenShoot();
-#ifdef LUNOKIOT_DEBUG
-        uint32_t lastApplicationHeapFree = 0;
-        uint32_t lastApplicationPSRAMFree = 0;
-#endif
+        #ifdef LUNOKIOT_DEBUG
+            uint32_t lastApplicationHeapFree = 0;
+            uint32_t lastApplicationPSRAMFree = 0;
+        #endif
+        virtual bool isWatchface() { return false; }
+        virtual const char *AppName() = 0; //{ return "NO NAME APP"; };
 };
 
 

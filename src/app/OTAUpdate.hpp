@@ -21,6 +21,7 @@ class OTAUpdateApplication : public TemplateApplication {
         char *bufferForText = nullptr;
 
     public:
+        const char *AppName() override { return "OTA updater"; };
         OTAUpdateApplication();
         ~OTAUpdateApplication();
         bool Tick();

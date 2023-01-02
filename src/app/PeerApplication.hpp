@@ -20,6 +20,7 @@ class PeerApplication : public TemplateApplication {
         bool emojiPaletteVisible=false;
 
     public:
+        const char *AppName() override { return "Peer chat"; };
         PeerApplication();
         ~PeerApplication();
         static void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);

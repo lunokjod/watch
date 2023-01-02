@@ -12,6 +12,7 @@ class ThemeApplication : public TemplateApplication {
         const static size_t MAXThemes = 9;
         ButtonWidget *themeButton[MAXThemes] = { nullptr };
     public:
+        const char *AppName() override { return "Themes"; };
         ThemeApplication();
         ~ThemeApplication();
         bool Tick();

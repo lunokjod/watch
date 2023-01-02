@@ -23,6 +23,7 @@ class BatteryApplication: public TemplateApplication {
         bool charging=false;
         const int16_t battHeight = 133;
     public:
+        const char *AppName() override { return "Battery"; };
         // PMU_EVENT_BATT_PC
         EventKVO * BattPCEvent = nullptr;
         EventKVO * BattChargeEvent = nullptr;

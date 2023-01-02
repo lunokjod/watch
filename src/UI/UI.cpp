@@ -22,9 +22,11 @@
 #include "AudioOutputI2S.h"
 #endif
 
+#include "../app/TaskSwitcher.hpp"
+
 extern TTGOClass *ttgo; // ttgo library shit ;)
 extern TFT_eSPI * tft;
-
+bool UIlongTap=false; // used to trigger only once the long tap event
 extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
 extern const PROGMEM uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
@@ -75,7 +77,7 @@ esp_event_loop_handle_t uiEventloopHandle;
 SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
 
 void ScreenWake() {
-    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
@@ -94,7 +96,6 @@ void ScreenWake() {
         #if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
         ttgo->touchWakup();
         #endif
-        // AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         //delay(1); // get time to queue digest ;)
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
@@ -106,7 +107,7 @@ void ScreenWake() {
 }
 
 void ScreenSleep() {
-    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
@@ -117,7 +118,6 @@ void ScreenSleep() {
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
-        /// AAAAAAAAAAAAAAAAAAAAAAAAAAAA watchface kill must be placed here!
         Serial.flush();
         //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 #ifdef LUNOKIOT_SERIAL
@@ -197,17 +197,23 @@ void TakeScreenShootSound() {
 
 // reduce the size of image using float value (0.5=50%)
 TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
+    if ( nullptr == view ) { return nullptr; }
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
     TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());
-    canvas->createSprite(nw, nh);
-    canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
+    if ( nullptr == canvas->createSprite(nw, nh) ) {
+        delete canvas;
+        return nullptr;
+    }
+    //canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
 
     //Serial.printf("ScaleSprite: H: %d W: %d (divisor: %f) Calculated H: %d W: %d\n",
     //     view->height(),view->width(), divisor, canvas->height(),canvas->width());
 
+    // iterate whole paint searching for pixels
     for(float y=0;y<nh;y++) {
         int32_t ry = int32_t(y/divisor);
         for(float x=0;x<nw;x++) {
@@ -277,6 +283,7 @@ TFT_eSprite *TakeScreenShoot() {
 
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
     screenShootCanvas = new TFT_eSprite(ttgo->tft);
+    if ( nullptr == screenShootCanvas ) { return nullptr; }
     screenShootCanvas->setColorDepth(view->getColorDepth());
     screenShootCanvas->createSprite(view->width(),view->height());
     screenShootCanvas->fillSprite(CanvasWidget::MASK_COLOR);
@@ -331,50 +338,99 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     // an app can choice destroy the overlay if want, the system generates new one
     if ( nullptr == overlay ) {
         overlay = new TFT_eSprite(ttgo->tft);
+        if ( nullptr == overlay ) {
+            lUILog("ERROR: unable to create overlay! (yes, is serious thing, enought to stop the UI right now)\n");
+            return;
+        }
         overlay->setColorDepth(8);
         overlay->createSprite(TFT_WIDTH, TFT_HEIGHT);
         // http://i.stack.imgur.com/5fcX6.png
         overlay->fillSprite(TFT_TRANSPARENT);
-        lUILog("UI: new overlay generated %p\n", overlay);
+        lUILog("New overlay generated %p\n", overlay);
     }
     // try to get UI lock
     bool changes = false;
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
-        if ( nullptr != currentApplication ) {
-            TFT_eSprite *appView = currentApplication->canvas;
-            if ( nullptr != appView ) {
-                // perform the call to the app logic
-                changes = currentApplication->Tick();
-                if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
-                if ( changes ) { // Tick() returned true
-                    // dump the current ap to the TFT
-                    appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-                    appView->pushSprite(0,0); // push appView to tft
-                }
-                #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
-                else {
-                    
-                    // no changes in this frame
+        if ( nullptr == currentApplication ) {
+            xSemaphoreGive( UISemaphore );
+            return;
+        }
 
-                    // don't allow screenshoots meanwhile directDraw is enabled
-                    if ( false == directDraw ) {
-                        if ( false == touched ) { touchDownTimeMS=0; }
-                        //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
-                        if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
-                        if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
-                            unsigned long pushedTime = millis()-touchDownTimeMS; 
-                            if ( pushedTime > 2300 ) {
-                                touchDownTimeMS=0;
-                                ScreenShots.push_back(TakeScreenShoot());
-                                lUILog("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG\n");
-                                lUILog("UI: Saved screenshoots: %d\n",ScreenShots.size());
-                            }
-                        }
+        TFT_eSprite *appView = currentApplication->canvas;
+        if ( nullptr == appView ) {
+            lUILog("ERROR: unable to get application canvas!\n");
+            xSemaphoreGive( UISemaphore );
+            return;
+        }
+        // verify long tap to launch TaskSwitcher
+        if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
+            UIlongTap=false;
+        } else { 
+            if  ( 0.0 == touchDragDistance ) {
+                // touch full-system reactors, long tap to show the task list
+                unsigned long pushTime = millis() - touchDownTimeMS; // how much time?
+            if ( pushTime > LUNOKIOT_TOUCH_LONG_MS ) {
+                if ( false == UIlongTap ) {
+                    UIlongTap=true; // locked until thumb up
+                    lUILog("Long touchpad tap detected\n");
+                    
+                    //@TODO here is a good place to draw a circular menu and use the finger as arrow
+                    // Up tasks
+                    // Down appointments
+                    // Left email
+                    // Right notifications...
+                    // and more...
+
+                    xSemaphoreGive( UISemaphore );
+                    if ( ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
+                        LaunchWatchface(); // return to user configured watchface
+                    } else {
+                        // announce haptic on launch the long tap task
+                        #ifdef LILYGO_WATCH_2020_V3
+                            //ttgo->motor->onec(40);
+                            //delay(100);
+                            ttgo->motor->onec(80);
+                            delay(200);
+                        #endif
+                        LaunchApplication(new TaskSwitcher(),true,true);
                     }
+                    return;
                 }
-                #endif
+            }
+
             }
         }
+
+        // perform the call to the app logic
+        changes = currentApplication->Tick();
+        if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
+        if ( changes ) { // Tick() returned true
+            // dump the current ap to the TFT
+            //appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
+            appView->pushSprite(0,0); // push appView to tft
+        }
+        #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
+        else {
+            
+            // no changes in this frame
+
+            // don't allow screenshoots meanwhile directDraw is enabled
+            if ( false == directDraw ) {
+                if ( false == touched ) { touchDownTimeMS=0; }
+                //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
+                if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
+                if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
+                    unsigned long pushedTime = millis()-touchDownTimeMS; 
+                    if ( pushedTime > 2300 ) {
+                        touchDownTimeMS=0;
+                        ScreenShots.push_back(TakeScreenShoot());
+                        lUILog("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG\n");
+                        lUILog("UI: Saved screenshoots: %d\n",ScreenShots.size());
+                    }
+                }
+            }
+        }
+        #endif
         xSemaphoreGive( UISemaphore );
     }
 }
@@ -459,7 +515,7 @@ static void UITickTask(void* args) {
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
 
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
-        // Dynamic FPS... the apps receives less events per second AAAAAAAAAAAAAAAAAAAAAAAAAAAa
+        // Dynamic FPS... the apps receives less events per second
         if (( ESP_OK != what )||( isDelayed )) {
             FPS--;
             if ( FPS < 1 ) { FPS=1; }
@@ -499,7 +555,7 @@ void UIStart() {
 
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 8,
+        .queue_size = 20,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = uxTaskPriorityGet(NULL), // tskIDLE_PRIORITY-1,
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,

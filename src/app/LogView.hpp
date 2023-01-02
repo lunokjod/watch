@@ -74,6 +74,7 @@ class LogViewApplication: public TemplateApplication {
         int16_t offsetX=0;
         int16_t offsetY=0;
     public:
+        const char *AppName() override { return "Log viewer"; };
         TFT_eSprite * ViewBuffer;
         static bool dirty;
         static TFT_eSprite * LogTextBuffer;

@@ -5,6 +5,7 @@
 #include "../UI/UI.hpp"
 #include "../static/img_sample_background.c"
 
+
 PlaygroundApplication1::~PlaygroundApplication1() {
     if ( nullptr != testNotification ) {
         delete testNotification;

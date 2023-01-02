@@ -10,6 +10,7 @@ class TemplateApplication: public LunokIoTApplication {
         unsigned long nextRefresh=0;
         ButtonImageXBMWidget * btnBack = nullptr;
     public:
+        const char *AppName() override { return "AppTemplate without name"; };
         TemplateApplication();
         virtual ~TemplateApplication();
         bool Tick();

@@ -77,7 +77,7 @@ void SimpleWatchfaceApplication::NTPSync(void * data) {
 }
 
 SimpleWatchfaceApplication::SimpleWatchfaceApplication() {
-    LunokIoTApplication();
+    //LunokIoTApplication();
     watchFaceCanvas = new CanvasWidget(240,240);
 
     backgroundCanvas = new CanvasWidget(240,240);

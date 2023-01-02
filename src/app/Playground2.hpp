@@ -13,6 +13,8 @@ class PlaygroundApplication2: public LunokIoTApplication {
         unsigned long shootTime=0;
         unsigned long nextShootTime=0;
     public:
+        const char *AppName() override { return "Playground2 test"; };
+
         CanvasWidget *bullets=nullptr;
         CanvasWidget *spaceShip=nullptr;
         CanvasWidget *buffer=nullptr;

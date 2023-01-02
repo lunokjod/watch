@@ -6,6 +6,8 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 PlaygroundApplication9::~PlaygroundApplication9() {
     
 }
+
+
 PlaygroundApplication9::PlaygroundApplication9() {
     canvas->deleteSprite();
     canvas->setColorDepth(4);

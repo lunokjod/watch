@@ -10,6 +10,7 @@
 
 class Provisioning2Application: public TemplateApplication {
     public:
+        const char *AppName() override { return "WiFi provisioning"; };
         unsigned long nextRedraw=0;
         char *pop=nullptr;
         char *service_key=nullptr;

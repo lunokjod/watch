@@ -11,6 +11,7 @@ class PlaygroundApplication9: public LunokIoTApplication {
         size_t colorOffset=0;
         unsigned long nextRedraw=0;
     public:
+        const char *AppName() override { return "Playground9 test"; };
         PlaygroundApplication9();
         ~PlaygroundApplication9();
         bool Tick();

@@ -575,8 +575,7 @@ Watchface2Application::~Watchface2Application()
 
 Watchface2Application::Watchface2Application()
 {
-    //@TODO Theme it ... ThCol(aaa)
-
+    //isWatchface=true;
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
@@ -780,7 +779,7 @@ bool Watchface2Application::Tick()
         }
         wl_status_t whatBoutWifi = WiFi.status();
         if ( (WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi) ) {
-            lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
+            //lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
             int16_t posX = 51;
             int16_t posY = 189;
             uint32_t dotColor = ThCol(background);
@@ -950,16 +949,6 @@ bool Watchface2Application::Tick()
             canvas->setTextDatum(CL_DATUM);
             canvas->drawString(textBuffer, posX + 10, posY + 1);
             canvas->fillCircle(posX, posY, 5, battColor); // Alarm: red dot
-            if ( PMUBattDischarge > 0.0 ) {
-                char *mahBuffer = (char *)ps_malloc(64);
-                sprintf(mahBuffer,"%.2f mAh",PMUBattDischarge);
-                canvas->setTextFont(0);
-                canvas->setTextSize(1);
-                canvas->setTextColor(ThCol(text));
-                canvas->setTextDatum(BL_DATUM);
-                canvas->drawString(mahBuffer, posX+8, posY-10);
-                free(mahBuffer);            
-            }
 
         }
         else

@@ -76,6 +76,7 @@ typedef struct {
 
 class DungeonGameApplication: public LunokIoTApplication {
     public:
+        const char *AppName() override { return "Dungeon game"; };
         //const float NormalScale=0.5; // 32x32 (unusable)
         //const float NormalScale=1.25; // 12x12
         //const float NormalScale=1.666; // 9x9

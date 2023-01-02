@@ -15,6 +15,7 @@
 
 class ActivityRecorderApplication: public LunokIoTApplication {
     public:
+        const char *AppName() override { return "Activity recorder"; };
         GraphWidget * accXGraph = nullptr;
         GraphWidget * accYGraph = nullptr;
         GraphWidget * accZGraph = nullptr;

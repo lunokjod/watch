@@ -31,6 +31,7 @@ class CalculatorApplication: public LunokIoTApplication {
         ButtonWidget * resultBtn=nullptr;
 
     public:
+        const char *AppName() override { return "Calculator"; };
         bool containDecimalNumber=false;
         const char *errMsg = "err";
         bool firstValueProvided=false;

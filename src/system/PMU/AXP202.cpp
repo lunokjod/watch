@@ -11,15 +11,27 @@ bool PMUCounterEnabled=false;
 Ticker PMUCounter;
 extern TTGOClass *ttgo;
 float PMUBattDischarge=0;
+float batteryRemainingTimeHours=0.0;
+float batteryTotalTimeHours = 0.0;
 
 static void PMUMonitorEventCallback(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // http://www.x-powers.com/en.php/Info/product_detail/article_id/30
+    
+    if ( batteryPercent < 1 ) { return; } // cannot calculate without battery or full discharge
     PMUBattDischarge = ttgo->power->getBattDischargeCurrent();
-    //lEvLog("PMU: %f mAh from last %d seconds\n", PMUBattDischarge,LUNOKIOT_PMU_MONITOR);
+    int chargeCurrent = ttgo->power->getChargeControlCur();
+    float battValue0to1 = float(batteryPercent/100.0);
+    batteryTotalTimeHours = float(batteryCapacitymAh/PMUBattDischarge);
+    if ( PMUBattDischarge > 0.0 ) {
+        batteryRemainingTimeHours = float(batteryTotalTimeHours*battValue0to1);
+        //lEvLog("PMU: Battery(%dmAh) Total time: %.2f Remaining time: %.2f\n", batteryCapacitymAh, batteryTotalTimeHours, batteryRemainingTimeHours);
+    } else {
+        batteryRemainingTimeHours=0.0;
+    }
 }
 
 void PMUMonitorCallback() { // freeRTOS discourages process on callback due priority and recomends a queue :)
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_REPORT, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_REPORT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 }
 
 static void PMUMonitorON(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {

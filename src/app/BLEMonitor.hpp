@@ -12,6 +12,7 @@ class BLEMonitorApplication: public LunokIoTApplication {
         unsigned long nextRedraw=0;
         int rotateVal = 0;
     public:
+        const char *AppName() override { return "BLE Monitor"; };
         ButtonImageXBMWidget * btnBack = nullptr;
         BLEMonitorApplication();
         ~BLEMonitorApplication();

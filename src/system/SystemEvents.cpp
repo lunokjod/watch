@@ -38,6 +38,8 @@ extern TTGOClass *ttgo; // ttgo library
 
 #include <NimBLECharacteristic.h>
 
+#include <esp_ota_ops.h>
+
 #include "esp_heap_task_info.h"
 #include <freertos/portable.h>
 //https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
@@ -242,35 +244,24 @@ static void DoSleepTask(void *args) {
     int64_t howMuchTime = esp_timer_get_next_alarm();
     int64_t nowTime = esp_timer_get_time();
     lEvLog("ESP32: NEXT ALARM in: %lld ms\n",(howMuchTime-nowTime)/1000);
+    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+        // the current app isn't a watchface... must bes top
+        LaunchApplication(nullptr,false,true); // Synched App Stop
+    }
+    
 
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     delay(50);
-    // Serial.printf("WIFI STATUS: %d\n", WiFi.status());
-    //const size_t MAXRETRIES = 3;
-    //size_t retries = MAXRETRIES;
-    // Serial.printf("WIFISTATUS: %d\n",WiFi.status());
-    // while ( ( WL_NO_SHIELD != WiFi.status())&&( WL_IDLE_STATUS != WiFi.status() ) ) {
-    /*
-    while (WL_CONNECTED == WiFi.status()) {
-        lNetLog("ESP32: DoSleep WAITING (%d): WiFi in use, waiting for system radio powerdown....\n", retries);
-        delay(2000);
-        retries--;
-        if (0 == retries + 1) {
-            lNetLog("ESP32: System don't end the connection. Forcing WiFI off due timeout\n");
-            WiFi.disconnect(true);
-            delay(200); // get driver time to archieve ordered disconnect (say AP goodbye etc...)
-            break;
-        }
-    }*/
+
     if (WL_NO_SHIELD != WiFi.status() ) {
-        lNetLog("WiFi: Must be disabled now!\n");
-        WiFi.disconnect(true,true);
-        delay(200);
-        WiFi.mode(WIFI_OFF);
-        delay(200);
+        if ( WIFI_MODE_NULL != WiFi.getMode() ) {
+            lNetLog("WiFi: Must be disabled now!\n");
+            WiFi.disconnect(true,true);
+            delay(200);
+            WiFi.mode(WIFI_OFF);
+            delay(200);
+        }
     }
-    //if (retries < MAXRETRIES) { lEvLog("ESP32: WiFi released, DoSleep continue...\n"); }
-    LaunchApplication(nullptr,false,true); // Synched App Stop
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
@@ -290,12 +281,10 @@ static void DoSleepTask(void *args) {
     esp_err_t canSleep = esp_light_sleep_start();    // device sleeps now
     if ( ESP_OK != canSleep ) {
         lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped !!!!!!!\n");
-
     }
-    lEvLog("ESP32: -- Wake -- o_O'\n"); // good morning!!
-    systemSleep = false;
-
+    lEvLog("ESP32: -- Wake -- o_O'\n"); // morning'!!
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
+    systemSleep = false;
     xSemaphoreGive(DoSleepTaskSemaphore);
     WakeUpReason();
     vTaskDelete(NULL);
@@ -646,7 +635,14 @@ static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t i
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
-    LaunchWatchface(false);
+    if ( nullptr == currentApplication ) {
+        LaunchWatchface(false);
+    } else { // already have an app on currentApplication
+        if ( false == currentApplication->isWatchface() ) { // Isn't a watchface, run it now!
+            LaunchWatchface(false);
+        }
+    }
+    // In case of already running a watchface, do nothing
 }
 // called when system is up
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -657,7 +653,7 @@ static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t 
         LaunchApplication(new Provisioning2Application());
         return;
     }
-    LaunchWatchface(false);
+    if ( nullptr == currentApplication ) { LaunchWatchface(false); }
 }
 
 static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -848,9 +844,10 @@ static void AXPInterruptController(void *args) {
     ttgo->power->clearIRQ();
 
 
-    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {   
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+        delay(LUNOKIOT_SYSTEM_INTERRUPTS_TIME); // dont care time precision, only yeld
+        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
         //if ( pdFALSE == isDelayed ) { continue; }
         // check for AXP int's
         if (irqAxp) {
@@ -858,89 +855,92 @@ static void AXPInterruptController(void *args) {
             if (ttgo->power->isChargingIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery charging\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isChargingDoneIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery fully charged\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattEnterActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery active\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattExitActivateIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery free\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery present\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery removed\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattTempLowIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature low\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isBattTempHighIRQ()) {
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Battery temperature high\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isVbusPlugInIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = true;
                 lEvLog("AXP202: Power source\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isVbusRemoveIRQ()) {
                 ttgo->power->clearIRQ();
                 vbusPresent = false;
                 lEvLog("AXP202: No power\n");
-                irqAxp = false;
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isPEKShortPressIRQ()) {
-                irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button short press\n");
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isPEKLongtPressIRQ()) {
-                irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event PEK Button long press\n");
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                irqAxp = false;
                 continue;
             } else if (ttgo->power->isTimerTimeoutIRQ()) {
-                irqAxp = false;
                 ttgo->power->clearIRQ();
                 lEvLog("AXP202: Event Timer timeout\n");
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            } else {
                 irqAxp = false;
+                continue;
+            } /*else {
                 ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
                 lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
+                irqAxp = false;
                 continue;
-            }
+            }*/
+            //ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
+            lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
+            irqAxp = false;
         }
     }
     lEvLog("AXPInterruptController is dead!\n");
@@ -1278,6 +1278,9 @@ void BootReason() {
             //delay(200);
         #endif
     }
+    const esp_partition_t *whereIAm = esp_ota_get_boot_partition();
+    lEvLog("Boot from: '%s'\n",whereIAm->label);
+    // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
 }
 
 
@@ -1315,9 +1318,9 @@ void SystemEventsStart() {
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 8,                            // maybe so big?
+        .queue_size = 20,                           // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+4,        // a little bit faster
+        .task_priority = tskIDLE_PRIORITY,          // a little bit faster?
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                           // to core 1
     };                                              // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t

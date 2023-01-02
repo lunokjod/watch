@@ -8,7 +8,7 @@
 uint8_t eyeSize = 8;
 
 IATestApplication::IATestApplication() {
-    LunokIoTApplication();
+   // LunokIoTApplication();
 /*
     /// COLOR ORDER NIGHTMARE....
     testButton[0] = new NotificationWidget(0,0,[&,this]() {

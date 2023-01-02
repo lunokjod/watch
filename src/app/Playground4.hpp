@@ -11,6 +11,7 @@
 class PlaygroundApplication4: public LunokIoTApplication {
     public:
         std::list<TFT_eSprite *>Thumbnails;
+        const char *AppName() override { return "Playground4 test"; };
 
         CanvasWidget * testBackground = nullptr;
         ScrollViewWidget * test=nullptr;

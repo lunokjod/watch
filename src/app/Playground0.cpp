@@ -4,7 +4,6 @@
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 
-
 PlaygroundApplication0::~PlaygroundApplication0() {
 }
 

@@ -15,6 +15,7 @@ class AboutApplication: public TemplateApplication {
         unsigned long nextScrollRedraw=0;
         uint8_t counterLines=0;
     public:
+        const char *AppName() override { return "About"; };
         TFT_eSprite * textBuffer = nullptr;
         CanvasWidget * colorBuffer = nullptr;
         CanvasWidget * perspectiveTextBuffer = nullptr;

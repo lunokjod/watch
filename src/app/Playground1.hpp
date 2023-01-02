@@ -9,6 +9,7 @@
 
 class PlaygroundApplication1: public LunokIoTApplication {
     public:
+        const char *AppName() override { return "Playground1 test"; };
         CanvasWidget *background_image=nullptr;
         NotificationWidget *testNotification=nullptr;
         NotificationWidget *testNotification1=nullptr;

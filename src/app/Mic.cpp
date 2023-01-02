@@ -32,6 +32,7 @@ int32_t             all_val_zero2 = 0;
 int32_t             all_val_zero3 = 0;
 uint32_t            j = 0;
 
+
 void MicApplication::_RecordThread(void *args) {
     lAppLog("Mic thread start\n");
     MicApplication * self = (MicApplication *)args;

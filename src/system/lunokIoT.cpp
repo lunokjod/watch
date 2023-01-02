@@ -4,6 +4,7 @@
 #include <ArduinoNvs.h>
 #include <esp_timer.h>
 #include <esp_log.h>
+#include <esp_task_wdt.h>
 
 #include "../lunokIoT.hpp"
 #include "../lunokiot_config.hpp"
@@ -21,6 +22,35 @@ TTGOClass *ttgo = TTGOClass::getWatch();
 TFT_eSPI *tft;
 extern bool ntpSyncDone;
 extern const char *ntpServer;
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+volatile RTC_NOINIT_ATTR int16_t 	lt_sys_reset;//Global var
+RTC_NOINIT_ATTR char lt_sys_tsk_ovf[16];//Global var
+		 	
+//extern "C" 
+void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName ) {
+    snprintf(lt_sys_tsk_ovf, 16, "%s", pcTaskName);
+    lt_sys_reset = 21;
+
+    ets_printf("@TODO ***ERROR*** A stack overflow in task ");
+    ets_printf((char *)pcTaskName);
+    ets_printf(" has been detected.\r\n");
+
+    abort();
+}
+
+extern "C" void esp_task_wdt_isr_user_handler(void) {
+/***************************************************************************//**
+\brief This function is called by task_wdt_isr function (ISR for when TWDT times out).
+\details It can be redefined in user code to handle twdt events.
+Note: It has the same limitations as the interrupt function.
+Do not use ESP_LOGI functions inside.
+*******************************************************************************/
+
+    ets_printf("@TODO ERROR: Watchdog TIMEOUT triggered\n");
+}
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
@@ -41,7 +71,22 @@ LunokIoT::LunokIoT() {
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
-
+    /*
+    esp_err_t taskStatus = esp_task_wdt_status(NULL);
+    if ( ESP_ERR_INVALID_STATE != taskStatus ) {
+        esp_task_wdt_deinit();
+        lEvLog(" TWDT enabled by arduinoFW???\n");
+    }*/
+    esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, false);
+    if ( ESP_OK != taskWatchdogResult ) {
+        lEvLog("ERROR: unable to start Task Watchdog\n");
+    }
+    #ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
+        esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
+    #endif
+    #if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
+        esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
+    #endif
     #ifdef LILYGO_WATCH_2020_V3
     ttgo->motor_begin();
     #endif

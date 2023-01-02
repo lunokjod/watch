@@ -11,6 +11,7 @@ class ActivitiesApplication: public LunokIoTApplication {
         unsigned long nextRedraw;
         int16_t angle;
     public:
+        const char *AppName() override { return "Activities"; };
         ActivitiesApplication();
         ~ActivitiesApplication();
         bool Tick();

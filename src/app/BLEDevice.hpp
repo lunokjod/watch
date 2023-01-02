@@ -14,6 +14,7 @@ class BLEDeviceMonitorApplication: public LunokIoTApplication {
         uint16_t backgroundColor;
         NimBLEAddress addr;
     public:
+        const char *AppName() override { return "BLE device inspector"; };
         ButtonImageXBMWidget * btnBack = nullptr;
         BLEDeviceMonitorApplication(uint16_t baseColor, NimBLEAddress addr);
         ~BLEDeviceMonitorApplication();

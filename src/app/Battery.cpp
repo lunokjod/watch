@@ -7,6 +7,12 @@
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
 
+extern float PMUBattDischarge;
+extern float batteryRemainingTimeHours;
+extern float batteryTotalTimeHours;
+
+
+
 BatteryApplication::~BatteryApplication() {
     delete BattPCEvent;
     delete BattChargeEvent;
@@ -24,14 +30,19 @@ BatteryApplication::BatteryApplication() {
     },PMU_EVENT_BATT_CHARGING); // show charging animation
     BattFullEvent = new EventKVO([&, this](){
         charging=false;
-        LaunchWatchface(); // battery full, return to watchface
+        this->dirtyFrame = true;
+        //LaunchWatchface(); // battery full, return to watchface
     },PMU_EVENT_BATT_FULL);
 
     charging = ttgo->power->isChargeing();
     Tick();
 }
 bool BatteryApplication::Tick() {
-    TemplateApplication::Tick();
+    TemplateApplication::btnBack->Interact(touched, touchX, touchY);
+    if ( vbusPresent ) {
+        UINextTimeout = millis()+UITimeout; // if plugged in, don't turn off screen
+    }
+
     if (millis() > nextRedraw ) {
         if ( this->dirtyFrame ) { // only refresh when dirty
             canvas->fillSprite(TFT_BLACK);
@@ -59,6 +70,27 @@ bool BatteryApplication::Tick() {
                 canvas->drawString(textBuffer, 75, battTextHeight);
             }
             charging = ttgo->power->isChargeing();
+            if ( false == charging ) {
+                char buffer[30];
+                if ( PMUBattDischarge > 0.0 ) {
+                    sprintf(buffer,"Usage: %.2f mA",PMUBattDischarge);
+                    canvas->setTextFont(0);
+                    canvas->setTextSize(2);
+                    canvas->setTextColor(ThCol(text));
+                    canvas->setTextDatum(TL_DATUM);
+                    canvas->drawString(buffer, 10, 10);
+                }
+                if ( batteryRemainingTimeHours > 0.0 ) {
+                    int hours = fabs(batteryRemainingTimeHours);
+                    int minutes = (batteryRemainingTimeHours-hours)*60;
+                    sprintf(buffer,"%d hrs %d min",hours, minutes);
+                    canvas->setTextFont(0);
+                    canvas->setTextSize(2);
+                    canvas->setTextColor(TFT_WHITE);
+                    canvas->setTextDatum(BL_DATUM);
+                    canvas->drawString(buffer, 80, canvas->width()-15);
+                }
+            }
             this->dirtyFrame = false;
         }
         if ( charging ) {
@@ -75,12 +107,9 @@ bool BatteryApplication::Tick() {
                 this->dirtyFrame=true;
             }
         }
-        TemplateApplication::Tick();
+        TemplateApplication::btnBack->DrawTo(canvas);
         nextRedraw=millis()+(1000/3);
         return true;
-    }
-    if ( vbusPresent ) {
-        UINextTimeout = millis()+UITimeout; // if plugged in, don't turn off automatically
     }
     return false;
 }

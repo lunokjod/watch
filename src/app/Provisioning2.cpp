@@ -54,6 +54,7 @@ const int16_t QRSize = 240;
 extern bool wifiOverride;
 bool provisioned=false;
 
+
 Provisioning2Application *lastProvisioning2Instance = nullptr;
 
 void Provisioning2_SysProvEvent(arduino_event_t *sys_event);

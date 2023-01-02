@@ -12,6 +12,7 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../static/img_back_32.xbm"
 #include "../static/img_settime_32.xbm"
 
+
 SetTimeApplication::~SetTimeApplication() {
     if ( nullptr != hour ) { delete hour; }
     if ( nullptr != minute ) { delete minute; }

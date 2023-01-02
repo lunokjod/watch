@@ -11,6 +11,7 @@ class BluetoothApplication: public TemplateApplication {
         unsigned long nextRedraw=0;
         uint32_t generatedPin=-1;
     public:
+        const char *AppName() override { return "BLE pairing"; };
         ButtonImageXBMWidget * btnGeneratePIN = nullptr;
         ButtonImageXBMWidget * btnRemoveBonding = nullptr;
         uint32_t SetBLERandomPin();

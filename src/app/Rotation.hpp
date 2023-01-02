@@ -14,6 +14,7 @@ class RotationApplication: public LunokIoTApplication {
         ButtonWidget * down=nullptr;
         ButtonWidget * left=nullptr;
     public:
+        const char *AppName() override { return "Screen rotation"; };
         RotationApplication();
         ~RotationApplication();
         bool Tick();

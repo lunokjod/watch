@@ -8,7 +8,6 @@
 #include "../static/img_back_32.xbm"              // back button
 #include "../UI/widgets/ButtonImageXBMWidget.hpp" // back button
 
-
 TemplateApplication::~TemplateApplication() { delete btnBack; }
 
 TemplateApplication::TemplateApplication() {

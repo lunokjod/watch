@@ -11,6 +11,7 @@ class PlaygroundApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
     public:
+        const char *AppName() override { return "Playground test"; };
         //TFT_eSPI *tft = ttgo->tft;
         CanvasWidget *buffer=nullptr;
         bool alphaDirection = true;

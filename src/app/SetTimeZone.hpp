@@ -13,6 +13,7 @@ class SetTimeZoneApplication: public LunokIoTApplication {
         unsigned long nextRedraw=0;
         //unsigned long nextSelectorTick=0;
     public:
+        const char *AppName() override { return "Set timezone"; };
         ValueSelector * timezoneGMTSelector = nullptr;
         ButtonImageXBMWidget * btnBack = nullptr;
         ButtonImageXBMWidget * btnSetGMT = nullptr;

@@ -10,6 +10,7 @@
 #include "LogView.hpp"
 
 extern bool bleEnabled;
+
 BluetoothApplication::~BluetoothApplication() {
     if ( nullptr != btnGeneratePIN ) { delete btnGeneratePIN; }
     if ( nullptr != btnRemoveBonding ) { delete btnRemoveBonding; }

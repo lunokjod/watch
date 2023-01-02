@@ -12,6 +12,7 @@ class PlaygroundApplication5: public LunokIoTApplication {
         CanvasZWidget *imageDeepTest=nullptr;
         float increment=0.05;
     public:
+        const char *AppName() override { return "Playground5 test"; };
         PlaygroundApplication5();
         ~PlaygroundApplication5();
         bool Tick();

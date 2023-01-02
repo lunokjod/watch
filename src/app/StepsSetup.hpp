@@ -14,6 +14,7 @@ class StepsSetupApplication: public LunokIoTApplication {
         unsigned long nextRedraw=0;
         unsigned long nextSpinStep=0;
     public:
+        const char *AppName() override { return "Step settings"; };
         ButtonImageXBMWidget * btnBack = nullptr;
         SwitchWidget * genderSelect = nullptr;
         ValueSelector * tallValue = nullptr;

@@ -7,6 +7,7 @@
 
 class PlaygroundApplication0: public LunokIoTApplication {
     public:
+        const char *AppName() override { return "Playground0 test"; };
         unsigned long nextRedraw=0;
         PlaygroundApplication0();
         ~PlaygroundApplication0();

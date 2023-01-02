@@ -6,11 +6,32 @@ import uuid
 import socket
 import configparser
 from os.path import exists
+import subprocess
+
+print(" * lunokWatch build script")
 
 Import('env')
 build_type = env.GetProjectOption("build_type")
 
-print(" * lunokWatch build script")
+# try to get the device UART type to determine the battery capacity
+p = subprocess.Popen("pio --no-ansi device list", stdout=subprocess.PIPE, shell=True)
+(output, err) = p.communicate()
+p_status = p.wait()
+dataLines = output.decode().split()
+device_port=dataLines[0]
+
+batteryCapacity="380" #default battery (black, can be replaced)
+normalBatteryDev="/dev/ttyUSB"
+
+bigBatteryDev="/dev/ttyACM"
+if bigBatteryDev in device_port: 
+    batteryCapacity="500" # the v3 have 2 versions, 380 and 500 mAh
+
+print(f" * Detected battery: {batteryCapacity}mAh")
+
+#print(" * Reset otadata partition")
+#os.system("otatool.py --port \"{device_port}\" erase_otadata")
+#os.system("esptool.py erase_region 0xD000 0x2000")
 
 h_name = socket.gethostname()
 IP_addres = socket.gethostbyname(h_name)
@@ -75,8 +96,9 @@ if "debug" == build_type:
         f.write(str(buildCount))
     with open(openWeatherFile,'r') as f:
         openweatherKey = f.read()
+    print("ADVICE: build in debug mode can leak personal information inside the flash image, like the OpenWeather key or your IP on LAN better don't share your debug builds")
 elif "release" == build_type:
-    print(" -> Release build don't increment the buildcont")
+    print(" -> Release build don't increment the buildcont, and removes OpenWeatherKey")
     with open(counterFile,'r') as f:
         buildCount = int(f.read())
     
@@ -92,6 +114,10 @@ else: # clover the openweather key and localcloud node
     outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", "")
     outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", "127.0.0.1")
 outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
+
+outputData = outputData.replace("@@LILYGOTWATCH_BATTERY_CAPACITY@@", batteryCapacity)
+
+
 
 #outputData = outputData.replace("@@LUNOKIOT_SERIALNUMBER@@", str(buildSerialNumber))
 #outputData = outputData.replace("@@LUNOKIOT_UNIQUEID@@", str(buildUniqueID))

@@ -87,6 +87,8 @@
 #include "Lamp.hpp"
 
 #include "LogView.hpp"
+#include "../static/img_mainmenu_lastapps.xbm"
+#include "TaskSwitcher.hpp"
 
 typedef struct {
     const char *name;
@@ -100,6 +102,8 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, []() { LaunchWatchface(); } },
+
+//    {"Tasks", img_mainmenu_lastapps_bits, img_mainmenu_lastapps_height, img_mainmenu_lastapps_width, []() { LaunchApplication(new TaskSwitcher()); } },
 //    {"Log", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new LogViewApplication()); } },
 //    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, []() { LaunchApplication(new Provisioning2Application()); } },
 //    {"Update",img_mainmenu_update_bits, img_mainmenu_update_height, img_mainmenu_update_width, []() { LaunchApplication(new OTAUpdateApplication()); } },

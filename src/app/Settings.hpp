@@ -15,7 +15,8 @@ class SettingsApplication: public TemplateApplication {
         SwitchWidget * openweatherCheck = nullptr;
         SwitchWidget * wifiCheck = nullptr;
         SwitchWidget * bleCheck = nullptr;
-    public:        
+    public:
+        const char *AppName() override { return "Basic settings"; };
         SettingsApplication();
         virtual ~SettingsApplication();
         bool Tick();

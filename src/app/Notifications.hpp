@@ -7,6 +7,7 @@ class NotificacionsApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
     public:
+        const char *AppName() override { return "Notifications"; };
         NotificacionsApplication();
         ~NotificacionsApplication();
         bool Tick();

@@ -5,8 +5,9 @@
 
 class LampApplication : public LunokIoTApplication {
     public:
+        const char *AppName() override { return "Lamp"; };
         LampApplication();
-        ~LampApplication();
+        //~LampApplication();
         bool Tick();
 };
 

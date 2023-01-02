@@ -20,6 +20,8 @@ class PlaygroundApplication3: public LunokIoTApplication {
         int hour=0;
         int minute=0;
     public:
+        const char *AppName() override { return "Playground3 test"; };
+
         GaugeWidget * hourGauge = nullptr;
         GaugeWidget * minuteGauge = nullptr;
 

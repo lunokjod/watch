@@ -15,6 +15,7 @@ class PlaygroundApplication6: public LunokIoTApplication {
         const float thumnailScale=0.333;
         CanvasWidget * buffer=nullptr;
     public:
+        const char *AppName() override { return "Playground6 test"; };
         PlaygroundApplication6();
         ~PlaygroundApplication6();
         bool Tick();

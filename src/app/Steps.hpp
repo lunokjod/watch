@@ -13,6 +13,7 @@ class StepsApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
     public:
+        const char *AppName() override { return "Step counter"; };
         void CreateStats();
         ButtonImageXBMWidget * btnSetup = nullptr;
         ButtonImageXBMWidget * btnBack = nullptr;

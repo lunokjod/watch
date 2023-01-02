@@ -3,6 +3,7 @@
 #include "Playground2.hpp"
 #include "../static/img_game_spaceship1.c"
 #include "lunokiot_config.hpp"
+
 PlaygroundApplication2::~PlaygroundApplication2() {
     
 }

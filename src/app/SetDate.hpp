@@ -18,6 +18,7 @@ class SetDateApplication: public LunokIoTApplication {
         ButtonImageXBMWidget * setDateButton = nullptr;
         ButtonImageXBMWidget * backButton = nullptr;
     public:
+        const char *AppName() override { return "Set date"; };
         SetDateApplication();
         ~SetDateApplication();
         bool Tick();

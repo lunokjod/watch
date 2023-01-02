@@ -16,6 +16,7 @@ SetDateApplication::~SetDateApplication() {
     if ( nullptr != setDateButton ) { delete setDateButton; }
 }
 
+
 extern int currentDay;
 extern int currentMonth;
 extern bool ntpSyncDone;

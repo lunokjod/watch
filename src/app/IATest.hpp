@@ -7,6 +7,7 @@
 
 class IATestApplication: public LunokIoTApplication {
     public:
+        const char *AppName() override { return "IA Test"; };
         NotificationWidget * testButton[5]= { nullptr };
         CanvasWidget * watchFacebackground = nullptr; // contains the back of the clock
         CanvasWidget * compositeBuffer = nullptr; // for image composite

@@ -10,6 +10,7 @@ class MicApplication : public TemplateApplication {
         unsigned long nextRefresh=0;
         unsigned long graphRedraw=0;
     public:
+        const char *AppName() override { return "Mic recorder"; };
         bool recThread = true;
         bool recThreadDead = false;
         GraphWidget * audioWaveGraph;

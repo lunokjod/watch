@@ -19,6 +19,7 @@ class StopwatchApplication: public TemplateApplication {
         ButtonImageXBMWidget * startBtn = nullptr;
         bool blink=false;
     public:
+        const char *AppName() override { return "Stopwatch"; };
         static unsigned long pauseTime;
         static unsigned long starTime;
         StopwatchApplication();
