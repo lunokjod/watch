@@ -632,6 +632,19 @@ static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t i
     lSysLog("System event: Stop\n");
 
 }
+static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lSysLog("System event: Low memory\n");
+    if ( nullptr != currentApplication ) {
+        currentApplication->LowMemory();
+        if ( nullptr == currentApplication->canvas ) {
+            lSysLog("System event: Application don't have enough memory to run, returning to user selected Watchface\n");
+            //@TODO this is an excelent place to launch the BSOD screen :P
+            LaunchWatchface();
+            return;
+        }
+        lSysLog("System event: Application memory constrained\n");
+    }
+}
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
@@ -1282,8 +1295,13 @@ void BootReason() {
     lEvLog("Boot from: '%s'\n",whereIAm->label);
     // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
 }
-
-
+/*
+#include <esp_expression_with_stack.h>
+void external_stack_function(void)
+{
+    printf("Executing this printf from external stack! \n");
+}
+*/
 /**
  * @brief callback called when a allocation operation fails, if registered
  * @param size in bytes of failed allocation
@@ -1291,12 +1309,38 @@ void BootReason() {
  * @param function_name function which generated the failure
  */
 void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
+    //lLog("\n");
+    //lLog(" ====== /!\\/!\\/!\\ ======\n");
     lLog("\n");
-    lLog(" ====== /!\\/!\\/!\\ ======\n");
+    lSysLog("MEMORY LOW: Unable to allocate %d bytes requested by: '%s' (flags: %x)\n",size,function_name,caps);
     lLog("\n");
-    lSysLog("MEMORY ERROR: Unable to allocate %d bytes requested by: '%s' (flags: %x)\n",size,function_name,caps);
-    lLog("\n");
+    /*
+    //Allocate a stack buffer, from heap or as a static form:
+    portSTACK_TYPE *shared_stack = (portSTACK_TYPE *)ps_malloc(LUNOKIOT_TASK_STACK_SIZE * sizeof(portSTACK_TYPE));
+    if ( NULL == shared_stack ) {
+        lSysLog("Unable to allocate space to call LowMemory()\n");
+        return;
+    }
+
+    //Allocate a mutex to protect its usage:
+    SemaphoreHandle_t printf_lock = xSemaphoreCreateMutex();
+    assert(printf_lock != NULL);
+
+    //Call the desired function using the macro helper:
+    esp_execute_shared_stack_function(printf_lock,
+                                    shared_stack,
+                                    8192,
+                                    external_stack_function);
+
+    vSemaphoreDelete(printf_lock);
+    free(shared_stack);
+    */
+   
+   //@TODO this is an excelent place to launch the BSOD screen :P
+
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
+
 void SystemShutdownHandler() {
     lLog("lunokIoT: See you soon! :)\n");
     uart_wait_tx_idle_polling(UART_NUM_0);
@@ -1349,57 +1393,62 @@ void SystemEventsStart() {
     }
     delay(50);
     esp_err_t registered = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived, NULL);
-    if ( ESP_OK != espLoopCreated ) {
+    if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on ESP32 queue ANY_BASE ANY_ID\n");
     }
-  
+
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, SystemEventLowMem, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: LOW MEMORY\n");
+    }
+
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, SystemEventWake, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: WAKE\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: WAKE\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, SystemEventStop, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: STOP\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: STOP\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, SystemEventReady, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: READY\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: READY\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, SystemEventTick, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: TICK\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: TICK\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, AXPEventPEKShort, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: PEK short\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: PEK short\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, AXPEventPEKLong, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: PEK long\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: PEK long\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, BMAEventStepCounter, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: Step counter\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Step counter\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, BMAEventActivity, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: Activity\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Activity\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, BMAEventNoActivity, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: No motion\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: No motion\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, SystemEventTimer, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: TIMER\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: TIMER\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, SystemEventPMUPower, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: POWER\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: POWER\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, SystemEventPMUPower, nullptr, NULL);
-    if ( ESP_OK != espLoopCreated ) {
-        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIOT queue Event: NO POWER\n");
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: NO POWER\n");
     }
 
     lSysLog("PMU interrupts\n");

@@ -104,7 +104,8 @@ bool TaskSwitcher::Tick() {
                     captures[searchOffset]=nullptr;
                 }
                 // update the app capture
-                captures[searchOffset] = ScaleSprite(lastApps[searchOffset],0.29);
+                // little black margin
+                captures[searchOffset] = ScaleSprite(lastApps[searchOffset], 0.32);//0.3333);
                 /*
                 if ( nullptr == captures[searchOffset] ) {
                     lAppLog("Unable to create thumbnail from last app: %u canvas at: %p, discarded\n",searchOffset,lastApps[searchOffset]);

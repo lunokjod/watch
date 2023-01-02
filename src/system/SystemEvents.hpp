@@ -23,6 +23,7 @@ enum {
     SYSTEM_EVENT_LIGHTSLEEP,  // received when the system is begin sleep
     SYSTEM_EVENT_TIMER,       // ESP32 timed wakeup
     SYSTEM_EVENT_UPDATE,      // Update comes!!
+    SYSTEM_EVENT_LOWMEMORY,   // All apps receive this call when system memory goes low
 
     PMU_EVENT_BATT_CHARGING,  // notify when the battery is charging
     PMU_EVENT_BATT_FULL,      // the batt is full

@@ -55,17 +55,6 @@ LunokIoTApplication::~LunokIoTApplication() {
         this->canvas = nullptr;
     }
     lUILog("LunokIoTApplication: %p ends\n", this);
-    /*
-    #ifdef LUNOKIOT_DEBUG
-    // In multitask environment is complicated to automate this... but works as advice that something went wrong
-    if ( this->lastApplicationHeapFree != ESP.getFreeHeap()) { 
-        lUILog("LunokIoTApplication: WARNING: Heap leak? differs %d byte\n",this->lastApplicationHeapFree-ESP.getFreeHeap());
-    }
-    if ( this->lastApplicationPSRAMFree != ESP.getFreePsram()) { 
-        lUILog("LunokIoTApplication: WARNING: PSRAM leak? differs %d byte\n",this->lastApplicationPSRAMFree-ESP.getFreePsram());
-    }
-    #endif
-    */
 }
 
 bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the full screen redraw
@@ -74,10 +63,12 @@ bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the f
 void KillApplicationTask(void * data) {
     //lUILog("------------------- R I P ---------------\n");
     //FreeSpace();
-    lUILog("KillApplicationTask: %p closing...\n", data);
-    LunokIoTApplication *instance = (LunokIoTApplication *)data;
-    delete instance;
-    lUILog("KillApplicationTask: %p has gone\n", data);
+    if ( nullptr != data ) {
+        LunokIoTApplication *instance = (LunokIoTApplication *)data;
+        lUILog("KillApplicationTask: %p '%s' closing...\n", data,instance->AppName());
+        delete instance;
+        lUILog("KillApplicationTask: %p has gone\n", data);
+    }
     //FreeSpace();
     //lUILog("-----------------------------------------\n");
     vTaskDelete(NULL);
@@ -165,7 +156,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     lastAppsTimestamp[searchOffset]=0;
                     continue;
                 }
-                // all fine update current app state
+                // update current app state
                 lastApps[searchOffset] = lastView;
                 lAppLog("%p '%s' already on the apps stack (offset: %d) view updated\n",ptrToCurrent,name,searchOffset);
 
@@ -177,10 +168,12 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     delete lastApps[searchOffset];
                     lastApps[searchOffset]=nullptr;
                     lastAppsTimestamp[searchOffset]=0;
+                    delay(80);
                     continue;
                 }
                 // otherwise, receive more keepalive time due has been seen now
                 lastAppsTimestamp[searchOffset] = millis();
+                lAppLog("%p '%s' timeout updated (offset: %u)\n",ptrToCurrent,name,searchOffset);
             }
 
             if ( false == alreadyExists ) { // is new app
@@ -237,3 +230,33 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
         xTaskCreate(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, uxTaskPriorityGet(NULL), nullptr);
     }
 }
+
+void LunokIoTApplication::LowMemory() {
+    lAppLog("System alert received: LOW MEMORY for %p '%s'\n", this,this->AppName());
+    if ( nullptr != canvas ) {
+        // try to regenerate canvas (move memory) with a bit of lucky, the new location is a better place
+        canvas->deleteSprite();
+        void * oldcanvasPtr = canvas;
+        delete canvas;
+        canvas=nullptr;
+        
+        delay(80); // do little yeld (idle task frees memory)
+
+        canvas = new TFT_eSprite(tft);
+        if ( nullptr == canvas ) {
+            lAppLog("ERROR: canvas cannot be regenerated: App must die :(\n");
+            return;
+        }
+        canvas->setColorDepth(16); // try to experiment with different color depth
+        if ( NULL == canvas->createSprite(TFT_WIDTH, TFT_HEIGHT) ) {
+            lAppLog("ERROR: Unable to create new canvas: App must die :(\n");
+            delete canvas;
+            canvas=nullptr;
+            return;
+        }
+        lAppLog("Regenerated canvas from: %p to new location: %p\n",oldcanvasPtr,canvas);
+        //canvas->fillSprite(ThCol(background));
+//        Tick();
+    }
+}
+

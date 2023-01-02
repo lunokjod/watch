@@ -254,11 +254,12 @@ TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int
     return canvas;
 }
 TFT_eSprite *TakeScreenShoot() {
+    TFT_eSprite *appView = currentApplication->canvas;
+    if ( nullptr == appView ) { return nullptr; }
+    TFT_eSprite *myCopy = DuplicateSprite(appView);
     ttgo->setBrightness(0);
     ttgo->tft->fillScreen(TFT_WHITE);
     ttgo->setBrightness(255);
-    TFT_eSprite *appView = currentApplication->canvas;
-    TFT_eSprite *myCopy = DuplicateSprite(appView);
     ttgo->tft->fillScreen(TFT_BLACK);
     ttgo->setBrightness(0);
     delay(10);
@@ -358,10 +359,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
 
         TFT_eSprite *appView = currentApplication->canvas;
         if ( nullptr == appView ) {
-            lUILog("ERROR: unable to get application canvas!\n");
+            lUILog("Unable to get app canvas!\n");
             xSemaphoreGive( UISemaphore );
             return;
-        }
+        } // cannot do nothing
+        
         // verify long tap to launch TaskSwitcher
         if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
             UIlongTap=false;
@@ -372,8 +374,21 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             if ( pushTime > LUNOKIOT_TOUCH_LONG_MS ) {
                 if ( false == UIlongTap ) {
                     UIlongTap=true; // locked until thumb up
-                    lUILog("Long touchpad tap detected\n");
-                    
+                    lEvLog("UI: Touchpad long tap\n");
+                    /*
+                    // simply decorative, notifiyng the user about the action
+                    ttgo->tft->fillCircle(touchX,touchY,70,TFT_WHITE);
+                    //ttgo->tft->fillCircle(touchX,touchY,50,TFT_WHITE);
+                    ttgo->tft->drawCircle(touchX,touchY,80,TFT_WHITE);
+                    */
+                    // announce haptic on launch the long tap task
+                    #ifdef LILYGO_WATCH_2020_V3
+                        //ttgo->motor->onec(40);
+                        //delay(100);
+                        ttgo->motor->onec(80);
+                        delay(200);
+                    #endif
+
                     //@TODO here is a good place to draw a circular menu and use the finger as arrow
                     // Up tasks
                     // Down appointments
@@ -384,25 +399,17 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     xSemaphoreGive( UISemaphore );
                     if ( ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
                         LaunchWatchface(); // return to user configured watchface
-                    } else {
-                        // announce haptic on launch the long tap task
-                        #ifdef LILYGO_WATCH_2020_V3
-                            //ttgo->motor->onec(40);
-                            //delay(100);
-                            ttgo->motor->onec(80);
-                            delay(200);
-                        #endif
-                        LaunchApplication(new TaskSwitcher(),true,true);
-                    }
+                    } else { LaunchApplication(new TaskSwitcher()); }
                     return;
+                    }
                 }
-            }
-
             }
         }
 
-        // perform the call to the app logic
-        changes = currentApplication->Tick();
+        if ( false == UIlongTap ) { // only if no long tap in progress
+            // perform the call to the app logic
+            changes = currentApplication->Tick();
+        }
         if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
         if ( changes ) { // Tick() returned true
             // dump the current ap to the TFT

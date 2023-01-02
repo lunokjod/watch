@@ -21,7 +21,8 @@ class LunokIoTApplication {
             uint32_t lastApplicationPSRAMFree = 0;
         #endif
         virtual bool isWatchface() { return false; }
-        virtual const char *AppName() = 0; //{ return "NO NAME APP"; };
+        virtual const char *AppName() = 0;
+        virtual void LowMemory();
 };
 
 
