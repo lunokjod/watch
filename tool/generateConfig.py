@@ -18,8 +18,11 @@ p = subprocess.Popen("pio --no-ansi device list", stdout=subprocess.PIPE, shell=
 (output, err) = p.communicate()
 p_status = p.wait()
 dataLines = output.decode().split()
-device_port=dataLines[0]
-
+device_port="NOT FOUND"
+if len(dataLines) > 0:
+    device_port=dataLines[0]
+else:
+    print(("WARNING: device not found!!! unable to determine the battery type"))
 batteryCapacity="380" #default battery (black, can be replaced)
 normalBatteryDev="/dev/ttyUSB"
 
