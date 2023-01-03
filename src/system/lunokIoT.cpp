@@ -28,15 +28,15 @@ extern const char *ntpServer;
 
 volatile RTC_NOINIT_ATTR int16_t 	lt_sys_reset;//Global var
 RTC_NOINIT_ATTR char lt_sys_tsk_ovf[16];//Global var
-		 	
-//extern "C" 
+
+// requires configCHECK_FOR_STACK_OVERFLOW ¿ArduinoFW?
 void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName ) {
     snprintf(lt_sys_tsk_ovf, 16, "%s", pcTaskName);
     lt_sys_reset = 21;
 
-    ets_printf("@TODO ***ERROR*** A stack overflow in task ");
+    ets_printf("\n\n\n@TODO ***ERROR*** Stack overflow: task '");
     ets_printf((char *)pcTaskName);
-    ets_printf(" has been detected.\r\n");
+    ets_printf("' has been detected.\n\n\n\n");
 
     abort();
 }
@@ -49,7 +49,7 @@ Note: It has the same limitations as the interrupt function.
 Do not use ESP_LOGI functions inside.
 *******************************************************************************/
 
-    ets_printf("@TODO ERROR: Watchdog TIMEOUT triggered\n");
+    ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
 }
 
 LunokIoT::LunokIoT() {
@@ -71,22 +71,31 @@ LunokIoT::LunokIoT() {
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
+    
     /*
     esp_err_t taskStatus = esp_task_wdt_status(NULL);
     if ( ESP_ERR_INVALID_STATE != taskStatus ) {
         esp_task_wdt_deinit();
         lEvLog(" TWDT enabled by arduinoFW???\n");
     }*/
+    // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, false);
     if ( ESP_OK != taskWatchdogResult ) {
-        lEvLog("ERROR: unable to start Task Watchdog\n");
+        lEvLog("ERROR: Unable to start Task Watchdog\n");
     }
-    #ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
-        esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
-    #endif
-    #if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
-        esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
-    #endif
+    //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
+    taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
+    if ( ESP_OK != taskWatchdogResult ) {
+        lEvLog("ERROR: Unable to start Task Watchdog on PRO_CPU(0) (maybe due the ArduinoFW esp-idf sdk see: '.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config/sdkconfig.h')\n");
+    }
+    //#endif
+    //#if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
+    taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
+    if ( ESP_OK != taskWatchdogResult ) {
+        lEvLog("ERROR: Unable to start Task Watchdog on APP_CPU(1)\n");
+    }
+    //#endif
+
     #ifdef LILYGO_WATCH_2020_V3
     ttgo->motor_begin();
     #endif

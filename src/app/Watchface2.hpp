@@ -35,7 +35,8 @@ class Watchface2Application: public LunokIoTApplication {
         Watchface2Application();
         virtual ~Watchface2Application();
         bool Tick();
-        bool isWatchface() { return true; }
+        const bool isWatchface() override { return true; }
+        const bool mustShowAsTask() override { return false; }
 
 };
 

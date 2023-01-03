@@ -77,7 +77,7 @@ DungeonGameApplication::DungeonGameApplication() {
     currentLevel.valid=false;
     loadedSpawnPoint=false;
     lAppLog("Starting map generator...\n");
-    xTaskCreate(DungeonLevelGenerator, "", LUNOKIOT_TASK_STACK_SIZE, &currentLevel, uxTaskPriorityGet(NULL), &MapGeneratorHandle);
+    xTaskCreatePinnedToCore(DungeonLevelGenerator, "", LUNOKIOT_TASK_STACK_SIZE, &currentLevel, uxTaskPriorityGet(NULL), &MapGeneratorHandle,1);
 
     // use canvas as splash screen
     // https://www.fontspace.com/category/medieval
@@ -125,7 +125,7 @@ void DungeonGameApplication::ManageSplashScreen() {
                     LaunchWatchface();
                 }
                 this->canvas->pushSprite(0,0); 
-                xTaskCreate(DungeonLevelGenerator, "", LUNOKIOT_APP_STACK_SIZE, &currentLevel, uxTaskPriorityGet(NULL), &MapGeneratorHandle);
+                xTaskCreatePinnedToCore(DungeonLevelGenerator, "", LUNOKIOT_APP_STACK_SIZE, &currentLevel, uxTaskPriorityGet(NULL), &MapGeneratorHandle,1);
                 waitGeneratorTimeout=0;
                 return;
             } else if ( millis() > waitGeneratorTimestamp ) {

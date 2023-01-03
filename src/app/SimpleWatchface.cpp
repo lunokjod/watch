@@ -108,7 +108,7 @@ SimpleWatchfaceApplication::SimpleWatchfaceApplication() {
     secondHandCanvas->canvas->setPivot(6,106);
 
     if ( false == ntpSyncDone ) {
-        xTaskCreate(SimpleWatchfaceApplication::NTPSync, "", LUNOKIOT_PROVISIONING_STACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL);
+        xTaskCreatePinnedToCore(SimpleWatchfaceApplication::NTPSync, "", LUNOKIOT_PROVISIONING_STACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL,1);
     }
 
 }

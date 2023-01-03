@@ -313,7 +313,7 @@ void NetworkTaskRun(void *data) {
                 lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
                 networkTaskRunning=true;
                 TaskHandle_t taskHandle;
-                BaseType_t taskOK = xTaskCreate(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle);
+                BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle,0);
                 if ( pdPASS != taskOK ) {
                     lNetLog("NetworkTask: ERROR Trying to run task: '%s'\n", tsk->name);
                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
@@ -375,7 +375,7 @@ void NetworkTasksCheck() {
         delay(100);
     }
 
-    BaseType_t taskOK = xTaskCreate(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL);
+    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         lNetLog("Network: BLE last state restored\n");
@@ -959,7 +959,7 @@ void StartBLE() {
     pBLEScan->setMaxResults(3); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
 
-    xTaskCreate(BLELoopTask, "lble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreatePinnedToCore(BLELoopTask, "lble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,0);
 
     //Serial.println("Waiting a client connection to notify...");
 }

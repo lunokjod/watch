@@ -18,6 +18,7 @@ class MainMenuApplication: public LunokIoTApplication {
         int32_t appNamePosY = TFT_HEIGHT-20;
     public:
         const char *AppName() override { return "Main menu"; };
+        const bool mustShowAsTask() override { return false; }
         MainMenuApplication();
         bool Tick();
 };

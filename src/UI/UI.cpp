@@ -535,7 +535,7 @@ static void UITickTask(void* args) {
 
 void UITickStart() {
     if ( NULL == UITickTaskHandler ) {
-        BaseType_t res = xTaskCreate(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler);
+        BaseType_t res = xTaskCreatePinnedToCore(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler,1);
         if ( pdPASS != res ) { UITickTaskHandler = NULL; return; }
         lUILog("Tick enabled\n");
     }

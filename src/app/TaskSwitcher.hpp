@@ -14,6 +14,7 @@ class TaskSwitcher : public LunokIoTApplication {
         const char *AppName() override { return "Task switcher"; };
         TaskSwitcher();
         ~TaskSwitcher();
+        const bool mustShowAsTask() override { return false; }
         bool Tick();
 };
 

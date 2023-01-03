@@ -82,6 +82,7 @@ bool TaskSwitcher::Tick() {
                 if ( 0 == lastAppsTimestamp[searchOffset] )   { continue; }
                 if ( nullptr == lastAppsName[searchOffset] )  { continue; }
                 if ( nullptr == lastApps[searchOffset] )      { continue; }
+                /*
                 if ( 0 == strcmp(lastAppsName[searchOffset],"Task switcher") ) {
                     continue; // hide myself
                 }
@@ -90,12 +91,7 @@ bool TaskSwitcher::Tick() {
                 }
                 if ( 0 == strcmp(lastAppsName[searchOffset],"Settings menu") ) {
                     continue; // secondary menu
-                }
-                // probably timeouted by the system... ¿@think is necessary dissapear in the fingers of the user? maybe TaskSwitch don't must follow the timeouts
-                if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
-                    //lAppLog("Task %d is timed-out\n",searchOffset);
-                    continue;
-                }
+                }*/
                 // clean up!!! clean up!!!!!!
                 if ( nullptr != captures[searchOffset] ) {
                     //lAppLog("Removing thumbnail %u at: %p\n",searchOffset,captures[searchOffset]);
@@ -103,6 +99,13 @@ bool TaskSwitcher::Tick() {
                     delete captures[searchOffset];
                     captures[searchOffset]=nullptr;
                 }
+
+                // probably timeouted by the system... ¿@think is necessary dissapear in the fingers of the user? maybe TaskSwitch don't must follow the timeouts
+                if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
+                    //lAppLog("Task %d is timed-out\n",searchOffset);
+                    continue;
+                }
+
                 // update the app capture
                 // little black margin
                 captures[searchOffset] = ScaleSprite(lastApps[searchOffset], 0.32);//0.3333);

@@ -20,9 +20,10 @@ class LunokIoTApplication {
             uint32_t lastApplicationHeapFree = 0;
             uint32_t lastApplicationPSRAMFree = 0;
         #endif
-        virtual bool isWatchface() { return false; }
-        virtual const char *AppName() = 0;
-        virtual void LowMemory();
+        virtual const bool isWatchface() { return false; } // used to determine if the app must be replaced with watchface when PEK button
+        virtual const char *AppName() = 0; // app title
+        virtual const bool mustShowAsTask() { return true; } // false=Not show in task switcher (menus and intermediate views must be hidden)
+        virtual void LowMemory(); // called when system fails to allocate memory (malloc)
 };
 
 

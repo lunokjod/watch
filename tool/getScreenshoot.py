@@ -5,6 +5,7 @@ import asyncio, logging
 from ble_serial.scan import main as scanner
 from ble_serial.bluetooth.ble_interface import BLE_interface
 import numpy as np
+import sys
 from PIL import Image
 
 PIXELSIZE=240
@@ -87,18 +88,21 @@ async def main():
     ADAPTER = "hci0"
     SCAN_TIME = 5 #seconds
     SERVICE_UUID = None # optional filtering
-
-    devices = await scanner.scan(ADAPTER, SCAN_TIME, SERVICE_UUID)
-    found=False
-    DEVICEBASENAME = "lunokIoT_"
-    DEVICE = "DE:AD:BE:EF:FE:ED"
-    for dev in devices:
-        if dev.name[0:len(DEVICEBASENAME)] == DEVICEBASENAME:
-            DEVICE=dev.address
-            print("Found at: ", DEVICE)
-            found=True
-            break
-
+    n = len(sys.argv)
+    if ( n == 1 ):
+        devices = await scanner.scan(ADAPTER, SCAN_TIME, SERVICE_UUID)
+        found=False
+        DEVICEBASENAME = "lunokIoT_"
+        DEVICE = "DE:AD:BE:EF:FE:ED"
+        for dev in devices:
+            if dev.name[0:len(DEVICEBASENAME)] == DEVICEBASENAME:
+                DEVICE=dev.address
+                print("Found at: ", DEVICE)
+                found=True
+                break
+    else:
+        DEVICE=sys.argv[0]
+        found=True
     if found:
         ### deep scan get's services/characteristics
         #services = await scanner.deep_scan(DEVICE, devices)

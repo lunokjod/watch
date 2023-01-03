@@ -293,7 +293,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        xTaskCreate(DoSleepTask, "lSLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL);
+        xTaskCreatePinnedToCore(DoSleepTask, "lSLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
     }
 }
 
@@ -634,16 +634,21 @@ static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t i
 }
 static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Low memory\n");
+    if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
     if ( nullptr != currentApplication ) {
-        currentApplication->LowMemory();
+            currentApplication->LowMemory();
+        }
         if ( nullptr == currentApplication->canvas ) {
             lSysLog("System event: Application don't have enough memory to run, returning to user selected Watchface\n");
+            xSemaphoreGive( UISemaphore ); // free
             //@TODO this is an excelent place to launch the BSOD screen :P
+            lLog("@TODO show BSOD here!\n");
             LaunchWatchface();
             return;
         }
         lSysLog("System event: Application memory constrained\n");
     }
+    xSemaphoreGive( UISemaphore ); // free
 }
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -1337,6 +1342,7 @@ void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
     */
    
    //@TODO this is an excelent place to launch the BSOD screen :P
+    lLog("@TODO show BSOD here 2!\n");
 
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
@@ -1357,7 +1363,6 @@ void SystemEventsStart() {
         lSysLog("WARNING: Unable to register shutdown handler\n");
     }
     delay(50);
-    //esp_task_wdt_isr_user_handler
 
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
@@ -1453,17 +1458,17 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    xTaskCreate(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle);
+    xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
     delay(50);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreate(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle);
+    xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
     delay(50);
 
     lSysLog("RTC interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreate(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle);
+    xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
     delay(50);
     LunokIoTSystemTickerStart();
     delay(50);

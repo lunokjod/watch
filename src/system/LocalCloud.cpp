@@ -99,5 +99,5 @@ void StartLocalCloudClientTask(void * data) {
 }
 
 void StartLocalCloudClient() {
-    xTaskCreate(StartLocalCloudClientTask, "", LUNOKIOT_TASK_STACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL);
+    xTaskCreatePinnedToCore(StartLocalCloudClientTask, "", LUNOKIOT_TASK_STACK_SIZE,nullptr, uxTaskPriorityGet(NULL), NULL,1);
 }

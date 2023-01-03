@@ -36,7 +36,7 @@ bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,in
 }
 
 void ActiveRect::Trigger() {
-    BaseType_t res = xTaskCreate(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL);
+    BaseType_t res = xTaskCreatePinnedToCore(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL,1);
     if ( res != pdTRUE ) {
         lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
         lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
