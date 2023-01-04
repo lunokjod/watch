@@ -21,15 +21,13 @@ bool GraphWidget::PushValue(int64_t value) {
         graph->canvas->drawFastVLine(0,0,canvas->height(),outColor);
         return false;
     }
-
-    uint32_t pcValue = 0;
-    if ( maxValue == canvas->height() ) {
-        pcValue = value;
-    } else {
-        if ( 0 == maxValue ) { pcValue = 0; }
-        else { pcValue = value * canvas->height() /maxValue; }
-    }
-    //Serial.printf("pc: %d val: %lld max: %lld canvas: %d\n",pcValue,value,maxValue,canvas->height());
+    float range=maxValue-minValue;
+    float correctedValue=value-minValue;
+    int32_t pcValue = 0;
+    if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
+    else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
+    else { pcValue = (correctedValue/range)*canvas->height(); }
+    //lUILog("@DEBUG pixels: %d, val: %lld, corrected: %.2f, min: %lld, max: %lld, range: %.2f, canvas: %d\n",pcValue,value,correctedValue,minValue,maxValue,range,canvas->height());
     // bottom to top
     graph->canvas->drawFastVLine(0, 0, canvas->height(), backgroundColor);
     graph->canvas->drawFastVLine(0,canvas->height()-pcValue,pcValue,markColor);

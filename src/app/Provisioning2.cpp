@@ -90,15 +90,15 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             //Serial.println(IPAddress(sys_event->event_info.got_ip.ip_info.ip.addr));
             break;
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-            lAppLog("Provisioning: Disconnected. Connecting to the AP again... \n");
+            lLog("Provisioning: Disconnected. Connecting to the AP again... \n");
             break;
         case ARDUINO_EVENT_PROV_START:
-            lAppLog("Provisioning: Up and ready! use ESP provisining app\n");
+            lLog("Provisioning: Up and ready! use ESP provisining app\n");
             break;
         case ARDUINO_EVENT_PROV_CRED_RECV: { 
-            lAppLog("Provisioning: Received Wi-Fi credentials:\n");
-            lAppLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
-            lAppLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
+            lLog("Provisioning: Received Wi-Fi credentials:\n");
+            lLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
+            lLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
             char buffr[65];
             snprintf(buffr,64,"%s",sys_event->event_info.prov_cred_recv.ssid);
             NVS.setString("provSSID",buffr,false);
@@ -107,11 +107,11 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {
-            lAppLog("Provisioning: Failed, reason:\n");
+            lLog("Provisioning: Failed, reason:\n");
             if(sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR) {
-                lAppLog("Wi-Fi AP password incorrect\n");
+                lLog("Wi-Fi AP password incorrect\n");
             } else {
-                lAppLog("Wi-Fi AP not found\n");
+                lLog("Wi-Fi AP not found\n");
             }
             Provisioning2DestroyNVS();
             NVS.setInt("provisioned",0,false);
@@ -120,7 +120,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-            lAppLog("Provisioning Successful\n");
+            lLog("Provisioning Successful\n");
             if ( nullptr != lastProvisioning2Instance ) {
                 lastProvisioning2Instance->provisioningStarted = false;
                 NVS.setInt("provisioned",1, false);
@@ -129,7 +129,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             }
             break;
         case ARDUINO_EVENT_PROV_END:
-            lAppLog("Provisioning Ends\n");
+            lLog("Provisioning Ends\n");
             LaunchWatchface();
             break;
         default:

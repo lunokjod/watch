@@ -386,7 +386,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                         //ttgo->motor->onec(40);
                         //delay(100);
                         ttgo->motor->onec(80);
-                        delay(200);
+                        //delay(200);
                     #endif
 
                     //@TODO here is a good place to draw a circular menu and use the finger as arrow

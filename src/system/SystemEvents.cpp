@@ -234,25 +234,34 @@ static void DoSleepTask(void *args) {
     }
 
     doSleepThreads++;
-    FreeSpace();
 
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
 
     //ScreenSleep();
     LunokIoTSystemTickerStop();
-    
-    int64_t howMuchTime = esp_timer_get_next_alarm();
-    int64_t nowTime = esp_timer_get_time();
-    lEvLog("ESP32: NEXT ALARM in: %lld ms\n",(howMuchTime-nowTime)/1000);
-    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
-        // the current app isn't a watchface... must bes top
-        LaunchApplication(nullptr,false,true); // Synched App Stop
-    }
-    
-
+    delay(50);
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     delay(50);
 
+    int64_t howMuchTime = esp_timer_get_next_alarm();
+    int64_t nowTime = esp_timer_get_time();
+    uint32_t diffTime_secs = (howMuchTime-nowTime)/uS_TO_S_FACTOR;
+    lEvLog("ESP32: Time from boot:  %lld secs\n",(nowTime/uS_TO_S_FACTOR));
+    if ( diffTime_secs > 60 ) {
+        uint32_t diffTime_mins = diffTime_secs/60;
+        diffTime_secs%=60;
+        lEvLog("ESP32: Next alarm in:   %lu mins %lu secs\n",diffTime_mins,diffTime_secs);
+    } else {
+        lEvLog("ESP32: Next alarm in:   %lu secs\n",diffTime_secs);
+    }
+
+    // destroy the app if isn't the watchface
+    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+        // the current app isn't a watchface... get out!
+        LaunchApplication(nullptr,false,true); // Synched App Stop
+    }
+    
+    // forcing wifi to get out!
     if (WL_NO_SHIELD != WiFi.status() ) {
         if ( WIFI_MODE_NULL != WiFi.getMode() ) {
             lNetLog("WiFi: Must be disabled now!\n");
@@ -272,6 +281,7 @@ static void DoSleepTask(void *args) {
 //GPIO_SEL_37 |
     esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
 //    esp_sleep_enable_ext1_wakeup( BMA423_INT1 & RTC_INT_PIN, ESP_EXT1_WAKEUP_ANY_HIGH);
+    FreeSpace();
     
     lEvLog("ESP32: -- ZZz --\n");
     //Serial.flush();
@@ -280,7 +290,7 @@ static void DoSleepTask(void *args) {
 
     esp_err_t canSleep = esp_light_sleep_start();    // device sleeps now
     if ( ESP_OK != canSleep ) {
-        lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped !!!!!!!\n");
+        lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped? !!!!!!!\n");
     }
     lEvLog("ESP32: -- Wake -- o_O'\n"); // morning'!!
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
@@ -619,7 +629,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
             // lEvLog("AXP202: Temperature: %.1fºC\n", axpTemp);
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         }
-        nextSlowSensorsTick = millis() + 3000;
+        nextSlowSensorsTick = millis() + 2666;
     }
 
     if (millis() > nextSensorsTick) { // poll some other sensors ( normal pooling )
@@ -1317,7 +1327,7 @@ void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
     //lLog("\n");
     //lLog(" ====== /!\\/!\\/!\\ ======\n");
     lLog("\n");
-    lSysLog("MEMORY LOW: Unable to allocate %d bytes requested by: '%s' (flags: %x)\n",size,function_name,caps);
+    lLog("ESP32: ERROR: Unable to allocate %d Bytes requested by: '%s' (flags: 0x%x)\n",size,function_name,caps);
     lLog("\n");
     /*
     //Allocate a stack buffer, from heap or as a static form:
@@ -1341,10 +1351,13 @@ void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
     free(shared_stack);
     */
    
-   //@TODO this is an excelent place to launch the BSOD screen :P
-    lLog("@TODO show BSOD here 2!\n");
+    //lLog("@TODO show BSOD here 2!\n");
 
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+   //@TODO this is an excelent place to launch the BSOD screen :P
+    esp_err_t sended = esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if ( ESP_OK != sended ) {
+        lLog("@TODO show BSOD here 2!\n");
+    }
 }
 
 void SystemShutdownHandler() {
@@ -1458,18 +1471,22 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     delay(50);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
+    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
     delay(50);
 
     lSysLog("RTC interrupts\n");
     // Start the BMA interrupt controller loop
-    xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
+    intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
     delay(50);
+
     LunokIoTSystemTickerStart();
     delay(50);
 

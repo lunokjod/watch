@@ -67,7 +67,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     }
     switch (evt->event_id) {
     case HTTP_EVENT_ERROR:
-        lAppLog("HTTP_EVENT_ERROR\n");
+        lLog("HTTP_EVENT_ERROR\n");
         break;
     case HTTP_EVENT_ON_CONNECTED:
         //lAppLog("HTTP_EVENT_ON_CONNECTED\n");
@@ -92,10 +92,10 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
         }
         break;
     case HTTP_EVENT_ON_FINISH:
-        lAppLog("HTTP_EVENT_ON_FINISH\n");
+        lLog("HTTP_EVENT_ON_FINISH\n");
         break;
     case HTTP_EVENT_DISCONNECTED:
-        lAppLog("HTTP_EVENT_DISCONNECTED\n");
+        lLog("HTTP_EVENT_DISCONNECTED\n");
         OTAStep=OTASTEP_NO_WIFI;
         break;
     }

@@ -17,7 +17,7 @@ size_t BLEMonitorScanLoops = 0;
 
 void BLEMonitorTask(void *data) {
     lunokIoT_BLEMonitorTaskLoopEnded = true;
-    lAppLog("BLEMonitorTask: BLE scan task starts\n");
+    lNetLog("BLEMonitorTask: BLE scan task starts\n");
     BLEMonitorScanLoops=0;
     while (lunokIoT_BLEMonitorTaskLoop) {
         delay(67);
@@ -38,11 +38,11 @@ void BLEMonitorTask(void *data) {
             if (bleEnabled) {
                 if (pBLEScan->isScanning()) {
                     pBLEScan->stop();
-                    lAppLog("BLEMonitorTask: Scan stopped!\n");
+                    lNetLog("BLEMonitorTask: Scan stopped!\n");
                     delay(1000);
                     continue;
                 }
-                lAppLog("BLEMonitorTask: Scan %d begin\n", BLEMonitorScanLoops);
+                lNetLog("BLEMonitorTask: Scan %d begin\n", BLEMonitorScanLoops);
                 // pBLEScan->clearDuplicateCache();
                 // pBLEScan->clearResults();
                 // pBLEScan->setMaxResults(5);
@@ -55,7 +55,7 @@ void BLEMonitorTask(void *data) {
             BLEMonitorTasknextBLEScan = millis() + (5 * 1000);
         }
     }
-    lAppLog("BLEMonitorTask: BLE scan task stops\n");
+    lNetLog("BLEMonitorTask: BLE scan task stops\n");
     lunokIoT_BLEMonitorTaskLoopEnded = false;
     vTaskDelete(NULL);
 }

@@ -66,41 +66,37 @@ static inline void FreeSpace() {
     size_t largestHeap = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
     UBaseType_t stackMax = uxTaskGetStackHighWaterMark(NULL);
     //uint16_t stackBegin = uxTaskGetStackHighWaterMark2(NULL);
+    uint32_t usedHeap = freeHeap-largestHeap;
+    float fragmentation=(float(usedHeap)/float(freeHeap))*100.0;
 
-    if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.3f MByte\n", float(stackMax/1024.0/1024.0)); }
-    else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.3f KByte\n", float(stackMax/1024.0)); }
+    if ( usedHeap > (1024*1024) ) { lSysLog("ESP32: Heap hole: %.2f MByte\n", float(usedHeap/1024.0/1024.0)); }
+    else if ( usedHeap > 1024 ) { lSysLog("ESP32: Heap hole: %.2f Kb\n", float(usedHeap/1024.0)); }
+    else { lSysLog("ESP32: Heap hole: %u Byte\n",usedHeap); }
+    
+    if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.2f MByte\n", float(stackMax/1024.0/1024.0)); }
+    else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.2f Kb\n", float(stackMax/1024.0)); }
     else { lSysLog("ESP32: Free stack: %u Byte\n",stackMax); }
 
-    if ( freeHeap > (1024*1024) ) { lSysLog("ESP32: Free HEAP: %.3f MByte\n", float(freeHeap/1024.0/1024.0)); }
-    else if ( freeHeap > 1024 ) { lSysLog("ESP32: Free HEAP: %.3f KByte\n", float(freeHeap/1024.0)); }
-    else { lSysLog("ESP32: Free HEAP: %u Byte\n",freeHeap); }
+    if ( freeHeap > (1024*1024) ) { lSysLog("ESP32: Free heap: %.2f MByte\n", float(freeHeap/1024.0/1024.0)); }
+    else if ( freeHeap > 1024 ) { lSysLog("ESP32: Free heap: %.2f Kb\n", float(freeHeap/1024.0)); }
+    else { lSysLog("ESP32: Free heap: %u Byte\n",freeHeap); }
 
     //lSysLog("ESP32: Stack window size: %u Bytes Range 0x%x~0x%x\n",stackMax,stackBegin,stackMax);
 
-    if ( largestHeap > (1024*1024) ) { lSysLog("ESP32: Most allocable data (fragmentation): %.3f MByte\n", float(largestHeap/1024.0/1024.0)); }
-    else if ( largestHeap > 1024 ) { lSysLog("ESP32: Most allocable data: (fragmentation) %.3f KByte\n", float(largestHeap/1024.0)); }
-    else { lSysLog("ESP32: Most allocable data: (fragmentation) %u Byte\n",largestHeap); }
+    if ( largestHeap > (1024*1024) ) { lSysLog("ESP32: Most allocable data: %.2f MByte (fragmentation: %.1f%%%%)\n",float((largestHeap/1024.0)/1024.0),fragmentation); }
+    else if ( largestHeap > 1024 ) { lSysLog("ESP32: Most allocable data: %.2f Kb (fragmentation: %.1f%%%%)\n", float(largestHeap/1024.0),fragmentation); }
+    else { lSysLog("ESP32: Most allocable data: %lu Byte (fragmentation: %.1f%%%%)\n",largestHeap,fragmentation); }
 
     bool done = heap_caps_check_integrity_all(true);
     lSysLog("ESP32: Heap integrity: %s\n",(done?"good":"WARNING: CORRUPTED!!!"));
 
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
-
-    //lLog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap() / 1024);
-    //lLog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram() / 1024);
 /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();
     lLog("ESP32: Himem has %dKiB of memory, %dKiB of which is free. Testing the free memory...\n", (int)memcnt/1024, (int)memfree/1024);
 
-
-
-heap_caps_get_total_size
-heap_caps_get_free_size
-heap_caps_get_minimum_free_size
-xPortGetMinimumEverFreeHeapSize
-heap_caps_get_minimum_free_size()
  uxTaskGetSnapshotAll()
 */
 

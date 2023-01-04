@@ -403,8 +403,7 @@ void Watchface2Application::Handlers()
             // init and get the time
             int daylight = NVS.getInt("summerTime");
             long timezone = NVS.getInt("timezoneTime");
-            lEvLog("Watchface: Summer time: %s\n", (daylight ? "true" : "false"));
-            lEvLog("Watchface: GMT: %d\n", timezone);
+            lEvLog("Watchface: Summer time: '%s', GMT: %+d\n", (daylight?"yes":"no"),timezone);
             configTime(timezone * 3600, daylight * 3600, ntpServer);
             // Set offset time in seconds to adjust for your timezone, for example:
             // GMT +1 = 3600
@@ -416,10 +415,10 @@ void Watchface2Application::Handlers()
             }
             lNetLog("Watchface: NTP Received\n");
             if (getLocalTime(&timeinfo))  {
-                lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon, 1900 + timeinfo.tm_year);
+                lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon+1, 1900 + timeinfo.tm_year);
                 ttgo->rtc->syncToRtc();
                 RTC_Date d = ttgo->rtc->getDateTime();
-                lEvLog("RTC: Read RTC: '%s'\n", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
+                lEvLog("RTC: Sync: '%s'\n", ttgo->rtc->formatDateTime(PCF_TIMEFORMAT_YYYY_MM_DD_H_M_S));
                 /*
                 if (d.year != (timeinfo.tm_year + 1900) || d.month != timeinfo.tm_mon + 1
                                 || d.day !=  timeinfo.tm_mday ||  d.hour != timeinfo.tm_hour
@@ -516,7 +515,7 @@ void Watchface2Application::Handlers()
             }
             strcpy(weatherCountry, countryString);
             strcpy(weatherCity, cityString);
-            lNetLog("GeoIP: Country: '%s' City: '%s' (can be so innacurate)\n",weatherCountry,weatherCity);
+            lNetLog("GeoIP: Country: '%s' City: '%s' (innacurate)\n",weatherCountry,weatherCity);
             return true;
         };
         geoIPTask->enabled = oweatherValue;

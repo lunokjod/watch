@@ -89,7 +89,7 @@ void DungeonLevelGenerator(void *data) {
     TFT_eSprite * topMap = thisLevel->topMap;
     TFT_eSprite * objectsMap = thisLevel->objectsMap;
     
-    lAppLog("Generating paths (horizontal)....\n");
+    lLog("Generating paths (horizontal)....\n");
     int horizontalPaths=thisLevel->horizontalPaths;
     while(horizontalPaths>0) {
         int32_t x=2;
@@ -113,14 +113,14 @@ void DungeonLevelGenerator(void *data) {
             floorMap->drawFastHLine(x,y-1,(floorMap->width()-x)-4,0); // floor
             floorMap->drawFastHLine(x,y,(floorMap->width()-x)-4,0); // floor
             floorMap->drawFastHLine(x,y+1,(floorMap->width()-x)-4,0); // floor
-            lAppLog("H Path %d generated X: %d Y: %d\n", horizontalPaths,x,y);
+            lLog("H Path %d generated X: %d Y: %d\n", horizontalPaths,x,y);
             horizontalPaths--;
             //delay(100);
         }
     }
     
 
-    lAppLog("Generating paths (vertical)....\n");
+    lLog("Generating paths (vertical)....\n");
     int verticalPaths=thisLevel->verticalPaths;
     while(verticalPaths>0) {
         int32_t x=random(2,floorMap->height()-4);
@@ -143,12 +143,12 @@ void DungeonLevelGenerator(void *data) {
             floorMap->drawFastVLine(x-1,y,(floorMap->height()-4)-y,0); // floor
             floorMap->drawFastVLine(x,y,(floorMap->height()-4)-y,0); // floor
             floorMap->drawFastVLine(x+1,y,(floorMap->height()-4)-y,0); // floor
-            lAppLog("V Path %d generated X: %d Y: %d\n", verticalPaths,x,y);
+            lLog("V Path %d generated X: %d Y: %d\n", verticalPaths,x,y);
             verticalPaths--;
             //delay(100);
         }
     }
-    lAppLog("Generating rooms....\n");
+    lLog("Generating rooms....\n");
     // build rooms
     int rooms=thisLevel->rooms;
 
@@ -198,13 +198,13 @@ void DungeonLevelGenerator(void *data) {
             } // draw the down entry
 
 
-            lAppLog("Room %d generated X: %d Y: %d H: %d W: %d\n", rooms,x,y,h,w);
+            lLog("Room %d generated X: %d Y: %d H: %d W: %d\n", rooms,x,y,h,w);
             rooms--;
             //delay(10);
         }
     }
     
-    lAppLog("Removing small holes...\n");
+    lLog("Removing small holes...\n");
     // remove stupid holes using colindant values
     for(int32_t y=0;y<floorMap->height();y+=4) {
         for(int32_t x=0;x<floorMap->width();x+=4) {
@@ -227,7 +227,7 @@ void DungeonLevelGenerator(void *data) {
             }
         }
     }
-    lAppLog("Generating walls (up/down)....\n");
+    lLog("Generating walls (up/down)....\n");
     // put up/down walls 
     for(int32_t y=0;y<floorMap->height();y++) {
         for(int32_t x=0;x<floorMap->width();x++) {
@@ -259,7 +259,7 @@ void DungeonLevelGenerator(void *data) {
     }
     //delay(1000);
 
-    lAppLog("Generating walls (left/right)....\n");
+    lLog("Generating walls (left/right)....\n");
     for(int32_t y=0;y<floorMap->height();y++) {
         for(int32_t x=0;x<floorMap->width();x++) {
             uint16_t color = floorMap->readPixel(x,y);
@@ -310,7 +310,7 @@ void DungeonLevelGenerator(void *data) {
     }
     //delay(1000);
 
-    lAppLog("Inner columns...\n");
+    lLog("Inner columns...\n");
     int current=thisLevel->columns;
     // change some tiles to add more visual richness
     while(current > 0) {
@@ -340,7 +340,7 @@ void DungeonLevelGenerator(void *data) {
     //delay(1000);
 
    
-    lAppLog("Generating wall decorations....\n");
+    lLog("Generating wall decorations....\n");
     for(int32_t y=0;y<topMap->height();y++) {
         for(int32_t x=0;x<topMap->width();x++) {
             uint16_t wallColor = wallMap->readPixel(x,y);
@@ -399,7 +399,7 @@ void DungeonLevelGenerator(void *data) {
     //delay(1000);
 
     
-    lAppLog("Details...\n");
+    lLog("Details...\n");
     // change some tiles to add more visual richness
     for(int32_t y=0;y<floorMap->height();y++) {
         for(int32_t x=0;x<floorMap->width();x++) {
@@ -504,7 +504,7 @@ void DungeonLevelGenerator(void *data) {
         }
     }
     //delay(1000);
-    lAppLog("Crates...\n");
+    lLog("Crates...\n");
     //uint8_t 
     current=thisLevel->cratesNumber;
     // change some tiles to add more visual richness
@@ -525,7 +525,7 @@ void DungeonLevelGenerator(void *data) {
         }
     }
     //delay(1000);
-    lAppLog("Chests...\n");
+    lLog("Chests...\n");
     current=thisLevel->chestNumber;
     // change some tiles to add more visual richness
     while(current > 0) {
@@ -557,7 +557,7 @@ void DungeonLevelGenerator(void *data) {
         }
     }
     //delay(1000);
-    lAppLog("Coins...\n");
+    lLog("Coins...\n");
     current=thisLevel->coinNumber;
     // change some tiles to add more visual richness
     while(current > 0) {
@@ -577,7 +577,7 @@ void DungeonLevelGenerator(void *data) {
     }
     
     if ( ( 0 == thisLevel->PlayerBeginX ) && ( 0 == thisLevel->PlayerBeginY ) ) {
-        lAppLog("Determine the player spawnpoint\n");
+        lLog("Determine the player spawnpoint\n");
         bool keepSearching=true;
         while(keepSearching) {
             int16_t candidateX=random(0,thisLevel->width-1);
@@ -587,7 +587,7 @@ void DungeonLevelGenerator(void *data) {
                 thisLevel->PlayerBeginX = candidateX;
                 thisLevel->PlayerBeginY = candidateY;
                 keepSearching=false;
-                lAppLog("Player Spawnpoint X: %d Y: %d\n",thisLevel->PlayerBeginX,thisLevel->PlayerBeginY);
+                lLog("Player Spawnpoint X: %d Y: %d\n",thisLevel->PlayerBeginX,thisLevel->PlayerBeginY);
 
                 break; // gotcha
             }
@@ -595,7 +595,7 @@ void DungeonLevelGenerator(void *data) {
         }
     }
     //delay(1000);
-    lAppLog("Randomize floor tiles...\n");
+    lLog("Randomize floor tiles...\n");
     for(int32_t y=0;y<floorMap->height();y++) {
         for(int32_t x=0;x<floorMap->width();x++) {
                 uint16_t floorColor = floorMap->readPixel(x,y);
@@ -610,7 +610,7 @@ void DungeonLevelGenerator(void *data) {
 
     thisLevel->player = new ElfMalePlayer();        // male elf by default
     thisLevel->player->SetPos(thisLevel->PlayerBeginX,thisLevel->PlayerBeginY);
-    lAppLog("Dungeon generated!\n");
+    lLog("Dungeon generated!\n");
     //delay(1000);
     thisLevel->valid=true;
     thisLevel->inProgress=false;

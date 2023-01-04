@@ -85,9 +85,13 @@ void ValueSelector::InternalRedraw() {
     int32_t currVal = selectedValue-1;
     while ( posY > 25 ) {
         if ( currVal < valMin ) { break; }
-        char * showsignString = (char *)"";
-        if ( showsign ) { if ( currVal > 0 ) { showsignString=(char *)"+"; } }        
-        sprintf(textBuffer,"%s%d", showsignString, currVal);
+        //char * showsignString = (char *)"";
+        //if ( showsign ) { if ( currVal > 0 ) { showsignString=(char *)"+"; } }        
+        if ( showsign ) {
+            sprintf(textBuffer, "%+d", currVal);
+        } else {
+            sprintf(textBuffer,"%d", currVal);
+        }
         buffer->canvas->drawString(textBuffer, posX, posY);
         currVal--;
         posY-=25;

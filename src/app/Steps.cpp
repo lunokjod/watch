@@ -77,7 +77,6 @@ void StepManagerCallback() {
 }
 void InstallStepManager() {
     StepTicker.attach(60*40,StepManagerCallback);
-    
     return;
     /*
     if ( nullptr == stepsManager ) {
@@ -161,10 +160,18 @@ StepsApplication::~StepsApplication() {
 void StepsApplication::CreateStats() {
     int32_t maxVal = 0;
     int32_t minVal = 0;
+    /*
+    lAppLog("@DEBUG Filling with fake data!!!\n");
+    for(int a=0;a<7;a++) {
+        weekSteps[a] = random(0,8000);
+    }
+    */
     for(int a=0;a<7;a++) {
         if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
         if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
     }
+
+
 
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }

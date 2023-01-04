@@ -11,6 +11,7 @@
 #include "../system/Datasources/kvo.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
 #include "../system/Application.hpp"
 #include "../static/img_back_32.xbm" // back buton image
 #include "../system/SystemEvents.hpp"   // the event bus
@@ -19,9 +20,14 @@ class BatteryApplication: public TemplateApplication {
     private:
         bool dirtyFrame = true;
         unsigned long nextRedraw=0;
+        unsigned long pollTempRedraw=0;
+        unsigned long scaleTempRedraw=0;
+        bool normalRange=true;
+        const int SCALE=4;
         uint16_t chargingAnimOffset=0;
         bool charging=false;
         const int16_t battHeight = 133;
+        GraphWidget *batteryTempMonitor=nullptr;
     public:
         const char *AppName() override { return "Battery"; };
         // PMU_EVENT_BATT_PC

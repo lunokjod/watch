@@ -60,17 +60,22 @@ LunokIoTApplication::~LunokIoTApplication() {
 bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the full screen redraw
 
 // This task destroy the last app in a second thread trying to maintain the user experience
+void KillApplicationTaskSync(LunokIoTApplication *instance) {
+    if ( nullptr != instance ) {
+        void * where=(void *)instance;
+        lUILog("KillApplicationTask: %p '%s' closing...\n", where,instance->AppName());
+        delete instance;
+        delay(80); // do idle_task time to free heap
+        lUILog("KillApplicationTask: %p has gone\n", where);
+        //FreeSpace();
+    }
+
+}
 void KillApplicationTask(void * data) {
-    //lUILog("------------------- R I P ---------------\n");
-    //FreeSpace();
     if ( nullptr != data ) {
         LunokIoTApplication *instance = (LunokIoTApplication *)data;
-        lUILog("KillApplicationTask: %p '%s' closing...\n", data,instance->AppName());
-        delete instance;
-        lUILog("KillApplicationTask: %p has gone\n", data);
+        KillApplicationTaskSync(instance);
     }
-    //FreeSpace();
-    //lUILog("-----------------------------------------\n");
     vTaskDelete(NULL);
 }
 void LaunchApplicationTask(void * data) {
@@ -107,17 +112,21 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     //taskENTER_CRITICAL(NULL);
                     for(float scale=0.1;scale<0.4;scale+=0.04) {
                         TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                        scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
-                        scaledImg->deleteSprite();
-                        delete scaledImg;
+                        if ( nullptr != scaledImg ) {
+                            //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                            scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
+                            scaledImg->deleteSprite();
+                            delete scaledImg;
+                        }
                     }
                     for(float scale=0.4;scale<0.7;scale+=0.15) {
                         TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                        scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
-                        scaledImg->deleteSprite();
-                        delete scaledImg;
+                        if ( nullptr != scaledImg ) {
+                            //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
+                            scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
+                            scaledImg->deleteSprite();
+                            delete scaledImg;
+                        }
                     }
                     //taskEXIT_CRITICAL(NULL);
                     //xTaskResumeAll();
@@ -129,6 +138,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         }
         xSemaphoreGive( UISemaphore ); // free
 
+        // take screenshoot for the task switcher
         if ( nullptr == ptrToCurrent ) { return; }
         if ( ptrToCurrent->mustShowAsTask() ) {
             if( xSemaphoreTake( lAppStack, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) == pdTRUE )  {
@@ -158,22 +168,24 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     }
                     // update current app state
                     lastApps[searchOffset] = lastView;
-                    lAppLog("%p '%s' already on the apps stack (offset: %d) view updated\n",ptrToCurrent,name,searchOffset);
+                    lUILog("%p '%s' already on the apps stack (offset: %d) view updated\n",ptrToCurrent,name,searchOffset);
 
                     // check the timeout
                     if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
-                        lAppLog("%p '%s' timeout in app stack (offset: %u)\n",ptrToCurrent,name,searchOffset);
+                        lUILog("%p '%s' timeout in app stack (offset: %u)\n",ptrToCurrent,name,searchOffset);
                         lastAppsName[searchOffset] = nullptr; // free entry due timeout
-                        lastApps[searchOffset]->deleteSprite();
-                        delete lastApps[searchOffset];
-                        lastApps[searchOffset]=nullptr;
+                        if ( nullptr != lastApps[searchOffset] ) {
+                            lastApps[searchOffset]->deleteSprite();
+                            delete lastApps[searchOffset];
+                            lastApps[searchOffset]=nullptr;
+                        }
                         lastAppsTimestamp[searchOffset]=0;
                         delay(80);
                         continue;
                     }
                     // otherwise, receive more keepalive time due has been seen now
                     lastAppsTimestamp[searchOffset] = millis();
-                    lAppLog("%p '%s' timeout updated (offset: %u)\n",ptrToCurrent,name,searchOffset);
+                    lUILog("%p '%s' timeout updated (offset: %u)\n",ptrToCurrent,name,searchOffset);
                 }
 
                 if ( false == alreadyExists ) { // is new app
@@ -181,7 +193,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     TFT_eSprite * lastView = ptrToCurrent->NewScreenShoot();
                     if ( nullptr != lastView ) {
                         // add to "last apps stack"
-                        lAppLog("%p '%s' added to app stack (offset: %u)\n",ptrToCurrent,name,lastAppsOffset);
+                        lUILog("%p '%s' added to app stack (offset: %u)\n",ptrToCurrent,name,lastAppsOffset);
                         lastApps[lastAppsOffset] = lastView;
                         lastAppsName[lastAppsOffset] = name;
                         lastAppsTimestamp[lastAppsOffset] = millis();
@@ -194,11 +206,14 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         }
 
         if (synched) {
-            delete ptrToCurrent;
+            KillApplicationTaskSync(ptrToCurrent);
         } else {
             // kill app in other thread (some apps takes much time)
+            //xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr,0);
             xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr,0);
         }
+        delay(80);
+        FreeSpace();
     }
 }
 

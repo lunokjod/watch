@@ -30,8 +30,10 @@ SetTimeApplication::SetTimeApplication() {
     minute = new ValueSelector(120,0,165,120,0,59,TFT_BLACK);
     lAppLog("currentMin: %d currentHour: %d\n",currentMin,currentHour);
     hour->selectedValue = currentHour;
+    lAppLog("HOUR REDRAW\n");
     hour->InternalRedraw();
     minute->selectedValue = currentMin;
+    lAppLog("MINUTE REDRAW\n");
     minute->InternalRedraw();
     backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
         LaunchWatchface();

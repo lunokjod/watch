@@ -34,9 +34,9 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName 
     snprintf(lt_sys_tsk_ovf, 16, "%s", pcTaskName);
     lt_sys_reset = 21;
 
-    ets_printf("\n\n\n@TODO ***ERROR*** Stack overflow: task '");
+    ets_printf("\n\n\n@TODO ***ERROR*** Stack overflow in task '");
     ets_printf((char *)pcTaskName);
-    ets_printf("' has been detected.\n\n\n\n");
+    ets_printf("'\n\n\n\n");
 
     abort();
 }
@@ -86,13 +86,15 @@ LunokIoT::LunokIoT() {
     //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
     if ( ESP_OK != taskWatchdogResult ) {
-        lEvLog("ERROR: Unable to start Task Watchdog on PRO_CPU(0) (maybe due the ArduinoFW esp-idf sdk see: '.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config/sdkconfig.h')\n");
+        //  maybe due the ArduinoFW esp-idf sdk see:
+        // '.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config/sdkconfig.h'
+        lEvLog("WARNING: Unable to start Task Watchdog on PRO_CPU(0)\n");
     }
     //#endif
     //#if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
     if ( ESP_OK != taskWatchdogResult ) {
-        lEvLog("ERROR: Unable to start Task Watchdog on APP_CPU(1)\n");
+        lEvLog("WARNING: Unable to start Task Watchdog on APP_CPU(1)\n");
     }
     //#endif
 
@@ -124,19 +126,19 @@ LunokIoT::LunokIoT() {
     long timezone = NVS.getInt("timezoneTime");
     // announce values to log
     delay(50);
-    lEvLog("RTC: Config: Summer time: %s GMT: %d\n",(daylight?"true":"false"),timezone);
+    lEvLog("RTC: Config: Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
     delay(50);
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
-        lEvLog("RTC: The timedate seems valid\n");
+        lEvLog("RTC: The time-date seems valid, thanks to secondary battery :)\n");
         // inquiry RTC via i2C
         RTC_Date r = ttgo->rtc->getDateTime();
-        lEvLog("RTC: time: %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
+        lEvLog("RTC: Time:        %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
         ttgo->rtc->syncToSystem(); // feed ESP32 with correct time
         if (getLocalTime(&timeinfo)) {
-        lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon,1900+timeinfo.tm_year);
-        ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
+            lEvLog("ESP32: Sync Time: %02d:%02d:%02d date: %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
+            ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
         }
     }
     delay(50);

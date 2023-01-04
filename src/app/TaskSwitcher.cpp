@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
+#include "../system/Application.hpp"
 #include "TaskSwitcher.hpp"
 #include <LilyGoWatch.h>
 
@@ -26,7 +27,7 @@ TaskSwitcher::TaskSwitcher() {
 }
 
 TaskSwitcher::~TaskSwitcher() {
-
+    /*
     int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
     while ( searchOffset > 0 ) {
         searchOffset--;
@@ -36,98 +37,78 @@ TaskSwitcher::~TaskSwitcher() {
             delete captures[searchOffset];  
             captures[searchOffset]=nullptr;              
         }
-    }
+    }*/
     //directDraw=false;
 }
-
+// https://blog.espressif.com/esp32-programmers-memory-model-259444d89387
 bool TaskSwitcher::Tick() {
-    /*
-    if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
-        longTap=false;
-    } else { 
-        // touch
-        unsigned long pushTime = millis() - touchDownTimeMS; // how much time?
-        if ( pushTime > LUNOKIOT_TOUCH_LONG_MS ) {
-            if ( false == longTap ) {
-                longTap=true;
-                //lAppLog("@TODO long push back?\n");
-                
-                //#ifdef LILYGO_WATCH_2020_V3
-                //    ttgo->shake();
-                //    delay(200);
-                //#endif
-
-                LaunchWatchface();
-                return false;
-            }
-        }
-    }*/
 
     if ( millis() > nextRefresh ) {
         dirty=true;
-        nextRefresh=millis()+(1000/2);
+        nextRefresh=millis()+(1000/8);
     }
     if ( dirty ) {
-        //ttgo->tft->fillScreen(TFT_BLACK);
-        canvas->fillSprite(TFT_BLACK); // use theme colors
+        if ( touched ) {
+            int offX=touchX/(canvas->width()/3);
+            int offY=touchY/(canvas->height()/3);
+            selectedOffset=(offY*3)+offX;
+            //lAppLog("IMAGE OFFSET: %d\n", selectedOffset);
+        } else {
+            selectedOffset=-1;
+        }
+        // background fades
+        canvas->fillSprite(ThCol(background_alt)); // use theme colors
+        uint8_t shadow=0;
+        for(int y=0;y<canvas->height();y+=3) {
+            uint32_t color= ttgo->tft->color565(shadow,shadow,shadow);
+            canvas->drawFastHLine(0,y,canvas->width(),color);
+            shadow+=2;
+        }
         int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed value
         bool alreadyExists=false;
-        int16_t x=0;
-        int16_t y=0;
+        int16_t x=canvas->width()/6;
+        int16_t y=canvas->height()/6;
         //lLog("@TODO ugly hardcoded list of hidden apps (use const string and share with the apps AppName())\n");
         if( xSemaphoreTake( lAppStack, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+            int tileCount=0;
             while ( searchOffset > 0 ) {
                 searchOffset--;
-
                 if ( 0 == lastAppsTimestamp[searchOffset] )   { continue; }
                 if ( nullptr == lastAppsName[searchOffset] )  { continue; }
                 if ( nullptr == lastApps[searchOffset] )      { continue; }
-                /*
-                if ( 0 == strcmp(lastAppsName[searchOffset],"Task switcher") ) {
-                    continue; // hide myself
-                }
-                if ( 0 == strcmp(lastAppsName[searchOffset],"Main menu") ) {
-                    continue; // the menu is accesable more easily
-                }
-                if ( 0 == strcmp(lastAppsName[searchOffset],"Settings menu") ) {
-                    continue; // secondary menu
-                }*/
-                // clean up!!! clean up!!!!!!
-                if ( nullptr != captures[searchOffset] ) {
-                    //lAppLog("Removing thumbnail %u at: %p\n",searchOffset,captures[searchOffset]);
-                    captures[searchOffset]->deleteSprite();
-                    delete captures[searchOffset];
-                    captures[searchOffset]=nullptr;
-                }
 
-                // probably timeouted by the system... ¿@think is necessary dissapear in the fingers of the user? maybe TaskSwitch don't must follow the timeouts
-                if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
-                    //lAppLog("Task %d is timed-out\n",searchOffset);
-                    continue;
+                TFT_eSprite * scaledImg = nullptr;
+                // wave effect
+                if (-1 == selectedOffset ) {
+                    // wave tile effect
+                    if (( currentScale > MAXWAVE)||(currentScale < MINWAVE )) { scaleDirection=(!scaleDirection); }
+                    if ( scaleDirection ) { currentScale+=(0.0013); }
+                    else { currentScale-=(0.0013); }
+                    scaledImg = ScaleSprite(lastApps[searchOffset], currentScale);
+                } else { // thumb?
+                    if ( selectedOffset == tileCount ) { // this is the selected one
+                        scaledImg = ScaleSprite(lastApps[searchOffset], 0.50);
+                    } else { // reduce others
+                        scaledImg = ScaleSprite(lastApps[searchOffset], 0.18);
+                    }
                 }
-
-                // update the app capture
-                // little black margin
-                captures[searchOffset] = ScaleSprite(lastApps[searchOffset], 0.32);//0.3333);
-                /*
-                if ( nullptr == captures[searchOffset] ) {
-                    lAppLog("Unable to create thumbnail from last app: %u canvas at: %p, discarded\n",searchOffset,lastApps[searchOffset]);
-                    continue;
-                } // unable to get 
-                //lAppLog("Created low resolution of %d canvas at: %p from: %p\n",searchOffset,captures[searchOffset],lastApps[searchOffset]);
-                */
-               if ( nullptr != captures[searchOffset] ) { // this code allow "holes" on task mosaic
+                
+                if ( nullptr != scaledImg ) {
                     canvas->setPivot(x,y);
-                    captures[searchOffset]->setPivot(0,0);
-                    captures[searchOffset]->pushRotated(canvas,0,CanvasWidget::MASK_COLOR);
-                    //lAppLog("RENDERING: %p '%s' %d at X: %d Y: %d\n",lastApps[searchOffset],lastAppsName[searchOffset],searchOffset,x,y);
+                    scaledImg->setPivot(scaledImg->width()/2,scaledImg->height()/2);
+                    scaledImg->pushRotated(canvas,0,CanvasWidget::MASK_COLOR);
+
+                    scaledImg->deleteSprite();
+                    delete scaledImg;
+                    scaledImg=nullptr;
+
                 }
+                //lAppLog("RENDERING: %p '%s' %d at X: %d Y: %d\n",lastApps[searchOffset],lastAppsName[searchOffset],searchOffset,x,y);
                 // build 3x3 grid
                 x+=canvas->width()/3; //captures[searchOffset]->width();
-                if ( x >= canvas->width() ) { x=0; y+=(canvas->height()/3); } //captures[searchOffset]->height(); }
-                if ( y >= canvas->height() ) {
-                    break;
-                }
+                if ( x >= canvas->width() ) { x=canvas->width()/6; y+=(canvas->height()/3); } //captures[searchOffset]->height(); }
+                if ( y >= canvas->height() ) { break; }
+                tileCount++;
 
             }
             //lAppLog("----------------------------\n");

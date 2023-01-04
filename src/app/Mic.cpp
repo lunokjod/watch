@@ -34,7 +34,7 @@ uint32_t            j = 0;
 
 
 void MicApplication::_RecordThread(void *args) {
-    lAppLog("Mic thread start\n");
+    lLog("Mic thread start\n");
     MicApplication * self = (MicApplication *)args;
     self->recThread=true;
     self->recThreadDead = false;
@@ -120,7 +120,7 @@ void MicApplication::_RecordThread(void *args) {
 
     }
     i2s_driver_uninstall(I2S_NUM_0);
-    lAppLog("Mic thread stop\n");
+    lLog("Mic thread stop\n");
     self->recThreadDead = true;
     vTaskDelete(NULL);
 }

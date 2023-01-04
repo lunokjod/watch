@@ -22,7 +22,7 @@ device_port="NOT FOUND"
 if len(dataLines) > 0:
     device_port=dataLines[0]
 else:
-    print(("WARNING: device not found!!! unable to determine the battery type"))
+    print("WARNING: device not found!!! unable to determine the battery type")
 batteryCapacity="380" #default battery (black, can be replaced)
 normalBatteryDev="/dev/ttyUSB"
 
@@ -103,9 +103,8 @@ if "debug" == build_type:
 elif "release" == build_type:
     print(" -> Release build don't increment the buildcont, and removes OpenWeatherKey")
     with open(counterFile,'r') as f:
-        buildCount = int(f.read())
-    
-
+        buildCount = int(f.read()) 
+print("BUILD #"+str(buildCount))
 openweatherKey = openweatherKey.replace('\n','').replace('\r','').strip()
 outputData = templateData.replace("@@LUNOKIOT_GENERATED_FILE_WARNING@@", str("DONT EDIT THIS FILE DIRECTLY!!! IS A GENERATED FILE on build time USE .template instead"))
 outputData = outputData.replace("@@BUILD_NUMBER@@", str(buildCount))
