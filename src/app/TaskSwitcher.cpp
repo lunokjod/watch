@@ -12,21 +12,23 @@ extern TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS];
 extern unsigned long lastAppsTimestamp[LUNOKIOT_MAX_LAST_APPS];
 extern SemaphoreHandle_t lAppStack;
 extern unsigned long touchDownTimeMS;
-
+extern bool UILongTapOverride; // from UI.cpp
 TaskSwitcher::TaskSwitcher() {
     // Init here any you need
     //lAppLog("Hello from LastApps!\n");
-
-    canvas->fillSprite(TFT_BLACK); // use theme colors
+    //canvas->fillSprite(TFT_BLACK); // use theme colors
 
     // Remember to dump anything to canvas to get awesome splash screen
     // draw of TFT_eSPI canvas for splash here
+    //UILongTapOverride=true;
     dirty=true;
     Tick(); // OR call this if no splash 
     //directDraw=true;
 }
 
 TaskSwitcher::~TaskSwitcher() {
+    UILongTapOverride=false;
+
     /*
     int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
     while ( searchOffset > 0 ) {

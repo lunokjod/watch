@@ -17,10 +17,10 @@ RotationApplication::~RotationApplication() {
 }
 
 RotationApplication::RotationApplication() {
-    down = new ButtonWidget(60,(TFT_HEIGHT-10)-60,60,TFT_WIDTH-120,[]() { tft->setRotation(0); });
-    left = new ButtonWidget(10,60,TFT_HEIGHT-120,60,[]() { tft->setRotation(1); });
-    up = new ButtonWidget(60,10,60,TFT_WIDTH-120,[]() { tft->setRotation(2); });
-    right = new ButtonWidget((TFT_WIDTH-10)-60,60,TFT_HEIGHT-120,60,[]() { tft->setRotation(3); });
+    down = new ButtonWidget(60,(TFT_HEIGHT-10)-60,60,TFT_WIDTH-120,[](void *unused) { tft->setRotation(0); });
+    left = new ButtonWidget(10,60,TFT_HEIGHT-120,60,[](void *unused) { tft->setRotation(1); });
+    up = new ButtonWidget(60,10,60,TFT_WIDTH-120,[](void *unused) { tft->setRotation(2); });
+    right = new ButtonWidget((TFT_WIDTH-10)-60,60,TFT_HEIGHT-120,60,[](void *unused) { tft->setRotation(3); });
     Tick();
 }
 

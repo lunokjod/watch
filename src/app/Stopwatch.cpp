@@ -25,17 +25,17 @@ StopwatchApplication::StopwatchApplication() {
     canvas->setTextColor(TFT_WHITE);
     canvas->setTextDatum(CC_DATUM);
 
-    startBtn = new ButtonImageXBMWidget(10,100,70,70,[this]() {
+    startBtn = new ButtonImageXBMWidget(10,100,70,70,[this](void *unused) {
         starTime=millis();
         pauseTime=0;
     },img_play_48_bits,img_play_48_height,img_play_48_width);
 
-    resetBtn = new ButtonImageXBMWidget(10+74,100,70,70,[this]() {
+    resetBtn = new ButtonImageXBMWidget(10+74,100,70,70,[this](void *unused) {
         starTime=0;
         pauseTime=0;
     },img_reload_48_bits,img_reload_48_height,img_reload_48_width);
 
-    pauseBtn = new ButtonImageXBMWidget(10+(74*2),100,70,70,[this]() {
+    pauseBtn = new ButtonImageXBMWidget(10+(74*2),100,70,70,[this](void *unused) {
         if ( 0 == starTime ) { return; }
         if ( 0 == pauseTime ) {
             pauseTime=millis();

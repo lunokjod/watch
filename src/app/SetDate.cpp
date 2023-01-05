@@ -29,10 +29,10 @@ SetDateApplication::SetDateApplication() {
     month->selectedValue = currentMonth+1;
     day->InternalRedraw();
     month->InternalRedraw();
-    backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+    backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
-    setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
+    setDateButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](void *unused){
         lAppLog("SetTime: RTC and localtime sync\n");
         RTC_Date test = ttgo->rtc->getDateTime();
         test.day = day->selectedValue;
@@ -44,7 +44,7 @@ SetDateApplication::SetDateApplication() {
         ntpSyncDone=true;
 
     },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
-    showTimeButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+    showTimeButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchApplication(new SetTimeApplication());
     },img_settime_32_bits,img_settime_32_height,img_settime_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
     Tick();

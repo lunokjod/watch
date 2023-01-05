@@ -4,31 +4,31 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "../system/Application.hpp"
-#include "../UI/widgets/CanvasWidget.hpp"
-#include "../UI/widgets/ButtonWidget.hpp"
+#include "../UI/widgets/ButtonTextWidget.hpp"
+
 class CalculatorApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
-        ButtonWidget * seven=nullptr;
-        ButtonWidget * eight=nullptr;
-        ButtonWidget * nine=nullptr;
-        ButtonWidget * four=nullptr;
-        ButtonWidget * five=nullptr;
-        ButtonWidget * six=nullptr;
-        ButtonWidget * one=nullptr;
-        ButtonWidget * two=nullptr;
-        ButtonWidget * three=nullptr;
-        ButtonWidget * zero=nullptr;
-        ButtonWidget * dotBtn=nullptr;
+        ButtonTextWidget * seven=nullptr;
+        ButtonTextWidget * eight=nullptr;
+        ButtonTextWidget * nine=nullptr;
+        ButtonTextWidget * four=nullptr;
+        ButtonTextWidget * five=nullptr;
+        ButtonTextWidget * six=nullptr;
+        ButtonTextWidget * one=nullptr;
+        ButtonTextWidget * two=nullptr;
+        ButtonTextWidget * three=nullptr;
+        ButtonTextWidget * zero=nullptr;
+        ButtonTextWidget * dotBtn=nullptr;
 
-        ButtonWidget * divBtn=nullptr;
-        ButtonWidget * mulBtn=nullptr;
-        ButtonWidget * lessBtn=nullptr;
-        ButtonWidget * addBtn=nullptr;
+        ButtonTextWidget * divBtn=nullptr;
+        ButtonTextWidget * mulBtn=nullptr;
+        ButtonTextWidget * lessBtn=nullptr;
+        ButtonTextWidget * addBtn=nullptr;
 
-        ButtonWidget * correctionBtn=nullptr;
-        ButtonWidget * resetBtn=nullptr;
-        ButtonWidget * resultBtn=nullptr;
+        ButtonTextWidget * correctionBtn=nullptr;
+        ButtonTextWidget * resetBtn=nullptr;
+        ButtonTextWidget * resultBtn=nullptr;
 
     public:
         const char *AppName() override { return "Calculator"; };

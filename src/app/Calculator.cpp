@@ -6,9 +6,11 @@
 #include "../static/img_happy_48.xbm" // center smiley to see the orientation
 #include <ArduinoNvs.h> // persistent values
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
 #include "LogView.hpp"
+
+#include "../UI/widgets/ButtonWidget.hpp"
+#include "../UI/widgets/ButtonTextWidget.hpp"
 
 // better save only on exit to save flash writes
 CalculatorApplication::~CalculatorApplication() {
@@ -35,88 +37,49 @@ CalculatorApplication::~CalculatorApplication() {
 CalculatorApplication::CalculatorApplication() {
     const int16_t ButtonsOffset = 45;
     const int16_t ButtonsSize = 48;
-    seven = new ButtonWidget(0,ButtonsOffset,ButtonsSize,ButtonsSize,[this]() {
+    UICallback numberButtonCallback = [&](void *payload) {
+        ButtonTextWidget * pushedBtn = (ButtonTextWidget *)payload;
+        //lLog("This: %p Button: %p -> Label: %p\n",this,payload,pushedBtn->label);
         if ( strlen(displayText) > 30) {
             sprintf(displayText,errMsg);
             return;
         }
-        sprintf(displayText,"%s%d",displayText,7);
-    });
-    eight = new ButtonWidget(ButtonsSize,ButtonsOffset,ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,8);
-    });
-    nine = new ButtonWidget(ButtonsSize*2,ButtonsOffset,ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,9);
-    });
-    
-    four = new ButtonWidget(0,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,4);
-    });
-    five = new ButtonWidget(ButtonsSize,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,5);
-    });
-    six = new ButtonWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,6);        
-    });
-    one = new ButtonWidget(0,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,1);
-    });
-    two = new ButtonWidget(ButtonsSize,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,2);
-    });
-    three = new ButtonWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,3);
-    });
+        sprintf(displayText,"%s%s",displayText,pushedBtn->label);
+    };
 
-    zero = new ButtonWidget(0,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize*2,[this]() {
-        if ( strlen(displayText) > 30) {
-            sprintf(displayText,errMsg);
-            return;
-        }
-        sprintf(displayText,"%s%d",displayText,0);
-    });
+    seven = new ButtonTextWidget(0,ButtonsOffset,ButtonsSize,ButtonsSize,numberButtonCallback,"7");
+    seven->paramCallback=seven;
+    eight = new ButtonTextWidget(ButtonsSize,ButtonsOffset,ButtonsSize,ButtonsSize,numberButtonCallback,"8");
+    eight->paramCallback=eight;
+    nine = new ButtonTextWidget(ButtonsSize*2,ButtonsOffset,ButtonsSize,ButtonsSize,numberButtonCallback,"9");
+    nine->paramCallback=nine;
 
-    dotBtn = new ButtonWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize,[this]() {
+    four = new ButtonTextWidget(0,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,numberButtonCallback,"4");
+    four->paramCallback=four;
+    five = new ButtonTextWidget(ButtonsSize,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,numberButtonCallback,"5");
+    five->paramCallback=five;
+    six = new ButtonTextWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,numberButtonCallback,"6");
+    six->paramCallback=six;
+
+    one = new ButtonTextWidget(0,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,numberButtonCallback,"1");
+    one->paramCallback=one;
+    two = new ButtonTextWidget(ButtonsSize,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,numberButtonCallback,"2");
+    two->paramCallback=two;
+    three = new ButtonTextWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,numberButtonCallback,"3");
+    three->paramCallback=three;
+
+    zero = new ButtonTextWidget(0,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize*2,numberButtonCallback,"0");
+    zero->paramCallback=zero;
+
+    dotBtn = new ButtonTextWidget(ButtonsSize*2,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize,[this](void * unused) {
         if ( containDecimalNumber ) {
             return;
         }
         sprintf(displayText,"%s.",displayText);
         containDecimalNumber=true;
-    },ThCol(background_alt));
-
-    divBtn = new ButtonWidget(ButtonsSize*3,ButtonsOffset,ButtonsSize,ButtonsSize,[this]() {
+    },".",ThCol(text),ThCol(background_alt));
+    
+    divBtn = new ButtonTextWidget(ButtonsSize*3,ButtonsOffset,ButtonsSize,ButtonsSize,[this](void *unused) {
         lastOp='/';
         if ( false == firstValueProvided ) {
             firstValue = strtof(displayText,nullptr);
@@ -126,9 +89,9 @@ CalculatorApplication::CalculatorApplication() {
             resultBtn->Trigger();
             sprintf(displayText,"0");
         }
-    },ThCol(highlight));
+    },"/",TFT_BLACK,ThCol(highlight));
 
-    mulBtn = new ButtonWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this]() {
+    mulBtn = new ButtonTextWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this](void *unused) {
         lastOp='*';
         if ( false == firstValueProvided ) {
             firstValue = strtof(displayText,nullptr);
@@ -138,9 +101,9 @@ CalculatorApplication::CalculatorApplication() {
             resultBtn->Trigger();
             sprintf(displayText,"0");
         }
-    },ThCol(highlight));
+    },"X",TFT_BLACK,ThCol(highlight));
 
-    lessBtn = new ButtonWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,[this]() {
+    lessBtn = new ButtonTextWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize*2),ButtonsSize,ButtonsSize,[this](void *unused) {
         lastOp='-';
         if ( false == firstValueProvided ) {
             firstValue = strtof(displayText,nullptr);
@@ -150,9 +113,9 @@ CalculatorApplication::CalculatorApplication() {
             resultBtn->Trigger();
             sprintf(displayText,"0");
         }
-    },ThCol(highlight));
+    },"-",TFT_BLACK,ThCol(highlight));
 
-    addBtn = new ButtonWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize,[this]() {
+    addBtn = new ButtonTextWidget(ButtonsSize*3,ButtonsOffset+(ButtonsSize*3),ButtonsSize,ButtonsSize,[this](void *unused) {
         lastOp='+';
         if ( false == firstValueProvided ) {
             firstValue = strtof(displayText,nullptr);
@@ -162,29 +125,29 @@ CalculatorApplication::CalculatorApplication() {
             resultBtn->Trigger();
             sprintf(displayText,"0");
         }
-    },ThCol(highlight));
+    },"+",TFT_BLACK,ThCol(highlight));
 
 
-    resetBtn = new ButtonWidget(ButtonsSize*4,ButtonsOffset,ButtonsSize,ButtonsSize,[this]() {
+    resetBtn = new ButtonTextWidget(ButtonsSize*4,ButtonsOffset,ButtonsSize,ButtonsSize,[this](void *unused) {
         sprintf(displayText,"0");
         containDecimalNumber=false;
         firstValueProvided=false;
         firstValue=0.0;
         resultValue=0.0;
         lastOp=0;
-    },ThCol(light));
+    },"C",TFT_BLACK,ThCol(light));
 
-    correctionBtn = new ButtonWidget(ButtonsSize*4,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this]() {
+    correctionBtn = new ButtonTextWidget(ButtonsSize*4,ButtonsOffset+(ButtonsSize),ButtonsSize,ButtonsSize,[this](void *unused) {
         size_t currLen = strlen(displayText);
         if ( 0 == currLen ) {
             sprintf(displayText,"0");
         } else {
             displayText[currLen-1]=0;
         }
-    },ThCol(light));
+    },"<",TFT_BLACK,ThCol(light));
 
 
-    resultBtn = new ButtonWidget(ButtonsSize*4,ButtonsOffset+(ButtonsSize*2),ButtonsSize*2,ButtonsSize,[this]() {
+    resultBtn = new ButtonTextWidget(ButtonsSize*4,ButtonsOffset+(ButtonsSize*2),ButtonsSize*2,ButtonsSize,[this](void *bah) {
         if ( false == firstValueProvided ) { return; }
         float checkNonZero = strtof(displayText,nullptr);
         if ( 0.0 == checkNonZero ) {
@@ -209,7 +172,7 @@ CalculatorApplication::CalculatorApplication() {
         lastOp=0;
         firstValue=0.0;
         firstValueProvided=false;
-    },ThCol(light));
+    },"=",TFT_BLACK,ThCol(light));
     
     canvas->setTextFont(0);
     canvas->setTextSize(3);
@@ -237,6 +200,7 @@ bool CalculatorApplication::Tick() {
     resetBtn->Interact(touched,touchX,touchY);
     correctionBtn->Interact(touched,touchX,touchY);
     resultBtn->Interact(touched,touchX,touchY);
+
     if (millis() > nextRedraw ) {
         // draw code here
         canvas->fillSprite(ThCol(background));
@@ -251,49 +215,25 @@ bool CalculatorApplication::Tick() {
         canvas->setTextDatum(TR_DATUM);
         canvas->drawString(displayText,TFT_WIDTH-10,14);
 
-        canvas->setTextColor(TFT_WHITE);
-        canvas->setTextDatum(CC_DATUM);
-
         seven->DrawTo(canvas);
-        canvas->drawString("7",seven->x+(seven->w/2),seven->y+(seven->h/2));
         eight->DrawTo(canvas);
-        canvas->drawString("8",eight->x+(eight->w/2),eight->y+(eight->h/2));
         nine->DrawTo(canvas);
-        canvas->drawString("9",nine->x+(nine->w/2),nine->y+(nine->h/2));
         four->DrawTo(canvas);
-        canvas->drawString("4",four->x+(four->w/2),four->y+(four->h/2));
         five->DrawTo(canvas);
-        canvas->drawString("5",five->x+(five->w/2),five->y+(five->h/2));
         six->DrawTo(canvas);
-        canvas->drawString("6",six->x+(six->w/2),six->y+(six->h/2));
         one->DrawTo(canvas);
-        canvas->drawString("1",one->x+(one->w/2),one->y+(one->h/2));
         two->DrawTo(canvas);
-        canvas->drawString("2",two->x+(two->w/2),two->y+(two->h/2));
         three->DrawTo(canvas);
-        canvas->drawString("3",three->x+(three->w/2),three->y+(three->h/2));
         zero->DrawTo(canvas);
-        canvas->drawString("0",zero->x+(zero->w/2),zero->y+(zero->h/2));
         dotBtn->DrawTo(canvas);
-        canvas->drawString(".",dotBtn->x+(dotBtn->w/2),dotBtn->y+(dotBtn->h/2));
-        divBtn->DrawTo(canvas);
-        canvas->setTextColor(TFT_BLACK);
-        canvas->drawString("/",divBtn->x+(divBtn->w/2),divBtn->y+(divBtn->h/2));
+        divBtn->DrawTo(canvas);        
         mulBtn->DrawTo(canvas);
-        canvas->drawString("X",mulBtn->x+(mulBtn->w/2),mulBtn->y+(mulBtn->h/2));
         lessBtn->DrawTo(canvas);
-        canvas->drawString("-",lessBtn->x+(lessBtn->w/2),lessBtn->y+(lessBtn->h/2));
         addBtn->DrawTo(canvas);
-        canvas->drawString("+",addBtn->x+(addBtn->w/2),addBtn->y+(addBtn->h/2));
 
         resetBtn->DrawTo(canvas);
-        canvas->setTextColor(TFT_BLACK);
-        canvas->drawString("C",resetBtn->x+(resetBtn->w/2),resetBtn->y+(resetBtn->h/2));
         correctionBtn->DrawTo(canvas);
-        canvas->drawString("<",correctionBtn->x+(correctionBtn->w/2),correctionBtn->y+(correctionBtn->h/2));
-
         resultBtn->DrawTo(canvas);
-        canvas->drawString("=",resultBtn->x+(resultBtn->w/2),resultBtn->y+(resultBtn->h/2));
 
         nextRedraw=millis()+(1000/3); // tune your required refresh
         return true;

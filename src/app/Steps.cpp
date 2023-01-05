@@ -93,7 +93,7 @@ void InstallStepManager() {
         stepsManager->everyTimeMS = (60*1000)*40; // every 40 minutes
         stepsManager->_lastCheck=millis();
         stepsManager->_nextTrigger=0; // launch NOW (as soon as system wants)
-        stepsManager->callback = [&]() {
+        stepsManager->callback = [&](void *unused) {
             time_t now;
             struct tm * tmpTime;
             time(&now);
@@ -190,11 +190,11 @@ void StepsApplication::CreateStats() {
     }
 }
 StepsApplication::StepsApplication() {
-    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
 
-    btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+    btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(text),ThCol(button),false);
     

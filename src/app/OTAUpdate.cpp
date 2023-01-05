@@ -109,7 +109,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
     OTADownloadSpeed = new GraphWidget(40,180,0,8*1024,TFT_BLUE,Drawable::MASK_COLOR,TFT_YELLOW);
     progressBar = new GaugeWidget(55, 45, 130);
 
-    updateBtn = new ButtonImageXBMWidget(120-50,120-50, 100, 100, [this](){
+    updateBtn = new ButtonImageXBMWidget(120-50,120-50, 100, 100, [this](void *bah){
         updateBtn->SetEnabled(false);
         OTAStep=OTASTEP_IDLE;
         backgroundColor=ThCol(background);

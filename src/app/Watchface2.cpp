@@ -385,8 +385,7 @@ void Watchface2Application::Handlers()
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
         ntpTask->desiredStack = LUNOKIOT_APP_STACK_SIZE;
         //}
-        ntpTask->callback = [&, this]()
-        {
+        ntpTask->callback = [&, this]() {
             if (false == (bool)NVS.getInt("NTPEnabled"))
             {
                 lEvLog("Watchface: NTP Sync disabled");
@@ -572,15 +571,14 @@ Watchface2Application::~Watchface2Application()
     lAppLog("Watchface is gone\n");
 }
 
-Watchface2Application::Watchface2Application()
-{
+Watchface2Application::Watchface2Application() {
     //isWatchface=true;
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
 
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, [&, this]()
-                                       { LaunchApplication(new MainMenuApplication()); });
+    bottomRightButton = new ActiveRect(160, 160, 80, 80, 
+    [&, this](void *unused) { LaunchApplication(new MainMenuApplication()); });
 
     colorBuffer = new CanvasZWidget(canvas->width(), canvas->height());
     colorBuffer->canvas->fillSprite(TFT_BLACK);

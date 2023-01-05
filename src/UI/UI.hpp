@@ -7,6 +7,9 @@
 #include <functional>
 #include "../system/Application.hpp"
 
+// caller contains the object (must be converted)
+typedef std::function<void (void* payload)> UICallback;
+
 /*
  * Use template to get the theme colors
  */
@@ -128,4 +131,5 @@ TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int
 
 #define OVERLAY_TRANSPARENT 6
 #define OVERLAY_WHITE 15
+
 #endif

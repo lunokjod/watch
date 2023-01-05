@@ -12,7 +12,7 @@ class ButtonImageXBMWidget: public ButtonWidget {
         int16_t xbmW;
         void InternalRedraw() override;
         ButtonImageXBMWidget(int16_t x,int16_t y, int16_t h, int16_t w, 
-                        std::function<void ()> notifyTo, 
+                        UICallback notifyTo, 
                         const uint8_t *XBMBitmapPtr,
                         int16_t xbmH, int16_t xbmW, uint16_t xbmColor=ThCol(text),
                         uint32_t btnBackgroundColor=ThCol(button), bool borders=true);

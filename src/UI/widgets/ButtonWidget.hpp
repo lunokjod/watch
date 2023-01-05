@@ -10,14 +10,14 @@ class ButtonWidget: public ActiveRect, public CanvasWidget {
     protected:
         bool lastPushed=false;
     public:
-        CanvasWidget * buffer;
+        CanvasWidget * buffer; // this fucking buffer is only for bitswap color
 
         bool Interact(bool touch, int16_t tx,int16_t ty);
         virtual ~ButtonWidget();
 
         void BuildCanvas(int16_t h, int16_t w);
         bool CheckBounds(); // rebuild the canvas if is changed (future animations/transitions) don't need to call directly
-        ButtonWidget(int16_t x,int16_t y, int16_t h, int16_t w, std::function<void ()> notifyTo=nullptr, uint32_t btnBackgroundColor=ThCol(button), bool borders=true);
+        ButtonWidget(int16_t x,int16_t y, int16_t h, int16_t w, UICallback notifyTo=nullptr, uint32_t btnBackgroundColor=ThCol(button), bool borders=true);
 
         virtual void InternalRedraw();
         virtual void DrawTo(TFT_eSprite * endCanvas);

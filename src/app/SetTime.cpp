@@ -35,10 +35,10 @@ SetTimeApplication::SetTimeApplication() {
     minute->selectedValue = currentMin;
     lAppLog("MINUTE REDRAW\n");
     minute->InternalRedraw();
-    backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+    backButton=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);    
-    setTimeButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](){
+    setTimeButton=new ButtonImageXBMWidget(5+64+15,TFT_HEIGHT-69,64,80,[&,this](void *unused){
         //Serial.println("SetTime: RTC and localtime sync");
         RTC_Date test = ttgo->rtc->getDateTime();
         test.hour = hour->selectedValue;
@@ -50,7 +50,7 @@ SetTimeApplication::SetTimeApplication() {
         ntpSyncDone = true;
 
     },img_settime_32_bits,img_settime_32_height,img_settime_32_width,TFT_WHITE,canvas->color24to16(0x353e45));    
-    showDateButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+    showDateButton=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchApplication(new SetDateApplication());
     },img_calendar_32_bits,img_calendar_32_height,img_calendar_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
     Tick();

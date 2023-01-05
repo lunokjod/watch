@@ -7,7 +7,7 @@
 
 #include "../../app/LogView.hpp"
 
-ActiveRect::ActiveRect(int16_t x,int16_t y, int16_t h, int16_t w, std::function<void ()> tapCallback):
+ActiveRect::ActiveRect(int16_t x,int16_t y, int16_t h, int16_t w, UICallback tapCallback):
                                     x(x),y(y),h(h),w(w),tapActivityCallback(tapCallback) {
     taskStackSize = LUNOKIOT_TASK_STACK_SIZE;
 }
@@ -34,10 +34,23 @@ bool ActiveRect::InRect(int16_t px, int16_t py, int16_t x,int16_t y,int16_t h,in
     //Serial.printf("ActiveRect: Event: Thumb PX: %d PY: %d INRECT between X: %d Y: %d W: %d H: %d\n",px,py,x,y,x+w,y+h);
     return true;
 }
+// used when call to callback
+struct LaunchDescriptor {
+    UICallback callback;
+    void * param; // the caller object as void*
+};
 
 void ActiveRect::Trigger() {
-    BaseType_t res = xTaskCreatePinnedToCore(ActiveRect::_LaunchCallbackTask, "", taskStackSize, &tapActivityCallback, uxTaskPriorityGet(NULL), NULL,1);
+    LaunchDescriptor * comm = new LaunchDescriptor();
+    if ( nullptr == comm ) {
+        lUILog("%s: %p ERROR: Unable to create launch descriptor!\n",__PRETTY_FUNCTION__,this);
+        return;
+    }
+    comm->callback=tapActivityCallback;
+    comm->param=paramCallback;
+    BaseType_t res = xTaskCreatePinnedToCore(ActiveRect::_LaunchCallbackTask, "", taskStackSize, comm, uxTaskPriorityGet(NULL), NULL,1);
     if ( res != pdTRUE ) {
+        delete(comm);
         lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
         lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
         lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
@@ -45,9 +58,15 @@ void ActiveRect::Trigger() {
 }
 
 void ActiveRect::_LaunchCallbackTask(void * callbackData) {
+    if ( nullptr == callbackData ) {
+        lUILog("ActiveRect unable to launch callback!\n");
+        vTaskDelete(NULL);
+    }
     delay(5); // to get correct values (triggers taskdelay that triggers yeld)
-    std::function<void ()> *runMe = reinterpret_cast<std::function<void ()>*>(callbackData);
-    (*runMe)();
+    //EventKVO *self = reinterpret_cast<EventKVO*>(handler_args);
+    LaunchDescriptor *desc = (LaunchDescriptor *)callbackData; // risky
+    (desc->callback)(desc->param);
+    delete desc;
     vTaskDelete(NULL);
 }
 

@@ -10,7 +10,7 @@
 ScrollViewWidget::~ScrollViewWidget() {
 }
 ScrollViewWidget::ScrollViewWidget(int16_t x, int16_t y, int16_t h, int16_t w, uint32_t btnBackgroundColor, CanvasWidget *view)
-                : ActiveRect(x,y,h,w,[&,this](){
+                : ActiveRect(x,y,h,w,[&,this](void *bah){
                     offsetX+=touchDragVectorX;
                     offsetY+=touchDragVectorY;
 //        Serial.printf("X: %d Y: %d Dist: %f VecX: %d VecY: %d\n",touchX, touchY,touchDragDistance,touchDragVectorX,touchDragVectorY);

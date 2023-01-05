@@ -8,29 +8,6 @@
 uint8_t eyeSize = 8;
 
 IATestApplication::IATestApplication() {
-   // LunokIoTApplication();
-/*
-    /// COLOR ORDER NIGHTMARE....
-    testButton[0] = new NotificationWidget(0,0,[&,this]() {
-        Serial.println("@TODO IATestApplication BUTTON TEST 0");
-    }, ttgo->tft->color24to16(0x79fa21)); //GRB
-
-    testButton[1] = new NotificationWidget(50,5,[&,this]() {
-        Serial.println("@TODO IATestApplication BUTTON TEST 1");
-    }, ttgo->tft->color24to16(0x21fa79)); // BRG
-
-    testButton[2] = new NotificationWidget(95,5,[&,this]() {
-        Serial.println("@TODO IATestApplication BUTTON TEST 2");
-    }, ttgo->tft->color24to16(0x2179fa)); // BGR
-
-    testButton[3] = new NotificationWidget(140,5,[&,this]() {
-        Serial.println("@TODO IATestApplication BUTTON TEST 3");
-    }, ttgo->tft->color24to16(0x7921fa)); //GBR
-
-    testButton[4] = new NotificationWidget(185,5,[&,this]() {
-        Serial.println("@TODO IATestApplication BUTTON TEST 4");
-    }, ttgo->tft->color24to16(0xfa7921)); // RGB
-    */
 
     // Buffers to do the work :)
 

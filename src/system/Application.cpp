@@ -14,6 +14,8 @@ extern TFT_eSPI *tft;
 
 #include "SystemEvents.hpp"
 
+#include <functional>
+
 SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
@@ -160,6 +162,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                         delay(80); // maybe is supersticious, but, bring idle task a little time to perform the free() is better for us :P
                     }
                     // get updated state screenshoot
+                    //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
                     TFT_eSprite * lastView = ptrToCurrent->NewScreenShoot();
                     if ( nullptr == lastView ) { // uops! must destroy this entry :(
                         lastAppsName[searchOffset] = nullptr;
@@ -189,7 +192,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                 }
 
                 if ( false == alreadyExists ) { // is new app
-                    delay(20);
+                    //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
                     TFT_eSprite * lastView = ptrToCurrent->NewScreenShoot();
                     if ( nullptr != lastView ) {
                         // add to "last apps stack"
@@ -202,6 +205,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     if ( lastAppsOffset > LUNOKIOT_MAX_LAST_APPS-1) { lastAppsOffset=0; }
                 }
                 xSemaphoreGive( lAppStack );
+                delay(20);
             }
         }
 
@@ -275,3 +279,8 @@ void LunokIoTApplication::LowMemory() {
     }*/
 }
 
+/*
+RunApplicationCallback LunokIoTApplication::GetRunCallback() {
+    return [](void *unused){ return new LunokIoTApplication(); };
+}
+*/

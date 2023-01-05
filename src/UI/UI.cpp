@@ -27,6 +27,7 @@
 extern TTGOClass *ttgo; // ttgo library shit ;)
 extern TFT_eSPI * tft;
 bool UIlongTap=false; // used to trigger only once the long tap event
+bool UILongTapOverride=false; // disable long tap to task switcher feature
 extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
 extern const PROGMEM uint8_t screenshoot_sound_end[] asm("_binary_asset_screenshoot_sound_mp3_end");
 
@@ -371,8 +372,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             if  ( 0.0 == touchDragDistance ) {
                 // touch full-system reactors, long tap to show the task list
                 unsigned long pushTime = millis() - touchDownTimeMS; // how much time?
-            if ( pushTime > LUNOKIOT_TOUCH_LONG_MS ) {
-                if ( false == UIlongTap ) {
+                if (( false == UILongTapOverride ) && ( pushTime > LUNOKIOT_TOUCH_LONG_MS )&&( false == UIlongTap )) {
                     UIlongTap=true; // locked until thumb up
                     lEvLog("UI: Touchpad long tap\n");
                     /*
@@ -397,15 +397,13 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     // and more...
 
                     xSemaphoreGive( UISemaphore );
-                    if ( ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
+                    if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
                         LaunchWatchface(); // return to user configured watchface
                     } else { LaunchApplication(new TaskSwitcher()); }
                     return;
-                    }
                 }
             }
         }
-
         if ( false == UIlongTap ) { // only if no long tap in progress
             // perform the call to the app logic
             changes = currentApplication->Tick();

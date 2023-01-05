@@ -5,18 +5,18 @@
 #include "lunokiot_config.hpp"
 #include "ButtonImageXBMWidget.hpp"
 #include "../../app/LogView.hpp"
-
+#include "../../UI/UI.hpp"
 #include "CanvasWidget.hpp"
 #include <functional>
 
 ButtonImageXBMWidget::ButtonImageXBMWidget(int16_t x, int16_t y, int16_t h, int16_t w, 
-                                    std::function<void ()> notifyTo, 
+                                    UICallback notifyTo, 
                                     const uint8_t *XBMBitmapPtr,
                                     int16_t xbmH, int16_t xbmW, uint16_t xbmColor,
                                     uint32_t btnBackgroundColor,
                                     bool borders)
                         : XBMBitmapPtr(XBMBitmapPtr), xbmH(xbmH), xbmW(xbmW), xbmColor(xbmColor),
-                                ButtonWidget(x,y,h,w,notifyTo, btnBackgroundColor, borders) {
+                                ButtonWidget(x,y,h,w, notifyTo, btnBackgroundColor, borders) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
     InternalRedraw();
 

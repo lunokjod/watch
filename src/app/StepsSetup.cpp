@@ -26,10 +26,10 @@ StepsSetupApplication::~StepsSetupApplication() {
 }
 
 StepsSetupApplication::StepsSetupApplication() {
-    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchApplication(new StepsApplication());
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(background),false);
-    genderSelect = new SwitchWidget(142,20,[&,this](){ });
+    genderSelect = new SwitchWidget(142,20,[&,this](void *unused){ });
     tallValue = new ValueSelector(10,10,220,110,120,220,ThCol(background));
     tallValue->selectedValue = userTall;
     tallValue->InternalRedraw();

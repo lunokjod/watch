@@ -19,7 +19,7 @@ ThemeApplication::ThemeApplication() {
 
     for (size_t i=0;i<MAXThemes;i++) {
         if ( i >= totalThemes ) { break; }
-        themeButton[i] = new ButtonWidget(x,y,80,80,[&,i](){
+        themeButton[i] = new ButtonWidget(x,y,80,80,[&,i](void *unused){
             currentColorPalette = &AllColorPaletes[i];
             currentThemeScheme = &AllThemes[i];
             lAppLog("Theme %d applied\n", i);

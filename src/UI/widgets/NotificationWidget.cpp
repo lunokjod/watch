@@ -4,7 +4,7 @@
 #include "../../app/LogView.hpp"
 
 #include "NotificationWidget.hpp"
-NotificationWidget::NotificationWidget(std::function<void ()> notifyTo, char *message, uint32_t color)
+NotificationWidget::NotificationWidget(UICallback notifyTo, char *message, uint32_t color)
 // NotificationWidget::NotificationWidget(int16_t x,int16_t y, std::function<void ()> notifyTo, uint32_t btnBackgroundColor)
                 : ButtonWidget(20,20,32,200,notifyTo,0xff0000), message(message), color(color) {
     buffer = new CanvasWidget(32,200);

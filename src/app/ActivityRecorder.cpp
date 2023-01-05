@@ -18,13 +18,13 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
 
     playbackGraph = new GraphWidget(62,180,0,36,canvas->color24to16(0x4c70a4));
 
-    btnStop = new ButtonImageXBMWidget(5,240-73,68,68,[&, this]() {
+    btnStop = new ButtonImageXBMWidget(5,240-73,68,68,[&, this](void *bah) {
         Serial.println("ActivityRecorder: Event: User wants stop!");
         recordOffset = recordEntries-1; // this cause end of recording
     },img_stop_48_bits,img_stop_48_width,img_stop_48_height,TFT_WHITE,wcolor);
     btnStop->enabled = false;
 
-    btnRecord = new ButtonImageXBMWidget(5,240-73,68,68,[&, this]() {
+    btnRecord = new ButtonImageXBMWidget(5,240-73,68,68,[&, this](void *bah) {
         Serial.println("ActivityRecorder: Begin activity recording...");
         this->btnRecord->enabled = false;
         this->btnStop->enabled = true;
@@ -57,7 +57,7 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
         this->recordOffset=0;
     },img_record_48_bits,img_record_48_width,img_record_48_height,TFT_WHITE, TFT_RED);
 
-    btnSave = new ButtonImageXBMWidget(78,240-73,68,68,[&, this]() {
+    btnSave = new ButtonImageXBMWidget(78,240-73,68,68,[&, this](void *bah) {
         this->btnSave->enabled = false;
 
         if ( ( nullptr == recordX ) || ( nullptr == recordY ) || ( nullptr == recordZ ) ) {
@@ -101,7 +101,7 @@ ActivityRecorderApplication::ActivityRecorderApplication() : LunokIoTApplication
     },img_save_48_bits,img_save_48_width,img_save_48_height,TFT_WHITE, canvas->color24to16(0x2e2e48));
     btnSave->enabled = false;
 
-    btnMatch = new ButtonImageXBMWidget(78+68+5,240-73,68,68,[&, this]() {
+    btnMatch = new ButtonImageXBMWidget(78+68+5,240-73,68,68,[&, this](void *bah) {
         Serial.println("Building match stream...");
         // * iterate last record
         size_t lasthistoryRecordsOffset=historyRecordsOffset-1;

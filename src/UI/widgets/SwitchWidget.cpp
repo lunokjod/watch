@@ -11,7 +11,7 @@
 SwitchWidget::~SwitchWidget() {
     delete buffer;
 }
-SwitchWidget::SwitchWidget(int16_t x, int16_t y, std::function<void ()> notifyTo, uint32_t switchColor)
+SwitchWidget::SwitchWidget(int16_t x, int16_t y, UICallback notifyTo, uint32_t switchColor)
                 : ActiveRect(x,y,64,64,notifyTo), CanvasWidget(64,64), switchColor(switchColor) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
 

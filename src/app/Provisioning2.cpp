@@ -260,17 +260,17 @@ Provisioning2Application::Provisioning2Application() {
 
     snprintf(service_name, 32, "%s%02X%02X%02X",
              ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
-    clearProvBtn=new ButtonImageXBMWidget(5,5,70,70,[&,this](){
+    clearProvBtn=new ButtonImageXBMWidget(5,5,70,70,[&,this](void *unused){
         Provisioning2DestroyNVS();
     },img_trash_48_bits,img_trash_48_height,img_trash_48_width,TFT_WHITE,TFT_RED);
 
-    wifiOrBLE = new SwitchWidget(130,10,[&,this](){
+    wifiOrBLE = new SwitchWidget(130,10,[&,this](void *unused){
         useBluetooth = wifiOrBLE->switchEnabled;
     });
     wifiOrBLE->switchEnabled = useBluetooth;
     wifiOrBLE->enabled = false;
     
-    startProvBtn=new ButtonImageXBMWidget(90,80,120,130,[&,this](){
+    startProvBtn=new ButtonImageXBMWidget(90,80,120,130,[&,this](void *unused){
         // https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFiProv/examples/WiFiProv
 
         if ( provisioningStarted ) {

@@ -50,7 +50,7 @@ This is the first widget that is reactive (do something when is pushed) in combi
 Creation:
 
 ```
-ButtonWidget *buttonCreated = new ButtonWidget(int16_t xInPixels,int16_t yInPixels, int16_t heightInPixels, int16_t widthInPixels, []() {
+ButtonWidget *buttonCreated = new ButtonWidget(int16_t xInPixels,int16_t yInPixels, int16_t heightInPixels, int16_t widthInPixels, [](void *caller) {
 
     /* put here code to run when button is pushed */
 
@@ -80,7 +80,7 @@ Draw a button with a image centered on it (xbm format) more info: https://github
 * note this can be exported easily from gimp using ending ".xbm" file name
 
 ```
-ButtonImageXBMWidget *imgButton = ButtonImageXBMWidget(int16_t x,int16_t y, int16_t h, int16_t w, []() {
+ButtonImageXBMWidget *imgButton = ButtonImageXBMWidget(int16_t x,int16_t y, int16_t h, int16_t w, [](void *caller) {
 
     /* put here code to run when button is pushed */
 
@@ -108,7 +108,7 @@ on (Application destructor):
 Create a switch (true/false) value on screen
 
 ```
-SwitchWidget *switchCreated = new SwitchWidget(int16_t x, int16_t y, []() {
+SwitchWidget *switchCreated = new SwitchWidget(int16_t x, int16_t y, [](void *caller) {
     // receive callback when switch pushed
 }, uint32_t switchColor=ThCol(button));
 ```

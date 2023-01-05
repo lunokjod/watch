@@ -23,7 +23,7 @@ class NotificationWidget: public ButtonWidget {
         char * message=nullptr;
         uint32_t color=0x0;
         bool Interact(bool touch, int16_t tx,int16_t ty);
-        NotificationWidget(std::function<void ()> notifyTo, char *message, uint32_t color=tft->color24to16(0x353e45));
+        NotificationWidget(UICallback notifyTo, char *message, uint32_t color=tft->color24to16(0x353e45));
         void DrawTo(TFT_eSprite * endCanvas);
         bool isRead = false;
         ~NotificationWidget();

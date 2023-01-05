@@ -42,7 +42,7 @@ SettingsApplication::~SettingsApplication() {
 
 SettingsApplication::SettingsApplication() {
 
-    wifiCheck=new SwitchWidget(80,110,[&,this](){
+    wifiCheck=new SwitchWidget(80,110,[&,this](void *unused){
         // this delay is to get the current value of switch :( due multitasking env
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
@@ -77,7 +77,7 @@ SettingsApplication::SettingsApplication() {
 #endif
     bleCheck->InternalRedraw();
     
-    btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](){
+    btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](void *unused){
         showOverlay = (!showOverlay);
     },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
 

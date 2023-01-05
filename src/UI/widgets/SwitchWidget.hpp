@@ -15,7 +15,7 @@ class SwitchWidget: public ActiveRect, public CanvasWidget {
         bool Interact(bool  touch, int16_t tx,int16_t ty);
         virtual ~SwitchWidget();
 
-        SwitchWidget(int16_t x, int16_t y, std::function<void ()> notifyTo=nullptr, uint32_t switchColor=ThCol(button));
+        SwitchWidget(int16_t x, int16_t y, UICallback notifyTo=nullptr, uint32_t switchColor=ThCol(button));
 
         virtual void InternalRedraw();
         virtual void DrawTo(TFT_eSprite * endCanvas);

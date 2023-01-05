@@ -24,11 +24,11 @@ uint32_t BluetoothApplication::SetBLERandomPin() {
 
 BluetoothApplication::BluetoothApplication() {
     
-    btnGeneratePIN=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](){
+    btnGeneratePIN=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *bah){
         SetBLERandomPin();
     },img_lock_32_bits,img_lock_32_height,img_lock_32_width,ThCol(text),ThCol(button),false);
 
-    btnRemoveBonding=new ButtonImageXBMWidget(5,5,64,64,[&,this](){
+    btnRemoveBonding=new ButtonImageXBMWidget(5,5,64,64,[&,this](void *bah){
         lAppLog("BLE: Bound devices removed\n");
         NimBLEDevice::deleteAllBonds();
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));

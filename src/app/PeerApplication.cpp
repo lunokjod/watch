@@ -125,11 +125,11 @@ PeerApplication::PeerApplication() {
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
         lAppLog("ESPNOW: Failed to add peer\n");
     }
-    iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&](){
+    iconPaletteBtn=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&](void *bah){
         emojiPaletteVisible=(!emojiPaletteVisible);
     },img_chat_32_bits,img_chat_32_height,img_chat_32_width);
     
-    sendEmojiBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[&,this](){
+    sendEmojiBtn=new ButtonImageXBMWidget(68,TFT_HEIGHT-69,64,102,[&,this](void *bah){
         lIoTESPNowDataPackage myCurrentData;
         strncpy(myCurrentData.command,LUNOKIOT_ESPNOW_EMOJI,strlen(LUNOKIOT_ESPNOW_EMOJI));
         myCurrentData.emojiID= (uint8_t)selectedEmojiOffset;
@@ -209,7 +209,7 @@ PeerApplication::PeerApplication() {
     iconPaletteArea= new ActiveRect(
         (canvas->width()/2)-(emojiPaletteCanvas->canvas->width()/2),
         (canvas->height()/2)-(emojiPaletteCanvas->canvas->height()/2),
-        emojiPaletteCanvas->canvas->height(),emojiPaletteCanvas->canvas->width(),[&](){
+        emojiPaletteCanvas->canvas->height(),emojiPaletteCanvas->canvas->width(),[&](void *bah){
             selectedEmojiOffset++;
             if ( selectedEmojiOffset > (sizeof(emojiArray)/sizeof(emojiArray[0]))-1 ) {
                 selectedEmojiOffset = 0;

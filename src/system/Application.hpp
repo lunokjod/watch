@@ -5,6 +5,8 @@
 //#include <TTGO.h>
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <LilyGoWatch.h>
+#include <functional>
+
 /*
  * Basic application with UI
  */
@@ -24,8 +26,10 @@ class LunokIoTApplication {
         virtual const char *AppName() = 0; // app title
         virtual const bool mustShowAsTask() { return true; } // false=Not show in task switcher (menus and intermediate views must be hidden)
         virtual void LowMemory(); // called when system fails to allocate memory (malloc)
+        //virtual RunApplicationCallback GetRunCallback();
 };
 
+typedef std::function<LunokIoTApplication*()> RunApplicationCallback;
 
 class LaunchApplicationDescriptor {
     public:

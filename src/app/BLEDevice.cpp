@@ -16,7 +16,7 @@ BLEDeviceMonitorApplication::~BLEDeviceMonitorApplication() {
 
 BLEDeviceMonitorApplication::BLEDeviceMonitorApplication(uint16_t baseColor,NimBLEAddress addr):backgroundColor(baseColor),addr(addr) {
     btnBack = new ButtonImageXBMWidget(
-        5, TFT_HEIGHT - 69, 64, 64, [&, this]()
+        5, TFT_HEIGHT - 69, 64, 64, [&, this](void *bah)
         { LaunchApplication(new BLEMonitorApplication()); },
         img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, canvas->color24to16(0x353e45), false);
     Tick();

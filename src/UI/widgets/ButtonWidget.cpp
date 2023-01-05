@@ -33,7 +33,7 @@ bool ButtonWidget::Interact(bool touch, int16_t tx,int16_t ty) {
     return response;
 }
 
-ButtonWidget::ButtonWidget(int16_t x, int16_t y, int16_t h, int16_t w, std::function<void ()> notifyTo, uint32_t btnBackgroundColor, bool borders)
+ButtonWidget::ButtonWidget(int16_t x, int16_t y, int16_t h, int16_t w, UICallback notifyTo, uint32_t btnBackgroundColor, bool borders)
                 : ActiveRect(x,y,h,w,notifyTo), CanvasWidget(h,w), btnBackgroundColor(btnBackgroundColor), borders(borders) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
     buffer = new CanvasWidget(h,w);

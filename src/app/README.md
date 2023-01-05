@@ -72,7 +72,7 @@
 
 On the AllApps definition goes all MainMenu entries:
 
-```{"PUT YOUR APP NAME HERE",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, []() { LaunchApplication(new MYAPPLICATION()); } },```
+```{"PUT YOUR APP NAME HERE",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *caller) { LaunchApplication(new MYAPPLICATION()); } },```
 
 and it's all... icons can be made with gimp (xbm format) img_mainmenu_debug_bits,img_mainmenu_debug_height and img_mainmenu_debug_width are inside a xbm file, create their own, with a max of 120x120px (isn't necesary to be squared,only at last 120px)
 

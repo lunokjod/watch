@@ -23,17 +23,17 @@ AdvancedSettingsApplication::~AdvancedSettingsApplication() {
 }
 
 AdvancedSettingsApplication::AdvancedSettingsApplication() {
-    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](){
+    btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *bah){
         LaunchWatchface();
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
-    btnErase=new ButtonImageXBMWidget(5,5,64,64,[&,this](){
+    btnErase=new ButtonImageXBMWidget(5,5,64,64,[&,this](void *bah){
         NVS.eraseAll(true);
         LaunchApplication(new ShutdownApplication(true,false));
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
-    btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](){
+    btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](void *bah){
         LaunchApplication(new LogViewApplication());
     },img_log_32_bits,img_log_32_height,img_log_32_width,ThCol(text),ThCol(background_alt));
-    btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](){
+    btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](void *bah){
         showOverlay = (!showOverlay);
     },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
 
