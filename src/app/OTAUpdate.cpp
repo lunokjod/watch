@@ -172,24 +172,24 @@ OTAUpdateApplication::OTAUpdateApplication() {
         #endif
 
         FreeSpace();
-#ifdef LUNOKIOT_UPDATES_LOCAL_URL
+        #ifdef LUNOKIOT_UPDATES_LOCAL_URL
         lAppLog("OTA: Using local URL for updates\n");
         //sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LocalOTAURL,latestBuildFoundString,myDeviceName);
 
         sprintf(firmwareURL,"%s/ota/lunokWatch_%s_%s.bin",LUNOKIOT_UPDATE_LOCAL_URL_STRING,latestBuildFoundString,myDeviceName);
-#else
+        #else
         sprintf(firmwareURL,"https://raw.githubusercontent.com/lunokjod/watch/devel/ota/lunokWatch_%s_%s.bin",latestBuildFoundString,myDeviceName);
-#endif
+        #endif
         esp_http_client_config_t config = {
             .url = firmwareURL,
             .cert_pem = (const char *)githubPEM_start,
             .user_agent = "Wget/1.21.2",
             .timeout_ms = 5000,
             .event_handler = _http_event_handler,
-#ifdef LUNOKIOT_UPDATES_LOCAL_URL
-//            .transport_type = HTTP_TRANSPORT_OVER_TCP,
+            #ifdef LUNOKIOT_UPDATES_LOCAL_URL
+            // .transport_type = HTTP_TRANSPORT_OVER_TCP,
             .skip_cert_common_name_check=true,
-#endif
+            #endif
             .keep_alive_enable = true,
         };
         OTAStep=OTASTEP_CHECKING;
@@ -239,7 +239,6 @@ OTAUpdateApplication::OTAUpdateApplication() {
             backgroundColor=TFT_RED;
             OTAStep=OTASTEP_IMAGE_DOWNLOAD_ERROR;
         }
-
 ota_end:
         ota_finish_err = esp_https_ota_finish(https_ota_handle);
         if ((err == ESP_OK) && (ota_finish_err == ESP_OK)) {
@@ -276,7 +275,7 @@ ota_end:
         OTAStep=OTASTEP_IDLE;
         FreeSpace();
     },img_update_48_bits, img_update_48_height, img_update_48_width); //,TFT_WHITE,TFT_BLACK,false);
-    updateBtn->taskStackSize=LUNOKIOT_PROVISIONING_STACK_SIZE;
+    updateBtn->taskStackSize=LUNOKIOT_NETWORK_STACK_SIZE;
     
     //updateBtn->SetEnabled(false);
     //if ( nullptr != latestBuildFoundString ) { updateBtn->SetEnabled(true); }

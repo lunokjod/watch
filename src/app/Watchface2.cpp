@@ -577,8 +577,13 @@ Watchface2Application::Watchface2Application() {
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
 
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, 
-    [&, this](void *unused) { LaunchApplication(new MainMenuApplication()); });
+    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](void *unused) {
+        LaunchApplication(new MainMenuApplication());
+    });
+    if ( nullptr == bottomRightButton ) {
+        lAppLog("Unable to allocate watchface at: %p\n",this);
+        return;
+    }
 
     colorBuffer = new CanvasZWidget(canvas->width(), canvas->height());
     colorBuffer->canvas->fillSprite(TFT_BLACK);

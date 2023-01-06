@@ -592,6 +592,7 @@ void UIStart() {
     //esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, UITickStartCallback, nullptr, NULL);
 
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+
 }
 /*
 void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D

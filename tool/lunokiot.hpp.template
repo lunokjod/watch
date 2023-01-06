@@ -38,7 +38,7 @@ const PROGMEM TickType_t LUNOKIOT_TIMEDTASKS_LOOP_TIME = (1000 / portTICK_PERIOD
 const PROGMEM TickType_t LUNOKIOT_SYSTEM_INTERRUPTS_TIME = (60 / portTICK_PERIOD_MS); // system AXP interrupt controller in times per second
 
 const PROGMEM uint16_t LUNOKIOT_TOUCH_LONG_MS=1200;
-const PROGMEM size_t LUNOKIOT_MAX_LAST_APPS=12; // 9+3 minimum (watchface,mainmenu,taskswitch are hidden to taskswitcher)
+const PROGMEM size_t LUNOKIOT_MAX_LAST_APPS=9; // 9 max (watchface,mainmenu,taskswitch and others are hidden to taskswitcher, as no considered "applications")
 const PROGMEM unsigned long LUNOKIOT_RECENT_APPS_TIMEOUT_S=60*15; // in 15 minutes the app is considered "timed out" and deleted the taskSwitcher entry, so much memory :(
 
 #define LUNOKIOT_BUILD_NUMBER @@BUILD_NUMBER@@

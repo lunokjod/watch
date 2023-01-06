@@ -55,11 +55,12 @@ bool TaskSwitcher::Tick() {
             int offY=touchY/(canvas->height()/3);
             selectedOffset=(offY*3)+offX;
             //lAppLog("IMAGE OFFSET: %d\n", selectedOffset);
-        } else {
-            selectedOffset=-1;
-        }
+        } else { selectedOffset=-1; }
+
         // background fades
-        canvas->fillSprite(ThCol(background_alt)); // use theme colors
+        if ( -1 == selectedOffset ) { canvas->fillSprite(ThCol(background_alt)); }
+        else { canvas->fillSprite(TFT_BLACK); }
+
         uint8_t shadow=0;
         for(int y=0;y<canvas->height();y+=3) {
             uint32_t color= ttgo->tft->color565(shadow,shadow,shadow);

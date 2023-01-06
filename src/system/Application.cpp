@@ -34,19 +34,23 @@ unsigned long lastAppsTimestamp[LUNOKIOT_MAX_LAST_APPS] = { 0 };
 TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 
 // get a capture of current application
-TFT_eSprite *LunokIoTApplication::NewScreenShoot() { return DuplicateSprite(canvas); }
+TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
 LunokIoTApplication::LunokIoTApplication() {
-#ifdef LUNOKIOT_DEBUG
-    // trying to reduce leaks
-    lastApplicationHeapFree = ESP.getFreeHeap();
-    lastApplicationPSRAMFree = ESP.getFreePsram();
-#endif
     canvas = new TFT_eSprite(tft);
+    if ( nullptr == canvas ) { 
+        lUILog("LunokIoTApplication: %p ERROR: unable to create their own canvas!!!\n", this);
+        //LaunchWatchface(false);
+        return;
+    }
     canvas->setColorDepth(16);
-    canvas->createSprite(TFT_WIDTH, TFT_HEIGHT);
-    canvas->fillSprite(ThCol(background));
+    if ( NULL == canvas->createSprite(TFT_WIDTH, TFT_HEIGHT) ) {
+        lUILog("LunokIoTApplication: %p ERROR: unable to create canvas sprite\n", this);
+        delete canvas;
+        canvas=nullptr;
+        //LaunchWatchface(false);
+        return;
+    };
     lUILog("LunokIoTApplication: %p begin\n", this);
-    overlay->fillSprite(TFT_TRANSPARENT);
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
@@ -163,7 +167,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     }
                     // get updated state screenshoot
                     //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
-                    TFT_eSprite * lastView = ptrToCurrent->NewScreenShoot();
+                    TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
                     if ( nullptr == lastView ) { // uops! must destroy this entry :(
                         lastAppsName[searchOffset] = nullptr;
                         lastAppsTimestamp[searchOffset]=0;
@@ -193,7 +197,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
 
                 if ( false == alreadyExists ) { // is new app
                     //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
-                    TFT_eSprite * lastView = ptrToCurrent->NewScreenShoot();
+                    TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
                     if ( nullptr != lastView ) {
                         // add to "last apps stack"
                         lUILog("%p '%s' added to app stack (offset: %u)\n",ptrToCurrent,name,lastAppsOffset);
@@ -252,7 +256,26 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
 }
 
 void LunokIoTApplication::LowMemory() {
-    lAppLog("%p '%s': LOW MEMORY received, @TODO implement specific app free non-essential resources\n", this,this->AppName());
+    // free last apps!!
+    int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
+    while ( searchOffset > 0 ) {
+        searchOffset--;
+        if ( nullptr != lastApps[searchOffset]) {
+            lastApps[searchOffset]->deleteSprite();
+            delete lastApps[searchOffset];
+            lastApps[searchOffset]=nullptr;
+        }
+
+        if ( nullptr != lastAppsName[searchOffset]) {
+            lastAppsName[searchOffset]=nullptr;
+        }
+        if ( 0 != lastAppsTimestamp[searchOffset]) {
+            lastAppsTimestamp[searchOffset]=0;
+        }
+    }
+    lastAppsOffset=0;
+
+    lAppLog("%p '%s': LOW MEMORY received\n", this,this->AppName());
     /*
     if ( nullptr != canvas ) {
         // try to regenerate canvas (move memory) with a bit of lucky, the new location is a better place
