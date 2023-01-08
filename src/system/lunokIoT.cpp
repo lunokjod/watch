@@ -19,7 +19,9 @@
 #include "app/LogView.hpp"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
-TFT_eSPI *tft;
+TFT_eSPI * tft = nullptr;
+//TFT_eSPI * tft = new TFT_eSPI();
+
 extern bool ntpSyncDone;
 extern const char *ntpServer;
 
@@ -59,8 +61,10 @@ LunokIoT::LunokIoT() {
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
     FreeSpace();
     // Initialize lilygo lib
+    //ttgo->setTftExternal(*tft);
     ttgo->begin();
-    tft = ttgo->tft;
+    tft=ttgo->tft;
+    
     NVS.begin(); // need NVS to get the current settings
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS

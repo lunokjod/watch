@@ -69,10 +69,6 @@ static inline void FreeSpace() {
     uint32_t usedHeap = freeHeap-largestHeap;
     float fragmentation=(float(usedHeap)/float(freeHeap))*100.0;
 
-    if ( usedHeap > (1024*1024) ) { lSysLog("ESP32: Heap hole: %.2f MByte\n", float(usedHeap/1024.0/1024.0)); }
-    else if ( usedHeap > 1024 ) { lSysLog("ESP32: Heap hole: %.2f Kb\n", float(usedHeap/1024.0)); }
-    else { lSysLog("ESP32: Heap hole: %u Byte\n",usedHeap); }
-    
     if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.2f MByte\n", float(stackMax/1024.0/1024.0)); }
     else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.2f Kb\n", float(stackMax/1024.0)); }
     else { lSysLog("ESP32: Free stack: %u Byte\n",stackMax); }
@@ -83,6 +79,10 @@ static inline void FreeSpace() {
 
     //lSysLog("ESP32: Stack window size: %u Bytes Range 0x%x~0x%x\n",stackMax,stackBegin,stackMax);
 
+    if ( usedHeap > (1024*1024) ) { lSysLog("ESP32: Heap hole: %.2f MByte\n", float(usedHeap/1024.0/1024.0)); }
+    else if ( usedHeap > 1024 ) { lSysLog("ESP32: Heap hole: %.2f Kb\n", float(usedHeap/1024.0)); }
+    else { lSysLog("ESP32: Heap hole: %u Byte\n",usedHeap); }
+    
     if ( largestHeap > (1024*1024) ) { lSysLog("ESP32: Most allocable data: %.2f MByte (fragmentation: %.1f%%%%)\n",float((largestHeap/1024.0)/1024.0),fragmentation); }
     else if ( largestHeap > 1024 ) { lSysLog("ESP32: Most allocable data: %.2f Kb (fragmentation: %.1f%%%%)\n", float(largestHeap/1024.0),fragmentation); }
     else { lSysLog("ESP32: Most allocable data: %lu Byte (fragmentation: %.1f%%%%)\n",largestHeap,fragmentation); }

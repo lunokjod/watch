@@ -3,10 +3,11 @@
 
 #include "lunokiot_config.hpp" // WARNING: generated file, the original from "tools/lunokiot_config.hpp.template"
 
+
 // LoT is all you need for use it! ;)
 #define LoT LunokIoT::Get
 
-// yep... a f*kng singleton you know C++11 styish
+// yep... a f*kng singleton you know C++11 stylish
 class LunokIoT {
     public:
         static LunokIoT& Get() {

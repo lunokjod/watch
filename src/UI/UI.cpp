@@ -530,11 +530,20 @@ static void UITickTask(void* args) {
     lEvLog("UITickTask: is dead!!!\n");
     vTaskDelete(NULL);
 }
-
+StaticTask_t UITickBuffer;
+StackType_t UITickStack[LUNOKIOT_APP_STACK_SIZE];
 void UITickStart() {
     if ( NULL == UITickTaskHandler ) {
-        BaseType_t res = xTaskCreatePinnedToCore(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler,1);
-        if ( pdPASS != res ) { UITickTaskHandler = NULL; return; }
+        UITickTaskHandler = xTaskCreateStaticPinnedToCore( UITickTask,
+                                                "lUITick",
+                                                LUNOKIOT_APP_STACK_SIZE,
+                                                nullptr,
+                                                tskIDLE_PRIORITY+1,
+                                                UITickStack,
+                                                &UITickBuffer,
+                                                1);
+
+        //BaseType_t res = xTaskCreatePinnedToCore(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler,1);
         lUILog("Tick enabled\n");
     }
 }

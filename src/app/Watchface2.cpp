@@ -89,22 +89,32 @@ bool Watchface2Application::GetSecureNetworkWeather() {
         free(url);
         return false;
     }
-
-    HTTPClient weatherClient;
-    weatherClient.setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
-    weatherClient.setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
-    weatherClient.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
-    client->setCACert((const char*)openweatherPEM_start);
-    if (false == weatherClient.begin(*client, String(url))) {  // HTTPS
-        lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
+//AAAAAAAAAAAAAAAAAAAAA
+    HTTPClient *weatherClient = new HTTPClient;
+    if ( nullptr == weatherClient ) {
+        lNetLog("GetSecureNetworkWeather: ERROR: Unable to create HTTPClient\n");
         delete client;
         free(url);
         return false;
     }
-    int httpResponseCode = weatherClient.GET();
+    weatherClient->setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
+    weatherClient->setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
+    //weatherClient.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    client->setCACert((const char*)openweatherPEM_start);
+    FreeSpace();
+    if (false == weatherClient->begin(*client, url)) {  // HTTPS
+        lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
+        weatherClient->end();
+        delete weatherClient;
+        delete client;
+        free(url);
+        return false;
+    }
+    int httpResponseCode = weatherClient->GET();
     lNetLog("Watchface: GetSecureNetworkWeather: HTTP response code: %d\n", httpResponseCode);
     if (httpResponseCode < 1) {
-        weatherClient.end();
+        weatherClient->end();
+        delete weatherClient;
         delete client;
         free(url);
         return false;
@@ -114,11 +124,12 @@ bool Watchface2Application::GetSecureNetworkWeather() {
         free(weatherReceivedData);
         weatherReceivedData = nullptr;
     }
-    String payload = weatherClient.getString(); // fuck strings
+    String payload = weatherClient->getString(); // fuck strings
     
 
     lNetLog("Watchface: GetSecureNetworkWeather: free weatherClient\n");
-    weatherClient.end();
+    weatherClient->end();
+    delete weatherClient;
     delete client;
     free(url);
     // Generate the received data buffer
@@ -372,10 +383,13 @@ bool Watchface2Application::ParseWeatherData() {
 
 void Watchface2Application::Handlers()
 {
-    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, Watchface2Application::FreeRTOSEventReceived, this);
-#ifdef LUNOKIOT_WIFI_ENABLED
-    if (nullptr == ntpTask)
-    {
+    #ifdef LUNOKIOT_WIFI_ENABLED
+    esp_err_t done = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, Watchface2Application::FreeRTOSEventReceived, this);
+    if ( ESP_OK != done ) {
+        lAppLog("Unable to register into WiFi freeRTOS event loop\n");
+        return;
+    }
+    if (nullptr == ntpTask) {
         ntpTask = new NetworkTaskDescriptor();
         ntpTask->name = (char *)"NTP Watchface";
         ntpTask->everyTimeMS = ((1000 * 60) * 60) * 24; // once a day
@@ -552,7 +566,7 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_PROVISIONING_STACK_SIZE;
+        //weatherTask->desiredStack = LUNOKIOT_APP_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif
@@ -581,20 +595,36 @@ Watchface2Application::Watchface2Application() {
         LaunchApplication(new MainMenuApplication());
     });
     if ( nullptr == bottomRightButton ) {
-        lAppLog("Unable to allocate watchface at: %p\n",this);
+        lAppLog("Unable to allocate bottomRightButton\n");
         return;
     }
 
     colorBuffer = new CanvasZWidget(canvas->width(), canvas->height());
+    if ( nullptr == colorBuffer ) {
+        lAppLog("Unable to allocate colorbuffer at: %p\n",this);
+        return;
+    }
     colorBuffer->canvas->fillSprite(TFT_BLACK);
     outherSphere = new CanvasZWidget(canvas->width(), canvas->height());
+    if ( nullptr == outherSphere ) {
+        lAppLog("Unable to allocate outherSphere at: %p\n",this);
+        return;
+    }
     outherSphere->canvas->fillSprite(TFT_BLACK);
 
     hourHandCanvas = new CanvasZWidget(img_hours_hand.height, img_hours_hand.width);
+    if ( nullptr == hourHandCanvas ) {
+        lAppLog("Unable to allocate hourHandCanvas at: %p\n",this);
+        return;
+    }
     hourHandCanvas->canvas->pushImage(0, 0, img_hours_hand.width, img_hours_hand.height, (uint16_t *)img_hours_hand.pixel_data);
     hourHandCanvas->canvas->setPivot(12, 81);
 
     minuteHandCanvas = new CanvasZWidget(img_minutes_hand.height, img_minutes_hand.width);
+    if ( nullptr == minuteHandCanvas ) {
+        lAppLog("Unable to allocate minuteHandCanvas at: %p\n",this);
+        return;
+    }
     minuteHandCanvas->canvas->pushImage(0, 0, img_minutes_hand.width, img_minutes_hand.height, (uint16_t *)img_minutes_hand.pixel_data);
     minuteHandCanvas->canvas->setPivot(12, 107);
 
@@ -610,23 +640,21 @@ Watchface2Application::Watchface2Application() {
     outherSphere->canvas->fillCircle(middleX, middleY, radius - (margin * 2), TFT_BLACK);
 
     DescribeCircle(middleX, middleY, radius - (margin * 2.5),
-                   [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload)
-                   {
-                       if (3 == (angle % 6))
-                       { // dark bites
-                           outherSphere->canvas->fillCircle(x, y, 5, TFT_BLACK);
-                       }
-                       return true;
-                   });
+        [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+            if (3 == (angle % 6))
+            { // dark bites
+                outherSphere->canvas->fillCircle(x, y, 5, TFT_BLACK);
+            }
+            return true;
+        });
     DescribeCircle(middleX, middleY, radius - (margin * 2),
-                   [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload)
-                   {
-                       if (0 == (angle % 30))
-                       { // blue 5mins bumps
-                           outherSphere->canvas->fillCircle(x, y, 5, tft->color24to16(0x384058));
-                       }
-                       return true;
-                   });
+        [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+            if (0 == (angle % 30))
+            { // blue 5mins bumps
+                outherSphere->canvas->fillCircle(x, y, 5, tft->color24to16(0x384058));
+            }
+            return true;
+        });
     outherSphere->canvas->fillRect(0, middleY - 40, 40, 80, TFT_BLACK); // left cut
 
     outherSphere->DrawTo(colorBuffer->canvas, 0, 0, 1.0, false, TFT_BLACK);
@@ -983,4 +1011,10 @@ bool Watchface2Application::Tick()
         return true;
     }
     return false;
+}
+
+
+void Watchface2Application::LowMemory() {
+    LunokIoTApplication::LowMemory(); // call parent
+    lAppLog("YEAH WATCHFACE RECEIVED TOO\n");
 }

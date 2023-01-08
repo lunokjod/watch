@@ -250,12 +250,14 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
     if ( synced ) {
         LaunchApplicationTaskSync(thisLaunch,true); // forced sync
     } else {
+        // apps receive the worst priority
         // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
-        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, uxTaskPriorityGet(NULL), nullptr,0);
+        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY-1, nullptr,0);
     }
 }
 
 void LunokIoTApplication::LowMemory() {
+    lAppLog("LunokIoTApplication: LOW MEMORY received\n");
     // free last apps!!
     int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
     while ( searchOffset > 0 ) {
@@ -274,8 +276,6 @@ void LunokIoTApplication::LowMemory() {
         }
     }
     lastAppsOffset=0;
-
-    lAppLog("%p '%s': LOW MEMORY received\n", this,this->AppName());
     /*
     if ( nullptr != canvas ) {
         // try to regenerate canvas (move memory) with a bit of lucky, the new location is a better place

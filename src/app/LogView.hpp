@@ -6,7 +6,7 @@
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <LilyGoWatch.h>
-extern TFT_eSPI *tft;
+extern TFT_eSPI * tft;
 
 #include "../UI/AppTemplate.hpp"
 

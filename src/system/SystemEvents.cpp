@@ -642,7 +642,11 @@ static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t i
     lSysLog("System event: Stop\n");
 
 }
+unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
 static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    if ( lastLowMemTimestamp_ms > millis() ) { return; } // only one by second
+    lastLowMemTimestamp_ms=millis()+2000;
+
     lSysLog("System event: Low memory\n");
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
     if ( nullptr != currentApplication ) {
@@ -656,7 +660,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
             LaunchWatchface();
             return;
         }
-        lSysLog("System event: Application memory constrained\n");
+        //lSysLog("System event: Application memory constrained\n");
     }
     xSemaphoreGive( UISemaphore ); // free
 }
@@ -1382,7 +1386,7 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 20,                           // maybe so big?
         .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY,          // a little bit faster?
+        .task_priority = tskIDLE_PRIORITY+2,          // a little bit faster?
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                           // to core 1
     };                                              // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
