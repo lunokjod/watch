@@ -9,20 +9,25 @@
 
 extern TTGOClass *ttgo; // ttgo library shit ;)
 PlaygroundApplication10::~PlaygroundApplication10() {
-    
+    delete testEntryText;
+    delete testEntryText2;
 }
 
 PlaygroundApplication10::PlaygroundApplication10() {
-    testEntryText = new EntryTextWidget(10,10, 40, 180, "aaaa");
+    testEntryText = new EntryTextWidget(40,50, 40, 160, "1234");
+    testEntryText2 = new EntryTextWidget(10,120, 40, 220, "69");
     Tick();
 }
 
 bool PlaygroundApplication10::Tick() {
-    TemplateApplication::btnBack->Interact(touched,touchX,touchY);
     testEntryText->Interact(touched, touchX, touchY);
+    testEntryText2->Interact(touched, touchX, touchY);
+    TemplateApplication::btnBack->Interact(touched,touchX,touchY);
+
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         testEntryText->DrawTo(canvas);
+        testEntryText2->DrawTo(canvas);
         TemplateApplication::btnBack->DrawTo(canvas);
         nextRedraw=millis()+(1000/8); // tune your required refresh
         return true;

@@ -3,7 +3,7 @@
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <functional>
-
+#include "../base/Widget.hpp"
 //#include "lunokiot_config.hpp"
 #include "../activator/ActiveRect.hpp"
 #include "CanvasWidget.hpp"
@@ -27,7 +27,7 @@ bool ButtonWidget::Interact(bool touch, int16_t tx,int16_t ty) {
     bool response = ActiveRect::Interact(touch,tx,ty);
     if ( pushed != lastPushed ) {
         InternalRedraw();
-        DirectDraw();
+        //DirectDraw();
         lastPushed=pushed;
     }
     return response;
@@ -65,11 +65,13 @@ void ButtonWidget::InternalRedraw() {
         if ( false == enabled ) { buttonColor = ThCol(darken); }
         buffer->canvas->fillRoundRect( border, border,(ActiveRect::w-(border*2)),(ActiveRect::h-(border*2)),radius,buttonColor);
     }
-    if ( pushed ) {
+    if ( ( pushed )&&( borders )) {
         border = 6;
         uint16_t lightColor = canvas->alphaBlend(128,buttonColor,ThCol(light));
         buffer->canvas->fillRoundRect( border, border,(ActiveRect::w-(border*2)),(ActiveRect::h-(border*2)),radius,lightColor);
     }
+    buffer->canvas->setPivot(0,0);
+    canvas->setPivot(0,0);
     buffer->canvas->pushRotated(canvas,0,Drawable::MASK_COLOR);
 }
 

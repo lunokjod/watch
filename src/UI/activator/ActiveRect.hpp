@@ -1,6 +1,5 @@
 #ifndef __LUNOKIOT__UI__ACTIVE__RECTAREA___
 #define  __LUNOKIOT__UI__ACTIVE__RECTAREA___
-
 /*
  * UI Class ActiveRect
  * 
@@ -8,8 +7,9 @@
  * Note: can be used as circular point using InRadius
  * 
  */
-#include "../../UI/UI.hpp"
+//#include "../../UI/UI.hpp"
 #include <functional> // callbacks 
+typedef std::function<void (void* payload)> UICallback; // repeated declaration
 
 class ActiveRect {
     protected:

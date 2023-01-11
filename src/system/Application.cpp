@@ -15,6 +15,12 @@ extern TFT_eSPI *tft;
 #include "SystemEvents.hpp"
 
 #include <functional>
+#include <string.h>
+
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../static/img_trash_32.xbm"
+#include "../static/img_back_32.xbm"
+#include "../static/img_check_32.xbm"
 
 SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
@@ -276,7 +282,7 @@ void LunokIoTApplication::LowMemory() {
         }
     }
     lastAppsOffset=0;
-    /*
+    /* @TODO maybe building before delete... but this must be increment the fragmentation x'D
     if ( nullptr != canvas ) {
         // try to regenerate canvas (move memory) with a bit of lucky, the new location is a better place
         canvas->deleteSprite();
@@ -307,3 +313,181 @@ RunApplicationCallback LunokIoTApplication::GetRunCallback() {
     return [](void *unused){ return new LunokIoTApplication(); };
 }
 */
+#define KEYBOARD_KILL_DELAY 80
+#include "../UI/widgets/EntryTextWidget.hpp"
+SoftwareKeyboard *keyboardInstance=nullptr;
+Ticker destroyKeyboard;
+SoftwareKeyboard::SoftwareKeyboard(void * destinationWidget, lUIKeyboardType keyboardType)
+    : destinationWidget(destinationWidget), keyboardType(keyboardType) {
+    if ( nullptr == destinationWidget ) { return; }
+    //if ( nullptr == fromCanvas ) { return; }
+    EntryTextWidget * sendTo = (EntryTextWidget *)destinationWidget;
+    int16_t tX = sendTo->GetX();
+    int16_t tY = sendTo->GetY();
+    int16_t tW = sendTo->GetW();
+    int16_t tH = sendTo->GetH();
+    //if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
+    //appCopy = DuplicateSprite(fromCanvas);
+    //    xSemaphoreGive( UISemaphore );
+    //}
+
+    const int16_t ButtonsOffset = 40;
+    const int16_t ButtonsHeightSize = 50;
+    const int16_t ButtonsWidthSize = 80;
+    const int16_t XOffset=0;
+    
+    UICallback numberButtonCallback = [&,this](void *payload) {
+        ButtonTextWidget * pushedBtn = (ButtonTextWidget *)payload;
+        //@TODO Bug here, the predefined values already can contain dot
+        if (0 == strcmp(".",pushedBtn->label)) {
+            //lLog("IS DOT!\n");
+            if ( true == this->dotAdded ) { return; } // the number already have a dot, maintain until reset
+            this->dotAdded =true;
+        }
+        //lLog("VALUE ADDED: '%s'\n",pushedBtn->label);
+        sprintf(textEntry,"%s%s",textEntry,pushedBtn->label);
+    };
+
+    seven = new ButtonTextWidget(XOffset,ButtonsOffset,ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"7",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    seven->paramCallback=seven;
+    eight = new ButtonTextWidget(XOffset+ButtonsWidthSize,ButtonsOffset,ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"8",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    eight->paramCallback=eight;
+    nine = new ButtonTextWidget(XOffset+(ButtonsWidthSize*2),ButtonsOffset,ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"9",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    nine->paramCallback=nine;
+
+    four = new ButtonTextWidget(XOffset,ButtonsOffset+(ButtonsHeightSize),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"4",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    four->paramCallback=four;
+    five = new ButtonTextWidget(XOffset+ButtonsWidthSize,ButtonsOffset+(ButtonsHeightSize),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"5",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    five->paramCallback=five;
+    six = new ButtonTextWidget(XOffset+(ButtonsWidthSize*2),ButtonsOffset+(ButtonsHeightSize),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"6",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    six->paramCallback=six;
+
+    one = new ButtonTextWidget(XOffset,ButtonsOffset+(ButtonsHeightSize*2),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"1",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    one->paramCallback=one;
+    two = new ButtonTextWidget(XOffset+ButtonsWidthSize,ButtonsOffset+(ButtonsHeightSize*2),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"2",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    two->paramCallback=two;
+    three = new ButtonTextWidget(XOffset+(ButtonsWidthSize*2),ButtonsOffset+(ButtonsHeightSize*2),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"3",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    three->paramCallback=three;
+
+
+    dotBtn = new ButtonTextWidget(XOffset,ButtonsOffset+(ButtonsHeightSize*3),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,".",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    dotBtn->paramCallback=dotBtn;
+
+    zero = new ButtonTextWidget(XOffset+ButtonsWidthSize,ButtonsOffset+(ButtonsHeightSize*3),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"0",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
+    zero->paramCallback=zero;
+
+
+    btnCancel=new ButtonImageXBMWidget(canvas->width()-40,0, 40, 40, [&,this](void * useless){
+        destroyKeyboard.once_ms(KEYBOARD_KILL_DELAY,[](){
+            EntryTextWidget * ctrl = (EntryTextWidget*)keyboardInstance->destinationWidget;
+            ctrl->HideKeyboard(); // must be async to not call my own destructor
+        });
+    },(const uint8_t *)img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,TFT_BLACK,true);
+    btnDiscard=new ButtonImageXBMWidget(0,0, 40, 40, [&,this](void * useless){
+        textEntry[0]=0; // reset the string
+        dotAdded=false;
+    },(const uint8_t *)img_trash_32_bits,img_trash_32_height,img_trash_32_width,TFT_WHITE,TFT_BLACK,true);
+    btnSend=new ButtonImageXBMWidget(canvas->width()-50,canvas->height()-50, 50, 50, [&,this](void * useless){
+        destroyKeyboard.once_ms(KEYBOARD_KILL_DELAY,[](){
+            EntryTextWidget * ctrl = (EntryTextWidget*)keyboardInstance->destinationWidget;
+            ctrl->HideKeyboard(keyboardInstance->textEntry); // must be async to not call my own destructor
+        });
+    }, (const uint8_t *)img_check_32_bits,img_check_32_height,img_check_32_width,TFT_GREEN,ThCol(background),false);
+
+    textEntry = (char*)malloc(256); // buffer
+    textEntry[0] = 0; // end of line
+}
+SoftwareKeyboard::~SoftwareKeyboard() {
+    delete seven;
+    delete eight;
+    delete nine;
+    delete four;
+    delete five;
+    delete six;
+    delete one;
+    delete two;
+    delete three;
+    delete zero;
+    
+    delete dotBtn;
+
+    delete btnCancel;
+    delete btnDiscard;
+    delete btnSend;
+    if ( nullptr != textEntry ) { free(textEntry); }
+    /*
+    if ( nullptr != appCopy ) {
+        appCopy->deleteSprite();
+        delete appCopy;
+    }*/
+}
+#include "../UI/widgets/EntryTextWidget.hpp"
+bool SoftwareKeyboard::Tick() {
+    EntryTextWidget * sendTo = (EntryTextWidget *)destinationWidget;
+    /*
+    if (nullptr != appCopy ) {
+        appCopy->setPivot(0,0);
+        canvas->setPivot(0,0);
+        appCopy->pushRotated(canvas,0);
+    } else { */
+        canvas->fillSprite(ThCol(background));
+    //}
+
+    seven->Interact(touched,touchX,touchY);
+    eight->Interact(touched,touchX,touchY);
+    nine->Interact(touched,touchX,touchY);
+    four->Interact(touched,touchX,touchY);
+    five->Interact(touched,touchX,touchY);
+    six->Interact(touched,touchX,touchY);
+    one->Interact(touched,touchX,touchY);
+    two->Interact(touched,touchX,touchY);
+    three->Interact(touched,touchX,touchY);
+    zero->Interact(touched,touchX,touchY);
+
+    dotBtn->Interact(touched,touchX,touchY);
+
+    btnCancel->Interact(touched,touchX,touchY);
+    btnDiscard->Interact(touched,touchX,touchY);
+    btnSend->Interact(touched,touchX,touchY);
+   
+    seven->DrawTo(canvas);
+    eight->DrawTo(canvas);
+    nine->DrawTo(canvas);
+    four->DrawTo(canvas);
+    five->DrawTo(canvas);
+    six->DrawTo(canvas);
+    one->DrawTo(canvas);
+    two->DrawTo(canvas);
+    three->DrawTo(canvas);
+    zero->DrawTo(canvas);
+
+    dotBtn->DrawTo(canvas);
+
+
+
+    // background of typed number
+    canvas->fillRect(40,0,canvas->width()-80,40,TFT_BLACK);
+    // cursor blink
+    cursorBlinkStep+=10;
+    uint32_t color=ThCol(background);
+    if ( cursorBlinkStep < 127) { color=TFT_WHITE; }
+    canvas->fillRect(canvas->width()-65,5,20,30,color); // bold cursor
+    //canvas->drawFastVLine(canvas->width()-20,5,30,color); // bar cursor
+
+    if ( strlen(textEntry) > 0 ) {
+        //lLog("Draw textEntry: '%s'\n",textEntry);
+        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextFont(0);
+        canvas->setTextSize(3);
+        canvas->setTextDatum(TR_DATUM);
+        canvas->setTextWrap(true,true);
+        canvas->drawString(textEntry,canvas->width()-70,8);
+    }
+
+    btnCancel->DrawTo(canvas);
+    btnDiscard->DrawTo(canvas);
+    btnSend->DrawTo(canvas);
+
+
+    return false;
+}

@@ -2,11 +2,10 @@
 #define __LUNOKIOT__UI__DEFINE__
 
 #include <Arduino.h>
-//#include <LilyGoWatch.h>
+#include <LilyGoWatch.h>
 #include <esp_event_base.h>
 #include <functional>
-#include "../system/Application.hpp"
-
+//#include "../system/Application.hpp"
 // caller contains the object (must be converted)
 typedef std::function<void (void* payload)> UICallback;
 

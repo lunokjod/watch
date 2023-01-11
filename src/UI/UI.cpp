@@ -24,6 +24,10 @@
 
 #include "../app/TaskSwitcher.hpp"
 
+#include "../system/Application.hpp"
+
+extern SoftwareKeyboard *keyboardInstance;
+
 extern TTGOClass *ttgo; // ttgo library shit ;)
 extern TFT_eSPI * tft;
 bool UIlongTap=false; // used to trigger only once the long tap event
@@ -298,7 +302,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     static bool oldTouchState = false;
 
     int16_t newTouchX,newTouchY;
-    bool newTouch = ttgo->getTouch(newTouchX,newTouchY);
+    bool newTouch=false;
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
+        newTouch = ttgo->getTouch(newTouchX,newTouchY);
+        xSemaphoreGive( UISemaphore );
+    }    
     bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
         touchDragAngle = 0;
@@ -404,15 +412,24 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 }
             }
         }
-        if ( false == UIlongTap ) { // only if no long tap in progress
-            // perform the call to the app logic
-            changes = currentApplication->Tick();
+        if ( nullptr != keyboardInstance ) {
+            keyboardInstance->Tick();
+        } else {
+            if ( false == UIlongTap ) { // only if no long tap in progress
+                // perform the call to the app logic
+                changes = currentApplication->Tick();
+            }
         }
         if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
-        if ( changes ) { // Tick() returned true
-            // dump the current ap to the TFT
-            //appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-            appView->pushSprite(0,0); // push appView to tft
+
+        if ( nullptr != keyboardInstance ) {
+            keyboardInstance->canvas->pushSprite(0,0);
+        } else {
+            if ( changes ) { // Tick() returned true
+                // dump the current ap to the TFT
+                //appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
+                appView->pushSprite(0,0); // push appView to tft
+            }
         }
         #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
         else {
@@ -879,3 +896,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         }
     }
 }
+
+/*
+
+*/

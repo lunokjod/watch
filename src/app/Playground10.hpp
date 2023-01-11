@@ -7,6 +7,7 @@
 class PlaygroundApplication10: public TemplateApplication {
         unsigned long nextRedraw=0;
         EntryTextWidget * testEntryText=nullptr;
+        EntryTextWidget * testEntryText2=nullptr;
     public:
         const char *AppName() override { return "Playground10 test"; };
         PlaygroundApplication10();
