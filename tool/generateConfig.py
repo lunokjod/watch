@@ -12,25 +12,26 @@ print(" * lunokWatch build script")
 
 Import('env')
 build_type = env.GetProjectOption("build_type")
+batteryCapacity="380" #default lithium battery / LS-Q1 battery (black, can be replaced)
+# check if battery flag is set
+if "-DLUNOKIOT_BATTERY_CHECK" in env['BUILD_FLAGS']:
+    # try to get the device UART type to determine the battery capacity
+    p = subprocess.Popen("pio --no-ansi device list", stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    p_status = p.wait()
+    dataLines = output.decode().split()
+    device_port="NOT FOUND"
+    if len(dataLines) > 0:
+        device_port=dataLines[0]
+    else:
+        print("WARNING: device not found!!! unable to determine the battery type")
+    normalBatteryDev="/dev/ttyUSB"
 
-# try to get the device UART type to determine the battery capacity
-p = subprocess.Popen("pio --no-ansi device list", stdout=subprocess.PIPE, shell=True)
-(output, err) = p.communicate()
-p_status = p.wait()
-dataLines = output.decode().split()
-device_port="NOT FOUND"
-if len(dataLines) > 0:
-    device_port=dataLines[0]
-else:
-    print("WARNING: device not found!!! unable to determine the battery type")
-batteryCapacity="380" #default battery (black, can be replaced)
-normalBatteryDev="/dev/ttyUSB"
+    bigBatteryDev="/dev/ttyACM"
+    if bigBatteryDev in device_port: 
+        batteryCapacity="500" # the v3 have 2 versions, 380 and 500 mAh
 
-bigBatteryDev="/dev/ttyACM"
-if bigBatteryDev in device_port: 
-    batteryCapacity="500" # the v3 have 2 versions, 380 and 500 mAh
-
-print(f" * Detected battery: {batteryCapacity}mAh")
+    print(f" * Detected battery: {batteryCapacity}mAh")
 
 #print(" * Reset otadata partition")
 #os.system("otatool.py --port \"{device_port}\" erase_otadata")

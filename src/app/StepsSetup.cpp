@@ -8,6 +8,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../lunokiot_config.hpp"
+extern bool UILongTapOverride;
 
 StepsSetupApplication::~StepsSetupApplication() {
     userTall = tallValue->selectedValue;
@@ -23,6 +24,7 @@ StepsSetupApplication::~StepsSetupApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != genderSelect ) { delete genderSelect; }
     if ( nullptr != tallValue ) { delete tallValue; }
+    UILongTapOverride=false;
 }
 
 StepsSetupApplication::StepsSetupApplication() {
@@ -35,9 +37,11 @@ StepsSetupApplication::StepsSetupApplication() {
     tallValue->InternalRedraw();
     genderSelect->switchEnabled = userMaleFemale;
     Tick();
+    UILongTapOverride=true;
 }
 
 bool StepsSetupApplication::Tick() {
+
     btnBack->Interact(touched,touchX, touchY);
     genderSelect->Interact(touched,touchX, touchY);
     tallValue->Interact(touched,touchX, touchY);

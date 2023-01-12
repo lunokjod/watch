@@ -297,15 +297,17 @@ TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
     return screenShootCanvas;
 }
 
+extern SemaphoreHandle_t I2cMutex;
+
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // touch data handling
     static bool oldTouchState = false;
 
     int16_t newTouchX,newTouchY;
     bool newTouch=false;
-    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
+    if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         newTouch = ttgo->getTouch(newTouchX,newTouchY);
-        xSemaphoreGive( UISemaphore );
+        xSemaphoreGive( I2cMutex );
     }    
     bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
@@ -495,8 +497,9 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
         UINextTimeout = millis()+UITimeout;
         return;
     }
+    
     // if vbus get energy don't sleep
-    if ( ttgo->power->isVBUSPlug() ) {
+    if ( vbusPresent ) {
         UINextTimeout = millis()+UITimeout;
         return;
     }

@@ -24,6 +24,7 @@ enum {
     SYSTEM_EVENT_TIMER,       // ESP32 timed wakeup
     SYSTEM_EVENT_UPDATE,      // Update comes!!
     SYSTEM_EVENT_LOWMEMORY,   // All apps receive this call when system memory goes low
+    SYSTEM_EVENT_TEMP,        // Announche the current CPU temperature
 
     PMU_EVENT_BATT_CHARGING,  // notify when the battery is charging
     PMU_EVENT_BATT_FULL,      // the batt is full
@@ -51,9 +52,8 @@ enum {
     BMA_EVENT_TEMP,             // device temperature
     BMA_EVENT_DIRECTION         // pose/orientation
 };
-
-// Force get samples from sensors
-void TakeSamples();
+// obtain data from all sensors
+void TakeAllSamples();
 
 // Build system loop
 void SystemEventsStart();

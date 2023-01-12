@@ -64,6 +64,7 @@ int batteryPercent;       // -1 if no batt
 uint8_t bmaRotation;      // bma ground?
 float axpTemp;
 float bmaTemp;
+float cpuTemp;
 const char *currentActivity = "None";
 uint32_t stepCount = 0;
 uint32_t lastBootStepCount = 0;
@@ -108,6 +109,13 @@ static bool irqRTC = false;
 
 extern NimBLECharacteristic *battCharacteristic;
 
+
+extern "C" // Extern C is used when we are using a funtion written in "C" language in a C++ code.
+{
+  uint8_t temprature_sens_read(); // This function is written in C language
+}
+uint8_t temprature_sens_read();
+
 void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callback due priority and recomends a queue :)
     if (false == ttgo->bl->isOn()) { return; } // only when screen is on
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
@@ -144,27 +152,40 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
     } else if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason) {
         //!< Wakeup caused by external signal using RTC_IO
         lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
+        irqAxp=true;
+
+        //lLog("Interrupt triggered on ext0 <-- (IMU) BMA423\n");
+        //irqBMA = true; // faked
+
         continueSleep=false; // don't want to sleep more
+
     } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {    // ESP_SLEEP_WAKEUP_BT
+        lLog("Interrupt triggered on ext1 <-- ");
         //!< Wakeup caused by external signal using RTC_CNTL
         GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-        if ( 0 != GPIO_reason ) {
-            lLog("Interrupt triggered on ext1 <-- ");
+        double GPIO_pin = ((log(GPIO_reason))/log(2));
+        if ( 0 == GPIO_reason) {
+            lLog("WARNING: wake from other source?\n");
+        }
+        continueSleep=false;
 
-            if (GPIO_SEL_37 == GPIO_reason) {
-                lLog("(RTC) PCF8563\n");
-            } else if (GPIO_SEL_38 == GPIO_reason) {
-                lLog("(TOUCH) FocalTech\n");
-            } else if (GPIO_SEL_39 == GPIO_reason) {
-                lLog("(BMA) BMA423\n");
-                irqBMA = true; // faked
-                continueSleep=false; // wait to get the int
-            } else {
-                lLog("WARNING: Unexpected: GPIO %u\n", GPIO_reason);
-                //Serial.print((log(GPIO_reason))/log(2), 0); 
-            }
+        if (GPIO_SEL_35 == GPIO_reason) {
+            lLog("(PMU) AXP202\n");
+            irqAxp=true;
+        } else if (GPIO_SEL_37 == GPIO_reason) {
+            lLog("(RTC) PCF8563\n");
+            //continueSleep=false; // wait to get the int
+            irqRTC=true;
+        } else if (GPIO_SEL_38 == GPIO_reason) {
+            lLog("(TOUCH) FocalTech\n");
+            //continueSleep=false; // wait to get the int
+        } else if (GPIO_SEL_39 == GPIO_reason) {
+            lLog("(IMU) BMA423\n");
+            irqBMA = true; // faked
+            //continueSleep=false; // wait to get the int
         } else {
-            lLog("@TODO wake from unknown reason\n");
+            lLog("WARNING: Unexpected: GPIO %llu\n",GPIO_reason);
+            //Serial.print((log(GPIO_reason))/log(2), 0); 
         }
         /*
         if (GPIO_SEL_37 == GPIO_reason) {
@@ -179,7 +200,6 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
             lLog("WARNING: Unexpected: GPIO %u Reason: %u\n",impliedGPIO, GPIO_reason);
             // lLog((log(GPIO_reason))/log(2), 0);            
         }*/
-        
     } else if ( ESP_SLEEP_WAKEUP_TIMER == wakeup_reason) {
         //!< Wakeup caused by timer
         lLog("Wakeup caused by timer\n");
@@ -203,7 +223,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         //!< Wakeup caused by BT (light sleep only)
     }
     if ( continueSleep ) {
-        TakeSamples();
+        TakeAllSamples();
         DoSleep();
         return true;
     }
@@ -278,18 +298,41 @@ static void DoSleepTask(void *args) {
     // bma interrupt gpio_39
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * LUNOKIOT_WAKE_TIME_S); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",LUNOKIOT_WAKE_TIME_S); }
+
     esp_err_t wakeAXP = esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, LOW);
     if ( ESP_OK != wakeAXP ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
-    //GPIO_SEL_37 |
-    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    //lSysLog("@TODO DISABLED STEPCOUNTER BMA INTERRUPT!!!!!\n");
-    esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH);
-    if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 wakeup\n"); }
-    //esp_sleep_enable_ext1_wakeup( BMA423_INT1 | RTC_INT_PIN, ESP_EXT1_WAKEUP_ANY_HIGH);
+    /*
+    esp_err_t wakeBMA = esp_sleep_enable_ext0_wakeup((gpio_num_t)BMA423_INT1, HIGH);
+    if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
+    */
+
+    /*
+    // good ones
+    esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
+    if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
+    */
+
+    //esp_err_t wakeAXP_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_35 | GPIO_SEL_37) , ESP_EXT1_WAKEUP_ANY_HIGH);
+    esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
+    if ( ESP_OK != wakeBMA_RTC ) { lSysLog("ERROR: Unable to set ext1 (IMU+RTC) wakeup\n"); }
+
+    /*
+    esp_err_t uartEnabled=esp_sleep_enable_uart_wakeup(UART_NUM_0);
+    if ( ESP_OK != uartEnabled ) {
+        lEvLog("ESP32: WARNING: Unable to wake up from UART\n");
+    }
+    */
+
+   /*
+   // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/sleep_modes.html#_CPPv426esp_sleep_enable_bt_wakeupv
+   esp_err_t esp_sleep_enable_bt_wakeup(void)
+   */
+
     FreeSpace();
-    
     lEvLog("ESP32: -- ZZz --\n");
     uart_wait_tx_idle_polling(UART_NUM_0); // dontcare if fail
+
+    
     int64_t beginSleepTime_us = esp_timer_get_time();
     esp_err_t canSleep = esp_light_sleep_start();    // device sleeps now
     if ( ESP_OK != canSleep ) {
@@ -371,7 +414,7 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
 
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("ESP Wakeup timer triggered\n")
-    TakeSamples();
+    TakeAllSamples();
     if (false == ttgo->bl->isOn()) {
         lEvLog("Timer triggered without screen... (going to sleep again)\n")
         DoSleep();
@@ -498,6 +541,10 @@ void TakeBMPSample() {
     Accel acc;
     // Get acceleration data
     bool res = ttgo->bma->getAccel(acc);
+    float nowBMATemp = ttgo->bma->temperature();
+    // Obtain the BMA423 direction,
+    // so that the screen orientation is consistent with the sensor
+    uint8_t nowRotation = ttgo->bma->direction();
 
     xSemaphoreGive(I2cMutex);
     
@@ -556,15 +603,8 @@ void TakeBMPSample() {
             #endif
         }
     }
-    done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    if (pdTRUE != done) { return; }
 
-    float nowBMATemp = ttgo->bma->temperature();
-    
-    xSemaphoreGive(I2cMutex);
-
-    if (round(nowBMATemp) != round(bmaTemp))
-    {
+    if (round(nowBMATemp) != round(bmaTemp)) {
         // Serial.printf("BMA423: Temperature: %.1fºC\n", bmaTemp);
         if (UIRunning) {
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TEMP, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
@@ -572,43 +612,9 @@ void TakeBMPSample() {
     }
     bmaTemp = nowBMATemp; // set value
 
-    done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    if (pdTRUE != done) { return; }
-
-    // Obtain the BMA423 direction,
-    // so that the screen orientation is consistent with the sensor
-    uint8_t nowRotation = ttgo->bma->direction();
-
-    xSemaphoreGive(I2cMutex);
-
-    if (nowRotation != bmaRotation)
-    {
+    if (nowRotation != bmaRotation) {
         // Serial.printf("BMA423: Direction: Current: %u Obtained: %u Last: %u\n", ttgo->tft->getRotation(), rotation, prevRotation);
         bmaRotation = nowRotation;
-        /*
-        switch (rotation) {
-        case DIRECTION_DISP_DOWN:
-            //No use
-            break;
-        case DIRECTION_DISP_UP:
-            //No use
-            break;
-        case DIRECTION_BOTTOM_EDGE:
-            Serial.printf(" set %u\n", WATCH_SCREEN_BOTTOM_EDGE);
-            break;
-        case DIRECTION_TOP_EDGE:
-            Serial.printf(" set %u\n", WATCH_SCREEN_TOP_EDGE);
-            break;
-        case DIRECTION_RIGHT_EDGE:
-            Serial.printf(" set %u\n", WATCH_SCREEN_RIGHT_EDGE);
-            break;
-        case DIRECTION_LEFT_EDGE:
-            Serial.printf(" set %u\n", WATCH_SCREEN_LEFT_EDGE);
-            break;
-        default:
-            break;
-        }
-        */
         if (UIRunning) {
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DIRECTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
         }
@@ -619,52 +625,10 @@ unsigned long nextSlowSensorsTick = 0;
 unsigned long nextSensorsTick = 0;
 static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     if (millis() > nextSlowSensorsTick) { // poll some sensors ( slow pooling )
-        hallData = hallRead();
-
-        BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        if (pdTRUE != done) { return; }
-
-        // @TODO obtain more AXP202 info
-        vbusPresent = ttgo->power->isVBUSPlug();
-        bool battConnected = ttgo->power->isBatteryConnect();
-        xSemaphoreGive(I2cMutex);
-
-        // basic Battery info
-        if (battConnected) {
-            done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-            if (pdTRUE != done) { return; }
-            int nowBatteryPercent = ttgo->power->getBattPercentage();
-            xSemaphoreGive(I2cMutex);
-            if (nowBatteryPercent != batteryPercent) {
-                batteryPercent = nowBatteryPercent;
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-            }
-        } else {
-            if (-1 != batteryPercent) {
-                batteryPercent = -1;
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_NOTFOUND, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-            }
-            batteryPercent = -1;
-        }
-
-        done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        if (pdTRUE != done) { return; }
-
-        // begin tick report
-        float nowAXPTemp = ttgo->power->getTemp();
-
-        xSemaphoreGive(I2cMutex);
-
-        if (nowAXPTemp != axpTemp) {
-            axpTemp = nowAXPTemp;
-            // lEvLog("AXP202: Temperature: %.1fºC\n", axpTemp);
-            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
-        }
+        TakeAllSamples();
         nextSlowSensorsTick = millis() + 2666;
-    }
-
-    if (millis() > nextSensorsTick) { // poll some other sensors ( normal pooling )
-        TakeSamples();
+    } else if (millis() > nextSensorsTick) { // poll some other sensors ( normal pooling )
+        TakeBMPSample();
         nextSensorsTick = millis() + (1000 / 8);
     }
 }
@@ -918,6 +882,7 @@ static void AXPInterruptController(void *args) {
         if (pdTRUE != done) { continue; }
 
         if (irqAxp) {
+            lEvLog("AXP202: INT received\n");
             int readed = ttgo->power->readIRQ();
             if ( AXP_PASS != readed ) { xSemaphoreGive(I2cMutex); continue; }
             if (ttgo->power->isChargingIRQ()) {
@@ -1161,10 +1126,7 @@ static void BMAInterruptController(void *args) {
         xSemaphoreGive(I2cMutex);
         return;
     }
-    ttgo->bma423AttachInterrupt([]{
-        //ets_printf("\n\n\nJOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOODER\n\n\n\n");
-        irqBMA = true;
-    });
+    ttgo->bma423AttachInterrupt([]{ irqBMA = true; });
     /*
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(
@@ -1204,6 +1166,7 @@ static void BMAInterruptController(void *args) {
         if (pdTRUE != done) { continue; }
 
         if (irqBMA) {
+            lEvLog("BMA423: INT received\n");
             int readed = ttgo->bma->readInterrupt();
             if ( false == readed ) { xSemaphoreGive(I2cMutex); continue; } // wait a bit
            /*
@@ -1273,12 +1236,14 @@ static void RTCInterruptController(void *args) {
     }*/
 
     //ttgo->rtc->resetAlarm();
-    ttgo->rtc->disableAlarm();
     /*
+    ttgo->rtc->disableAlarm();
+
     ttgo->rtc->setAlarmByMinutes(1);
     ttgo->rtc->enableAlarm();
-    lLog("PCF8563: @@@@@@@@@@@@@@@@@@@@@@@@@@DEBUG alarm set by 1 minute\n");
+    lLog("PCF8563: TEST @@@@@@@@@@@@@@@@@@@@@@@@@@DEBUG alarm set by 1 minute\n");
     */
+
 /*
     ttgo->rtc->disableTimer();
     ttgo->rtc->setTimer(5,20,true);
@@ -1295,6 +1260,16 @@ static void RTCInterruptController(void *args) {
         // check the RTC int
         if (irqRTC) {
             irqRTC = false;
+            lEvLog("PCF8563: INT received\n");
+            ttgo->rtc->resetAlarm();
+            ttgo->rtc->disableAlarm();
+            /**
+            ttgo->rtc->setAlarmByMinutes(1);
+            ttgo->rtc->enableAlarm();
+            lLog("PCF8563: TEST AGAIN ---------------------> alarm set by 1 minute\n");
+            */
+            xSemaphoreGive(I2cMutex);
+            continue;
 
             //detachInterrupt(RTC_INT_PIN);
             //detachInterrupt(RTC_INT_PIN);
@@ -1533,13 +1508,12 @@ void SystemEventsStart() {
     // Start the BMA interrupt controller loop
     intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
-    /*
-    //delay(150);
+
     lSysLog("RTC interrupts\n");
     // Start the BMA interrupt controller loop
     intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
-    */
+
     LunokIoTSystemTickerStart();
     delay(50);
 }
@@ -1551,12 +1525,62 @@ void SystemEventBootEnd() {
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 
+void TakeAXPSample() {
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if (pdTRUE != done) { return; }
+    // begin tick report
+    float nowAXPTemp = ttgo->power->getTemp();
+    vbusPresent = ttgo->power->isVBUSPlug();
+    bool battConnected = ttgo->power->isBatteryConnect();
+    int nowBatteryPercent = ttgo->power->getBattPercentage();
+
+    xSemaphoreGive(I2cMutex);
+
+    if (nowAXPTemp != axpTemp) {
+        axpTemp = nowAXPTemp;
+        // lEvLog("AXP202: Temperature: %.1fºC\n", axpTemp);
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TEMPERATURE, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
+    }
+
+    // basic Battery info
+    if (battConnected) {
+        if (nowBatteryPercent != batteryPercent) {
+            batteryPercent = nowBatteryPercent;
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PC, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+        }
+    } else {
+        if (-1 != batteryPercent) {
+            batteryPercent = -1;
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_NOTFOUND, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+        }
+        batteryPercent = -1;
+    }
+}
+
+void TakeESPSamples() {
+    hallData = hallRead();
+    float nowCpuTemp = (temprature_sens_read() - 32) / 1.8;
+
+    if (nowCpuTemp != cpuTemp) {
+        cpuTemp = nowCpuTemp;
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TEMP, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
+    }
+}
 /*
  * Get all samples possible
  */
-void TakeSamples()
-{
-    //@TODO AXP, hall, and others must be collected
+unsigned long nextReportTimestamp = 0;
+void TakeAllSamples() {
+
+    TakeESPSamples();
     TakeBMPSample();
+    TakeAXPSample();
+
+    // periodical report
+    if( millis() > nextReportTimestamp ) {
+        lSysLog("Temperatures: CPU: %.2f C, PMU: %.1f C, IMU: %g C\n", cpuTemp,axpTemp,bmaTemp);
+        nextReportTimestamp=millis()+(60*1000);
+    }
+
     // Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
 }
