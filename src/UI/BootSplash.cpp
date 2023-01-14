@@ -7,7 +7,7 @@
 
 #include "lunokiot_config.hpp" 
 
-#ifdef LILYGO_WATCH_2020_V3 // only if have speaker
+#if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
 #include <driver/i2s.h>
 #include "AudioFileSourcePROGMEM.h"
 #include "AudioFileSourceID3.h"
@@ -25,7 +25,7 @@ bool bootLoop = true; // this stops the animation loop
 bool bootLoopEnds = false; // this is used by the splash to know bootLoop is ended
 
 
-#ifdef LILYGO_WATCH_2020_V3
+#if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
 extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
 extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
@@ -171,7 +171,7 @@ void SplashAnnounceBegin() {
         if ( bright > 255 ) { break; }
         ttgo->setBrightness(bright);
     }
-#ifdef LILYGO_WATCH_2020_V3
+#if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
     // do sound only if boot is normal (crash-silent)
     if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
 #endif

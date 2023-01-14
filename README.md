@@ -14,6 +14,14 @@
 
 * Note: under heavy development (not ready for everyday use)
 
+
+* Supported devices:
+ * lilyGo TWatch 2020 series v1
+ * lilyGo TWatch 2020 series v2
+ * lilyGo TWatch 2020 series v3 (both battery and UART/TTL) 380mAh and 500mAh
+
+
+
 * You can set WiFi credentials ("Home>Settings>Prov") via QR using:
   * Android device: https://play.google.com/store/apps/details?id=com.espressif.provsoftap (select WiFi provisioning using WiFi)
   * Apple iOS: https://apps.apple.com/us/app/esp-softap-provisioning/id1474040630

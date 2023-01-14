@@ -16,10 +16,11 @@ SemaphoreHandle_t lLogSemaphore = NULL;
 bool LogViewApplication::dirty=false;
 
 void lLogCreate() {
+
     if ( nullptr == LogViewApplication::LogTextBuffer ) {
         LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
         LogViewApplication::LogTextBuffer->setColorDepth(1);
-        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*40,LogViewApplication::TextHeight*30);
+        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*40,LogViewApplication::TextHeight*20);
         LogViewApplication::LogTextBuffer->fillSprite(TFT_BLACK);
         LogViewApplication::LogTextBuffer->setTextWrap(false,false);
         LogViewApplication::LogTextBuffer->setTextFont(0);
@@ -27,6 +28,7 @@ void lLogCreate() {
         LogViewApplication::LogTextBuffer->setTextColor(TFT_WHITE);
         LogViewApplication::LogTextBuffer->setCursor(0,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
     }
+
     if ( NULL == lLogSemaphore ) { lLogSemaphore = xSemaphoreCreateMutex(); }
 }
 
@@ -40,7 +42,8 @@ void lRawLog(const char *fmt, ...) {
     #ifdef LUNOKIOT_DEBUG
         if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
             Serial.printf(buf);
-            /* @TODO too slow code
+            /*
+            // @TODO too slow code
             if ( nullptr != LogViewApplication::LogTextBuffer ) {
                 LogViewApplication::LogTextBuffer->printf(buf);
                 int16_t x = LogViewApplication::LogTextBuffer->getCursorX();

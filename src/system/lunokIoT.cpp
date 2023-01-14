@@ -54,18 +54,26 @@ Do not use ESP_LOGI functions inside.
     ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
 }
 
+#include "Datasources/database.hpp"
+
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
     InitLogs();
     // announce myself with build information
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
     FreeSpace();
+
     // Initialize lilygo lib
     //ttgo->setTftExternal(*tft);
     ttgo->begin();
     tft=ttgo->tft;
     
-    NVS.begin(); // need NVS to get the current settings
+    bool gotNVS = NVS.begin(); // need NVS to get the current settings
+
+    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
+    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
+    // format SPIFFS
+    if ( false == gotSPIFFS ) { gotSPIFFS = SPIFFS.begin(true); }
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
     //lUILog("User screen rotation: %d\n", rotation);
@@ -109,6 +117,7 @@ LunokIoT::LunokIoT() {
     BootReason();
     // here comes!
     SplashAnnounceBegin();
+
     userTall= NVS.getInt("UserTall");        // get how high is the user
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
 
@@ -120,7 +129,7 @@ LunokIoT::LunokIoT() {
         // BIOLOGICAL MALE PROPS
         stepDistanceCm = userTall * MAN_STEP_PROPORTION;
     }
-    delay(50);
+    //delay(50);
     // first logged message
     lSysLog("System initializing...\n");
 
@@ -129,10 +138,10 @@ LunokIoT::LunokIoT() {
     // get the GMT timezone
     long timezone = NVS.getInt("timezoneTime");
     // announce values to log
-    delay(50);
+    //delay(50);
     lEvLog("RTC: Config: Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
-    delay(50);
+    //delay(50);
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
         lEvLog("RTC: The time-date seems valid, thanks to secondary battery :)\n");
@@ -145,21 +154,30 @@ LunokIoT::LunokIoT() {
             ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
         }
     }
-    delay(50);
+    //delay(50);
     // Launch the lunokiot message bus
     SystemEventsStart();
-    delay(50);
+    //delay(50);
 
     UIStart();  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
 
     NetworkHandler();   // already provisioned? start the network timed tasks loop
-    delay(50);
+    //delay(50);
     InstallStepManager();
-    delay(50);
+    //delay(50);
 
     StartPMUMonitor();
 
-    delay(50);
+    
+    
+    
+    TestDatabase();
+
+    
+    
+    
+    
+    //delay(50);
     SplashAnnounceEnd();
 
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)

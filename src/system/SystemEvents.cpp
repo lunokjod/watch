@@ -44,6 +44,11 @@ extern TTGOClass *ttgo; // ttgo library
 #include <freertos/portable.h>
 //https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
 
+
+#include <SPI.h>
+#include <FS.h>
+#include <SPIFFS.h>
+
 bool normalBoot=true;
 
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
@@ -51,6 +56,9 @@ Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
 uint32_t systemStatsBootCounter = 0;
 uint32_t systemStatsRebootCounter = 0;
 uint32_t systemStatsCrashCounter = 0;
+
+uint32_t deviceSleepMSecs = 0; // time wasted in lightSleep waiting user interactions (forever alone time x'D)
+unsigned long deviceUsageMSecs=0; // time interacted with the user
 
 extern bool UIRunning;
 bool systemSleep = false;
@@ -236,6 +244,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
+
 static void DoSleepTask(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_timer.html
     // what about change all timers to:
@@ -306,15 +315,13 @@ static void DoSleepTask(void *args) {
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
     */
 
-    /*
-    // good ones
+    // the only good ones :(
     esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
-    */
 
     //esp_err_t wakeAXP_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_35 | GPIO_SEL_37) , ESP_EXT1_WAKEUP_ANY_HIGH);
-    esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
-    if ( ESP_OK != wakeBMA_RTC ) { lSysLog("ERROR: Unable to set ext1 (IMU+RTC) wakeup\n"); }
+    //esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
+    //if ( ESP_OK != wakeBMA_RTC ) { lSysLog("ERROR: Unable to set ext1 (IMU+RTC) wakeup\n"); }
 
     /*
     esp_err_t uartEnabled=esp_sleep_enable_uart_wakeup(UART_NUM_0);
@@ -339,9 +346,14 @@ static void DoSleepTask(void *args) {
         lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped? !!!!!!!\n");
     }
     int64_t wakeSleepTime_us = esp_timer_get_time();
-    int32_t differenceSleepTime_sec = (wakeSleepTime_us-beginSleepTime_us)/uS_TO_S_FACTOR;
+    int32_t differenceSleepTime_msec = (wakeSleepTime_us-beginSleepTime_us)/1000;
+    deviceSleepMSecs+=differenceSleepTime_msec;
+    deviceUsageMSecs=(esp_timer_get_time()/1000)-deviceSleepMSecs;
+    //float deviceUsageRatio=(deviceUsageMSecs/float(deviceSleepMSecs+deviceUsageMSecs))*100.0;
+    float deviceUsageRatio=(deviceUsageMSecs/float(esp_timer_get_time()/1000.0))*100.0;
 
-    lEvLog("ESP32: -- Wake -- o_O' (sleepd: %d secs)\n",differenceSleepTime_sec); // morning'!!
+    lEvLog("ESP32: -- Wake -- o_O' Sleepd times: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
+            differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
 
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     systemSleep = false;
@@ -492,6 +504,9 @@ void SaveDataBeforeShutdown() {
     }
     NVS.close();
     lEvLog("NVS: Closed\n");
+//    SPIFFS. @TODO need to be closed?
+//    lEvLog("SPIFFS: Closed\n");
+
     Serial.flush();
 }
 
@@ -858,9 +873,7 @@ static void AXPInterruptController(void *args) {
             AXP202_BATT_CUR_ADC1 |
             AXP202_BATT_VOL_ADC1,
         true);
-    ttgo->powerAttachInterrupt([]{
-        //ets_printf("AXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXPAXP\n\n\n");
-        irqAxp = true; });
+    ttgo->powerAttachInterrupt([](){ irqAxp = true; });
 
     ttgo->power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ | AXP202_PEK_LONGPRESS_IRQ |
                                AXP202_BATT_LOW_TEMP_IRQ | AXP202_BATT_OVER_TEMP_IRQ |
@@ -1126,15 +1139,8 @@ static void BMAInterruptController(void *args) {
         xSemaphoreGive(I2cMutex);
         return;
     }
-    ttgo->bma423AttachInterrupt([]{ irqBMA = true; });
-    /*
-    pinMode(BMA423_INT1, INPUT);
-    attachInterrupt(
-        BMA423_INT1, []{
-            ets_printf("JOOOOOOOOOOOOOOOO22222222222222222222222222222222OOOODER\n");
-            irqBMA = true;
-        }, RISING); // It must be a rising edge
-    */
+    ttgo->bma423AttachInterrupt([](){ irqBMA = true; });
+
     bool featureOK = ttgo->bma->enableFeature(BMA423_STEP_CNTR, true);
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'Step counter' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableFeature(BMA423_ANY_MOTION, true);
@@ -1214,35 +1220,24 @@ static void BMAInterruptController(void *args) {
 TaskHandle_t RTCInterruptControllerHandle = NULL;
 static void RTCInterruptController(void *args) {
     lSysLog("RTC interrupt handler \n");
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    //if (pdTRUE != done) { continue; }
-
-    //pinMode(RTC_INT_PIN, INPUT_PULLDOWN);
-    ttgo->rtcAttachInterrupt([]{irqRTC = true;});
-    /*
-    pinMode(RTC_INT_PIN, INPUT_PULLUP);
-    attachInterrupt(RTC_INT_PIN, [] {
-        irqRTC = true;
-    }, FALLING);
-    */
-    //if ( ttgo->rtc->alarmActive() ) { ttgo->rtc->disableAlarm(); }
-    //if ( ttgo->rtc->isTimerEnable() ) { ttgo->rtc->disableTimer(); }
+    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    ttgo->rtcAttachInterrupt([](){irqRTC = true;});
     
-    /*
-    bool rtcValid = ttgo->rtc->isValid();
-    if ( false == rtcValid ) {
-        lLog("RTC: invalid time\n");
-        return;
-    }*/
-
+    if ( ttgo->rtc->alarmActive() ) { 
+        //ttgo->rtc->disableAlarm();
+        lEvLog("RTC: Alarm is active\n");
+    }
+    if ( ttgo->rtc->isTimerEnable() ) {
+        //ttgo->rtc->disableTimer();
+        lEvLog("RTC: Timer is active\n");
+    }
+    
     //ttgo->rtc->resetAlarm();
-    /*
     ttgo->rtc->disableAlarm();
 
     ttgo->rtc->setAlarmByMinutes(1);
     ttgo->rtc->enableAlarm();
     lLog("PCF8563: TEST @@@@@@@@@@@@@@@@@@@@@@@@@@DEBUG alarm set by 1 minute\n");
-    */
 
 /*
     ttgo->rtc->disableTimer();
@@ -1261,8 +1256,17 @@ static void RTCInterruptController(void *args) {
         if (irqRTC) {
             irqRTC = false;
             lEvLog("PCF8563: INT received\n");
-            ttgo->rtc->resetAlarm();
-            ttgo->rtc->disableAlarm();
+            if ( ttgo->rtc->alarmActive() ) { 
+                //ttgo->rtc->resetAlarm();
+                ttgo->rtc->disableAlarm();
+                lEvLog("RTC: Alarm is active\n");
+            }
+            if ( ttgo->rtc->isTimerEnable() ) {
+                lEvLog("RTC: Timer is active\n");
+                ttgo->rtc->disableTimer();
+            }
+
+
             /**
             ttgo->rtc->setAlarmByMinutes(1);
             ttgo->rtc->enableAlarm();
@@ -1579,8 +1583,8 @@ void TakeAllSamples() {
     // periodical report
     if( millis() > nextReportTimestamp ) {
         lSysLog("Temperatures: CPU: %.2f C, PMU: %.1f C, IMU: %g C\n", cpuTemp,axpTemp,bmaTemp);
+        // Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
         nextReportTimestamp=millis()+(60*1000);
     }
 
-    // Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
 }

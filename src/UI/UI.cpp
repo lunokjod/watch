@@ -516,16 +516,7 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
 
 static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("lunokIoT: UI event loop running\n");
-    systemSleep = false;
-    ttgo->setBrightness(255); // by default, user overrides this on LaunchApplication
 }
-
-
-
-
-
-
-
 
 TaskHandle_t UITickTaskHandler = NULL;              // save the handler
 static void UITickTask(void* args) {
@@ -552,7 +543,7 @@ static void UITickTask(void* args) {
 }
 StaticTask_t UITickBuffer;
 StackType_t UITickStack[LUNOKIOT_APP_STACK_SIZE];
-void UITickStart() {
+void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
     if ( NULL == UITickTaskHandler ) {
         UITickTaskHandler = xTaskCreateStaticPinnedToCore( UITickTask,
                                                 "lUITick",
@@ -567,7 +558,8 @@ void UITickStart() {
         lUILog("Tick enabled\n");
     }
 }
-void UITickEnd() {
+
+void UITickEnd() { // @TODO this can be replaced by a Ticker stop
     if ( NULL != UITickTaskHandler ) {
         vTaskDelete(UITickTaskHandler);
         UITickTaskHandler=NULL;
