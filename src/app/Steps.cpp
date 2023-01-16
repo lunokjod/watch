@@ -230,7 +230,7 @@ bool StepsApplication::Tick() {
         //lLog("Steps: WeekDay: %d\n",correctedDay);
         if ( -1 == correctedDay ) { correctedDay=6; }
         //drawrect under the current week day
-        canvas->fillRect(35+(25*correctedDay),100,25,5,ThCol(light));
+        canvas->fillRect(32+(25*correctedDay),100,25,5,ThCol(light));
 
 
         uint32_t totalStepsValues = stepsBMAActivityStationary
@@ -267,7 +267,7 @@ bool StepsApplication::Tick() {
                     timeBMAActivityNone = 0;
 */
         int16_t x = 20;
-        int16_t y = 12;
+        int16_t y = 16;
         int16_t border=4;
         canvas->fillRect(x-border,y-border,activityGraph->canvas->width()+(border*2),activityGraph->canvas->height()+(border*2),ThCol(background_alt));
         activityGraph->DrawTo(canvas,x,y);

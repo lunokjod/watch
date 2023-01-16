@@ -387,28 +387,41 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
         if (0 == strcmp("BMA423_USER_STATIONARY", currentActivity)) {
             stepsBMAActivityStationary += totalStepsBMAActivity;
             timeBMAActivityStationary += totalBMAActivity;
-            SqlLog("Activity: Stationary");
         }
         else if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
             stepsBMAActivityWalking += totalStepsBMAActivity;
             timeBMAActivityWalking += totalBMAActivity;
-            SqlLog("Activity: Walking");
         }
         else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
             stepsBMAActivityRunning += totalStepsBMAActivity;
             timeBMAActivityRunning += totalBMAActivity;
-            SqlLog("Activity: Running");
         }
         else if (0 == strcmp("BMA423_STATE_INVALID", currentActivity)) {
             stepsBMAActivityInvalid += totalStepsBMAActivity;
             timeBMAActivityInvalid += totalBMAActivity;
-            SqlLog("Activity: Invalid");
         }
         else if (0 == strcmp("None", currentActivity)) {
             stepsBMAActivityNone += totalStepsBMAActivity;
             timeBMAActivityNone += totalBMAActivity;
+        }
+
+        // current activity mark
+        if (0 == strcmp("BMA423_USER_STATIONARY", nowActivity)) {
+            SqlLog("Activity: Stationary");
+        }
+        else if (0 == strcmp("BMA423_USER_WALKING", nowActivity)) {
+            SqlLog("Activity: Walking");
+        }
+        else if (0 == strcmp("BMA423_USER_RUNNING", nowActivity)) {
+            SqlLog("Activity: Running");
+        }
+        else if (0 == strcmp("BMA423_STATE_INVALID", nowActivity)) {
+            SqlLog("Activity: Invalid");
+        }
+        else if (0 == strcmp("None", nowActivity)) {
             SqlLog("Activity: None");
         }
+
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);
         lEvLog("BMA423: Event: Current actity: %s\n", nowActivity);
         lEvLog("BMA423: Timers:\n");

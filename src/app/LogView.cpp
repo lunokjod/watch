@@ -11,12 +11,12 @@ extern TFT_eSPI *tft;
 #include "../UI/UI.hpp"
 
 SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
-TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
+//TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
 bool LogViewApplication::dirty=false;
 extern bool sqlInit;
 void lLogCreate() {
-
+    /*
     if ( nullptr == LogViewApplication::LogTextBuffer ) {
         LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
         LogViewApplication::LogTextBuffer->setColorDepth(1);
@@ -28,7 +28,7 @@ void lLogCreate() {
         LogViewApplication::LogTextBuffer->setTextColor(TFT_WHITE);
         LogViewApplication::LogTextBuffer->setCursor(0,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
     }
-
+    */
     if ( NULL == lLogSemaphore ) { lLogSemaphore = xSemaphoreCreateMutex(); }
 }
 
@@ -65,6 +65,11 @@ void lRawLog(const char *fmt, ...) {
     va_end(args);
 }
 LogViewApplication::~LogViewApplication() {
+    /*
+    LogTextBuffer->deleteSprite();
+    delete LogTextBuffer;
+    LogTextBuffer=nullptr;
+   */
     //ViewBuffer->deleteSprite();
     //delete ViewBuffer;
 }
@@ -95,6 +100,7 @@ bool LogViewApplication::Tick() {
     return TemplateApplication::Tick();
 
     if ( touched ) {
+        /*
         if ( ActiveRect::InRect(touchX,touchY,0,0,ViewBuffer->height(),ViewBuffer->width()) ) {
             if ( touchDragVectorX != 0 ) {
                 lastTouch=true;
@@ -118,7 +124,9 @@ bool LogViewApplication::Tick() {
             }
             return false;
         }
+        */
     } else if ( lastTouch ) {
+        /*
         if ( nullptr != LogViewApplication::LogTextBuffer ) {
             offsetX+=touchDragVectorX;
             if ( offsetX > 0 ) { offsetX = 0; }
@@ -129,6 +137,7 @@ bool LogViewApplication::Tick() {
             else if ( offsetY < ((LogTextBuffer->height()-ViewBuffer->height())*-1) ) { offsetY = ((LogTextBuffer->height()-ViewBuffer->height())*-1); }
         }
         lastTouch=false;
+        */
     }
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);

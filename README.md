@@ -149,3 +149,4 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * https://github.com/espressif/esp-launchpad
  * https://github.com/espressif/esp-sr/blob/master/esp-tts/README_en.md
  * https://github.com/espressif/esp-sr
+ * https://github.com/niicoooo/esp32-elfloader/tree/master/example-payload

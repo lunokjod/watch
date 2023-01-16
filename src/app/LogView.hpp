@@ -79,7 +79,7 @@ class LogViewApplication: public TemplateApplication {
         const char *AppName() override { return "Log viewer"; };
         TFT_eSprite * ViewBuffer;
         static bool dirty;
-        static TFT_eSprite * LogTextBuffer;
+        //static TFT_eSprite * LogTextBuffer;
         static const uint8_t TextHeight=9;
         static const uint8_t TextWidth=40;
         LogViewApplication();
