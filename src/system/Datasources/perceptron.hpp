@@ -1,9 +1,17 @@
 #ifndef PERCEPTRON_H
 #define PERCEPTRON_H
 
+
+#include <Arduino.h>
+
+#include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 typedef struct Perceptron {
 	unsigned numInputs_;
@@ -35,6 +43,7 @@ void _Perceptron_changeWeights(Perceptron *perceptron, int actualResult, int des
 #ifdef __cplusplus
 }
 #endif
+int PerceptronTest();
 
 #endif
 

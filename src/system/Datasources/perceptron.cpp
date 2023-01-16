@@ -1,7 +1,11 @@
+#include <Arduino.h>
+
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
-#include "perceptron.h"
+#include "perceptron.hpp"
+#include "../../app/LogView.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +39,7 @@ double Perceptron_getValue(const Perceptron *perceptron, const double inputs[]) 
 	double ans = 0;
 	
 	for (i = 0 ; i < perceptron->numInputs_ ; i++) {
+		delay(1);
 		ans += perceptron->weights_[i] * inputs[i];
 	}	
 	return ans;
@@ -83,6 +88,7 @@ void Perceptron_setWeightAt(Perceptron *perceptron, unsigned index, double weigh
 void Perceptron_setWeights(Perceptron *perceptron, const double *weights) {
 	unsigned i;
 	for (i = 0 ; i < perceptron->numInputs_ ; i++) {
+		delay(1);
 		perceptron->weights_[i] = weights[i];
 	}
 }
@@ -95,6 +101,7 @@ void _Perceptron_changeWeights(Perceptron *perceptron, int actualResult, int des
 	unsigned i;
 	
 	for (i = 0 ; i < perceptron->numInputs_ ; i++) {
+		delay(1);
 		perceptron->weights_[i] += perceptron->trainingRate_ * (desiredResult - actualResult) * inputs[i];
 	}
 	perceptron->threshold_ -= perceptron->trainingRate_ * (desiredResult - actualResult);
@@ -113,4 +120,65 @@ double _Perceptron_getRandomDouble() {
 #ifdef __cplusplus
 }
 #endif
+
+
+// https://sourceforge.net/p/ccperceptron/wiki/Home/
+int PerceptronTest() {
+	// Constants
+	const int TRAINING_ITERATIONS = 16;
+	const int NUM_OF_INPUTS = 2;
+	const double TRAINING_RATE = 0.2;
+	
+	const double ZERO_ZERO[] = {0, 0};
+	const double ZERO_ONE[]  = {0, 1};
+	const double ONE_ZERO[]  = {1, 0};
+	const double ONE_ONE[]   = {1, 1};
+	
+	int i;
+	// Creating Perceptron instances
+	Perceptron *pAND = Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
+	Perceptron *pOR  = Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
+
+	// Printing the results of the randomly generated perceptrons (BEFORE TRAINING)
+	lLog("Results for 'OR' perceptron, BEFORE training:\n");
+	lLog("Input: (0,0). Result: %d\n", Perceptron_getResult(pOR, ZERO_ZERO));
+	lLog("Input: (0,1). Result: %d\n", Perceptron_getResult(pOR, ZERO_ONE));
+	lLog("Input: (1,0). Result: %d\n", Perceptron_getResult(pOR, ONE_ZERO));
+	lLog("Input: (1,1). Result: %d\n", Perceptron_getResult(pOR, ONE_ONE));
+
+	lLog("Results for 'AND' perceptron, BEFORE training:\n");
+	lLog("Input: (0,0). Result: %d\n", Perceptron_getResult(pAND, ZERO_ZERO));
+	lLog("Input: (0,1). Result: %d\n", Perceptron_getResult(pAND, ZERO_ONE));
+	lLog("Input: (1,0). Result: %d\n", Perceptron_getResult(pAND, ONE_ZERO));
+	lLog("Input: (1,1). Result: %d\n", Perceptron_getResult(pAND, ONE_ONE));
+	
+	// Training each of the perceptrons
+	for (i = 0 ; i < TRAINING_ITERATIONS ; i++) {
+		delay(80);
+		Perceptron_train(pAND, ZERO_ZERO, 0);
+		Perceptron_train(pAND, ZERO_ONE,  0);
+		Perceptron_train(pAND, ONE_ZERO,  0);
+		Perceptron_train(pAND, ONE_ONE,   1);
+	
+		Perceptron_train(pOR, ZERO_ZERO,  0);
+		Perceptron_train(pOR, ZERO_ONE,   1);
+		Perceptron_train(pOR, ONE_ZERO,   1);
+		Perceptron_train(pOR, ONE_ONE,    1);
+	}
+	
+	// Printing the results of the trained perceptrons (AFTER TRAINING)
+	lLog("Results for 'OR' perceptron, AFTER training:\n");
+	lLog("Input: (0,0). Result: %d\n", Perceptron_getResult(pOR, ZERO_ZERO));
+	lLog("Input: (0,1). Result: %d\n", Perceptron_getResult(pOR, ZERO_ONE));
+	lLog("Input: (1,0). Result: %d\n", Perceptron_getResult(pOR, ONE_ZERO));
+	lLog("Input: (1,1). Result: %d\n", Perceptron_getResult(pOR, ONE_ONE));
+		
+	lLog("Results for 'AND' perceptron, AFTER training:\n");
+	lLog("Input: (0,0). Result: %d\n", Perceptron_getResult(pAND, ZERO_ZERO));
+	lLog("Input: (0,1). Result: %d\n", Perceptron_getResult(pAND, ZERO_ONE));
+	lLog("Input: (1,0). Result: %d\n", Perceptron_getResult(pAND, ONE_ZERO));
+	lLog("Input: (1,1). Result: %d\n", Perceptron_getResult(pAND, ONE_ONE));
+	
+	return 0;
+}
 

@@ -21,11 +21,13 @@
 #include "UI/BootSplash.hpp"
 #include "SystemEvents.hpp"
 #include "Datasources/database.hpp"
+#include "Datasources/perceptron.hpp"
 #include "PMU/AXP202.hpp"
 #include "system/Network.hpp"
 
 #include "app/Steps.hpp" // Step manager
 #include "app/LogView.hpp" // log
+
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 TFT_eSPI * tft = nullptr;
@@ -166,6 +168,9 @@ LunokIoT::LunokIoT() {
         }
     }
     StartDatabase(); // must be started after RTC sync (timestamped inserts)
+
+    FreeSpace();
+    PerceptronTest();
 
     //delay(50);
     // Launch the lunokiot message bus
