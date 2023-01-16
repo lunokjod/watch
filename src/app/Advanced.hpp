@@ -9,7 +9,7 @@
 class AdvancedSettingsApplication: public LunokIoTApplication {
     private:
         unsigned long nextRedraw=0;
-        bool showOverlay=false;
+        //bool showOverlay=false;
     public:
         const char *AppName() override { return "Advanced settings"; };
         ButtonImageXBMWidget * btnBack = nullptr;

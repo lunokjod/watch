@@ -9,7 +9,7 @@
 
 class SettingsApplication: public TemplateApplication {
     private:
-        bool showOverlay=false;
+        //bool showOverlay=false;
         ButtonImageXBMWidget * btnHelp = nullptr;
         SwitchWidget * ntpCheck = nullptr;
         SwitchWidget * openweatherCheck = nullptr;

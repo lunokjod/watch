@@ -1,137 +1,137 @@
-/*
-    This creates two empty databases, populates values, and retrieves them back
-    from the SPIFFS file 
-*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3.h>
 #include <SPI.h>
 #include <FS.h>
 #include "SPIFFS.h"
+#include "../../app/LogView.hpp"
 
-/* You only need to format SPIFFS the first time you run a
-   test or else use the SPIFFS plugin to create a partition
-   https://github.com/me-no-dev/arduino-esp32fs-plugin */
-#define FORMAT_SPIFFS_IF_FAILED true
+// https://www.sqlite.org/syntaxdiagrams.html
 
-const char* data = "Callback function called";
-static int callback(void *data, int argc, char **argv, char **azColName) {
-   int i;
-   Serial.printf("%s: ", (const char*)data);
-   for (i = 0; i<argc; i++){
-       Serial.printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-   }
-   Serial.printf("\n");
-   return 0;
+void ListSPIFFS() {
+    lSysLog("SPIFFS contents: ")
+    // list SPIFFS contents
+    File root = SPIFFS.open("/");
+    if (!root) {
+        lLog("- failed to open directory\n");
+        return;
+    }
+    if (!root.isDirectory()) {
+        lLog("- not a directory\n");
+        return;
+    }
+    lLog("\n")
+    File file = root.openNextFile();
+    while (file) {
+        if (file.isDirectory()) {
+            lSysLog("<DIR> '%s'\n",file.name());
+        } else {
+            lSysLog("      '%s' (%u byte)\n",file.name(),file.size());
+        }
+        file = root.openNextFile();
+    }
+    lSysLog("SPIFFS end\n");
 }
 
+sqlite3 *lIoTsystemDatabase = nullptr;
+
+static int callback(void *data, int argc, char **argv, char **azColName) {
+   int i;
+   lSysLog("SQL: Data dump:\n");
+   for (i = 0; i<argc; i++){
+       lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+   }
+   return 0;
+}
+// @TODO if SD is availiable, must use it to save read/write operations (internal flash cannot be replaced)
 int db_open(const char *filename, sqlite3 **db) {
    int rc = sqlite3_open(filename, db);
    if (rc) {
-       Serial.printf("Can't open database: %s\n", sqlite3_errmsg(*db));
+       lSysLog("SQL ERROR: Can't open database: '%s'\n", sqlite3_errmsg(*db));
        return rc;
    } else {
-       Serial.printf("Opened database successfully\n");
+       lSysLog("SQL: Opened database successfully\n");
    }
    return rc;
 }
 
 char *zErrMsg = 0;
 int db_exec(sqlite3 *db, const char *sql) {
-   Serial.println(sql);
+   lSysLog("SQL: '%s'\n",sql);
    long start = micros();
-   int rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
+   int rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
    if (rc != SQLITE_OK) {
-       Serial.printf("SQL error: %s\n", zErrMsg);
+       lSysLog("SQL: ERROR: %s\n", zErrMsg);
        sqlite3_free(zErrMsg);
    } else {
-       Serial.printf("Operation done successfully\n");
+       lSysLog("SQL: Operation done successfully\n");
    }
-   Serial.print(F("Time taken:"));
-   Serial.println(micros()-start);
+   lSysLog("SQL: Time taken: %lu\n", micros()-start);
    return rc;
 }
 
-void TestDatabase() {
+SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
+void SqlLog(const char * logLine) {
+    if ( nullptr == lIoTsystemDatabase ) { return; }
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+        char * query=(char*)ps_malloc(200);
+        sprintf(query,fmtStr,logLine);
+        int  rc = db_exec(lIoTsystemDatabase,query);
+        if (rc != SQLITE_OK) {
+            lSysLog("SQL: ERROR: Unable to log '%s'", logLine);
+            sqlite3_close(lIoTsystemDatabase);
+            lIoTsystemDatabase=nullptr;
+            free(query);
+            xSemaphoreGive( SqlLogSemaphore ); // free
+            return;
+        }
+        free(query);
+        xSemaphoreGive( SqlLogSemaphore ); // free
+    }
+}
 
-   sqlite3 *db1;
-   sqlite3 *db2;
-   int rc;
-   // list SPIFFS contents
-   File root = SPIFFS.open("/");
-   if (!root) {
-       Serial.println("- failed to open directory");
-       return;
-   }
-   if (!root.isDirectory()) {
-       Serial.println(" - not a directory");
-       return;
-   }
-   File file = root.openNextFile();
-   while (file) {
-       if (file.isDirectory()) {
-           Serial.print("  DIR : ");
-           Serial.println(file.name());
-       } else {
-           Serial.print("  FILE: ");
-           Serial.print(file.name());
-           Serial.print("\tSIZE: ");
-           Serial.println(file.size());
-       }
-       file = root.openNextFile();
-   }
+void StopDatabase() {
+    if (nullptr != lIoTsystemDatabase ) {
+        lSysLog("SQL: closing...\n");
+        SqlLog("end");
+        sqlite3_close(lIoTsystemDatabase);
+        lIoTsystemDatabase=nullptr;
+    }
+}
+void StartDatabase() {
+    lSysLog("Sqlite3 opening...\n");
+    //SPIFFS.remove("/lwatch.db");
+    int rc;
+    sqlite3_initialize();
+    if (db_open("/spiffs/lwatch.db", &lIoTsystemDatabase)) {
+        lSysLog("ERROR: Datasource: Unable to open sqlite3 log!\n");
+        lIoTsystemDatabase=nullptr;
+        return;
+    }
+    rc = db_exec(lIoTsystemDatabase, "CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);");
+    if (rc != SQLITE_OK) {
+        sqlite3_close(lIoTsystemDatabase);
+        lIoTsystemDatabase=nullptr;
+        return;
+    }
 
-   // remove existing file
-   //SPIFFS.remove("/test1.db");
-   //SPIFFS.remove("/test2.db");
+    // destroy old entries and possible date errors (no ntpSync or RTC)
+    rc = db_exec(lIoTsystemDatabase, "DELETE FROM rawlog WHERE timestamp < datetime('now', '-90 days');");
+    if (rc != SQLITE_OK) {
+        sqlite3_close(lIoTsystemDatabase);
+        lIoTsystemDatabase=nullptr;
+        return;
+    }
+    db_exec(lIoTsystemDatabase, "SELECT COUNT(*) FROM rawlog;");
 
-   sqlite3_initialize();
+    rc = db_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 5;");
+    if (rc != SQLITE_OK) {
+        sqlite3_close(lIoTsystemDatabase);
+        lIoTsystemDatabase=nullptr;
+        return;
+    }
 
-   if (db_open("/spiffs/test1.db", &db1))
-       return;
-   if (db_open("/spiffs/test2.db", &db2))
-       return;
-/*
-   rc = db_exec(db1, "CREATE TABLE test1 (id INTEGER, content);");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-   rc = db_exec(db2, "CREATE TABLE test2 (id INTEGER, content);");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-*/
-   rc = db_exec(db1, "INSERT INTO test1 VALUES ('Hello, World from test1');");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-   rc = db_exec(db2, "INSERT INTO test2 VALUES ('Hello, World from test2');");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-
-   rc = db_exec(db1, "SELECT * FROM test1");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-   rc = db_exec(db2, "SELECT * FROM test2");
-   if (rc != SQLITE_OK) {
-       sqlite3_close(db1);
-       sqlite3_close(db2);
-       return;
-   }
-
-   sqlite3_close(db1);
-   sqlite3_close(db2);
-
+    SqlLog("begin");
 }

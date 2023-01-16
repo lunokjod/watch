@@ -69,14 +69,10 @@ bool ShutdownApplication::Tick() {
         ttgo->tft->fillScreen(TFT_BLACK);
         if ( restart ) {
             lEvLog("ESP32: System restart NOW!\n");
-            //Serial.flush();
-            //delay(10);
             uart_wait_tx_idle_polling(UART_NUM_0);
             ESP.restart();
         } else {
             lEvLog("ESP32: System shutdown NOW!\n");
-            //Serial.flush();
-            //delay(10);
             uart_wait_tx_idle_polling(UART_NUM_0);
             ttgo->shutdown();
         }

@@ -14,7 +14,7 @@ SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
 TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
 SemaphoreHandle_t lLogSemaphore = NULL;
 bool LogViewApplication::dirty=false;
-
+extern bool sqlInit;
 void lLogCreate() {
 
     if ( nullptr == LogViewApplication::LogTextBuffer ) {

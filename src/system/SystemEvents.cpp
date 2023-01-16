@@ -59,6 +59,7 @@ uint32_t systemStatsCrashCounter = 0;
 
 uint32_t deviceSleepMSecs = 0; // time wasted in lightSleep waiting user interactions (forever alone time x'D)
 unsigned long deviceUsageMSecs=0; // time interacted with the user
+float deviceUsageRatio=100.0;   // device usage percentage ratio
 
 extern bool UIRunning;
 bool systemSleep = false;
@@ -110,9 +111,9 @@ unsigned long timeBMAActivityInvalid = 0;
 uint32_t stepsBMAActivityNone = 0;
 unsigned long timeBMAActivityNone = 0;
 
-static bool irqAxp = false;
-static bool irqBMA = false;
-static bool irqRTC = false;
+volatile static bool irqAxp = false;
+volatile static bool irqBMA = false;
+volatile static bool irqRTC = false;
 
 
 extern NimBLECharacteristic *battCharacteristic;
@@ -350,9 +351,9 @@ static void DoSleepTask(void *args) {
     deviceSleepMSecs+=differenceSleepTime_msec;
     deviceUsageMSecs=(esp_timer_get_time()/1000)-deviceSleepMSecs;
     //float deviceUsageRatio=(deviceUsageMSecs/float(deviceSleepMSecs+deviceUsageMSecs))*100.0;
-    float deviceUsageRatio=(deviceUsageMSecs/float(esp_timer_get_time()/1000.0))*100.0;
+    deviceUsageRatio=(deviceUsageMSecs/float(esp_timer_get_time()/1000.0))*100.0;
 
-    lEvLog("ESP32: -- Wake -- o_O' Sleepd times: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
+    lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
 
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
@@ -383,30 +384,30 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
         uint32_t endStepsBMAActivity = stepCount;
         uint32_t totalStepsBMAActivity = endStepsBMAActivity - beginStepsBMAActivity;
         // time counter attribution
-        if (0 == strcmp("BMA423_USER_STATIONARY", currentActivity))
-        {
+        if (0 == strcmp("BMA423_USER_STATIONARY", currentActivity)) {
             stepsBMAActivityStationary += totalStepsBMAActivity;
             timeBMAActivityStationary += totalBMAActivity;
+            SqlLog("Activity: Stationary");
         }
-        else if (0 == strcmp("BMA423_USER_WALKING", currentActivity))
-        {
+        else if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
             stepsBMAActivityWalking += totalStepsBMAActivity;
             timeBMAActivityWalking += totalBMAActivity;
+            SqlLog("Activity: Walking");
         }
-        else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity))
-        {
+        else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
             stepsBMAActivityRunning += totalStepsBMAActivity;
             timeBMAActivityRunning += totalBMAActivity;
+            SqlLog("Activity: Running");
         }
-        else if (0 == strcmp("BMA423_STATE_INVALID", currentActivity))
-        {
+        else if (0 == strcmp("BMA423_STATE_INVALID", currentActivity)) {
             stepsBMAActivityInvalid += totalStepsBMAActivity;
             timeBMAActivityInvalid += totalBMAActivity;
+            SqlLog("Activity: Invalid");
         }
-        else if (0 == strcmp("None", currentActivity))
-        {
+        else if (0 == strcmp("None", currentActivity)) {
             stepsBMAActivityNone += totalStepsBMAActivity;
             timeBMAActivityNone += totalBMAActivity;
+            SqlLog("Activity: None");
         }
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);
         lEvLog("BMA423: Event: Current actity: %s\n", nowActivity);
@@ -475,6 +476,8 @@ static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32
 }
 
 extern bool provisioned;
+extern void StopDatabase();
+
 void SaveDataBeforeShutdown() {
     NVS.setInt("provisioned", provisioned, false);
 
@@ -504,10 +507,17 @@ void SaveDataBeforeShutdown() {
     }
     NVS.close();
     lEvLog("NVS: Closed\n");
-//    SPIFFS. @TODO need to be closed?
-//    lEvLog("SPIFFS: Closed\n");
 
-    Serial.flush();
+    char * usageStatics=(char *)ps_malloc(200);
+    if ( nullptr != usageStatics ) {
+        sprintf(usageStatics,"Usage stats: Sleep: %u secs, in use: %lu secs (usage ratio: %.2f%%%%)",
+                deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
+        SqlLog(usageStatics);
+        free(usageStatics);
+    }
+    StopDatabase();
+    SPIFFS.end();
+    lEvLog("SPIFFS: Closed\n");
 }
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -649,6 +659,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    SqlLog("stop");
     lSysLog("System event: Stop\n");
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
@@ -676,6 +687,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
+    SqlLog("wake");
     if ( nullptr == currentApplication ) {
         LaunchWatchface(false);
     } else { // already have an app on currentApplication

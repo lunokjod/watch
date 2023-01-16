@@ -66,6 +66,8 @@ void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 #define lUIDeepLog(...)
 #endif
 
+extern void SqlLog(const char * logLine);
+
 class LogViewApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;

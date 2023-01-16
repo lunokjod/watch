@@ -13,7 +13,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 
-extern TFT_eSprite *overlay;
+//extern TFT_eSprite *overlay;
 
 AdvancedSettingsApplication::~AdvancedSettingsApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }
@@ -33,6 +33,7 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
     btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](void *bah){
         LaunchApplication(new LogViewApplication());
     },img_log_32_bits,img_log_32_height,img_log_32_width,ThCol(text),ThCol(background_alt));
+    /*
     btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](void *bah){
         showOverlay = (!showOverlay);
     },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
@@ -60,6 +61,7 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
     overlay->setTextColor(TFT_WHITE);
     overlay->setTextDatum(TL_DATUM);
     overlay->drawString("Full erase",rx+7,ry+7);
+    */
     Tick();
 }
 
@@ -74,7 +76,7 @@ bool AdvancedSettingsApplication::Tick() {
         btnErase->DrawTo(canvas);
         btnLog->DrawTo(canvas);
         btnHelp->DrawTo(canvas);
-        if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
+        //if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
         nextRedraw=millis()+(1000/10);
         return true;
     }

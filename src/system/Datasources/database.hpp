@@ -1,6 +1,10 @@
 #ifndef ___LUNOKIOT__SYSTEM__DATABASE___
 #define ___LUNOKIOT__SYSTEM__DATABASE___
+#include <sqlite3.h>
 
-void TestDatabase();
+void StartDatabase();
+void ListSPIFFS();
+void SqlLog(const char * logLine);
+extern sqlite3 *lIoTsystemDatabase;
 
 #endif

@@ -5,7 +5,7 @@
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
-extern TFT_eSprite *overlay;
+//extern TFT_eSprite *overlay;
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
@@ -76,11 +76,11 @@ SettingsApplication::SettingsApplication() {
     bleCheck->switchEnabled=false;
 #endif
     bleCheck->InternalRedraw();
-    
+    /*
     btnHelp=new ButtonImageXBMWidget(TFT_WIDTH-69,5,64,64,[&,this](void *unused){
         showOverlay = (!showOverlay);
     },img_help_32_bits,img_help_32_height,img_help_32_width,ThCol(text),ThCol(button),false);
-
+    */
     ntpCheck=new SwitchWidget(10,10);
     ntpCheck->switchEnabled=NVS.getInt("NTPEnabled");
     ntpCheck->enabled=wifiCheck->switchEnabled;
@@ -93,6 +93,7 @@ SettingsApplication::SettingsApplication() {
     if ( 0 == strlen(openWeatherMapApiKey)) {
         openweatherCheck->SetEnabled(false);
     }
+    /*
     // build overlay as help screen
     overlay->fillSprite(TFT_BLACK);
     const uint8_t margin = 32;
@@ -118,7 +119,8 @@ SettingsApplication::SettingsApplication() {
     overlay->fillCircle(bleCheck->x+margin,bleCheck->y+margin,radius,TFT_TRANSPARENT);
     overlay->fillCircle(btnHelp->x+margin,btnHelp->y+margin,radius,TFT_TRANSPARENT);
     overlay->fillCircle(btnBack->x+margin,btnBack->y+margin,radius,TFT_TRANSPARENT);
-    /*
+
+
     overlay->setTextFont(1);
     overlay->setTextSize(2);
     overlay->setTextDatum(CL_DATUM);
@@ -172,7 +174,7 @@ bool SettingsApplication::Tick() {
 #endif
         canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,textColor);
 
-        if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
+        //if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
 
         nextRefresh=millis()+(1000/3);
         return true;

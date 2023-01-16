@@ -30,7 +30,7 @@ WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
 LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
 void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
 
-extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
+//extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
 
 LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 

@@ -18,6 +18,7 @@ class StepsApplication: public LunokIoTApplication {
         ButtonImageXBMWidget * btnSetup = nullptr;
         ButtonImageXBMWidget * btnBack = nullptr;
         GraphWidget * weekGraph = nullptr;
+        GraphWidget * activityGraph = nullptr;
         StepsApplication();
         ~StepsApplication();
         bool Tick();

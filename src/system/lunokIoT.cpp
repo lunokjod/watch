@@ -1,22 +1,31 @@
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <cstdio>
+//#include <stdio.h>
+//#include <stdlib.h>
 
-#include <ArduinoNvs.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <esp_timer.h>
 #include <esp_log.h>
 #include <esp_task_wdt.h>
+
+#include <LilyGoWatch.h>
+
+#include <SPI.h>
+#include <FS.h>
+#include <SPIFFS.h>
+#include <ArduinoNvs.h>
 
 #include "../lunokIoT.hpp"
 #include "../lunokiot_config.hpp"
 #include "UI/BootSplash.hpp"
 #include "SystemEvents.hpp"
-
+#include "Datasources/database.hpp"
 #include "PMU/AXP202.hpp"
-
-//#include "system/Tasks.hpp"
 #include "system/Network.hpp"
+
 #include "app/Steps.hpp" // Step manager
-#include "app/LogView.hpp"
+#include "app/LogView.hpp" // log
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 TFT_eSPI * tft = nullptr;
@@ -24,9 +33,6 @@ TFT_eSPI * tft = nullptr;
 
 extern bool ntpSyncDone;
 extern const char *ntpServer;
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 
 volatile RTC_NOINIT_ATTR int16_t 	lt_sys_reset;//Global var
 RTC_NOINIT_ATTR char lt_sys_tsk_ovf[16];//Global var
@@ -54,26 +60,30 @@ Do not use ESP_LOGI functions inside.
     ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
 }
 
-#include "Datasources/database.hpp"
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
     InitLogs();
+    
     // announce myself with build information
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
     FreeSpace();
 
+    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
+    // format SPIFFS if needed
+    if ( false == gotSPIFFS ) {
+        lSysLog("Format SPIFFS....\n");
+        gotSPIFFS = SPIFFS.begin(true);
+    }
+    ListSPIFFS();
+    
     // Initialize lilygo lib
     //ttgo->setTftExternal(*tft);
     ttgo->begin();
     tft=ttgo->tft;
     
     bool gotNVS = NVS.begin(); // need NVS to get the current settings
-
-    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
-    // format SPIFFS
-    if ( false == gotSPIFFS ) { gotSPIFFS = SPIFFS.begin(true); }
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
     //lUILog("User screen rotation: %d\n", rotation);
@@ -83,7 +93,8 @@ LunokIoT::LunokIoT() {
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
-    
+
+
     /*
     esp_err_t taskStatus = esp_task_wdt_status(NULL);
     if ( ESP_ERR_INVALID_STATE != taskStatus ) {
@@ -95,13 +106,14 @@ LunokIoT::LunokIoT() {
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
     }
+    /* useless on arduinofw
     //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
     if ( ESP_OK != taskWatchdogResult ) {
         //  maybe due the ArduinoFW esp-idf sdk see:
         // '.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config/sdkconfig.h'
         lEvLog("WARNING: Unable to start Task Watchdog on PRO_CPU(0)\n");
-    }
+    }*/
     //#endif
     //#if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
@@ -118,6 +130,8 @@ LunokIoT::LunokIoT() {
     // here comes!
     SplashAnnounceBegin();
 
+    lSysLog("System initializing...\n");
+
     userTall= NVS.getInt("UserTall");        // get how high is the user
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
 
@@ -129,9 +143,6 @@ LunokIoT::LunokIoT() {
         // BIOLOGICAL MALE PROPS
         stepDistanceCm = userTall * MAN_STEP_PROPORTION;
     }
-    //delay(50);
-    // first logged message
-    lSysLog("System initializing...\n");
 
     // get if are in summertime
     int daylight = NVS.getInt("summerTime");
@@ -154,6 +165,8 @@ LunokIoT::LunokIoT() {
             ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
         }
     }
+    StartDatabase(); // must be started after RTC sync (timestamped inserts)
+
     //delay(50);
     // Launch the lunokiot message bus
     SystemEventsStart();
@@ -168,15 +181,6 @@ LunokIoT::LunokIoT() {
 
     StartPMUMonitor();
 
-    
-    
-    
-    TestDatabase();
-
-    
-    
-    
-    
     //delay(50);
     SplashAnnounceEnd();
 

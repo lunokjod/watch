@@ -128,7 +128,7 @@ TFT_eSprite *DuplicateSprite(TFT_eSprite *view);
 TFT_eSprite *ScaleSprite(TFT_eSprite *view, float divisor = 0.5);
 TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int16_t maxH);
 
-#define OVERLAY_TRANSPARENT 6
-#define OVERLAY_WHITE 15
+//#define OVERLAY_TRANSPARENT 6
+//#define OVERLAY_WHITE 15
 
 #endif
