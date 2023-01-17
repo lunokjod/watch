@@ -88,6 +88,25 @@ and it's all... icons can be made with gimp (xbm format) img_mainmenu_debug_bits
   * return **true** means the UI has changed
   * return **false** means no redraw needed
 
+### Draw interface:
+  * Can use application->canvas to draw anything you need in your application using TFT_eSPI primitives or lunokIoT controls
+
+### Splash screen:
  * To draw a splash screen must draw your canvas before leave Application constructor, If no splash use a "Tick();" at end of constructor
+
+### i2c/i2s access:
+ * Notes about i2c usage in your application:
+  * you must acquire a system mutex named "I2cMutex"
+### Porting sketch from Arduino
+ * Porting code from arduino sketch:
+  * use app constructor call to run the setup contents of sketch
+  * use app Tick call to run the loop contens of the sketch
+
+```
+BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+if (pdTRUE != done) { ...recovercode... ; }
+...normal use...
+xSemaphoreGive(I2cMutex);
+```
 
  * See [widgets to write a user interface](../UI/widgets/README.md)
