@@ -33,7 +33,7 @@ SettingsApplication::~SettingsApplication() {
     if ( nullptr != Watchface2Application::weatherTask ) {
         Watchface2Application::weatherTask->enabled = openweatherCheck->switchEnabled;
     }
-    delete btnHelp;
+    //delete btnHelp;
     delete ntpCheck;
     delete openweatherCheck;
     delete wifiCheck;
@@ -134,7 +134,7 @@ bool SettingsApplication::Tick() {
     
     TemplateApplication::Tick();
 
-    btnHelp->Interact(touched,touchX, touchY);
+    //btnHelp->Interact(touched,touchX, touchY);
     wifiCheck->Interact(touched,touchX, touchY);
     bleCheck->Interact(touched,touchX, touchY);
 
@@ -144,7 +144,7 @@ bool SettingsApplication::Tick() {
 
     if (millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background));
-        btnHelp->DrawTo(canvas);
+        //btnHelp->DrawTo(canvas);
         btnBack->DrawTo(canvas);
         ntpCheck->DrawTo(canvas);
         openweatherCheck->DrawTo(canvas);
