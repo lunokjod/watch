@@ -99,6 +99,7 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     //const TickType_t LUNOKIOT_UI_TICK_TIME =  portTICK_PERIOD_MS/4; // (FPS / portTICK_PERIOD_MS); // try to get the promised speed
     //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while (bootLoop) {
+        delay(20);
         splashLoadingBar->fillSprite(ThCol(boot_splash_background));
         offset++;
         if ( offset > splashLoadingBar->width() ) { break; }
@@ -107,7 +108,7 @@ void SplashMeanWhile(void *data) { // task to do boot animation
         // do something beauty meanwhile boot
         splashLoadingBar->pushSprite((TFT_WIDTH-splashLoadingBar->width())/2,(TFT_HEIGHT-splashLoadingBar->height())-10);
         offset++;
-        delay(43); // this value is the speed of the loadbar
+        delay(23); // this value is the speed of the loadbar
         // this task isn't subscribed to Watchdog
     }
     splashLoadingBar->deleteSprite();

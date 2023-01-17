@@ -179,6 +179,9 @@ int PerceptronTest() {
 	lLog("Input: (1,0). Result: %d\n", Perceptron_getResult(pAND, ONE_ZERO));
 	lLog("Input: (1,1). Result: %d\n", Perceptron_getResult(pAND, ONE_ONE));
 	
+	free(pAND);
+	free(pOR);
+
 	return 0;
 }
 
