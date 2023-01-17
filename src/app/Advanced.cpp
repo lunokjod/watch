@@ -19,7 +19,7 @@ AdvancedSettingsApplication::~AdvancedSettingsApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != btnErase ) { delete btnErase; }
     if ( nullptr != btnLog ) { delete btnLog; }
-    if ( nullptr != btnHelp ) { delete btnHelp; }
+//    if ( nullptr != btnHelp ) { delete btnHelp; }
 }
 
 AdvancedSettingsApplication::AdvancedSettingsApplication() {
@@ -69,13 +69,13 @@ bool AdvancedSettingsApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     btnErase->Interact(touched,touchX, touchY);
     btnLog->Interact(touched,touchX, touchY);
-    btnHelp->Interact(touched,touchX, touchY);
+    //btnHelp->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         btnErase->DrawTo(canvas);
         btnLog->DrawTo(canvas);
-        btnHelp->DrawTo(canvas);
+        //btnHelp->DrawTo(canvas);
         //if ( showOverlay ) { overlay->pushRotated(canvas,0,TFT_TRANSPARENT); }
         nextRedraw=millis()+(1000/10);
         return true;

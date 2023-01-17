@@ -15,7 +15,6 @@ class AdvancedSettingsApplication: public LunokIoTApplication {
         ButtonImageXBMWidget * btnBack = nullptr;
         ButtonImageXBMWidget * btnErase = nullptr;
         ButtonImageXBMWidget * btnLog = nullptr;
-        ButtonImageXBMWidget * btnHelp = nullptr;
         AdvancedSettingsApplication();
         ~AdvancedSettingsApplication();
         bool Tick();
