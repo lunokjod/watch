@@ -34,7 +34,7 @@ Perceptron *Perceptron_new(unsigned numOfInputs, double trainingRate) {
 		perc->weights_[i] = _Perceptron_getRandomDouble();
 	}
 	perc->threshold_ = _Perceptron_getRandomDouble();
-	
+	perc->trainedTimes = 0;
 	return perc;	
 }
 
@@ -56,9 +56,11 @@ void Perceptron_setTrainingRate(Perceptron *perceptron, double trainingRate) {
 void Perceptron_train(Perceptron *perceptron, const double inputs[], int expectedResult) {
 	int result = Perceptron_getResult(perceptron, inputs);
 	if (result == expectedResult) {
+		//lLog("Perceptron: %p already trained\n",perceptron);
 		return;
 	}
 	_Perceptron_changeWeights(perceptron, result, expectedResult, inputs);
+	perceptron->trainedTimes++;
 }
 
 int Perceptron_getResult(const Perceptron *perceptron, const double inputs[]) {

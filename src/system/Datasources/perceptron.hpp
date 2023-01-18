@@ -20,6 +20,7 @@ typedef struct Perceptron {
 	double *weights_;
 	double threshold_;
 	double trainingRate_;
+	size_t trainedTimes;
 } Perceptron;
 
 // Public
