@@ -11,6 +11,7 @@ extern TFT_eSPI * tft;
 #include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
 
 extern SemaphoreHandle_t lLogAsBlockSemaphore;
 
@@ -77,7 +78,11 @@ class LogViewApplication: public TemplateApplication {
         int16_t offsetY=0;
     public:
         const char *AppName() override { return "Log viewer"; };
-        TFT_eSprite * ViewBuffer;
+        GraphWidget * powerLog = nullptr;
+        GraphWidget * activityLog = nullptr;
+        GraphWidget * appLog = nullptr;
+
+        //TFT_eSprite * ViewBuffer;
         static bool dirty;
         //static TFT_eSprite * LogTextBuffer;
         static const uint8_t TextHeight=9;

@@ -7,7 +7,7 @@ class ApplicationBase : public TemplateApplication {
     private:
         unsigned long nextRefresh=0;
     public:
-        const char *AppName() override { return "NOT SET"; };
+        const char *AppName() override { return "MUST BE SET"; };
         ApplicationBase();
         ~ApplicationBase();
         bool Tick();

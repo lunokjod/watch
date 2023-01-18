@@ -1,39 +1,19 @@
 #include <Arduino.h>
-
+#include <sqlite3.h>
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
-
-#include "LogView.hpp"
-#include "../static/img_back_32.xbm"
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-
 #include "../UI/UI.hpp"
+#include "LogView.hpp"
+#include "../system/Datasources/database.hpp"
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/GraphWidget.hpp"
+#include "../static/img_back_32.xbm"
 
-SemaphoreHandle_t lLogAsBlockSemaphore = xSemaphoreCreateMutex();
-//TFT_eSprite * LogViewApplication::LogTextBuffer=nullptr;
-SemaphoreHandle_t lLogSemaphore = NULL;
+SemaphoreHandle_t lLogAsBlockSemaphore =  xSemaphoreCreateMutex(); // used when push a log line
+SemaphoreHandle_t lLogSemaphore =  xSemaphoreCreateMutex(); // used when push a chunk of log line
 bool LogViewApplication::dirty=false;
-extern bool sqlInit;
-void lLogCreate() {
-    /*
-    if ( nullptr == LogViewApplication::LogTextBuffer ) {
-        LogViewApplication::LogTextBuffer = new TFT_eSprite(tft);
-        LogViewApplication::LogTextBuffer->setColorDepth(1);
-        LogViewApplication::LogTextBuffer->createSprite(LogViewApplication::TextWidth*40,LogViewApplication::TextHeight*20);
-        LogViewApplication::LogTextBuffer->fillSprite(TFT_BLACK);
-        LogViewApplication::LogTextBuffer->setTextWrap(false,false);
-        LogViewApplication::LogTextBuffer->setTextFont(0);
-        LogViewApplication::LogTextBuffer->setTextSize(1);
-        LogViewApplication::LogTextBuffer->setTextColor(TFT_WHITE);
-        LogViewApplication::LogTextBuffer->setCursor(0,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
-    }
-    */
-    if ( NULL == lLogSemaphore ) { lLogSemaphore = xSemaphoreCreateMutex(); }
-}
 
 void lRawLog(const char *fmt, ...) {
-    lLogCreate();
+    //lLogCreate();
     va_list args;
     va_start(args, fmt);
     static char buf[1024];
@@ -42,18 +22,6 @@ void lRawLog(const char *fmt, ...) {
     #ifdef LUNOKIOT_DEBUG
         if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
             Serial.printf(buf);
-            /*
-            // @TODO too slow code
-            if ( nullptr != LogViewApplication::LogTextBuffer ) {
-                LogViewApplication::LogTextBuffer->printf(buf);
-                int16_t x = LogViewApplication::LogTextBuffer->getCursorX();
-                int16_t y = LogViewApplication::LogTextBuffer->getCursorY();
-                if ( y > (LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight) ) {
-                    LogViewApplication::LogTextBuffer->scroll(0,LogViewApplication::TextHeight*-1);
-                    LogViewApplication::LogTextBuffer->setCursor(x,(LogViewApplication::LogTextBuffer->height()-LogViewApplication::TextHeight));
-                }
-                LogViewApplication::dirty=true;
-            }*/
             xSemaphoreGive( lLogSemaphore );
         } else {
             #ifdef LUNOKIOT_DEBUG_UI
@@ -64,97 +32,98 @@ void lRawLog(const char *fmt, ...) {
 
     va_end(args);
 }
-LogViewApplication::~LogViewApplication() {
-    /*
-    LogTextBuffer->deleteSprite();
-    delete LogTextBuffer;
-    LogTextBuffer=nullptr;
-   */
-    //ViewBuffer->deleteSprite();
-    //delete ViewBuffer;
+
+
+GraphWidget *powerWidget=nullptr;
+GraphWidget *activityWidget=nullptr;
+GraphWidget *appWidget=nullptr;
+
+// callback from sqlite3 used to build the activity bar
+static int LogEventsParser(void *data, int argc, char **argv, char **azColName) {
+    int i;
+    const char appBanner[]="Application:";
+    appWidget->markColor = TFT_BLACK;
+    for (i = 0; i<argc; i++){
+        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+        if ( 0 != strcmp(azColName[i],"message")) { continue; }        
+
+        // feed activity bar
+        if ( 0 == strcmp(argv[i],"Activity: Running")) { activityWidget->markColor = TFT_RED; }
+        else if ( 0 == strcmp(argv[i],"Activity: Walking")) { activityWidget->markColor = TFT_YELLOW; }
+        else if ( 0 == strcmp(argv[i],"Activity: None")) { activityWidget->markColor = TFT_GREEN; }
+        // feed power bar
+        else if ( 0 == strcmp(argv[i],"begin")) { powerWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strcmp(argv[i],"end")) { powerWidget->markColor = TFT_BLACK; }
+        else if ( 0 == strcmp(argv[i],"wake")) { powerWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strcmp(argv[i],"stop")) { powerWidget->markColor = TFT_DARKGREEN; }
+        
+        // feed app bar
+        else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
+    }
+    powerWidget->PushValue(1);
+    activityWidget->PushValue(1);
+    appWidget->PushValue(1);
+    return 0;
 }
 
-LogViewApplication::LogViewApplication() {
-    /*
-    // build the area for log
-    ViewBuffer = new TFT_eSprite(tft);
-    ViewBuffer->setColorDepth(1);
-    ViewBuffer->createSprite(120,80);
-    ViewBuffer->fillSprite(TFT_BLACK);
-    if ( nullptr != LogViewApplication::LogTextBuffer ) {
-        offsetY = LogTextBuffer->height()-ViewBuffer->height();
-        LogTextBuffer->setPivot(offsetX,offsetY);
+LogViewApplication::~LogViewApplication() {
+    delete powerLog;
+    delete activityLog;
+    delete appLog;
+}
+extern SemaphoreHandle_t SqlLogSemaphore;
 
-        ViewBuffer->setPivot(0,0);
-        ViewBuffer->fillSprite(TFT_BLACK);
-        LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
-    }*/
+LogViewApplication::LogViewApplication() {
+    powerLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
+    activityLog = new GraphWidget(20,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
+    appLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
+
+
+    powerWidget=powerLog;
+    activityWidget=activityLog;
+    appWidget=appLog;
+
+    char *zErrMsg;
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser, nullptr, &zErrMsg);
+        xSemaphoreGive( SqlLogSemaphore );
+    }
     Tick();
 }
 
 bool LogViewApplication::Tick() {
-
-    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app
-    
-    //btnBack->Interact(touched,touchX, touchY);
-    return TemplateApplication::Tick();
-
-    if ( touched ) {
-        /*
-        if ( ActiveRect::InRect(touchX,touchY,0,0,ViewBuffer->height(),ViewBuffer->width()) ) {
-            if ( touchDragVectorX != 0 ) {
-                lastTouch=true;
-                if ( millis() > nextSlideTime ) {
-                    if ( nullptr != LogTextBuffer ) {
-                        LogTextBuffer->setPivot(0,0);
-                        int16_t offX=offsetX+touchDragVectorX;
-                        if ( offX > 0 ) { offX = 0; }
-                        else if ( offX < ((LogTextBuffer->width()-ViewBuffer->width())*-1) ) { offX = ((LogTextBuffer->width()-ViewBuffer->width())*-1); }
-                        int16_t offY=offsetY+touchDragVectorY;
-                        if ( offY > 0 ) { offY = 0; }
-                        else if ( offY < ((LogTextBuffer->height()-ViewBuffer->height())*-1) ) { offY = ((LogTextBuffer->height()-ViewBuffer->height())*-1); }
-                        ViewBuffer->setPivot(0,0);
-                        LogTextBuffer->setPivot(offX*-1,offY*-1);
-                        ViewBuffer->fillSprite(TFT_BLACK);
-                        LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
-                        ViewBuffer->pushSprite(0,0);
-                    }
-                    nextSlideTime=millis()+(1000/16);
-                }
-            }
-            return false;
-        }
-        */
-    } else if ( lastTouch ) {
-        /*
-        if ( nullptr != LogViewApplication::LogTextBuffer ) {
-            offsetX+=touchDragVectorX;
-            if ( offsetX > 0 ) { offsetX = 0; }
-            else if ( offsetX < ((LogTextBuffer->width()-ViewBuffer->width())*-1) ) { offsetX = ((LogTextBuffer->width()-ViewBuffer->width())*-1); }
-            
-            offsetY+=touchDragVectorY;
-            if ( offsetY > 0 ) { offsetY = 0; }
-            else if ( offsetY < ((LogTextBuffer->height()-ViewBuffer->height())*-1) ) { offsetY = ((LogTextBuffer->height()-ViewBuffer->height())*-1); }
-        }
-        lastTouch=false;
-        */
-    }
+    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app    
+    btnBack->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
         canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
+
+        canvas->setTextFont(0);
+        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextSize(2);
+        canvas->setTextDatum(BL_DATUM);
+
+
+        int16_t x = 20;
+        int16_t y = 28;
+        int16_t border=4;
+        canvas->drawString("Power",40, y-border);
+        canvas->fillRect(x-border,y-border,powerLog->canvas->width()+(border*2),powerLog->canvas->height()+(border*2),ThCol(background_alt));
+        powerLog->DrawTo(canvas,x,y);
+
+        y+=20+28;
+        canvas->drawString("Activity",40, y-border);
+        canvas->fillRect(x-border,y-border,activityLog->canvas->width()+(border*2),activityLog->canvas->height()+(border*2),ThCol(background_alt));
+        activityLog->DrawTo(canvas,x,y);
+
+        y+=20+28;
+        canvas->drawString("Apps",40, y-border);
+        canvas->fillRect(x-border,y-border,appLog->canvas->width()+(border*2),appLog->canvas->height()+(border*2),ThCol(background_alt));
+        appLog->DrawTo(canvas,x,y);
+
         btnBack->DrawTo(canvas);
-        /*
-        if ( nullptr != LogViewApplication::LogTextBuffer ) {
-            ViewBuffer->setPivot(0,0);
-            if ( LogViewApplication::dirty ) {
-                //LogTextBuffer->setPivot(offsetX*-1,offsetY*-1);
-                ViewBuffer->fillSprite(TFT_BLACK);
-                LogTextBuffer->pushRotated(ViewBuffer,0,TFT_BLACK);
-                LogViewApplication::dirty = false;
-            }
-            canvas->setPivot(0,0);
-            ViewBuffer->pushRotated(canvas,0,TFT_BLACK);
-        }*/
+
         nextRedraw=millis()+(1000/3);
         return true;
     }

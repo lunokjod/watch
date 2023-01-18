@@ -3,6 +3,7 @@
 #include <sqlite3.h>
 
 void StartDatabase();
+void StopDatabase();
 void ListSPIFFS();
 void SqlLog(const char * logLine);
 extern sqlite3 *lIoTsystemDatabase;

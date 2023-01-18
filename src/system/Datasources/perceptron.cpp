@@ -7,6 +7,10 @@
 #include "perceptron.hpp"
 #include "../../app/LogView.hpp"
 
+// Constants
+const double TRAINING_RATE = 0.2;
+const int TRAINING_ITERATIONS = 16;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,13 +19,13 @@ Perceptron *Perceptron_new(unsigned numOfInputs, double trainingRate) {
 	unsigned i;
 	static int initializedRandomization_ = 0;
 	
-	Perceptron *perc = (Perceptron*)malloc(sizeof(Perceptron));
+	Perceptron *perc = (Perceptron*)ps_malloc(sizeof(Perceptron));
 	perc->numInputs_ = numOfInputs;
 	if (perc->numInputs_ <= 0) {
 		perc->numInputs_ = 1;
 	}
 	perc->trainingRate_ = trainingRate;
-	perc->weights_ = (double*)malloc(perc->numInputs_ * sizeof(double));
+	perc->weights_ = (double*)ps_malloc(perc->numInputs_ * sizeof(double));
 	if (! initializedRandomization_) {
 		srand(time(NULL));
 		initializedRandomization_ = 1;
@@ -124,11 +128,8 @@ double _Perceptron_getRandomDouble() {
 
 // https://sourceforge.net/p/ccperceptron/wiki/Home/
 int PerceptronTest() {
-	// Constants
-	const int TRAINING_ITERATIONS = 16;
 	const int NUM_OF_INPUTS = 2;
-	const double TRAINING_RATE = 0.2;
-	
+
 	const double ZERO_ZERO[] = {0, 0};
 	const double ZERO_ONE[]  = {0, 1};
 	const double ONE_ZERO[]  = {1, 0};
@@ -185,3 +186,23 @@ int PerceptronTest() {
 	return 0;
 }
 
+char *PerceptronSnapshoot(Perceptron *perceptron, size_t &size) {
+	/*
+	unsigned numInputs_;
+	double *weights_;
+	double threshold_;
+	double trainingRate_;
+	*/
+	size_t sizeWeights=sizeof(double)*perceptron->numInputs_;
+	lLog("Perceptron: Allocating %u bytes\n",sizeWeights);
+	char * buffer=(char*)ps_malloc(sizeWeights);
+	double *bufferPtr;
+	bufferPtr=(double *)buffer;
+	size=sizeWeights;
+	for(size_t off=0;off<perceptron->numInputs_;off++) {
+		//lLog("Weight off: %u Value: %lf\n", off, perceptron->weights_[off]);
+		*bufferPtr=perceptron->weights_[off];
+		bufferPtr++;
+	}
+	return buffer;
+}

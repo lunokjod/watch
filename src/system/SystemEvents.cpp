@@ -1607,9 +1607,16 @@ void TakeAllSamples() {
 
     // periodical report
     if( millis() > nextReportTimestamp ) {
-        lSysLog("Temperatures: CPU: %.2f C, PMU: %.1f C, IMU: %g C\n", cpuTemp,axpTemp,bmaTemp);
-        // Serial.printf("BMA423: Acceleromether: X: %d Y: %d Z: %d\n", accX, accY, accZ);
-        nextReportTimestamp=millis()+(60*1000);
+        char logMsg[255] = { 0 }; 
+        sprintf(logMsg,"Temperatures: CPU: %.2f C, PMU: %.1f C, IMU: %g C", cpuTemp,axpTemp,bmaTemp);
+        SqlLog(logMsg);
+        sprintf(logMsg,"Hall: %d", hallData);
+        SqlLog(logMsg);
+        sprintf(logMsg,"Acceleromether: X: %d, Y: %d, Z: %d", accX,accY,accZ);
+        SqlLog(logMsg);
+        sprintf(logMsg,"Battery: %d, USB: %s", batteryPercent, (vbusPresent?"yes":"no"));
+        SqlLog(logMsg);
+        nextReportTimestamp=millis()+(5*60*1000);
     }
 
 }

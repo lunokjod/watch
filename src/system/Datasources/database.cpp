@@ -6,6 +6,7 @@
 #include <FS.h>
 #include "SPIFFS.h"
 #include "../../app/LogView.hpp"
+#include "database.hpp"
 
 // https://www.sqlite.org/syntaxdiagrams.html
 
@@ -64,6 +65,14 @@ int db_exec(sqlite3 *db, const char *sql) {
    if (rc != SQLITE_OK) {
        lSysLog("SQL: ERROR: %s\n", zErrMsg);
        sqlite3_free(zErrMsg);
+       if ( SQLITE_CORRUPT == rc ) {
+            lSysLog("SQL: ERROR: Data lost, regenerating database...\n");
+            StopDatabase();
+            lIoTsystemDatabase=nullptr;
+            SPIFFS.remove("/lwatch.db");
+            //AAAAAAAAAAAAAAAAAAAA
+            StartDatabase();
+       }
    } else {
        lSysLog("SQL: Operation done successfully\n");
    }
@@ -76,7 +85,7 @@ void SqlLog(const char * logLine) {
     if ( nullptr == lIoTsystemDatabase ) { return; }
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
-        char * query=(char*)ps_malloc(200);
+        char * query=(char*)ps_malloc(400);
         sprintf(query,fmtStr,logLine);
         int  rc = db_exec(lIoTsystemDatabase,query);
         if (rc != SQLITE_OK) {
@@ -102,7 +111,6 @@ void StopDatabase() {
 }
 void StartDatabase() {
     lSysLog("Sqlite3 opening...\n");
-    //SPIFFS.remove("/lwatch.db");
     int rc;
     sqlite3_initialize();
     if (db_open("/spiffs/lwatch.db", &lIoTsystemDatabase)) {

@@ -54,8 +54,6 @@ uint32_t FPS=0;         // current FPS
 //bool UIAlertLedEnabled = false;
 int16_t downTouchX=120;
 int16_t downTouchY=120;
-//TFT_eSprite *overlay = nullptr;
-
 
 size_t screenShootCurrentImageX=0;
 size_t screenShootCurrentImageY=0;
@@ -347,20 +345,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         touchX = newTouchX;
         touchY = newTouchY;
     }
-    /*
-    // an app can choice destroy the overlay if want, the system generates new one
-    if ( nullptr == overlay ) {
-        overlay = new TFT_eSprite(ttgo->tft);
-        if ( nullptr == overlay ) {
-            lUILog("ERROR: unable to create overlay! (yes, is serious thing, enought to stop the UI right now)\n");
-            return;
-        }
-        overlay->setColorDepth(8);
-        overlay->createSprite(TFT_WIDTH, TFT_HEIGHT);
-        // http://i.stack.imgur.com/5fcX6.png
-        overlay->fillSprite(TFT_TRANSPARENT);
-        lUILog("New overlay generated %p\n", overlay);
-    }*/
+
     // try to get UI lock
     bool changes = false;
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
@@ -466,20 +451,8 @@ uint32_t alarmLedColor = TFT_RED;
 void AlertLedEnable(bool enabled, uint32_t ledColor, uint32_t x, uint32_t y) {
     return;
     alarmLedColor = ledColor;
-//    if ( false == enabled ) { alarmLedColor = overlay->color24to16(0x2c0000); }
-
-    //overlay->fillCircle(120,22,6,alarmLedColor); // on buffer
     ttgo->tft->fillCircle(120,25,6,alarmLedColor); // on screen NOW
 
-    /*
-    if ( ( lastAlarmLedStatus ) && ( false == enabled)) {
-        overlay->drawCircle(120,20,10,ledColor);
-        overlay->drawCircle(120,20,16,ledColor);
-    } else {
-        overlay->drawCircle(120,20,10,TFT_BLACK);
-        overlay->drawCircle(120,20,16,TFT_BLACK);
-    }
-    */
     lastAlarmLedStatus = enabled;
 }
 

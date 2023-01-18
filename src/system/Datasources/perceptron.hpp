@@ -8,6 +8,8 @@
 #include <time.h>
 #include <stdio.h>
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +23,7 @@ typedef struct Perceptron {
 } Perceptron;
 
 // Public
+char *PerceptronSnapshoot(Perceptron *perceptron, size_t &size);
 Perceptron *Perceptron_new(unsigned numOfInputs, double trainingRate);
 double Perceptron_getValue(const Perceptron *perceptron, const double inputs[]);
 void Perceptron_setTrainingRate(Perceptron *perceptron, double trainingRate);

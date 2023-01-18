@@ -86,6 +86,7 @@ StepsApplication::~StepsApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != weekGraph ) { delete weekGraph; }
     if ( nullptr != btnSetup ) { delete btnSetup; }
+    if ( nullptr != activityGraph ) { delete activityGraph; }
 
 }
 
@@ -93,28 +94,19 @@ StepsApplication::~StepsApplication() {
 static int StepsAppInspectLogGraphGenerator(void *data, int argc, char **argv, char **azColName) {
     GraphWidget * myGraph=(GraphWidget*)data;
     int i;
-    myGraph->markColor = TFT_GREEN;
+    //myGraph->markColor = TFT_GREEN;
     for (i = 0; i<argc; i++){
         //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
         if ( 0 != strcmp(azColName[i],"message")) { continue; }        
 
         if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
         else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
-        else if ( 0 == strcmp(argv[i],"Activity: None")) {
-            myGraph->markColor = TFT_GREEN;
-            //myGraph->PushValue(1);
-            //myGraph->markColor = Drawable::MASK_COLOR;
-        }
-        /*
-        else if ( 0 == strcmp(argv[i],"begin")) { myGraph->markColor = TFT_DARKGREY; }
-        else if ( 0 == strcmp(argv[i],"end")) { myGraph->markColor = TFT_BLACK; }
-        else if ( 0 == strcmp(argv[i],"wake")) { myGraph->markColor = TFT_BLUE; }
-        else if ( 0 == strcmp(argv[i],"stop")) { myGraph->markColor = Drawable::MASK_COLOR; }
-        */
+        else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
     }
     myGraph->PushValue(1);
     return 0;
 }
+extern SemaphoreHandle_t SqlLogSemaphore;
 
 void StepsApplication::CreateStats() {
     int32_t maxVal = 0;
@@ -134,7 +126,7 @@ void StepsApplication::CreateStats() {
 
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }
-    weekGraph = new GraphWidget(50,180,minVal,maxVal,ThCol(mark), ThCol(background));
+    weekGraph = new GraphWidget(50,180,minVal,maxVal,TFT_GREEN, ThCol(background));
     
     // push values from weekSteps
     int t=6;
@@ -149,12 +141,14 @@ void StepsApplication::CreateStats() {
     }
 
     if ( nullptr != activityGraph ) { delete activityGraph; }
-    activityGraph = new GraphWidget(5,200,0,1,ThCol(mark), Drawable::MASK_COLOR);
+    activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     
     char *zErrMsg;
-    //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
-    sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
-
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        xSemaphoreGive( SqlLogSemaphore );
+    }
 }
 StepsApplication::StepsApplication() {
     btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){

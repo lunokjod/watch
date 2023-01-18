@@ -30,8 +30,6 @@ WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
 LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
 void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
 
-//extern TFT_eSprite *overlay; // the overlay, usefull to draw out the UI
-
 LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 
 size_t lastAppsOffset=0;
@@ -57,6 +55,7 @@ LunokIoTApplication::LunokIoTApplication() {
         return;
     };
     lUILog("LunokIoTApplication: %p begin\n", this);
+
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
@@ -112,6 +111,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
             ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
         } else {
            lUILog("Application: %p '%s' goes to front\n", instance,instance->AppName());
+
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance; // set as main app
             uint8_t userBright = NVS.getInt("lBright");
@@ -140,6 +140,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                             delete scaledImg;
                         }
                     }
+
                     //taskEXIT_CRITICAL(NULL);
                     //xTaskResumeAll();
                     //taskENABLE_INTERRUPTS();
@@ -230,7 +231,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         FreeSpace();
     }
 }
-
+Ticker LogAppRun;
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
     /*
@@ -249,6 +250,16 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
         }
     }
 
+    if ( nullptr != instance ) {
+        // get a little breath to the system before log (sql is a relative expensive operation) 
+        LogAppRun.once(2,[]() {
+            if ( nullptr != currentApplication ) {
+                char logMsg[255] = { 0 }; 
+                sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
+                SqlLog(logMsg);
+            }
+        });
+    }
 
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();
     thisLaunch->instance = instance;

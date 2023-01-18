@@ -75,6 +75,7 @@
 #include "Playground7.hpp"
 #include "Playground8.hpp"
 #include "Playground9.hpp"
+#include "Playground10.hpp"
 #endif
 
 #include "Provisioning2.hpp"
@@ -90,6 +91,8 @@
 #include "../static/img_mainmenu_lastapps.xbm"
 #include "TaskSwitcher.hpp"
 
+#include "ThumbTest.hpp"
+
 typedef struct {
     const char *name;
     unsigned char * imagebits;
@@ -102,6 +105,8 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
+    {"ThumbTest",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new ThumbTest()); } },
+//    {"Playground10",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication10()); } },
 
 //    {"Tasks", img_mainmenu_lastapps_bits, img_mainmenu_lastapps_height, img_mainmenu_lastapps_width, [](void *unused) { LaunchApplication(new TaskSwitcher()); } },
 //    {"Log", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
