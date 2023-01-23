@@ -85,6 +85,9 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
         }
         lAppLog("=== C DUMP: END ===\n");
     },"Dump");
+    #ifndef LUNOKIOT_DEBUG
+    DumpButton->SetEnabled(false);
+    #endif
     LoadButton=new ButtonTextWidget(5,64,54,110,[&,this](void * unused){
         lAppLog("Saving presets to NVS...\n");
         //perceptron_a.weights_=(double *)perceptronBlob_a;
@@ -115,7 +118,7 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
         SavePerceptronWithSymbol('y',&perceptron_y);
         SavePerceptronWithSymbol('z',&perceptron_z);
         SavePerceptronWithSymbol(' ',&perceptron__);
-    },"Reset");
+    },"Preset");
 
 
     switchUseAltKeyb=new SwitchWidget(15,115,[&,this](void *unused){
