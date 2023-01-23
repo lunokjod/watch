@@ -18,14 +18,14 @@ extern "C" {
 Perceptron *Perceptron_new(unsigned numOfInputs, double trainingRate) {
 	unsigned i;
 	static int initializedRandomization_ = 0;
-	
+	if ( numOfInputs < 1 ) {  numOfInputs = 1; }
+	//size_t contiguousSize = sizeof(Perceptron)+(numOfInputs*sizeof(double));
+	//Perceptron *perc = (Perceptron*)ps_malloc(contiguousSize); // data packed in only one malloc/free
 	Perceptron *perc = (Perceptron*)ps_malloc(sizeof(Perceptron));
 	perc->numInputs_ = numOfInputs;
-	if (perc->numInputs_ <= 0) {
-		perc->numInputs_ = 1;
-	}
 	perc->trainingRate_ = trainingRate;
 	perc->weights_ = (double*)ps_malloc(perc->numInputs_ * sizeof(double));
+	//perc->weights_ = (double*)(perc+sizeof(Perceptron)); // packed data (only one free neded)
 	if (! initializedRandomization_) {
 		srand(time(NULL));
 		initializedRandomization_ = 1;
@@ -139,8 +139,8 @@ int PerceptronTest() {
 	
 	int i;
 	// Creating Perceptron instances
-	Perceptron *pAND = Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
-	Perceptron *pOR  = Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
+	Perceptron *pAND = (Perceptron *)Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
+	Perceptron *pOR  = (Perceptron *)Perceptron_new(NUM_OF_INPUTS, TRAINING_RATE);
 
 	// Printing the results of the randomly generated perceptrons (BEFORE TRAINING)
 	lLog("Results for 'OR' perceptron, BEFORE training:\n");

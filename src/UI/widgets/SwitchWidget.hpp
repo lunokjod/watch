@@ -21,7 +21,7 @@ class SwitchWidget: public ActiveRect, public CanvasWidget {
         virtual void DrawTo(TFT_eSprite * endCanvas);
         virtual void DirectDraw();
 
-        bool switchEnabled=false;
+        volatile bool switchEnabled=false;
         uint32_t switchColor;
         const int32_t switchHeight = 20; //@TODO this must define canvas sizes
 

@@ -11,7 +11,7 @@ const int TRAINING_ITERATIONS = 16;
 extern bool UILongTapOverride;
 
 ThumbTest::ThumbTest() {
-    learnerP0 = Perceptron_new(9*9, TRAINING_RATE);
+    learnerP0 = (Perceptron*)Perceptron_new(9*9, TRAINING_RATE);
 
     RedrawMe();
     UILongTapOverride=true;
@@ -23,8 +23,8 @@ ThumbTest::~ThumbTest() {
 }
 void ThumbTest::RedrawMe() {
     // redraw interface
-
-    learn++;
+    if ( 15 < learnerP0->trainedTimes ) { learn=2; } // lock in check if are enought trained
+    else { learn++; }
     if ( learn > 2 ) { learn=0; }
 
     if ( 0 == learn ) { // LEARN MODE

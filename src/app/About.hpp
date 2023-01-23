@@ -5,7 +5,6 @@
 #include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 
 class AboutApplication: public TemplateApplication {

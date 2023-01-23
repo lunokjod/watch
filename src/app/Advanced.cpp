@@ -11,7 +11,7 @@
 #include "Shutdown.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
+//#include "../UI/widgets/SwitchWidget.hpp"
 
 AdvancedSettingsApplication::~AdvancedSettingsApplication() {
     if ( nullptr != btnBack ) { delete btnBack; }

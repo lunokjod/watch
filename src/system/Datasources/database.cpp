@@ -8,6 +8,10 @@
 #include "../../app/LogView.hpp"
 #include "database.hpp"
 
+char *zErrMsg = 0;
+volatile bool sqliteDbProblem=false;
+
+
 // https://www.sqlite.org/syntaxdiagrams.html
 
 void ListSPIFFS() {
@@ -57,21 +61,20 @@ int db_open(const char *filename, sqlite3 **db) {
    return rc;
 }
 
-char *zErrMsg = 0;
+
 int db_exec(sqlite3 *db, const char *sql) {
    lSysLog("SQL: '%s'\n",sql);
    long start = micros();
    int rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
-   if (rc != SQLITE_OK) {
+   if (SQLITE_OK != rc) {
        lSysLog("SQL: ERROR: %s\n", zErrMsg);
        sqlite3_free(zErrMsg);
        if ( SQLITE_CORRUPT == rc ) {
-            lSysLog("SQL: ERROR: Data lost, regenerating database...\n");
-            StopDatabase();
-            lIoTsystemDatabase=nullptr;
-            SPIFFS.remove("/lwatch.db");
-            //AAAAAAAAAAAAAAAAAAAA
-            StartDatabase();
+            lSysLog("SQL: ERROR: Data lost! (corruption)\n");
+            sqliteDbProblem=true;
+       } else if ( SQLITE_IOERR == rc ) {
+            lSysLog("SQL: ERROR: I/O ERROR!\n");
+            sqliteDbProblem=true;
        }
    } else {
        lSysLog("SQL: Operation done successfully\n");
@@ -82,16 +85,25 @@ int db_exec(sqlite3 *db, const char *sql) {
 
 SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
 void SqlLog(const char * logLine) {
-    if ( nullptr == lIoTsystemDatabase ) { return; }
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        if ( sqliteDbProblem ) {
+            lSysLog("SQL: ERROR: database corrupt in last transaction, regenerating database...\n");
+            StopDatabase();
+            delay(100);
+            lSysLog("SPIFFS: removing files...\n");
+            SPIFFS.remove("/lwatch.db");
+            SPIFFS.remove("/lwatch.db-journal");
+            lSysLog("SPIFFS: done\n");
+            delay(100);
+            sqliteDbProblem=false;
+            StartDatabase();
+        }
         const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
         char * query=(char*)ps_malloc(400);
         sprintf(query,fmtStr,logLine);
         int  rc = db_exec(lIoTsystemDatabase,query);
         if (rc != SQLITE_OK) {
-            lSysLog("SQL: ERROR: Unable to log '%s'", logLine);
-            sqlite3_close(lIoTsystemDatabase);
-            lIoTsystemDatabase=nullptr;
+            lSysLog("SQL: ERROR: Unable to log '%s'\n", logLine);
             free(query);
             xSemaphoreGive( SqlLogSemaphore ); // free
             return;
@@ -104,9 +116,10 @@ void SqlLog(const char * logLine) {
 void StopDatabase() {
     if (nullptr != lIoTsystemDatabase ) {
         lSysLog("SQL: closing...\n");
-        SqlLog("end");
+        if ( false == sqliteDbProblem ) { SqlLog("end"); }
         sqlite3_close(lIoTsystemDatabase);
         lIoTsystemDatabase=nullptr;
+        sqlite3_shutdown();
     }
 }
 void StartDatabase() {
@@ -116,12 +129,14 @@ void StartDatabase() {
     if (db_open("/spiffs/lwatch.db", &lIoTsystemDatabase)) {
         lSysLog("ERROR: Datasource: Unable to open sqlite3 log!\n");
         lIoTsystemDatabase=nullptr;
+        sqliteDbProblem=true;
         return;
     }
     rc = db_exec(lIoTsystemDatabase, "CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);");
     if (rc != SQLITE_OK) {
         sqlite3_close(lIoTsystemDatabase);
         lIoTsystemDatabase=nullptr;
+        sqliteDbProblem=true;
         return;
     }
 
@@ -130,6 +145,7 @@ void StartDatabase() {
     if (rc != SQLITE_OK) {
         sqlite3_close(lIoTsystemDatabase);
         lIoTsystemDatabase=nullptr;
+        sqliteDbProblem=true;
         return;
     }
     db_exec(lIoTsystemDatabase, "SELECT COUNT(*) FROM rawlog;");
@@ -138,6 +154,7 @@ void StartDatabase() {
     if (rc != SQLITE_OK) {
         sqlite3_close(lIoTsystemDatabase);
         lIoTsystemDatabase=nullptr;
+        sqliteDbProblem=true;
         return;
     }
 

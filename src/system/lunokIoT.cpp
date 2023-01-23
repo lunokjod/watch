@@ -71,19 +71,14 @@ LunokIoT::LunokIoT() {
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
     FreeSpace();
 
-    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
-    // format SPIFFS if needed
-    if ( false == gotSPIFFS ) {
-        lSysLog("Format SPIFFS....\n");
-        gotSPIFFS = SPIFFS.begin(true);
-    }
-    ListSPIFFS();
-    
+
     // Initialize lilygo lib
     //ttgo->setTftExternal(*tft);
     ttgo->begin();
     tft=ttgo->tft;
-    
+
+    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
+        
     bool gotNVS = NVS.begin(); // need NVS to get the current settings
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
 
@@ -95,6 +90,18 @@ LunokIoT::LunokIoT() {
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
+
+    // format SPIFFS if needed
+    if ( false == gotSPIFFS ) {
+        lSysLog("SPIFFS: Format SPIFFS....\n");
+        gotSPIFFS = SplashFormatSPIFFSAnnounce();
+        if ( false == gotSPIFFS ) {
+            lSysLog("SPIFFS: ERROR: Unable to format!!!\n");
+        }
+    }
+    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
+
+    ListSPIFFS();
 
 
     /*
@@ -170,7 +177,7 @@ LunokIoT::LunokIoT() {
     StartDatabase(); // must be started after RTC sync (timestamped inserts)
 
     FreeSpace();
-    PerceptronTest();
+    //PerceptronTest();
 
     //delay(50);
     // Launch the lunokiot message bus

@@ -117,7 +117,11 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     bootLoopEnds=true;
     vTaskDelete(NULL);
 }
-
+bool SplashFormatSPIFFSAnnounce() {
+    tft->setTextDatum(BC_DATUM);
+    tft->drawString("SPIFFS format...",TFT_WIDTH/2,TFT_HEIGHT-30);
+    return SPIFFS.begin(true);
+}
 void SplashAnnounce() {
     bootLoop=true;
     

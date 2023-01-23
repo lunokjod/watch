@@ -7,8 +7,6 @@ ApplicationBase::ApplicationBase() {
     // Init here any you need
     lAppLog("Hello from ApplicationBase!\n");
 
-    canvas->fillSprite(ThCol(background)); // use theme colors
-
     // Remember to dump anything to canvas to get awesome splash screen
     // draw of TFT_eSPI canvas for splash here
 
