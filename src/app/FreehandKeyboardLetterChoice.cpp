@@ -12,7 +12,11 @@ extern TTGOClass *ttgo;
 #include "../static/img_trash_32.xbm"
 extern bool UILongTapOverride;
 
-const char FreehandKeyboardLetterTrainableSymbols[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',' '};
+// from: https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language
+const char FreehandKeyboardLetterTrainableSymbols[] = {'e','a','r','i','o','t','n','s','l','c','u','d','p',' ','m','h','g','b','f','y','w','k','v','x','z','j','q'};
+
+// alphabetically (slow)
+// const char FreehandKeyboardLetterTrainableSymbols[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',' '};
 
 const size_t FreehandKeyboardLetterTrainableSymbolsCount=sizeof(FreehandKeyboardLetterTrainableSymbols);
 
