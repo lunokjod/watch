@@ -101,12 +101,16 @@ FreehandKeyboardLetterChoiceApplication::FreehandKeyboardLetterChoiceApplication
         lAppLog("Loading symbol '%c'...\n",FreehandKeyboardLetterTrainableSymbols[current]);
         perceptrons[current] = LoadPerceptronFromSymbol(FreehandKeyboardLetterTrainableSymbols[current]);
     }
-
+    // first election random
     currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
     currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
     lAppLog("Pick one random: %lu '%c'\n",currentSymbolOffset,currentSymbol);
-    
-
+    /*
+    currentSymbolOffset=0;
+    if ( currentSymbolOffset > FreehandKeyboardLetterTrainableSymbolsCount-1 ) { currentSymbolOffset = 0; }
+    currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
+    lAppLog("Next: %lu '%c'\n",currentSymbolOffset,currentSymbol);
+    */
     RedrawMe();
     UILongTapOverride=true;
     lAppLog("Begin!\n");
@@ -300,9 +304,28 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                 free(perceptronData);
 
                 if ( isGood ) {
+                    /*
+                    // pick less training number (loops when training saturates)
+                    size_t lessTrainedOffset=0;
+                    int32_t lessTrainedValue=-1;
+                    for (size_t c=0;c<FreehandKeyboardLetterTrainableSymbolsCount;c++) {
+                        if (lessTrainedValue < perceptrons[c]->trainedTimes) { continue; }
+                        lessTrainedOffset=c;
+                    }
+                    currentSymbolOffset=lessTrainedOffset;
+                    currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
+                    lAppLog("Choosing less trained symbol '%c' with: %u rounds\n",currentSymbol,perceptrons[currentSymbolOffset]->trainedTimes);
+                    */
                     // pick random next letter to train
                     currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
                     currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
+                    /*
+                    // pick sequential
+                    currentSymbolOffset++;
+                    if ( currentSymbolOffset > FreehandKeyboardLetterTrainableSymbolsCount-1 ) { currentSymbolOffset = 0; }
+                    currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
+                    lAppLog("Next: %lu '%c'\n",currentSymbolOffset,currentSymbol);
+                    /*
                     /*
                     if ( random(0,100) > 50 ) {
                         trainNotSymbol=(!trainNotSymbol); // flip

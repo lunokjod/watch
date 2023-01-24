@@ -118,7 +118,7 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
         SavePerceptronWithSymbol('y',&perceptron_y);
         SavePerceptronWithSymbol('z',&perceptron_z);
         SavePerceptronWithSymbol(' ',&perceptron__);
-    },"Preset");
+    },"Pred");
 
 
     switchUseAltKeyb=new SwitchWidget(15,115,[&,this](void *unused){
