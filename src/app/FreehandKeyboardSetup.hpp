@@ -13,7 +13,7 @@ class FreeHandKeyboardSetupApplication : public TemplateApplication {
         ButtonTextWidget * trainButton=nullptr;
         ButtonTextWidget * LoadButton=nullptr;
         ButtonTextWidget * DumpButton=nullptr;
-        ButtonTextWidget * tryButton=nullptr;
+        //ButtonTextWidget * tryButton=nullptr;
         ButtonTextWidget * multiCheckButton=nullptr;
         ButtonImageXBMWidget * btnEraseTrain=nullptr;
         SwitchWidget * switchUseAltKeyb = nullptr;

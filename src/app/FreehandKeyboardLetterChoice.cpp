@@ -12,14 +12,6 @@ extern TTGOClass *ttgo;
 #include "../static/img_trash_32.xbm"
 extern bool UILongTapOverride;
 
-// from: https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language
-const char FreehandKeyboardLetterTrainableSymbols[] = {'e','a','r','i','o','t','n','s','l','c','u','d','p',' ','m','h','g','b','f','y','w','k','v','x','z','j','q'};
-
-// alphabetically (slow)
-// const char FreehandKeyboardLetterTrainableSymbols[] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',' '};
-
-const size_t FreehandKeyboardLetterTrainableSymbolsCount=sizeof(FreehandKeyboardLetterTrainableSymbols);
-
 void FreehandKeyboardLetterChoiceApplication::SavePerceptronWithSymbol(char symbol,Perceptron *item) {
     if ( nullptr == item) { return; }
 
@@ -223,6 +215,8 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                 lAppLog("Recognizer matrix (%zu byte):\n",MemNeeds);
                 double *perceptronData=(double*)ps_malloc(MemNeeds); // alloc size for train the perceptrons
                 memset(perceptronData,0,MemNeeds); // all 0
+                char suggestedSymbol=0;
+                size_t suggestedOffset=0;
 
                 double *pDataPtr;
                 pDataPtr=perceptronData;
@@ -272,7 +266,6 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                             ttgo->tft->fillScreen(TFT_RED);
                         }
                     }
-
                     if ( needTraining ) {
                         lAppLog("Perceptron %p %s '%c' training...\n", perceptrons[currentSymbolOffset], (trainNotSymbol?"learn NOT":"LEARN"),currentSymbol);
                         //train the perceptron here
@@ -293,7 +286,14 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                                     int pResponse1 = Perceptron_getResult(perceptrons[c], perceptronData);
                                     if ( 1 == pResponse1 ) { // only one "not"
                                         lAppLog("Perceptron %p '%c' matches also :(\n", perceptrons[c], FreehandKeyboardLetterTrainableSymbols[c]);
-                                        Perceptron_train(perceptrons[c], perceptronData, 0);
+                                        //int8_t repeat=PerceptronIterations/2;
+                                        //while (repeat > 0 ) {
+                                        Perceptron_train(perceptrons[currentSymbolOffset], perceptronData, 0);
+                                        //    repeat--;
+                                        //}
+                                        suggestedSymbol=FreehandKeyboardLetterTrainableSymbols[c];
+                                        suggestedOffset=c;
+
                                     }
                                 }
                             }
@@ -308,6 +308,13 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                 free(perceptronData);
 
                 if ( isGood ) {
+                    if ( 0 == suggestedSymbol ) { // pick random next letter to train
+                        currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
+                        currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
+                    } else { // try to re-check the matched symbols
+                        currentSymbolOffset = suggestedOffset;
+                        currentSymbol=suggestedSymbol;
+                    }
                     /*
                     // pick less training number (loops when training saturates)
                     size_t lessTrainedOffset=0;
@@ -320,9 +327,6 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                     currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
                     lAppLog("Choosing less trained symbol '%c' with: %u rounds\n",currentSymbol,perceptrons[currentSymbolOffset]->trainedTimes);
                     */
-                    // pick random next letter to train
-                    currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
-                    currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
                     /*
                     // pick sequential
                     currentSymbolOffset++;

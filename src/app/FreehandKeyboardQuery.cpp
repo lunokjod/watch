@@ -193,7 +193,7 @@ bool FreehandKeyboardQuery::Tick() {
                         lAppLog("Symbol: '%c' MATCH\n",FreehandKeyboardLetterTrainableSymbols[current]);
                         if ( 0 == seeChar ) {
                             seeChar=FreehandKeyboardLetterTrainableSymbols[current];
-                            break; // @DEBUG stop search here
+                            break; // stop search here
                         }
                     }
                 }
@@ -201,7 +201,7 @@ bool FreehandKeyboardQuery::Tick() {
                     bufferText[bufferTextOffset] = seeChar;
                     bufferText[bufferTextOffset+1]= 0; //EOL
                     bufferTextOffset++;
-                    if ( bufferTextOffset >=BufferTextMax ) {
+                    if ( bufferTextOffset >= BufferTextMax-1 ) { // 2 less due the \0
                         bufferTextOffset=0;
                         bufferText[bufferTextOffset]= 0; //EOL
                     }
@@ -239,7 +239,7 @@ void FreehandKeyboardQuery::RedrawMe() {
     canvas->setFreeFont(&FreeMonoBold9pt7b);
     canvas->setTextDatum(TR_DATUM);
     canvas->setTextColor(ThCol(text));
-    canvas->drawString(bufferText,TFT_WIDTH-5,5);
+    canvas->drawString(bufferText,TFT_WIDTH-10,5);
 
 
     freeHandCanvas->pushRotated(canvas,0,Drawable::MASK_COLOR);

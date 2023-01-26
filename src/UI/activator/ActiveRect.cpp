@@ -90,7 +90,8 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
         // no callback, nothing to do
         if ( nullptr != tapActivityCallback ) {
             // launch the callback!
-            Trigger();
+            pushed = ActiveRect::InRect(tx,ty,x,y,h,w); // inside?
+            if ( pushed ) { Trigger(); }
         }
     }
     lastInteraction=false;

@@ -6,7 +6,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../static/img_trash_32.xbm"
 #include "../UI/widgets/SwitchWidget.hpp"
-#include "FreehandKeyboardLetterChoice.hpp"
+#include "FreehandKeyboardTraining.hpp"
 #include "FreehandKeyboardQuery.hpp"
 #include <ArduinoNvs.h>
 #include <LilyGoWatch.h>
@@ -54,7 +54,7 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
 
     trainButton=new ButtonTextWidget(105,5,54,130,[&,this](void * unused){
-        LaunchApplication(new FreehandKeyboardLetterChoiceApplication());
+        LaunchApplication(new FreehandKeyboardTraining());
     },"Learn");
     DumpButton=new ButtonTextWidget(120,64,54,110,[&,this](void * unused){
         lAppLog("=== C DUMP: BEGIN ===\n");
@@ -125,11 +125,11 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
         lAppLog("@TODO SWITCH VALUE: '%s'\n",(switchUseAltKeyb->switchEnabled?"true":"false"));
         //@TODO this option disable alternative keyboards (numeric, phone, credit-card...)
     });
-
+    /*
     tryButton=new ButtonTextWidget(74,TFT_HEIGHT-59,54,75,[&,this](void * unused){
-        LaunchApplication(new FreehandKeyboardLetterChoiceApplication(false));
+        LaunchApplication(new FreehandKeyboardTraining(false));
     },"Chk");
-    
+    */
     multiCheckButton=new ButtonTextWidget(TFT_WIDTH-80,TFT_HEIGHT-59,54,75,[&,this](void * unused){
         LaunchApplication(new FreehandKeyboardQuery());
     },"Qry");
@@ -169,7 +169,7 @@ FreeHandKeyboardSetupApplication::~FreeHandKeyboardSetupApplication() {
     delete btnEraseTrain;
     delete LoadButton;
     delete switchUseAltKeyb;
-    delete tryButton;
+    //delete tryButton;
     delete multiCheckButton;
 }
 
@@ -180,7 +180,7 @@ bool FreeHandKeyboardSetupApplication::Tick() {
     btnEraseTrain->Interact(touched,touchX,touchY);
     switchUseAltKeyb->Interact(touched,touchX,touchY);
     LoadButton->Interact(touched,touchX,touchY);
-    tryButton->Interact(touched,touchX,touchY);
+    //tryButton->Interact(touched,touchX,touchY);
     multiCheckButton->Interact(touched,touchX,touchY);
 
     if ( millis() > nextRefresh ) { // redraw full canvas
@@ -188,7 +188,7 @@ bool FreeHandKeyboardSetupApplication::Tick() {
         btnEraseTrain->DrawTo(canvas);
         trainButton->DrawTo(canvas);
         DumpButton->DrawTo(canvas);
-        tryButton->DrawTo(canvas);
+        //tryButton->DrawTo(canvas);
         multiCheckButton->DrawTo(canvas);
         LoadButton->DrawTo(canvas);
         // switch blob @TODO this approach can be a new SwitchWidgetText (UIControl)

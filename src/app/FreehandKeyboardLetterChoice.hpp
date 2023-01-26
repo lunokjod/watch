@@ -29,7 +29,7 @@ class FreehandKeyboardLetterChoiceApplication : public TemplateApplication {
 
         const uint8_t PerceptronMatrixSize=11;
         const int16_t MINIMALDRAWSIZE=PerceptronMatrixSize*4;
-        const uint8_t PerceptronIterations=3; // 16
+        const uint8_t PerceptronIterations=4; // 16
         void Cleanup();
         void RedrawMe();
         ButtonImageXBMWidget * destroySymbolData = nullptr;

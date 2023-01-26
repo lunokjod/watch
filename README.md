@@ -2,6 +2,10 @@
 
 [Buy me a coffe!](https://www.buymeacoffee.com/lunokjod)
 
+**Last video from development**
+
+![Freehand keyboard](/doc/doc_2023-01-26_15-24-33.mp4)
+
 ![wartchface0](/doc/watchface0.png)
 ![wartchface0_day](/doc/day_watchface0.png)
 ![playground example0](/doc/playground0.png)

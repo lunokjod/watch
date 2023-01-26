@@ -1616,7 +1616,7 @@ void TakeAllSamples() {
         SqlLog(logMsg);
         sprintf(logMsg,"Battery: %d, USB: %s", batteryPercent, (vbusPresent?"yes":"no"));
         SqlLog(logMsg);
-        nextReportTimestamp=millis()+(5*60*1000);
+        nextReportTimestamp=millis()+(10*60*1000);
     }
 
 }

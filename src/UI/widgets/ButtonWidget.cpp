@@ -24,7 +24,7 @@ void ButtonWidget::DirectDraw() {
 
 bool ButtonWidget::Interact(bool touch, int16_t tx,int16_t ty) {
     lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
-    if ( 0 != touchDragDistance ) { return false; } // only tap
+    if ( 0.0 != touchDragDistance ) { return false; } // only tap
     bool response = ActiveRect::Interact(touch,tx,ty);
     if ( pushed != lastPushed ) {
         InternalRedraw();
