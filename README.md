@@ -4,7 +4,7 @@
 
 **Last video from development**
 
-![Freehand keyboard](/doc/doc_2023-01-26_15-24-33.mp4)
+https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9a0-77f161d2d659.mp4
 
 ![wartchface0](/doc/watchface0.png)
 ![wartchface0_day](/doc/day_watchface0.png)
