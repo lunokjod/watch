@@ -14,8 +14,8 @@ PlaygroundApplication10::~PlaygroundApplication10() {
 }
 
 PlaygroundApplication10::PlaygroundApplication10() {
-    testEntryText = new EntryTextWidget(40,50, 40, 160, "1234");
-    testEntryText2 = new EntryTextWidget(10,120, 40, 220, "69");
+    testEntryText = new EntryTextWidget(40,50, 40, 160, "1234",KEYBOARD_NUMERIC);
+    testEntryText2 = new EntryTextWidget(10,120, 40, 220, "hello", KEYBOARD_ALPHANUMERIC_FREEHAND);
     Tick();
 }
 

@@ -6,6 +6,7 @@
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <LilyGoWatch.h>
 #include <functional>
+#include "../system/Datasources/perceptron.hpp"
 
 /*
  * Basic application with UI
@@ -47,12 +48,12 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
  */
 enum lUIKeyboardType {
     KEYBOARD_NUMERIC,                   // 0~9
+    KEYBOARD_ALPHANUMERIC_FREEHAND,     // draw letters to be recognize
 //    KEYBOARD_PHONE,                   // phone dial
 //    KEYBOARD_ALPHANUMERIC_SEQUENCE,   // old phone 3x3 buttons ABC-DEF-GHI.... sequence
 //    KEYBOARD_HEXADECIMAL,             // usefull for old hex passwords
 //    KEYBOARD_PATTERN,                 // unlock pattern 3x3/4x4...
 //    KEYBOARD_NUMERIC_FREEHAND,        // draw numbers to OCR
-//    KEYBOARD_ALPHANUMERIC_FREEHAND,   // draw letters to be recognize
 //    KEYBOARD_IMAGE_DRAW,              // attach image instead of text
 //    KEYBOARD_FULL_BLUETOOTH,          // use full keyboard bluetooth
 };
@@ -61,10 +62,18 @@ enum lUIKeyboardType {
 #include "../UI/widgets/ButtonTextWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
+// base keyboard class
 class SoftwareKeyboard : public LunokIoTApplication {
     public:
-        //TFT_eSprite * appCopy=nullptr;
         char *textEntry=nullptr;
+        const bool mustShowAsTask() final { return false; }
+        SoftwareKeyboard(void * destinationWidget=nullptr);
+        ~SoftwareKeyboard();
+        void * destinationWidget=nullptr;
+};
+
+class SoftwareNumericKeyboard : public SoftwareKeyboard {
+    public:
         uint8_t cursorBlinkStep=0;
         ButtonTextWidget * seven=nullptr;
         ButtonTextWidget * eight=nullptr;
@@ -82,14 +91,49 @@ class SoftwareKeyboard : public LunokIoTApplication {
         ButtonImageXBMWidget * btnCancel=nullptr;
         ButtonImageXBMWidget * btnDiscard=nullptr;
         ButtonImageXBMWidget * btnSend=nullptr;
-        void * destinationWidget=nullptr;
         //TFT_eSprite * destinationCanvas=nullptr;
-        lUIKeyboardType keyboardType=KEYBOARD_NUMERIC;
-        SoftwareKeyboard(void * destinationWidget=nullptr, lUIKeyboardType keyboardType=KEYBOARD_NUMERIC);
-        ~SoftwareKeyboard();
+        SoftwareNumericKeyboard(void * destinationWidget=nullptr );
+        ~SoftwareNumericKeyboard();
         bool Tick();
-        const char *AppName() override { return "Software keyboard"; }
-        const bool mustShowAsTask() override { return false; }
-
+        const char *AppName() override { return "Software numeric keyboard"; }
 };
+
+extern const char FreehandKeyboardLetterTrainableSymbols[];
+extern const size_t FreehandKeyboardLetterTrainableSymbolsCount;
+
+class SoftwareFreehandKeyboard : public SoftwareKeyboard {
+    public:
+        SoftwareFreehandKeyboard(void * destinationWidget=nullptr );
+        ~SoftwareFreehandKeyboard();
+        bool Tick();
+        const char *AppName() override { return "Software freehand keyboard"; }
+        Perceptron **perceptrons;
+    private:
+        unsigned long nextRefresh=0;
+        unsigned long oneSecond=0; // trigger clear pad
+        int16_t boxX=TFT_WIDTH; // get the box of draw
+        int16_t boxY=TFT_HEIGHT;
+        int16_t boxH=0;
+        int16_t boxW=0;
+        bool triggered=false; // to launch the recognizer
+        TFT_eSprite * perceptronCanvas=nullptr;
+        TFT_eSprite * freeHandCanvas=nullptr;
+
+        const uint8_t PerceptronMatrixSize=11;
+        const int16_t MINIMALDRAWSIZE=PerceptronMatrixSize*4;
+        void Cleanup();
+        void RedrawMe();
+        void RemovePerceptron(Perceptron * item);
+        Perceptron * LoadPerceptronFromSymbol(char symbol);
+        Perceptron * BuildBlankPerceptron();
+        /*
+        const size_t BufferTextMax=20;
+        char * bufferText=nullptr;
+        size_t bufferTextOffset=0;
+        */
+        ButtonImageXBMWidget * btnCancel=nullptr;
+        ButtonImageXBMWidget * btnDiscard=nullptr;
+        ButtonImageXBMWidget * btnSend=nullptr;
+};
+
 #endif

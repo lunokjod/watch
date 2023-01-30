@@ -288,9 +288,11 @@ bool FreehandKeyboardTraining::Tick() {
                 }
                 if ( needTraining ) {
                     lAppLog("Training...\n");
+                    bool reached=false;
                     //train the perceptron here
                     for (size_t c=0;c<FreehandKeyboardLetterTrainableSymbolsCount;c++) {
-                        if ( c == currentSymbolOffset ) { //is my letter
+                        if ( c == currentSymbolOffset ) { //is my symbol
+                            reached=true; // warn not suggest also match character beyond this point
                             // train TRUE;
                             if ( 0 != perceptrons[c]->trainedTimes ) {
                                 if ( 1 == pResponse0 ) { continue; } // don't need train if isgood response
@@ -309,9 +311,9 @@ bool FreehandKeyboardTraining::Tick() {
                             // train FALSE;
                             if ( nullptr != perceptrons[c] ) {
                                 int pResponse1 = Perceptron_getResult(perceptrons[c], perceptronData);
-                                if ( 1 == pResponse1 ) { // only one "not"
+                                if ( 1 == pResponse1 ) { // say: "I know this symbol" (no! you are doing wrong!!!)
                                     if ( perceptrons[currentSymbolOffset]->trainedTimes > 0 ) { // only if are trained almost 1 time
-                                        lAppLog("Perceptron: %p, Match: '%c'\n", perceptrons[c], FreehandKeyboardLetterTrainableSymbols[c]);
+                                        lAppLog("Perceptron: %p, Match also: '%c'\n", perceptrons[c], FreehandKeyboardLetterTrainableSymbols[c]);
                                         int learned=1;
                                         do {
                                             int8_t repeat=PerceptronIterationsNO;
@@ -322,11 +324,11 @@ bool FreehandKeyboardTraining::Tick() {
                                         learned = Perceptron_getResult(perceptrons[c], perceptronData);
                                         } while (1==learned);
                                     }
-                                    suggestedSymbol=FreehandKeyboardLetterTrainableSymbols[c];
-                                    suggestedOffset=c;
-                                    isGood=true; // fake!!
-                                    //break; // dont find more
-
+                                    if ( false == reached ) {
+                                        suggestedSymbol=FreehandKeyboardLetterTrainableSymbols[c];
+                                        suggestedOffset=c;
+                                        isGood=true; // force to select this as next symbol
+                                    }
                                 }
                             }
                         }

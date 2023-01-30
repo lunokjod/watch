@@ -22,6 +22,11 @@ extern TFT_eSPI *tft;
 #include "../static/img_back_32.xbm"
 #include "../static/img_check_32.xbm"
 
+#include "../system/Datasources/perceptron.hpp"
+extern TTGOClass *ttgo;
+extern bool UILongTapOverride;
+
+
 SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
@@ -328,8 +333,17 @@ RunApplicationCallback LunokIoTApplication::GetRunCallback() {
 #include "../UI/widgets/EntryTextWidget.hpp"
 SoftwareKeyboard *keyboardInstance=nullptr;
 Ticker destroyKeyboard;
-SoftwareKeyboard::SoftwareKeyboard(void * destinationWidget, lUIKeyboardType keyboardType)
-    : destinationWidget(destinationWidget), keyboardType(keyboardType) {
+
+SoftwareKeyboard::SoftwareKeyboard(void * destinationWidget) : destinationWidget(destinationWidget) {
+    textEntry = (char*)malloc(256); // buffer
+    textEntry[0] = 0; // end of line
+}
+SoftwareKeyboard::~SoftwareKeyboard() {
+    if ( nullptr != textEntry ) { free(textEntry); }
+}
+
+SoftwareNumericKeyboard::SoftwareNumericKeyboard(void * destinationWidget) {
+    this->destinationWidget=destinationWidget;
     if ( nullptr == destinationWidget ) { return; }
     //if ( nullptr == fromCanvas ) { return; }
     EntryTextWidget * sendTo = (EntryTextWidget *)destinationWidget;
@@ -387,7 +401,6 @@ SoftwareKeyboard::SoftwareKeyboard(void * destinationWidget, lUIKeyboardType key
     zero = new ButtonTextWidget(XOffset+ButtonsWidthSize,ButtonsOffset+(ButtonsHeightSize*3),ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"0",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
     zero->paramCallback=zero;
 
-
     btnCancel=new ButtonImageXBMWidget(canvas->width()-40,0, 40, 40, [&,this](void * useless){
         destroyKeyboard.once_ms(KEYBOARD_KILL_DELAY,[](){
             EntryTextWidget * ctrl = (EntryTextWidget*)keyboardInstance->destinationWidget;
@@ -405,10 +418,11 @@ SoftwareKeyboard::SoftwareKeyboard(void * destinationWidget, lUIKeyboardType key
         });
     }, (const uint8_t *)img_check_32_bits,img_check_32_height,img_check_32_width,TFT_GREEN,ThCol(background),false);
 
-    textEntry = (char*)malloc(256); // buffer
-    textEntry[0] = 0; // end of line
+    Tick();
+    //@TODO do anim slide here
 }
-SoftwareKeyboard::~SoftwareKeyboard() {
+
+SoftwareNumericKeyboard::~SoftwareNumericKeyboard() {
     delete seven;
     delete eight;
     delete nine;
@@ -425,7 +439,6 @@ SoftwareKeyboard::~SoftwareKeyboard() {
     delete btnCancel;
     delete btnDiscard;
     delete btnSend;
-    if ( nullptr != textEntry ) { free(textEntry); }
     /*
     if ( nullptr != appCopy ) {
         appCopy->deleteSprite();
@@ -433,7 +446,7 @@ SoftwareKeyboard::~SoftwareKeyboard() {
     }*/
 }
 #include "../UI/widgets/EntryTextWidget.hpp"
-bool SoftwareKeyboard::Tick() {
+bool SoftwareNumericKeyboard::Tick() {
     EntryTextWidget * sendTo = (EntryTextWidget *)destinationWidget;
     /*
     if (nullptr != appCopy ) {
@@ -500,5 +513,255 @@ bool SoftwareKeyboard::Tick() {
     btnSend->DrawTo(canvas);
 
 
+    return true;
+}
+
+SoftwareFreehandKeyboard::SoftwareFreehandKeyboard(void * destinationWidget)  {
+    this->destinationWidget=destinationWidget; // overwrite
+    btnCancel=new ButtonImageXBMWidget(10,canvas->width()-50, 40, 40, [&,this](void * useless){
+        destroyKeyboard.once_ms(KEYBOARD_KILL_DELAY,[](){
+            EntryTextWidget * ctrl = (EntryTextWidget*)keyboardInstance->destinationWidget;
+            ctrl->HideKeyboard(); // must be async to not call my own destructor
+        });
+    },(const uint8_t *)img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,TFT_BLACK,false);
+    btnDiscard=new ButtonImageXBMWidget((canvas->height()/2)-20,canvas->width()-50, 40, 40, [&,this](void * useless){
+        textEntry[0]=0; // reset the string
+    },(const uint8_t *)img_trash_32_bits,img_trash_32_height,img_trash_32_width,TFT_WHITE,TFT_BLACK,false);
+    btnSend=new ButtonImageXBMWidget(canvas->width()-50,canvas->height()-50, 50, 50, [&,this](void * useless){
+        destroyKeyboard.once_ms(KEYBOARD_KILL_DELAY,[](){
+            EntryTextWidget * ctrl = (EntryTextWidget*)keyboardInstance->destinationWidget;
+            ctrl->HideKeyboard(keyboardInstance->textEntry); // must be async to not call my own destructor
+        });
+    }, (const uint8_t *)img_check_32_bits,img_check_32_height,img_check_32_width,TFT_GREEN,ThCol(background),false);
+
+    freeHandCanvas = new TFT_eSprite(tft);
+    freeHandCanvas->setColorDepth(16);
+    freeHandCanvas->createSprite(canvas->width(),canvas->height());
+    freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
+
+    perceptronCanvas = new TFT_eSprite(tft);
+    perceptronCanvas->setColorDepth(1);
+    perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
+    perceptronCanvas->fillSprite(0);
+
+    //symbolsTrained=(Perceptron*)ps_calloc(sizeof(TrainableSymbols),sizeof(Perceptron));
+    lAppLog("Symbols trainables: %zu\n",FreehandKeyboardLetterTrainableSymbolsCount);
+    perceptrons=(Perceptron **)ps_calloc(FreehandKeyboardLetterTrainableSymbolsCount,sizeof(Perceptron *));
+    lAppLog("Loading all perceptrons...\n");
+    for(size_t current=0;current<FreehandKeyboardLetterTrainableSymbolsCount;current++) {
+        lAppLog("Loading symbol '%c'...\n",FreehandKeyboardLetterTrainableSymbols[current]);
+        Perceptron * thaPerceptron = LoadPerceptronFromSymbol(FreehandKeyboardLetterTrainableSymbols[current]);
+        perceptrons[current] = thaPerceptron;
+    }
+    /*
+    bufferText=(char*)malloc(BufferTextMax);
+    bufferText[0]=0; //EOL (empty string)
+    */
+    RedrawMe();
+    UILongTapOverride=true;
+}
+
+SoftwareFreehandKeyboard::~SoftwareFreehandKeyboard() {
+    delete btnCancel;
+    delete btnDiscard;
+    delete btnSend;
+
+    for(size_t current=0;current<FreehandKeyboardLetterTrainableSymbolsCount;current++) {
+        if ( nullptr == perceptrons[current]) { continue; }
+        RemovePerceptron(perceptrons[current]);
+    }
+    free(perceptrons);
+    freeHandCanvas->deleteSprite();
+    delete freeHandCanvas;
+    perceptronCanvas->deleteSprite();
+    delete perceptronCanvas;
+    //free(bufferText);
+    UILongTapOverride=false;
+}
+Perceptron * SoftwareFreehandKeyboard::BuildBlankPerceptron() {
+    lAppLog("Blank perceptron\n");
+    // 0.2 of training rate
+    void * ptrData = Perceptron_new(PerceptronMatrixSize*PerceptronMatrixSize, 0.2);
+    Perceptron * current = (Perceptron *)ptrData;
+    return current;
+}
+void SoftwareFreehandKeyboard::RemovePerceptron(Perceptron * item) {
+    if ( nullptr != item ) {
+        lAppLog("Free perceptron memory...\n");
+        free(item);
+        item=nullptr;
+    }
+}
+Perceptron * SoftwareFreehandKeyboard::LoadPerceptronFromSymbol(char symbol) {
+    lAppLog("NVS: Load perceptron...\n");
+    // get the key name
+    char keyName[15];
+    if ( ' ' == symbol ) { symbol = '_'; } // changed to
+    sprintf(keyName,"freeHandSym_%c", symbol);
+
+    // Load from NVS
+    bool loaded = false; 
+    size_t totalSize = NVS.getBlobSize(keyName);
+    char *bufferdata = nullptr;
+    if ( 0 == totalSize ) {
+        lAppLog("NVS: Unable to get perceptron from '%c'\n",symbol);
+        return nullptr;
+    }
+    bufferdata = (char *)ps_malloc(totalSize); // create buffer "packed file"
+    loaded = NVS.getBlob(keyName, (uint8_t*)bufferdata, totalSize);
+    if ( false == loaded ) {
+        lAppLog("NVS: Unable to get '%c'\n",symbol);
+        return nullptr;
+    }
+    Perceptron * currentSymbolPerceptron=(Perceptron *)bufferdata;
+    currentSymbolPerceptron->weights_=(double*)(bufferdata+sizeof(Perceptron)); // correct the memory pointer
+    lAppLog("Perceptron loaded from NVS (trained: %u times)\n",currentSymbolPerceptron->trainedTimes);
+    return currentSymbolPerceptron;
+}
+
+void SoftwareFreehandKeyboard::Cleanup() {
+    // cleanup
+    freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
+    perceptronCanvas->fillSprite(0);
+    triggered=false;
+    oneSecond=0;
+
+    boxX=TFT_WIDTH; // restore default values
+    boxY=TFT_HEIGHT;
+    boxH=0;
+    boxW=0;
+}
+
+bool SoftwareFreehandKeyboard::Tick() {
+    bool interacted=false;
+    interacted = btnCancel->Interact(touched,touchX,touchY);
+    if ( interacted ) { RedrawMe(); return true; }
+    interacted = btnDiscard->Interact(touched,touchX,touchY);
+    if ( interacted ) { RedrawMe(); return true; }
+    interacted = btnSend->Interact(touched,touchX,touchY);
+    if ( interacted ) { RedrawMe(); return true; }
+
+    const int32_t RADIUS=14;
+    if ( touched ) {
+        // draw on freehand canvas
+        freeHandCanvas->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // to the buffer (ram operation is fast)
+        ttgo->tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
+        const float ratioFromScreen = canvas->width()/PerceptronMatrixSize; 
+        perceptronCanvas->drawPixel(touchX/ratioFromScreen,touchY/ratioFromScreen,1);
+        if ( touchX < boxX ) { boxX = touchX; }
+        if ( touchY < boxY ) { boxY = touchY; }
+        if ( touchX > boxW ) { boxW = touchX; }
+        if ( touchY > boxH ) { boxH = touchY; }
+        triggered=true;
+        oneSecond=0;
+        return false; // fake no changes (already draw on tft)
+    } else {
+        if ( triggered ) {
+            if ( 0 == oneSecond ) {
+                boxX-=RADIUS; // zoom out to get whole draw
+                boxY-=RADIUS;
+                boxH+=RADIUS*2;
+                boxW+=RADIUS*2;
+                // don't get out of margins
+                if ( boxX < 0 ) { boxX=0; }
+                if ( boxY < 0 ) { boxY=0; }
+                if ( boxH > canvas->height() ) { boxH=canvas->height(); }
+                if ( boxW > canvas->width() ) { boxW=canvas->width(); }
+
+                lAppLog("RECT: %d %d %d %d\n",boxX,boxY,boxH-boxY,boxW-boxX);
+                canvas->drawRect(boxX-1,boxY-1,(boxW-boxX)+2,(boxH-boxY)+2,TFT_RED); // mark the area to recognize
+                canvas->drawRect(boxX,boxY,boxW-boxX,boxH-boxY,TFT_RED);             // mark the area to recognize
+
+                oneSecond=millis()+800; // grace time, maybe the user need to add something before send to the perceptron
+                return true;
+            } else if ( millis() > oneSecond ) {
+                bool valid=false;
+                if ( ( boxW-boxX > MINIMALDRAWSIZE ) || ( boxH-boxY > MINIMALDRAWSIZE)) { valid=true; }
+                if ( false == valid ) {
+                    lAppLog("Discarded (too small draw<%dpx)\n",MINIMALDRAWSIZE);
+                    Cleanup();
+                    return false;
+                }
+
+
+                const size_t MemNeeds =sizeof(double)*(PerceptronMatrixSize*PerceptronMatrixSize);
+                lAppLog("Recognizer matrix (%zu byte):\n",MemNeeds);
+                double *perceptronData=(double*)ps_malloc(MemNeeds); // alloc size for train the perceptrons
+                memset(perceptronData,0,MemNeeds); // all 0
+
+                double *pDataPtr;
+                pDataPtr=perceptronData;
+                for (int16_t y=0;y<PerceptronMatrixSize;y++) {
+                    pDataPtr=perceptronData+(PerceptronMatrixSize*y);
+
+                    for (int16_t x=0;x<perceptronCanvas->width();x++) {
+                        uint32_t color = perceptronCanvas->readPixel(x,y);
+
+                        // 0 nothing 1 draw
+                        bool isData= false;
+                        if ( TFT_WHITE == color ){ // write only 1 (memset already put 0 on all)
+                            *pDataPtr=1;
+                            isData=true;
+                        }
+                        lLog("%c",(isData?'O':' '));
+                        pDataPtr++;
+                    }
+                    lLog("\n");
+                }
+                char seeChar = 0;
+                for(size_t current=0;current<FreehandKeyboardLetterTrainableSymbolsCount;current++) {
+                    Perceptron * thaPerceptron = perceptrons[current];
+                    if (  nullptr == thaPerceptron ) { continue; }
+                    int pResponse0 = Perceptron_getResult(thaPerceptron,perceptronData);
+                    if ( 1 == pResponse0 ) {
+                        lAppLog("Symbol: '%c' MATCH\n",FreehandKeyboardLetterTrainableSymbols[current]);
+                        if ( 0 == seeChar ) {
+                            seeChar=FreehandKeyboardLetterTrainableSymbols[current];
+                            break; // stop search here
+                        }
+                    }
+                }
+                if ( 0 != seeChar ) {
+                    sprintf(textEntry,"%s%c",textEntry,seeChar);
+                }
+                seeChar=0;
+
+                Cleanup();
+            }
+        }
+    }
+
+    if ( millis() > nextRefresh ) { // redraw full canvas
+        RedrawMe();
+        nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
+        return true;
+    }
     return false;
 }
+
+void SoftwareFreehandKeyboard::RedrawMe() {
+    canvas->fillSprite(ThCol(background)); // use theme colors
+    const int32_t BORDER=20;
+    canvas->fillRoundRect(BORDER,30,
+    canvas->width()-(BORDER*2),
+    canvas->height()-90,
+    BORDER/2,ThCol(background_alt));
+
+    canvas->drawFastHLine(30,50,canvas->width()-60,ThCol(shadow));
+    canvas->drawFastHLine(30,140,canvas->width()-60,ThCol(light));
+    canvas->drawFastHLine(30,155,canvas->width()-60,ThCol(light));
+
+    if ( (false == touched) || ( 0 == touchDragDistance )) {
+        btnCancel->DrawTo(canvas);
+        btnDiscard->DrawTo(canvas);
+        btnSend->DrawTo(canvas);
+    }
+    canvas->setFreeFont(&FreeMonoBold9pt7b);
+    canvas->setTextDatum(TR_DATUM);
+    canvas->setTextColor(ThCol(text));
+    canvas->drawString(textEntry,TFT_WIDTH-10,5);
+
+
+    freeHandCanvas->pushRotated(canvas,0,Drawable::MASK_COLOR);
+}
+

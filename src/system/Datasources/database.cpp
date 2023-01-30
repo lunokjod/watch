@@ -98,6 +98,7 @@ void SqlLog(const char * logLine) {
             sqliteDbProblem=false;
             StartDatabase();
         }
+        if ( nullptr == lIoTsystemDatabase ) { return; }
         const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
         char * query=(char*)ps_malloc(400);
         sprintf(query,fmtStr,logLine);

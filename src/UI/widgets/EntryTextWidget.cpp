@@ -33,14 +33,18 @@ void EntryTextWidget::ShowKeyboard() {
         delete keyboardInstance;
         keyboardInstance=nullptr;
     }
-    keyboardInstance=new SoftwareKeyboard(this);
+    if ( KEYBOARD_NUMERIC == keyboarTypeToShow ) {
+        keyboardInstance=new SoftwareNumericKeyboard(this);
+    } else if ( KEYBOARD_ALPHANUMERIC_FREEHAND == keyboarTypeToShow ) {
+        keyboardInstance=new SoftwareFreehandKeyboard(this);
+    }
     if ( nullptr != ptrToText ) {
         strcpy(keyboardInstance->textEntry,ptrToText);
     }
 }
 
 EntryTextWidget::EntryTextWidget(int16_t x,int16_t y, int16_t h, int16_t w, 
-            const char *text) 
+            const char *text, lUIKeyboardType keybType)
             : ButtonTextWidget(x,y,h,w,[](void *data){
                 EntryTextWidget * receiver=(EntryTextWidget *)data;
                 if ( nullptr != keyboardInstance ) {
@@ -51,7 +55,7 @@ EntryTextWidget::EntryTextWidget(int16_t x,int16_t y, int16_t h, int16_t w,
                 //receiver->label="LOLOLO";
                 receiver->InternalRedraw();
 
-            },text,TFT_BLACK,TFT_WHITE,true) {
+            },text,TFT_BLACK,TFT_WHITE,true), keyboarTypeToShow(keybType) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
     ButtonTextWidget::paramCallback=this;
     ptrToText=(char*)malloc(256);

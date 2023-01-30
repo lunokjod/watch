@@ -401,7 +401,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             }
         }
         if ( nullptr != keyboardInstance ) {
-            keyboardInstance->Tick();
+            changes = keyboardInstance->Tick();
         } else {
             if ( false == UIlongTap ) { // only if no long tap in progress
                 // perform the call to the app logic
@@ -410,13 +410,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         }
         if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
 
-        if ( nullptr != keyboardInstance ) {
-            keyboardInstance->canvas->pushSprite(0,0);
-        } else {
-            if ( changes ) { // Tick() returned true
-                // dump the current ap to the TFT
-                //appView->setPivot((TFT_WIDTH/2),(TFT_HEIGHT/2));
-                appView->pushSprite(0,0); // push appView to tft
+        if ( changes ) {
+            if ( nullptr != keyboardInstance ) {
+                    keyboardInstance->canvas->pushSprite(0,0);
+            } else {
+                    appView->pushSprite(0,0); // push appView to tft
             }
         }
         #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
