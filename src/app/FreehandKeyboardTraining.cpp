@@ -91,12 +91,12 @@ FreehandKeyboardTraining::FreehandKeyboardTraining() {
     perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
     perceptronCanvas->fillSprite(0);
 
-    destroySymbolData = new ButtonImageXBMWidget(85,TFT_HEIGHT-69,64,64,[&,this](void *bah){
+    destroySymbolData = new ButtonImageXBMWidget(85,TFT_HEIGHT-69,TFT_WIDTH-69,64,[&,this](void *bah){
         RemovePerceptron(perceptrons[currentSymbolOffset]);
         perceptrons[currentSymbolOffset]=BuildBlankPerceptron();
         RedrawMe();
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high),false);
-    //destroySymbolData->SetEnabled(false);
+    destroySymbolData->SetEnabled(false);
 
     lAppLog("Symbols trainables: %zu\n",FreehandKeyboardLetterTrainableSymbolsCount);
     perceptrons=(Perceptron **)ps_calloc(FreehandKeyboardLetterTrainableSymbolsCount,sizeof(Perceptron *));

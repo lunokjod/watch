@@ -633,8 +633,7 @@ void SoftwareFreehandKeyboard::Cleanup() {
 }
 
 bool SoftwareFreehandKeyboard::Tick() {
-    bool interacted=false;
-    interacted = btnCancel->Interact(touched,touchX,touchY);
+    bool interacted = btnCancel->Interact(touched,touchX,touchY);
     if ( interacted ) { RedrawMe(); return true; }
     interacted = btnDiscard->Interact(touched,touchX,touchY);
     if ( interacted ) { RedrawMe(); return true; }

@@ -586,7 +586,7 @@ Watchface2Application::~Watchface2Application()
 }
 
 Watchface2Application::Watchface2Application() {
-    //isWatchface=true;
+    directDraw=false;
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;

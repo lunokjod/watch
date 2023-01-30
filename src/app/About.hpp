@@ -9,9 +9,9 @@
 
 class AboutApplication: public TemplateApplication {
     private:
-        unsigned long drawOneSecond=0;
+        //unsigned long drawOneSecond=0;
         unsigned long nextRedraw=0;
-        unsigned long nextScrollRedraw=0;
+        //unsigned long nextScrollRedraw=0;
         uint8_t counterLines=0;
     public:
         const char *AppName() override { return "About"; };
