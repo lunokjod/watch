@@ -44,6 +44,7 @@ extern TTGOClass *ttgo; // ttgo library
 #include <freertos/portable.h>
 //https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
 
+#include "../app/Lamp.hpp"
 
 #include <SPI.h>
 #include <FS.h>
@@ -701,7 +702,20 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
     SqlLog("wake");
-    if ( nullptr == currentApplication ) {
+
+    TakeAllSamples(); // get current pose
+    
+    //lSysLog("GESTURE? %f,%f,%f\n", degX, degY, degZ);
+
+    // enable lamp? @TODO THIS MUST BE A SETTING
+    bool launchLamp=false;
+    if ( degY > 340.0 ) { launchLamp = true; }
+    else if ( degY < 20.0 ) { launchLamp = true; }
+
+    if ( launchLamp ) { // is the correct pose to get light?
+        LaunchApplication(new LampApplication());
+        return;
+    } else if ( nullptr == currentApplication ) {
         LaunchWatchface(false);
     } else { // already have an app on currentApplication
         if ( false == currentApplication->isWatchface() ) { // Isn't a watchface, run it now!

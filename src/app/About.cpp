@@ -129,6 +129,8 @@ const char *AboutBoxTextScroll[] = {
     "",
     "",
     "",
+    "",
+    "",
     "Thanks all!",
     "",
     "",
@@ -174,8 +176,10 @@ AboutApplication::AboutApplication() {
     textBuffer->setTextColor(TFT_WHITE);
     textBuffer->setTextSize(1);
     textBuffer->setTextDatum(BC_DATUM);
-
-    TemplateApplication::Tick(); // draw back button
+    // change the button color before draw
+    TemplateApplication::btnBack->xbmColor=TFT_WHITE;
+    TemplateApplication::btnBack->InternalRedraw();
+    TemplateApplication::Tick(); // draw back button for splash
 
 }
 
