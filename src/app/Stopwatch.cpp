@@ -19,23 +19,23 @@ StopwatchApplication::~StopwatchApplication() {
 }
 
 StopwatchApplication::StopwatchApplication() {
-    TemplateApplication();
+    //TemplateApplication();
     canvas->setTextFont(0);
     canvas->setTextSize(3);
     canvas->setTextColor(TFT_WHITE);
     canvas->setTextDatum(CC_DATUM);
 
-    startBtn = new ButtonImageXBMWidget(10,100,70,70,[this](void *unused) {
+    startBtn = new ButtonImageXBMWidget(10,120,70,70,[this](void *unused) {
         starTime=millis();
         pauseTime=0;
-    },img_play_48_bits,img_play_48_height,img_play_48_width);
+    },img_play_48_bits,img_play_48_height,img_play_48_width,TFT_GREEN,Drawable::MASK_COLOR,false);
 
-    resetBtn = new ButtonImageXBMWidget(10+74,100,70,70,[this](void *unused) {
+    resetBtn = new ButtonImageXBMWidget(10+74,120,70,70,[this](void *unused) {
         starTime=0;
         pauseTime=0;
-    },img_reload_48_bits,img_reload_48_height,img_reload_48_width);
+    },img_reload_48_bits,img_reload_48_height,img_reload_48_width,TFT_RED,Drawable::MASK_COLOR,false);
 
-    pauseBtn = new ButtonImageXBMWidget(10+(74*2),100,70,70,[this](void *unused) {
+    pauseBtn = new ButtonImageXBMWidget(10+(74*2),120,70,70,[this](void *unused) {
         if ( 0 == starTime ) { return; }
         if ( 0 == pauseTime ) {
             pauseTime=millis();
@@ -45,11 +45,13 @@ StopwatchApplication::StopwatchApplication() {
         starTime=millis()-diff;
         pauseTime=0;
 
-    },img_pause_48_bits,img_pause_48_height,img_pause_48_width);
+    },img_pause_48_bits,img_pause_48_height,img_pause_48_width,TFT_YELLOW,Drawable::MASK_COLOR,false);
+
+    TemplateApplication::btnBack->xbmColor=ThCol(text); // more visible back button
+    TemplateApplication::btnBack->InternalRedraw();
     Tick();
 }
 bool StopwatchApplication::Tick() {
-    TemplateApplication::Tick();
     startBtn->Interact(touched,touchX,touchY);
     resetBtn->Interact(touched,touchX,touchY);
     pauseBtn->Interact(touched,touchX,touchY);
@@ -57,10 +59,17 @@ bool StopwatchApplication::Tick() {
         UINextTimeout = millis()+UITimeout;
     }
     if (millis() > nextRedraw ) {
+        canvas->fillSprite(ThCol(background));
         char displayText[16] = { 0 };
         if ( starTime > 0 ) {
             unsigned long diff= millis()-starTime;
-            if ( pauseTime > 0 ) { diff=pauseTime-starTime; blink=(!blink); }
+            if ( pauseTime > 0 ) {
+                diff=pauseTime-starTime;
+                if ( millis() > nextBlink ) {
+                    blink=(!blink);
+                    nextBlink=millis()+300;
+                }
+            }
             else { blink = false; }
             int seconds = diff / 1000;
             diff %= 1000;
@@ -74,10 +83,11 @@ bool StopwatchApplication::Tick() {
         } else {
             sprintf(displayText,"00:00:00.000");
         }
-        canvas->fillRoundRect(0,40,TFT_WIDTH,40,10,TFT_BLACK); // ThCol(background));
+        canvas->fillRoundRect(0,40,TFT_WIDTH,40,10,TFT_BLACK);
         canvas->drawString(displayText,TFT_WIDTH/2,60);
         TemplateApplication::Tick();
 
+        canvas->fillRoundRect(15,122,210,68,30,TFT_BLACK);
         startBtn->DrawTo(canvas);
         resetBtn->DrawTo(canvas);
         pauseBtn->DrawTo(canvas);

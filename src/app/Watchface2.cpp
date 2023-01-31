@@ -28,6 +28,7 @@ extern TTGOClass *ttgo;
 #include "../static/img_weather_600.c"
 
 #include "../static/img_weather_800.c"
+#include "Stopwatch.hpp"
 
 int currentSec = random(0, 60);
 int currentMin = random(0, 60);
@@ -993,6 +994,23 @@ bool Watchface2Application::Tick()
             canvas->drawString("No batt", posX + 10, posY + 1);
             canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
         }
+        if ( 0 != StopwatchApplication::starTime ) {
+            unsigned long diff= millis()-StopwatchApplication::starTime;
+            int seconds = diff / 1000;
+            diff %= 1000;
+            int minutes = seconds / 60;
+            seconds %= 60;
+            int hours = minutes / 60;
+            minutes %= 60;
+            canvas->setTextFont(0);
+            canvas->setTextSize(1);
+            canvas->setTextColor(ThCol(text));
+            canvas->setTextDatum(CR_DATUM);
+            sprintf(textBuffer,"%02d:%02d:%02d.%03d",hours,minutes,seconds,diff);
+            canvas->drawString(textBuffer, middleX - 15, middleY-14);
+
+        }
+
         free(textBuffer);
         const int16_t margin = 15;
         canvas->setTextFont(0);

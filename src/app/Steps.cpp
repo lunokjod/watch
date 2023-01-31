@@ -288,6 +288,9 @@ bool StepsApplication::Tick() {
             //Serial.printf("-------> stepsBMAActivityRunning: %d\n", pcRunning);
             canvas->fillRect(x,y,pcWalking,h,ThCol(medium));
             canvas->fillRect(x+pcWalking,y,pcRunning,h,ThCol(high));
+
+            canvas->drawFastVLine(x+pcWalking,y+8,10,ThCol(text));
+            canvas->drawFastVLine(x+pcWalking+pcRunning,y+8,10,ThCol(text));
         }
 
 

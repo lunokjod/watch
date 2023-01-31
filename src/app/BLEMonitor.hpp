@@ -2,18 +2,17 @@
 #define __LUNOKIOT__BLEMONITOR_APP__
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "../system/Application.hpp"
-#include "../system/Network.hpp"
+#include "../UI/AppTemplate.hpp"
+//#include "../system/Network.hpp"
+//#include "../UI/widgets/ButtonImageXBMWidget.hpp"
 
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-
-class BLEMonitorApplication: public LunokIoTApplication {
+class BLEMonitorApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;
         int rotateVal = 0;
     public:
         const char *AppName() override { return "BLE Monitor"; };
-        ButtonImageXBMWidget * btnBack = nullptr;
+        //ButtonImageXBMWidget * btnBack = nullptr;
         BLEMonitorApplication();
         ~BLEMonitorApplication();
         bool Tick();

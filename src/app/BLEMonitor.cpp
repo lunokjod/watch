@@ -77,17 +77,14 @@ BLEMonitorApplication::~BLEMonitorApplication()
     }
     pBLEScan->clearDuplicateCache();
     pBLEScan->clearResults();
-    if (nullptr != btnBack)
-    {
-        delete btnBack;
-    }
 }
 
-BLEMonitorApplication::BLEMonitorApplication()
-{
+BLEMonitorApplication::BLEMonitorApplication() {
+    /*
     btnBack = new ButtonImageXBMWidget(
         5, TFT_HEIGHT - 69, 64, 64, [&, this](void *bah) { LaunchWatchface(); },
         img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, canvas->color24to16(0x353e45), false);
+    */
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_PROVISIONING_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
     Tick(); // splash
@@ -95,19 +92,16 @@ BLEMonitorApplication::BLEMonitorApplication()
 }
 
 bool BLEMonitorApplication::Tick() {
-    btnBack->Interact(touched, touchX, touchY);
     UINextTimeout = millis() + UITimeout; // no sleep here
     if (millis() > nextRedraw) {
         rotateVal += 1;
         canvas->fillSprite(canvas->color24to16(0x212121));
-        btnBack->DrawTo(canvas);
         canvas->fillCircle(120, 120, 30, TFT_BLACK);
         canvas->fillCircle(120, 120, 28, TFT_WHITE);
         canvas->fillCircle(120, 120, 24, TFT_BLUE);
         uint16_t iconColor = TFT_WHITE;
         if ( false == bleEnabled ) { iconColor = TFT_DARKGREY; }
         canvas->drawXBitmap((TFT_WIDTH - img_bluetooth_32_width) / 2, (TFT_HEIGHT - img_bluetooth_32_height) / 2, img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, iconColor);
-
         if (BLEKnowDevices.size() > 0) {
             int elementDegrees = 360 / BLEKnowDevices.size();
             if (elementDegrees > 359)
@@ -190,6 +184,7 @@ bool BLEMonitorApplication::Tick() {
                 return true; },
                 nullptr);
         }
+        TemplateApplication::Tick();
         nextRedraw = millis() + (1000 / 18);
         return true;
     }

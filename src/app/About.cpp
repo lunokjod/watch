@@ -162,7 +162,7 @@ AboutApplication::AboutApplication() {
     canvas->fillSprite(TFT_BLACK);
     AboutBoxTextScrollOffset=0;
 
-    perspectiveTextBuffer = new CanvasWidget(TFT_HEIGHT-80,TFT_WIDTH);
+    perspectiveTextBuffer = new CanvasWidget(TFT_HEIGHT-100,TFT_WIDTH);
     perspectiveTextBuffer->canvas->fillSprite(TFT_BLACK);
 
     colorBuffer = new CanvasWidget(perspectiveTextBuffer->canvas->height(),perspectiveTextBuffer->canvas->width());
@@ -193,9 +193,9 @@ bool AboutApplication::Tick() {
         perspectiveTextBuffer->canvas->fillSprite(TFT_BLACK);
         for(int32_t y=0;y<perspectiveTextBuffer->canvas->height();y++) {
             uint8_t bytepc = ((y*255)/perspectiveTextBuffer->canvas->height());
-            float divisor = 1.0+(bytepc/255.0);
+            //float divisor = 1.0+(bytepc/255.0);
 
-            uint16_t dcolor = canvas->alphaBlend(bytepc,TFT_YELLOW,TFT_BLACK); // darken with distance
+            uint16_t dcolor = canvas->alphaBlend(bytepc,TFT_YELLOW,TFT_CYAN); // darken with distance
             for(int32_t x=0;x<perspectiveTextBuffer->canvas->width();x++) {
                 int32_t rx = x; //((TFT_WIDTH/2)*-1)+(x*divisor);
                 if (( rx < 0 ) || ( rx/2 >= textBuffer->width() )) { continue; } // origin out of bounds
@@ -225,7 +225,7 @@ bool AboutApplication::Tick() {
             }
         }
         TemplateApplication::Tick();
-        perspectiveTextBuffer->canvas->pushSprite(0,40);
+        perspectiveTextBuffer->canvas->pushSprite(0,50);
 
         nextRedraw=millis()+AboutBoxTextScrollDelay;
     }
