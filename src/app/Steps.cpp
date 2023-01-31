@@ -83,7 +83,7 @@ void InstallStepManager() {
 
 StepsApplication::~StepsApplication() {
 
-    if ( nullptr != btnBack ) { delete btnBack; }
+    //if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != weekGraph ) { delete weekGraph; }
     if ( nullptr != btnSetup ) { delete btnSetup; }
     if ( nullptr != activityGraph ) { delete activityGraph; }
@@ -112,17 +112,18 @@ void StepsApplication::CreateStats() {
     int32_t maxVal = 0;
     int32_t minVal = 0;
     /*
-    lAppLog("@DEBUG Fill with fake data!!!\n");
+    lAppLog("@DEBUG Fill with fake data!!! <============================ DISABLE ME!!\n");
+    stepCount=random(0,8000);
     for(int a=0;a<7;a++) {
         weekSteps[a] = random(0,8000);
     }
     */
+    
+    // get minMax for the graph
     for(int a=0;a<7;a++) {
         if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
         if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
     }
-
-
 
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }
@@ -143,76 +144,65 @@ void StepsApplication::CreateStats() {
     if ( nullptr != activityGraph ) { delete activityGraph; }
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     
+    const char sqlQuery[]="SELECT * FROM rawlog ORDER BY id DESC LIMIT %d";
+    char sqlQueryBuffer[400] = { 0 };
+    sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
+
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
-        sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
 }
 StepsApplication::StepsApplication() {
-    btnBack=new ButtonImageXBMWidget(TFT_WIDTH-69,TFT_HEIGHT-69,64,64,[&,this](void *unused){
-        LaunchWatchface();
-    },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
-
-    btnSetup=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *unused){
+    btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](void *unused){
         LaunchApplication(new StepsSetupApplication());
-    },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(text),ThCol(button),false);
+    },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(background_alt),ThCol(button),false);
     
     CreateStats();
     Tick();
 }
 
 bool StepsApplication::Tick() {
-    btnBack->Interact(touched,touchX, touchY);
     btnSetup->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
-        btnBack->DrawTo(canvas);
+        TemplateApplication::Tick();
         btnSetup->DrawTo(canvas);
-        weekGraph->DrawTo(canvas,30,30);
+
+        int32_t x = 20;
+        int32_t y = 20;
+        int16_t border=4;
 
         canvas->setTextFont(0);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString("Recent activities:", 40,y-(border*2));
+
+        canvas->fillRect(x-border,y-border,activityGraph->canvas->width()+(border*2),activityGraph->canvas->height()+(border*2),ThCol(background_alt));
+        activityGraph->DrawTo(canvas,x,y);
+
+        x=30;
+        y=45;
+
+
+        canvas->setTextSize(1);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString("Week comparision:", 40,y-(border*2));
+
+        weekGraph->DrawTo(canvas,x,y);
+
         canvas->setTextSize(1);
         canvas->setTextDatum(TL_DATUM);
         canvas->setTextWrap(false,false);
         canvas->setTextColor(ThCol(text));
-        canvas->drawString("Mo.", 34,90);
-        canvas->drawString("Tu.", 60,90);
-        canvas->drawString("We.", 86,90);
-        canvas->drawString("Th.", 114,90);
-        canvas->drawString("Fr.", 140,90);
-        canvas->drawString("Sa.", 166,90);
-        canvas->drawString("Su.", 192,90);
-
-        canvas->drawXBitmap(30,120,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
-        canvas->drawXBitmap(130,120,img_distance_32_bits,img_distance_32_width,img_distance_32_height,ThCol(text));
-
-        char bufferText[32] = {0};
-        canvas->setTextSize(2);
-        sprintf(bufferText,"%d",stepCount);
-        canvas->setTextDatum(BL_DATUM);
-        canvas->drawString(bufferText, 60,140);
-        canvas->setTextSize(1);
-        canvas->setTextDatum(TL_DATUM);
-        canvas->drawString("steps", 60,140);
-
-        canvas->setTextSize(2);
-        canvas->setTextDatum(BL_DATUM);
-        float distance = (stepCount*stepDistanceCm)/100;
-        if ( distance > 1000 ) {
-            sprintf(bufferText,"%.2f",distance/1000);
-        } else {
-            sprintf(bufferText,"%.2f",distance);
-        }
-        canvas->drawString(bufferText, 170,140);
-        canvas->setTextSize(1);
-        canvas->setTextDatum(TL_DATUM);
-        if ( distance > 1000 ) {
-            canvas->drawString("Km", 170,140);
-        } else {
-            canvas->drawString("mts.", 170,140);
-        }
+        canvas->drawString("Mo.", 34,y+60);
+        canvas->drawString("Tu.", 60,y+60);
+        canvas->drawString("We.", 86,y+60);
+        canvas->drawString("Th.", 114,y+60);
+        canvas->drawString("Fr.", 140,y+60);
+        canvas->drawString("Sa.", 166,y+60);
+        canvas->drawString("Su.", 192,y+60);
 
 
         time_t now;
@@ -224,16 +214,69 @@ bool StepsApplication::Tick() {
         //lLog("Steps: WeekDay: %d\n",correctedDay);
         if ( -1 == correctedDay ) { correctedDay=6; }
         //drawrect under the current week day
-        canvas->fillRect(32+(25*correctedDay),100,25,5,ThCol(light));
+        canvas->fillRect(32+(25*correctedDay),y+70,25,5,ThCol(light));
+
+
+
+        char bufferText[32] = {0};
+        x=30;
+        y=140;
+
+        canvas->setTextSize(1);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString("Today:", 40,y-(border*2));
+
+        canvas->drawXBitmap(x,y,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
+        canvas->setTextSize(2);
+        sprintf(bufferText,"%d",stepCount);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString(bufferText, x+30,y+20);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TL_DATUM);
+        canvas->drawString("steps", x+30,y+20);
+
+        x=130;
+        y=140;
+
+        canvas->setTextSize(1);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString("Distance:", x+10,y-(border*2));
+
+        canvas->drawXBitmap(x,y,img_distance_32_bits,img_distance_32_width,img_distance_32_height,ThCol(text));
+        canvas->setTextSize(2);
+        canvas->setTextDatum(BL_DATUM);
+        float distance = (stepCount*stepDistanceCm)/100;
+        if ( distance > 1000 ) {
+            sprintf(bufferText,"%.2f",distance/1000);
+        } else {
+            sprintf(bufferText,"%.2f",distance);
+        }
+        canvas->drawString(bufferText, x+40,y+20);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TL_DATUM);
+        if ( distance > 1000 ) {
+            canvas->drawString("Km", x+40,y+20);
+        } else {
+            canvas->drawString("mts.", x+40,y+20);
+        }
+
+
 
 
         uint32_t totalStepsValues = stepsBMAActivityStationary
                 +stepsBMAActivityWalking+stepsBMAActivityRunning
                 +stepsBMAActivityInvalid+stepsBMAActivityNone;
         uint32_t barWidth = 220;
+        x=10;
+        y=canvas->height()-48;
+        int32_t h=5;
 
-        canvas->fillRect(8,165,barWidth+4,9,ThCol(background_alt));
-        canvas->fillRect(10,167,barWidth,5,ThCol(low));
+        canvas->setTextSize(1);
+        canvas->setTextDatum(BL_DATUM);
+        canvas->drawString("Percentage:", 40,y-(border*2));
+
+        canvas->fillRect(x-2,y-2,barWidth+border,h+border,ThCol(background_alt));
+        canvas->fillRect(x,y,barWidth,h,ThCol(low));
 
         if ( totalStepsValues > 0 ) {
             //Serial.printf("Steps: TotalSteps: %d\n", totalStepsValues);
@@ -243,28 +286,12 @@ bool StepsApplication::Tick() {
             //Serial.printf("-------> stepsBMAActivityWalking: %d\n", pcWalking);
             uint32_t pcRunning=(stepsBMAActivityRunning*barWidth)/totalStepsValues;
             //Serial.printf("-------> stepsBMAActivityRunning: %d\n", pcRunning);
-            canvas->fillRect(10,167,pcWalking,5,ThCol(medium));
-            canvas->fillRect(10+pcWalking,167,pcRunning,5,ThCol(high));
+            canvas->fillRect(x,y,pcWalking,h,ThCol(medium));
+            canvas->fillRect(x+pcWalking,y,pcRunning,h,ThCol(high));
         }
 
 
-/*
-                    stepsBMAActivityStationary = 0;
-                    timeBMAActivityStationary = 0;
-                    stepsBMAActivityWalking = 0;
-                    timeBMAActivityWalking = 0;
-                    stepsBMAActivityRunning = 0;
-                    timeBMAActivityRunning = 0;
-                    stepsBMAActivityInvalid = 0;
-                    timeBMAActivityInvalid = 0;
-                    stepsBMAActivityNone = 0;
-                    timeBMAActivityNone = 0;
-*/
-        int16_t x = 20;
-        int16_t y = 16;
-        int16_t border=4;
-        canvas->fillRect(x-border,y-border,activityGraph->canvas->width()+(border*2),activityGraph->canvas->height()+(border*2),ThCol(background_alt));
-        activityGraph->DrawTo(canvas,x,y);
+
         nextRedraw=millis()+(1000/16);
         return true;
     }

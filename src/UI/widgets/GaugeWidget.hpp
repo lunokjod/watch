@@ -13,6 +13,7 @@ class GaugeWidget : public CanvasWidget, ActiveRect {
         uint32_t incrementColor;
         CanvasWidget * buffer;
         bool dirty = true;
+        int16_t lastAngle = 0;
         int16_t selectedAngle = 0;
         int32_t markX = -1;
         int32_t markY = -1;

@@ -81,7 +81,9 @@ void GaugeWidget::DirectDraw() {
     if ( dirty ) {
         ForceDraw();
         dirty = false;
+        if ( lastAngle == selectedAngle ) { return; }
         buffer->canvas->pushSprite(x,y,Drawable::MASK_COLOR);
+        lastAngle = selectedAngle;
     }
 }
 

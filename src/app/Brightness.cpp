@@ -23,12 +23,10 @@ BrightnessApplication::~BrightnessApplication() {
 
 BrightnessApplication::BrightnessApplication() {
     TemplateApplication();
-    brightGauge = new GaugeWidget(20,10,200);
+    brightGauge = new GaugeWidget(10,10,220);
 
     uint8_t userBright = ttgo->bl->getLevel();
-    // NVS.getInt("lBright");
     int16_t currentValue = userBright*(360.0/255);
-    //ttgo->setBrightness(userBright);
     brightGauge->selectedAngle = currentValue;
     Tick();
 }
@@ -41,12 +39,11 @@ bool BrightnessApplication::Tick() {
         return false;
     }
     TemplateApplication::Tick();
-
     if (millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background));
         // sun in the center
         canvas->drawXBitmap((TFT_WIDTH/2)-(img_bright_48_width/2),
-                    ((TFT_HEIGHT/2)-(img_bright_48_height/2)-14),
+                    ((TFT_HEIGHT/2)-(img_bright_48_height/2)),
                     img_bright_48_bits,
                     img_bright_48_width,
                     img_bright_48_height,
