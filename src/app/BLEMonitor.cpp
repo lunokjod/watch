@@ -26,16 +26,6 @@ void BLEMonitorTask(void *data) {
         if (millis() > BLEMonitorTasknextBLEScan)
         {
             NimBLEScan *pBLEScan = BLEDevice::getScan();
-            /*
-            if ( BLEMonitorScanLoops > 5 ) {
-                lAppLog("BLE: Rolling to avoid saturation\n");
-                StopBLE();
-                //delay(10*1000);
-                StartBLE();
-                delay(3200);
-                BLEMonitorScanLoops=0;
-                continue;
-            }*/
             if (bleEnabled) {
                 if (pBLEScan->isScanning()) {
                     pBLEScan->stop();

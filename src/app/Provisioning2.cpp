@@ -22,7 +22,7 @@ extern TFT_eSPI *tft;
 #include <esp_wifi.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
-
+#include "../system/SystemEvents.hpp"
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
 #include "esp_gattc_api.h"
@@ -34,6 +34,8 @@ extern TFT_eSPI *tft;
 #include "esp_system.h"
 
 #include "LogView.hpp"
+extern bool bleServiceRunning;
+#include "../system/Network.hpp"
 
 // https://github.com/ricmoo/QRCode
 #include <qrcode.h>
@@ -276,6 +278,10 @@ Provisioning2Application::Provisioning2Application() {
         if ( provisioningStarted ) {
             lAppLog("Provisioning: %p: Rejected (already runing)\n",this);
             return;
+        }
+        if ( bleServiceRunning ) {
+            lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
+            StopBLE();
         }
         lAppLog("Provisioning: %p: Starting provisioning procedure...\n",this);
         GenerateCredentials();

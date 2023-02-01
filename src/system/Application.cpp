@@ -45,6 +45,8 @@ TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 // get a capture of current application
 TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
 LunokIoTApplication::LunokIoTApplication() {
+    directDraw=false;
+    UILongTapOverride=false;
     canvas = new TFT_eSprite(tft);
     if ( nullptr == canvas ) { 
         lUILog("LunokIoTApplication: %p ERROR: unable to create their own canvas!!!\n", this);

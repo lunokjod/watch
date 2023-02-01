@@ -86,8 +86,8 @@ extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubuser
 extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 #endif
 
-bool bleEnabled = false;
-bool bleServiceRunning = false;
+volatile bool bleEnabled = false;
+volatile bool bleServiceRunning = false;
 bool blePeer = false;
 bool BLESendScreenShootCommand = false;
 // https://mynewt.apache.org/latest/network/ble_sec.html
@@ -372,14 +372,13 @@ void NetworkTasksCheck() {
     if ( bleServiceRunning ) {
         lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
         StopBLE();
-        delay(100);
     }
 
     BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_NETWORK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         lNetLog("Network: BLE last state restored\n");
-        if ( bleEnabled ) { StartBLE(); delay(100); }
+        if ( bleEnabled ) { StartBLE(); }
     }
 }
 
