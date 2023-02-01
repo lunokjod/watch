@@ -6,6 +6,7 @@
 #include <Arduino.h>
 //#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
+#include <Ticker.h>
 
 class Point2D {
     private: //@TODO why private? this class must have getter, setter and callback in case of change (KVO stykle) 
@@ -18,6 +19,10 @@ class Point2D {
         void Set(int16_t px, int16_t py);
         void Get(int16_t &px, int16_t &py);
         Point2D(int16_t x=0,int16_t y=0);
+        void Goto(int16_t nx,int16_t ny,unsigned long time);
+        double Distance(double x1, double y1, double x2, double y2);
+        Ticker animStepper;
+        double steps=0;
 };
 
 #endif

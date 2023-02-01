@@ -239,13 +239,13 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
 Ticker LogAppRun;
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
-    /*
+
     if ( nullptr != instance ) {
         if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
             lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
             return;
         }
-    }*/
+    }
 
     if ( ( nullptr != currentApplication ) && (nullptr != instance) ) {
         if ( 0 == strcmp( currentApplication->AppName(),instance->AppName() )) {
@@ -257,7 +257,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
 
     if ( nullptr != instance ) {
         // get a little breath to the system before log (sql is a relative expensive operation) 
-        LogAppRun.once(2,[]() {
+        LogAppRun.once(1,[]() {
             if ( nullptr != currentApplication ) {
                 char logMsg[255] = { 0 }; 
                 sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
@@ -265,7 +265,6 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
             }
         });
     }
-
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();
     thisLaunch->instance = instance;
     thisLaunch->animation = animation;
@@ -276,8 +275,10 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
         // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
         xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY-1, nullptr,0);
     }
-}
 
+
+}
+// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 void LunokIoTApplication::LowMemory() {
     lAppLog("LunokIoTApplication: LOW MEMORY received\n");
     // free last apps!!

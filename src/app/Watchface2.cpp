@@ -90,7 +90,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
         free(url);
         return false;
     }
-//AAAAAAAAAAAAAAAAAAAAA
+
     HTTPClient *weatherClient = new HTTPClient;
     if ( nullptr == weatherClient ) {
         lNetLog("GetSecureNetworkWeather: ERROR: Unable to create HTTPClient\n");

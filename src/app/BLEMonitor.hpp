@@ -12,7 +12,6 @@ class BLEMonitorApplication: public TemplateApplication {
         int rotateVal = 0;
     public:
         const char *AppName() override { return "BLE Monitor"; };
-        //ButtonImageXBMWidget * btnBack = nullptr;
         BLEMonitorApplication();
         ~BLEMonitorApplication();
         bool Tick();

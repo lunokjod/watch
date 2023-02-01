@@ -6,6 +6,7 @@
 #include "ActiveRect.hpp"
 
 #include "../../app/LogView.hpp"
+#include "../../system/SystemEvents.hpp"
 
 ActiveRect::ActiveRect(int16_t x,int16_t y, int16_t h, int16_t w, UICallback tapCallback):
                                     x(x),y(y),h(h),w(w),tapActivityCallback(tapCallback) {
@@ -52,8 +53,9 @@ void ActiveRect::Trigger() {
     if ( res != pdTRUE ) {
         delete(comm);
         lUILog("%s: %p ERROR: Unable to launch task!\n",__PRETTY_FUNCTION__,this);
-        lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
-        lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
+        FreeSpace();
+        //lUILog("ESP32: Free heap: %d KB\n", ESP.getFreeHeap()/1024);
+        //lUILog("ESP32: Free PSRAM: %d KB\n", ESP.getFreePsram()/1024);
     }
 }
 

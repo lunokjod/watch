@@ -1449,18 +1449,18 @@ void SystemEventsStart() {
     }
     //delay(50);
 
+    // Create my own event loop
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 20,                           // maybe so big?
-        .task_name = "lEvTask",                     // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+2,          // a little bit faster?
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
-        .task_core_id = 1                           // to core 1
-    };                                              // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
+        .queue_size = 8,                             // maybe so big?
+        .task_name = "lEvTask",                      // lunokIoT Event Task
+        .task_priority = tskIDLE_PRIORITY+8,         // a little bit faster?
+        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
+        .task_core_id = 1                            // to core 1
+    };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
     //delay(50);
 
-    // Create my own event loop
     esp_err_t loopCreated = esp_event_loop_create(&lunokIoTSystemEventloopConfig, &systemEventloopHandler);
     if ( ESP_FAIL == loopCreated ) {
         lSysLog("SystemEventsStart: ERROR: Unable to create LunokIoT Event Queue (fail)\n");
@@ -1481,6 +1481,7 @@ void SystemEventsStart() {
     } else if ( ESP_ERR_INVALID_ARG == espLoopCreated ) {
         lSysLog("SystemEventsStart: ERROR: Unable to create ESP32 Event Queue (invalid args)\n");
     }
+
     //delay(50);
     esp_err_t registered = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived, NULL);
     if ( ESP_OK != registered ) {

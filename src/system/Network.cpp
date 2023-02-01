@@ -430,10 +430,25 @@ bool NetworkHandler() {
     return false;
 }
 
+static void BLELauncherTask(void* args) {
+    StartBLE();
+    vTaskDelete(NULL);
+}
 static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     bool enabled = NVS.getInt("BLEEnabled");
     if ( enabled ) {
-        StartBLE();
+        //xTaskCreatePinnedToCore(BLELoopTask, "lble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,0);
+
+        BaseType_t taskOK = xTaskCreatePinnedToCore( BLELauncherTask,
+                            "bleLauncher",
+                            LUNOKIOT_TASK_STACK_SIZE,
+                            nullptr,
+                            tskIDLE_PRIORITY,
+                            NULL,
+                            1);
+        if ( pdPASS != taskOK ) {
+            lNetLog("BLEWake: ERROR Trying to launch Task\n");
+        }
     }
 }
 
@@ -802,6 +817,7 @@ float ReverseFloat( const float inFloat )
 }
 
 void StartBLE() {
+    // https://h2zero.github.io/NimBLE-Arduino/nimconfig_8h_source.html
     if ( bleEnabled ) { return; }  // global flag enabled, already called, safe to ignore
     bleEnabled = true;             // set the unsafe "lock"
     lNetLog("BLE: Starting...\n"); // notify to log
@@ -860,11 +876,10 @@ void StartBLE() {
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
 
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
-
     // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
-
+ 
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
     pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
@@ -872,7 +887,7 @@ void StartBLE() {
     BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
                     CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
     pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
- 
+
     // battery services
     // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
     pBattService = pServer->createService(BLE_SERVICE_BATTERY);
@@ -885,7 +900,6 @@ void StartBLE() {
     NimBLEDescriptor * battDescriptor = battCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     battDescriptor->setValue("Percentage 0 - 100");
 #endif
-
 
 
     // lunokiot services

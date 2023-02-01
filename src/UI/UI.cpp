@@ -514,12 +514,12 @@ static void UITickTask(void* args) {
     vTaskDelete(NULL);
 }
 StaticTask_t UITickBuffer;
-StackType_t UITickStack[LUNOKIOT_APP_STACK_SIZE];
+StackType_t UITickStack[LUNOKIOT_TINY_STACK_SIZE];
 void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
     if ( NULL == UITickTaskHandler ) {
         UITickTaskHandler = xTaskCreateStaticPinnedToCore( UITickTask,
                                                 "lUITick",
-                                                LUNOKIOT_APP_STACK_SIZE,
+                                                LUNOKIOT_TINY_STACK_SIZE,
                                                 nullptr,
                                                 tskIDLE_PRIORITY+1,
                                                 UITickStack,
@@ -553,10 +553,10 @@ void UIStart() {
 
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 20,   // so much, but with multitask delays... maybe this is the most easy
+        .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = uxTaskPriorityGet(NULL), // tskIDLE_PRIORITY-1,
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
+        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE,
         .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 
@@ -587,13 +587,13 @@ void UIStart() {
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 
 }
-/*
+
 void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D
     esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, (void*)point, sizeof(point), LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
     if ( ESP_ERR_TIMEOUT == what ) {
         //Serial.println("UI: Poin2D: Change Notification timeout");
     }
-}*/
+}
 /*
 
 

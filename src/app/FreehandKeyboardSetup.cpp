@@ -90,7 +90,6 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
     #endif
     LoadButton=new ButtonTextWidget(5,64,54,110,[&,this](void * unused){
         lAppLog("Saving presets to NVS...\n");
-        //perceptron_a.weights_=(double *)perceptronBlob_a;
         SavePerceptronWithSymbol('a',&perceptron_a);
         SavePerceptronWithSymbol('b',&perceptron_b);
         SavePerceptronWithSymbol('c',&perceptron_c);

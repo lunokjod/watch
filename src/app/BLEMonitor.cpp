@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoNvs.h>
 #include <LilyGoWatch.h>
 #include "BLEMonitor.hpp"
 #include "../static/img_back_32.xbm"
@@ -71,8 +72,7 @@ BLEMonitorApplication::~BLEMonitorApplication()
     lAppLog("BLEMonitor: BLE task dies\n");
     // task is dead here, don't need vTaskDelete(lunokIoT_BLEMonitorTask);
     NimBLEScan *pBLEScan = BLEDevice::getScan();
-    if (false == pBLEScan->isScanning())
-    {
+    if (false == pBLEScan->isScanning()) {
         pBLEScan->stop();
     }
     pBLEScan->clearDuplicateCache();
@@ -80,11 +80,10 @@ BLEMonitorApplication::~BLEMonitorApplication()
 }
 
 BLEMonitorApplication::BLEMonitorApplication() {
-    /*
-    btnBack = new ButtonImageXBMWidget(
-        5, TFT_HEIGHT - 69, 64, 64, [&, this](void *bah) { LaunchWatchface(); },
-        img_back_32_bits, img_back_32_height, img_back_32_width, TFT_WHITE, canvas->color24to16(0x353e45), false);
-    */
+    bool enabled = NVS.getInt("BLEEnabled");
+    if ( enabled ) {
+        if ( false == bleEnabled ) { StartBLE(); }
+    }
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_PROVISIONING_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
     Tick(); // splash
