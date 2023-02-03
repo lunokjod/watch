@@ -15,6 +15,7 @@ TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
 bool lunokIoT_BLEMonitorTaskLoop = false;
 bool lunokIoT_BLEMonitorTaskLoopEnded = false;
 size_t BLEMonitorScanLoops = 0;
+int BLEMonitorApplication::rotateVal=0;
 
 void BLEMonitorTask(void *data) {
     lunokIoT_BLEMonitorTaskLoopEnded = true;
@@ -71,9 +72,8 @@ BLEMonitorApplication::~BLEMonitorApplication()
 
 BLEMonitorApplication::BLEMonitorApplication() {
     bool enabled = NVS.getInt("BLEEnabled");
-    if ( enabled ) {
-        if ( false == bleEnabled ) { StartBLE(); }
-    }
+    if ( enabled ) { StartBLE(); }
+
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_PROVISIONING_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
     Tick(); // splash
@@ -155,13 +155,15 @@ bool BLEMonitorApplication::Tick() {
                             }
                             if ( ( touched ) && ( false == BTDeviceTouched ) ) {
                                 //lAppLog("InRadius x: %d y: %d\n",x,y);
-                                if ( ActiveRect::InRadius(touchX, touchY,x,y,50) ) {
+                                if ( ActiveRect::InRadius(touchX, touchY,x,y,radius) ) {
                                     lAppLog("TOUCHED BT: %s\n",dev->addr.toString().c_str());
                                     BTDeviceTouched=true;
                                     BTDeviceSelected=dev;
                                     canvas->fillCircle(x,y,160,finalColor);
+                                    char *macBuff= (char*)ps_malloc(19); // app must free this
+                                    strncpy(macBuff,dev->addr.toString().c_str(),18);
                                     xSemaphoreGive( BLEKnowDevicesSemaphore );
-                                    LaunchApplication(new BLEDeviceMonitorApplication(finalColor,dev->addr));
+                                    LaunchApplication(new BLEDeviceMonitorApplication(finalColor,macBuff));
                                     return true;
                                 }
                             }

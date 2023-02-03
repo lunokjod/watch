@@ -81,7 +81,7 @@ char *weatherCountry = nullptr;
 const PROGMEM char urlOpenWeatherFormatString[] = "https://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
 
 bool Watchface2Application::GetSecureNetworkWeather() {
-    char *url = (char *)ps_malloc(140); // usually ~120
+    char *url = (char *)ps_malloc(200); // usually ~120
     sprintf(url,urlOpenWeatherFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
     lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));
     WiFiClientSecure *client = new WiFiClientSecure;
@@ -100,7 +100,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     }
     weatherClient->setConnectTimeout(LUNOKIOT_UPDATE_TIMEOUT);
     weatherClient->setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
-    //weatherClient.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    weatherClient->setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
     client->setCACert((const char*)openweatherPEM_start);
     FreeSpace();
     if (false == weatherClient->begin(*client, url)) {  // HTTPS
@@ -398,7 +398,7 @@ void Watchface2Application::Handlers()
         ntpTask->_lastCheck = millis();
         // if ( false == ntpSyncDone ) {
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
-        ntpTask->desiredStack = LUNOKIOT_APP_STACK_SIZE;
+        ntpTask->desiredStack = LUNOKIOT_TINY_STACK_SIZE;
         //}
         ntpTask->callback = [&, this]() {
             if (false == (bool)NVS.getInt("NTPEnabled"))
@@ -567,7 +567,7 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        //weatherTask->desiredStack = LUNOKIOT_APP_STACK_SIZE;
+        weatherTask->desiredStack = LUNOKIOT_NETWORK_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif

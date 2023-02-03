@@ -25,7 +25,7 @@ uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
 float stepDistanceCm = userTall * MAN_STEP_PROPORTION; // change man/woman @TODO this must be in settings
 //TimedTaskDescriptor * stepsManager = nullptr;
-uint8_t lastStepsDay = 0; // impossible day to force next trigger (0~6)
+uint8_t lastStepsDay = 8; // impossible day to force next trigger (0~6)
 extern uint32_t lastBootStepCount;
 
 void StepManagerCallback() {
@@ -36,7 +36,7 @@ void StepManagerCallback() {
     // the last register is from yesterday?
     if ( lastStepsDay != tmpTime->tm_wday ) {
         // run beyond the midnight
-        //if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
+        if ( tmpTime->tm_hour >= 0 ) { // a bit stupid....mah
             lEvLog("StepManagerCallback: Rotating stepcounter...\n");
             
             // my weeks begins on monday not sunday
@@ -67,13 +67,16 @@ void StepManagerCallback() {
             timeBMAActivityNone = 0;
 
             for(int a=0;a<7;a++) { // Obtain the last days steps
-                char keyName[16] = {0};
-                sprintf(keyName,"lWSteps_%d",a);
-                //lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
-                NVS.setInt(keyName,weekSteps[a],false);
+                if ( weekSteps[a] > 0 ) {
+                    char keyName[16] = {0};
+                    sprintf(keyName,"lWSteps_%d",a);
+                    //lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
+                    NVS.setInt(keyName,weekSteps[a],false);
+                }
             }
             NVS.setInt("lstWeekStp",lastStepsDay,false);
             lEvLog("StepManagerCallback: Ends\n");
+        }
     }
 
 }
@@ -111,6 +114,14 @@ extern SemaphoreHandle_t SqlLogSemaphore;
 void StepsApplication::CreateStats() {
     int32_t maxVal = 0;
     int32_t minVal = 0;
+    
+    // load last values!
+    for(int a=0;a<7;a++) {
+        char keyName[16] = {0};
+        sprintf(keyName,"lWSteps_%d",a);
+        weekSteps[a] = NVS.getInt(keyName);
+    }
+
     /*
     lAppLog("@DEBUG Fill with fake data!!! <============================ DISABLE ME!!\n");
     stepCount=random(0,8000);
@@ -118,7 +129,7 @@ void StepsApplication::CreateStats() {
         weekSteps[a] = random(0,8000);
     }
     */
-    
+
     // get minMax for the graph
     for(int a=0;a<7;a++) {
         if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }

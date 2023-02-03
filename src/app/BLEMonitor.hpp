@@ -9,7 +9,7 @@
 class BLEMonitorApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;
-        int rotateVal = 0;
+        static int rotateVal; //maintain the rotation between launches (get sense when push "back" on device inspector)
     public:
         const char *AppName() override { return "BLE Monitor"; };
         BLEMonitorApplication();

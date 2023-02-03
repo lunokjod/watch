@@ -75,6 +75,8 @@ ESP_EVENT_DEFINE_BASE(UI_EVENTS);
 
 // Event loops
 esp_event_loop_handle_t uiEventloopHandle;
+TFT_eSprite *screenShootCanvas = nullptr;
+bool screenShootInProgress = false; // @TODO watchface must show it
 
 
 SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
@@ -145,8 +147,6 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
     anchor->GetDelta(deltaX,deltaY);
     lUILog("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
 }
-TFT_eSprite *screenShootCanvas = nullptr;
-bool screenShootInProgress = false; // @TODO watchface must show it
 
 void TakeScreenShootSound() {
 #ifdef LUNOKIOT_SILENT_BOOT

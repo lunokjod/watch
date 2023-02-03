@@ -1455,7 +1455,7 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 8,                             // maybe so big?
         .task_name = "lEvTask",                      // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+8,         // a little bit faster?
+        .task_priority = tskIDLE_PRIORITY-8,         // a little bit faster?
         .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
         .task_core_id = 1                            // to core 1
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
@@ -1553,10 +1553,10 @@ void SystemEventsStart() {
     intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
 
-    lSysLog("RTC interrupts\n");
-    // Start the BMA interrupt controller loop
-    intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
-    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
+    lSysLog("RTC interrupts @DEBUG @TODO DISABLED\n");
+    // Start the RTC interrupt controller loop
+    //intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
+    //if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
 
     LunokIoTSystemTickerStart();
     delay(50);

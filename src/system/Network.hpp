@@ -34,7 +34,7 @@ class NetworkTaskDescriptor {
         unsigned long everyTimeMS = -1; // lapse in millis
         unsigned long _nextTrigger = -1; // -1 means first launch in next time window or 0 for inmediate
         unsigned long _lastCheck = -1;  // reserved
-        uint32_t desiredStack = LUNOKIOT_APP_STACK_SIZE;
+        uint32_t desiredStack = LUNOKIOT_TASK_STACK_SIZE;
         void * payload = nullptr;   // @TODO this may be useless
         std::function<bool ()> callback = nullptr; // lambda power
 };
