@@ -595,9 +595,9 @@ void BLELoopTask(void * data) {
     oldDeviceConnected = false;
     deviceConnected = false;
     while(bleEnabled) {
+        bleEnabled = NVS.getInt("BLEEnabled"); // refresh the value
         esp_task_wdt_reset();
         delay(10);
-
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
             size_t b4Devs = BLEKnowDevices.size();
@@ -872,7 +872,8 @@ static void BLELauncherTask(void* args) {
     pBLEScan->setMaxResults(3); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
 
-    xTaskCreatePinnedToCore(BLELoopTask, "lble", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,0);
+    xTaskCreatePinnedToCore(BLELoopTask, "lble",
+                    LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLETaskHandler,0);
     //Serial.println("Waiting a client connection to notify...");
     vTaskDelete(NULL);
 }
@@ -883,7 +884,6 @@ static void BLEWake(void* handler_args, esp_event_base_t base, int32_t id, void*
 
 static void BLEDown(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     StopBLE();
-    //delay(100);
 }
 
 void BLESetupHooks() {
@@ -974,8 +974,8 @@ static void BLEStopTask(void* args) {
 }
 
 void StopBLE() {
-    if ( false == bleEnabled ) { return; }
-    if ( NULL != BLETaskHandler ) {
+    if ( false == bleServiceRunning ) { return; }
+    if ( NULL == BLETaskHandler ) {
         lNetLog("BLE: Already stopped?\n");
         return;
     }
@@ -1013,10 +1013,6 @@ void StartBLE() {
         return;
     }
     // https://h2zero.github.io/NimBLE-Arduino/nimconfig_8h_source.html
-    if ( bleEnabled ) {
-        lNetLog("BLE: unable to start, (earlier StartBLE() is in progress)\n");
-        return;
-    }  // global flag enabled, already called, safe to ignore
     if ( NULL != BLETaskHandler ) {
         lNetLog("BLE: ¿Task already running? refusing to launch\n");
         return;
@@ -1026,7 +1022,7 @@ void StartBLE() {
                         LUNOKIOT_TASK_STACK_SIZE,
                         nullptr,
                         tskIDLE_PRIORITY,
-                        &BLETaskHandler,
+                        NULL,
                         1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch Task\n");
