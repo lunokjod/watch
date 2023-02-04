@@ -351,7 +351,7 @@ bool NetworkHandler() {
         lNetLog("WiFi: Network tasks handler\n");
         if ( provisioned ) {
             lNetLog("WiFi: Provisioned :) Task runs in few seconds...\n");
-            BootNetworkTicker.once(8,NetworkTasksCheck);
+            BootNetworkTicker.once(3,NetworkTasksCheck);
         }
         NetworkTicker.attach(60*30,NetworkTasksCheck); // every 30 minutes
 
@@ -379,7 +379,7 @@ bool NetworkHandler() {
     return false;
 }
 
-
+/*
 float ReverseFloat( const float inFloat )
 {
    float retVal;
@@ -394,3 +394,5 @@ float ReverseFloat( const float inFloat )
 
    return retVal;
 }
+*/
+

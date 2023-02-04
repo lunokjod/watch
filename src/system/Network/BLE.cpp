@@ -7,6 +7,10 @@
 #include "BLE.hpp"
 #include "../SystemEvents.hpp"
 #include "../Datasources/kvo.hpp"
+
+#include "../../app/Bluetooth.hpp"
+
+
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
@@ -52,20 +56,25 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         deviceConnected = true;
     };*/
     void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: Client connect B\n");
+        lNetLog("BLE: Client connect\n");
         deviceConnected = true;
-
+        if ( nullptr != currentApplication ) {
+            if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
+                LaunchApplication(new BluetoothApplication());
+            }
+        }
     }
+    /*
     void onDisconnect(BLEServer* pServer) {
         lNetLog("BLE: Client disconnect A\n");
         deviceConnected = false;
-    }
+    }*/
     void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: Client disconnect B\n");
+        lNetLog("BLE: Client disconnect\n");
         deviceConnected = false;
     }
     void onMTUChange(uint16_t MTU, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: MTU change\n");
+        lNetLog("BLE: MTU changed to: %u\n",MTU);
     }
     uint32_t onPassKeyRequest() {
         lNetLog("BLE: Password request\n");
@@ -73,10 +82,19 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
     }
     void onAuthenticationComplete(ble_gap_conn_desc* desc) {
         lNetLog("BLE: Authentication complete\n");
-        //LaunchWatchface();
+        if ( nullptr != currentApplication ) {
+            if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
+                LaunchWatchface();
+            }
+        }
     }
     bool onConfirmPIN(uint32_t pin) {
-        if ( pin == BLEDevice::getSecurityPasskey() ) { return true; }
+        lNetLog("BLE: PIN confirmation: ");
+        if ( pin == BLEDevice::getSecurityPasskey() ) {
+            lLog("OK\n");
+            return true;
+        }
+        lLog("FAIL\n");
         return false;
     }
 };
@@ -453,7 +471,7 @@ static void BLEStartTask(void* args) {
     pBLEScan->setDuplicateFilter(false);
     bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
+                    LUNOKIOT_MID_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
@@ -463,25 +481,39 @@ static void BLEStartTask(void* args) {
 }
 
 // call to start
-void StartBLE() {
+void StartBLE(bool synced) {
     bool enabled = NVS.getInt("BLEEnabled");
     if ( false == enabled ) { 
         liLog("BLE Refusing to start (disabled by user)\n");
         return;
     }
+    if ( bleServiceRunning ) {
+        liLog("BLE Refusing to start (already running?)\n");
+        return; } // already enabled
+    if ( bleEnabled ) {
+        liLog("BLE Refusing to start (already started)\n");
+        return; } // already enabled
+
     //lNetLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     FreeSpace();
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_APP_STACK_SIZE,
+                        LUNOKIOT_MID_STACK_SIZE,
                         nullptr,
                         tskIDLE_PRIORITY,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch start Task\n");
+        return;
     }
-    //lNetLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA END\n");
+    if ( synced ) {
+        //if ( not bleServiceRunning ) {
+        lNetLog("BLE: Waiting service starts...\n");
+        while(not bleServiceRunning) { delay(15); esp_task_wdt_reset(); }
+        lNetLog("BLE: Service started!\n");
+        //}
+    }
 }
 
 

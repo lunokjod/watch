@@ -68,11 +68,11 @@ extern std::list <lBLEDevice*>BLEKnowDevices;
 
 extern volatile bool bleServiceRunning;
 
-void StartBLE();
+void StartBLE(bool synched=false);
 void StopBLE();
 
 void BLESetupHooks();
-//void BLEKickAllPeers();
+void BLEKickAllPeers();
 
 
 //extern volatile bool bleServiceRunning;

@@ -5,7 +5,7 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_lock_32.xbm"
 #include "../static/img_trash_32.xbm"
-
+#include "../system/Network/BLE.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 
@@ -29,8 +29,13 @@ BluetoothApplication::BluetoothApplication() {
     },img_lock_32_bits,img_lock_32_height,img_lock_32_width,ThCol(text),ThCol(button),false);
 
     btnRemoveBonding=new ButtonImageXBMWidget(5,5,64,64,[&,this](void *bah){
-        lAppLog("BLE: Bound devices removed\n");
+        lAppLog("BLE: Removing all bounded devices...\n");
+        BLEKickAllPeers();
         NimBLEDevice::deleteAllBonds();
+        StopBLE();
+        delay(100);
+        StartBLE(true);
+        lAppLog("BLE: Bound devices removed\n");
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     generatedPin = BLEDevice::getSecurityPasskey();
     Tick();

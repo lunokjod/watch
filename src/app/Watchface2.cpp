@@ -446,7 +446,7 @@ void Watchface2Application::Handlers()
         ntpTask->_lastCheck = millis();
         // if ( false == ntpSyncDone ) {
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
-        ntpTask->desiredStack = LUNOKIOT_TINY_STACK_SIZE;
+        ntpTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
         //}
         ntpTask->callback = [&, this]() {
             if (false == (bool)NVS.getInt("NTPEnabled"))
@@ -604,8 +604,6 @@ void Watchface2Application::Handlers()
                 return true;
             }
             bool getDone = Watchface2Application::GetSecureNetworkWeather();
-            //lLog("@TODO THIS PART IS DISABLED\n");
-            //return true;
 
             if (getDone) {
                 bool parseDone = Watchface2Application::ParseWeatherData();
@@ -804,7 +802,7 @@ bool Watchface2Application::Tick()
             // temperature
             if (-1000 != weatherTemp)
             {
-                sprintf(textBuffer, "%2.1f ºC", weatherTemp);
+                sprintf(textBuffer, "%2.1f C", weatherTemp);
                 int16_t posX = 150;
                 int16_t posY = 74;
                 canvas->setTextFont(0);
