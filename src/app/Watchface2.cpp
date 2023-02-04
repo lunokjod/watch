@@ -78,12 +78,56 @@ char *weatherReceivedData = nullptr;
 
 char *weatherCity = nullptr;
 char *weatherCountry = nullptr;
-const PROGMEM char urlOpenWeatherFormatString[] = "https://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
+const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
 
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Arduino_JSON.h>
+String jsonBuffer;
+String httpGETRequest(const char* serverName) {
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, serverName);
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.GET();
+  
+  String payload = "{}"; 
+  
+  if (httpResponseCode>0) {
+    //Serial.print("HTTP Response code: ");
+    //Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
+}
 bool Watchface2Application::GetSecureNetworkWeather() {
-    char *url = (char *)ps_malloc(200); // usually ~120
+    char *url = (char *)ps_malloc(200); // usually ~130
     sprintf(url,urlOpenWeatherFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
     lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));
+
+    jsonBuffer = httpGETRequest(url);
+    if ( nullptr != weatherReceivedData ) {
+        free(weatherReceivedData);
+    }
+    weatherReceivedData=(char*)ps_malloc(jsonBuffer.length()+1);
+    sprintf(weatherReceivedData,"%s",jsonBuffer.c_str());
+    return true;
+    
+    //Serial.println(jsonBuffer);
+    //JSONVar myObject = JSON.parse(jsonBuffer);
+
+
+    /*
     WiFiClientSecure *client = new WiFiClientSecure;
     if(nullptr == client) {
         lNetLog("GetSecureNetworkWeather: ERROR: Unable to create WiFiClientSecure\n");
@@ -102,7 +146,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     weatherClient->setTimeout(LUNOKIOT_UPDATE_TIMEOUT);
     weatherClient->setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
     client->setCACert((const char*)openweatherPEM_start);
-    FreeSpace();
+    FreeSpace(); // @TODO problem here
     if (false == weatherClient->begin(*client, url)) {  // HTTPS
         lNetLog("GetSecureNetworkWeather: ERROR: Unable to connect!\n");
         weatherClient->end();
@@ -141,6 +185,10 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     }
     lNetLog("HTTP: %s\n",weatherReceivedData);
     return true;
+    */
+
+
+
 
 
     /*
@@ -300,8 +348,8 @@ bool Watchface2Application::GetSecureNetworkWeather() {
         return true;
     }
     lNetLog("Watchface: Weather: Unable to create WiFiClientSecure\n");
-    return false;
     */
+    return false;
 }
 
 bool Watchface2Application::ParseWeatherData() {
@@ -556,8 +604,8 @@ void Watchface2Application::Handlers()
                 return true;
             }
             bool getDone = Watchface2Application::GetSecureNetworkWeather();
-            lLog("@TODO THIS PART IS DISABLED\n");
-            return true;
+            //lLog("@TODO THIS PART IS DISABLED\n");
+            //return true;
 
             if (getDone) {
                 bool parseDone = Watchface2Application::ParseWeatherData();
@@ -567,14 +615,13 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_NETWORK_STACK_SIZE;
+        weatherTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif
 }
 
-Watchface2Application::~Watchface2Application()
-{
+Watchface2Application::~Watchface2Application() {
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, Watchface2Application::FreeRTOSEventReceived);
     // directDraw=false;
     delete bottomRightButton;

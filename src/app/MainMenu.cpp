@@ -77,10 +77,8 @@
 #include "Playground9.hpp"
 #include "Playground10.hpp"
 #include "Playground11.hpp"
+#include "Playground12.hpp"
 #endif
-
-#include "Provisioning2.hpp"
-//#include "../static/img_mainmenu_provisioning.xbm"
 
 #include "../static/img_mainmenu_update.xbm"
 #include "OTAUpdate.hpp"
@@ -110,6 +108,7 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
+//    {"Playground12",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication12()); } },
 //    {"Playground11",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication11()); } },
 //    {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },
 //    {"Keyboard",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new FreeHandKeyboardSetupApplication()); } },
@@ -134,6 +133,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](void *unused) { LaunchApplication(new AboutApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI_DEMO
     {"GyroMonitor",img_mainmenu_activity_bits, img_mainmenu_activity_height, img_mainmenu_activity_width, [](void *unused) { LaunchApplication(new ActivitiesApplication()); } },
+    {"Playground12",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication12()); } },
     {"Playground11",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication11()); } },
     {"Playground10",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication10()); } },
     {"Playground9",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication9()); } },

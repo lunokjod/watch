@@ -259,7 +259,7 @@ static void DoSleepTask(void *args) {
         vTaskDelete(NULL);
     }*/
     lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
-    BaseType_t done = xSemaphoreTake(DoSleepTaskSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    BaseType_t done = xSemaphoreTake(DoSleepTaskSemaphore, LUNOKIOT_EVENT_TIME_TICKS);
     if (pdTRUE != done) {
         lEvLog("ESP32: DoSleep DISCARDED: already in progress?\n");
         vTaskDelete(NULL);
@@ -271,9 +271,25 @@ static void DoSleepTask(void *args) {
 
     //ScreenSleep();
     LunokIoTSystemTickerStop();
-    delay(50);
+
+    // destroy the app if isn't the watchface
+    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+        // the current app isn't a watchface... get out!
+        LaunchApplication(nullptr,false,true); // Synched App Stop
+    }
+
+    // forcing wifi to get out!
+    if (WL_NO_SHIELD != WiFi.status() ) {
+        if ( WIFI_MODE_NULL != WiFi.getMode() ) {
+            lNetLog("WiFi: Must be disabled now!\n");
+            WiFi.disconnect(true,true);
+            delay(200);
+            WiFi.mode(WIFI_OFF);
+            delay(200);
+        }
+    }
+
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    delay(50);
 
     int64_t howMuchTime = esp_timer_get_next_alarm();
     int64_t nowTime = esp_timer_get_time();
@@ -286,23 +302,7 @@ static void DoSleepTask(void *args) {
     } else {
         lEvLog("ESP32: Next alarm in:   %lu secs\n",diffTime_secs);
     }
-
-    // destroy the app if isn't the watchface
-    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
-        // the current app isn't a watchface... get out!
-        LaunchApplication(nullptr,false,true); // Synched App Stop
-    }
     
-    // forcing wifi to get out!
-    if (WL_NO_SHIELD != WiFi.status() ) {
-        if ( WIFI_MODE_NULL != WiFi.getMode() ) {
-            lNetLog("WiFi: Must be disabled now!\n");
-            WiFi.disconnect(true,true);
-            delay(200);
-            WiFi.mode(WIFI_OFF);
-            delay(200);
-        }
-    }
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
@@ -341,7 +341,6 @@ static void DoSleepTask(void *args) {
     lEvLog("ESP32: -- ZZz --\n");
     uart_wait_tx_idle_polling(UART_NUM_0); // dontcare if fail
 
-    
     int64_t beginSleepTime_us = esp_timer_get_time();
     esp_err_t canSleep = esp_light_sleep_start();    // device sleeps now
     if ( ESP_OK != canSleep ) {
@@ -367,7 +366,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        xTaskCreatePinnedToCore(DoSleepTask, "lSLEEP", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(DoSleepTask, "lSLEEP", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
     }
 }
 
@@ -678,10 +677,17 @@ static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t i
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
 static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    if ( lastLowMemTimestamp_ms > millis() ) { return; } // only one by second
+    // dont trigger too fast
+    if ( lastLowMemTimestamp_ms > millis() ) { return; }
     lastLowMemTimestamp_ms=millis()+2000;
-
+    // dump mem status
+    const char lineTxt[]="------------------------\n";
+    lSysLog(lineTxt);
     lSysLog("System event: Low memory\n");
+    lSysLog(lineTxt);
+    FreeSpace();
+    lSysLog(lineTxt);
+    // try to warn foreground app about the problem
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
     if ( nullptr != currentApplication ) {
             currentApplication->LowMemory();
@@ -1455,7 +1461,7 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 8,                             // maybe so big?
         .task_name = "lEvTask",                      // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY-8,         // a little bit faster?
+        .task_priority = tskIDLE_PRIORITY+8,         // a little bit faster?
         .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
         .task_core_id = 1                            // to core 1
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t

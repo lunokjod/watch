@@ -64,6 +64,7 @@ static inline void FreeSpace() {
     uint32_t minHeap = xPortGetMinimumEverFreeHeapSize();
     uint32_t freeHeap = xPortGetFreeHeapSize(); // portable of heap_caps_get_free_size(MALLOC_CAP_8BIT)
     size_t largestHeap = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    uint32_t espHeap = ESP.getFreeHeap();
     UBaseType_t stackMax = uxTaskGetStackHighWaterMark(NULL);
     //uint16_t stackBegin = uxTaskGetStackHighWaterMark2(NULL);
     uint32_t usedHeap = freeHeap-largestHeap;
@@ -72,6 +73,11 @@ static inline void FreeSpace() {
     if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.2f MByte\n", float(stackMax/1024.0/1024.0)); }
     else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.2f Kb\n", float(stackMax/1024.0)); }
     else { lSysLog("ESP32: Free stack: %u Byte\n",stackMax); }
+
+    if ( espHeap > (1024*1024) ) { lSysLog("ESP32: Internal Free heap: %.2f MByte\n", float(espHeap/1024.0/1024.0)); }
+    else if ( espHeap > 1024 ) { lSysLog("ESP32: Internal Free heap: %.2f Kb\n", float(espHeap/1024.0)); }
+    else { lSysLog("ESP32: Internal Free heap: %u Byte\n",espHeap); }
+
 
     if ( freeHeap > (1024*1024) ) { lSysLog("ESP32: Free heap: %.2f MByte\n", float(freeHeap/1024.0/1024.0)); }
     else if ( freeHeap > 1024 ) { lSysLog("ESP32: Free heap: %.2f Kb\n", float(freeHeap/1024.0)); }

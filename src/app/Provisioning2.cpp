@@ -4,7 +4,7 @@
 #include <LilyGoWatch.h>
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 extern TFT_eSPI *tft;
-
+#include "../system/Network/BLE.hpp"
 #include "Provisioning2.hpp"
 #include "../system/Application.hpp"
 
@@ -34,7 +34,6 @@ extern TFT_eSPI *tft;
 #include "esp_system.h"
 
 #include "LogView.hpp"
-extern bool bleServiceRunning;
 #include "../system/Network.hpp"
 
 // https://github.com/ricmoo/QRCode

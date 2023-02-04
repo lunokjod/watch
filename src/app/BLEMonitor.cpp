@@ -7,6 +7,7 @@
 #include "BLEDevice.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
+#include "../system/Network/BLE.hpp"
 #include <esp_task_wdt.h>
 extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
 extern bool bleEnabled;
