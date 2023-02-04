@@ -7,5 +7,6 @@ void StopDatabase();
 void ListSPIFFS();
 void SqlLog(const char * logLine);
 extern sqlite3 *lIoTsystemDatabase;
+void SqlJSONLog(const char * from, const char * logLine);
 
 #endif

@@ -12,7 +12,7 @@ extern TTGOClass *ttgo;
 #include "../app/LogView.hpp" // for lLog functions
 #include "../system/SystemEvents.hpp"
 #include "MainMenu.hpp"
-
+#include "../system/Datasources/database.hpp"
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
 #include "../static/img_seconds_hand.c"
@@ -427,6 +427,10 @@ bool Watchface2Application::ParseWeatherData() {
     }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
+
+    String jsonString = myObject.stringify(myObject);
+    SqlJSONLog("oweather",jsonString.c_str());
+
     return true;
 }
 
@@ -534,7 +538,6 @@ void Watchface2Application::Handlers()
             
             lNetLog("Watchface: free geoIPClient\n");
             geoIPClient.end();
-            lNetLog("HTTP: %s\n",payload.c_str());
 
             // Generate the received data buffer
             if (nullptr == geoIPReceivedData) {
@@ -547,8 +550,20 @@ void Watchface2Application::Handlers()
             JSONVar myObject = JSON.parse(geoIPReceivedData);
             if (JSON.typeof(myObject) == "undefined") {
                 lNetLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
+                lNetLog("HTTP: %s\n",payload.c_str());
                 return false;
+            
             }
+            //delete myObject["geoplugin_credit"];
+            myObject["geoplugin_credit"] = undefined; // sorry,so expensive credits :( thanks geoIP!!!! :**
+            //delete myObject["geoplugin_currencySymbol_UTF8"];
+            myObject["geoplugin_currencySymbol_UTF8"] = undefined; // no utf problems please!
+            //delete myObject["geoplugin_currencySymbol"];
+            myObject["geoplugin_currencySymbol"] = undefined; // no utf problems please!
+
+
+
+            //lLog("JSON:\n%s\n",myObject.stringify(myObject).c_str());
             if (false == myObject.hasOwnProperty("geoplugin_city")) {
                 lNetLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
                 return false;
@@ -578,9 +593,14 @@ void Watchface2Application::Handlers()
             strcpy(weatherCountry, countryString);
             strcpy(weatherCity, cityString);
             lNetLog("GeoIP: Country: '%s' City: '%s' (innacurate)\n",weatherCountry,weatherCity);
+
+            String jsonString = myObject.stringify(myObject);
+            SqlJSONLog("geoip",jsonString.c_str());
+
             return true;
         };
         geoIPTask->enabled = oweatherValue;
+        geoIPTask->desiredStack=LUNOKIOT_MID_STACK_SIZE;
         AddNetworkTask(geoIPTask);
     }
 
@@ -613,7 +633,7 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
+        weatherTask->desiredStack = LUNOKIOT_MID_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif

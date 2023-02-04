@@ -529,6 +529,7 @@ void SaveDataBeforeShutdown() {
         free(usageStatics);
     }
     StopDatabase();
+    delay(50);
     SPIFFS.end();
     lEvLog("SPIFFS: Closed\n");
 }
@@ -829,6 +830,9 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "Mic failure";
             } else if ( WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT == disconnectData->reason ) {
                 ReasonText = "4Way handshake timeout";
+                WiFi.disconnect();
+                delay(100);
+                WiFi.begin();
             } else if ( WIFI_REASON_GROUP_KEY_UPDATE_TIMEOUT == disconnectData->reason ) {
                 ReasonText = "Group key update timeout";
             } else if ( WIFI_REASON_IE_IN_4WAY_DIFFERS == disconnectData->reason ) {
