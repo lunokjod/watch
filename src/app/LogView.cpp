@@ -37,6 +37,7 @@ void lRawLog(const char *fmt, ...) {
 GraphWidget *powerWidget=nullptr;
 GraphWidget *activityWidget=nullptr;
 GraphWidget *appWidget=nullptr;
+GraphWidget *dataWidget=nullptr;
 
 // callback from sqlite3 used to build the activity bar
 static int LogEventsParser(void *data, int argc, char **argv, char **azColName) {
@@ -66,10 +67,45 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
     return 0;
 }
 
+
+
+// callback from sqlite3 used to build the activity bar
+static int LogEventsParserJSON(void *data, int argc, char **argv, char **azColName) {
+    int i;
+    const char appBanner[]="Data:";
+    for (i = 0; i<argc; i++){
+        if ( 0 != strcmp(azColName[i],"origin")) { continue; }
+
+        if ( 0 == strcmp(argv[i],"check")) { activityWidget->markColor = TFT_BLACK; } // is check?
+        else { dataWidget->markColor = TFT_YELLOW; } // event?
+        dataWidget->PushValue(1);
+        /*
+        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+
+        // feed activity bar
+        if ( 0 == strcmp(argv[i],"Activity: Running")) { activityWidget->markColor = TFT_RED; }
+        else if ( 0 == strcmp(argv[i],"Activity: Walking")) { activityWidget->markColor = TFT_YELLOW; }
+        else if ( 0 == strcmp(argv[i],"Activity: None")) { activityWidget->markColor = TFT_GREEN; }
+        // feed power bar
+        else if ( 0 == strcmp(argv[i],"begin")) { powerWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strcmp(argv[i],"end")) { powerWidget->markColor = TFT_BLACK; }
+        else if ( 0 == strcmp(argv[i],"wake")) { powerWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strcmp(argv[i],"stop")) { powerWidget->markColor = TFT_DARKGREEN; }
+        
+        // feed app bar
+        else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
+        */
+    }
+    dataWidget->markColor = TFT_BLACK;
+    dataWidget->PushValue(1);
+    return 0;
+}
+
 LogViewApplication::~LogViewApplication() {
     delete powerLog;
     delete activityLog;
     delete appLog;
+    delete dataLog;
 }
 extern SemaphoreHandle_t SqlLogSemaphore;
 
@@ -77,16 +113,18 @@ LogViewApplication::LogViewApplication() {
     powerLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
     activityLog = new GraphWidget(20,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     appLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
-
+    dataLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
 
     powerWidget=powerLog;
     activityWidget=activityLog;
     appWidget=appLog;
+    dataWidget=dataLog;
 
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
-        sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser, nullptr, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, "SELECT message FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser, nullptr, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, "SELECT origin FROM jsonLog ORDER BY id DESC LIMIT 200;", LogEventsParserJSON, nullptr, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
     Tick();
@@ -97,7 +135,7 @@ bool LogViewApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
-        canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
+        //canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
 
         canvas->setTextFont(0);
         canvas->setTextColor(TFT_WHITE);
@@ -121,6 +159,13 @@ bool LogViewApplication::Tick() {
         canvas->drawString("Apps",40, y-border);
         canvas->fillRect(x-border,y-border,appLog->canvas->width()+(border*2),appLog->canvas->height()+(border*2),ThCol(background_alt));
         appLog->DrawTo(canvas,x,y);
+
+        y+=20+28;
+        canvas->drawString("Network",40, y-border);
+        canvas->fillRect(x-border,y-border,appLog->canvas->width()+(border*2),appLog->canvas->height()+(border*2),ThCol(background_alt));
+        dataWidget->DrawTo(canvas,x,y);
+
+
 
         btnBack->DrawTo(canvas);
 

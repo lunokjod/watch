@@ -73,10 +73,11 @@ LunokIoT::LunokIoT() {
 
 
     // Initialize lilygo lib
-    //ttgo->setTftExternal(*tft);
     ttgo->begin();
+
     tft=ttgo->tft;
 
+    //ttgo->setTftExternal(*tft); // @TODO dream on!
     bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
         
     bool gotNVS = NVS.begin(); // need NVS to get the current settings

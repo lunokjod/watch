@@ -484,14 +484,14 @@ static void BLEStartTask(void* args) {
 void StartBLE(bool synced) {
     bool enabled = NVS.getInt("BLEEnabled");
     if ( false == enabled ) { 
-        liLog("BLE Refusing to start (disabled by user)\n");
+        liLog("BLE: Refusing to start (disabled by user)\n");
         return;
     }
     if ( bleServiceRunning ) {
-        liLog("BLE Refusing to start (already running?)\n");
+        liLog("BLE: Refusing to start (already running?)\n");
         return; } // already enabled
     if ( bleEnabled ) {
-        liLog("BLE Refusing to start (already started)\n");
+        liLog("BLE: Refusing to start (already started)\n");
         return; } // already enabled
 
     //lNetLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
@@ -524,7 +524,7 @@ void BLEKickAllPeers() {
         std::vector<uint16_t> clients = pServer->getPeerDevices();
         for(uint16_t client : clients) {
             delay(100);
-            lNetLog("Network: BLE kicking out client %d\n",client);
+            lNetLog("BLE: kicking out client %d\n",client);
             pServer->disconnect(client,0x13); // remote close
             pServer->disconnect(client,0x16); // localhost close
         }

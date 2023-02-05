@@ -67,7 +67,7 @@ int db_open(const char *filename, sqlite3 **db) {
 
 
 int db_exec(sqlite3 *db, const char *sql) {
-   lSysLog("SQL: '%s'\n",sql);
+   //lSysLog("SQL: '%s'\n",sql);
    long start = micros();
    int rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
    if (SQLITE_OK != rc) {
@@ -94,7 +94,7 @@ static void __internalSqlSend(void *args) {
         lSysLog("SQL: ERROR: unable to run empty query\n");
         vTaskDelete(NULL);
     }
-    FreeSpace();
+    //FreeSpace();
     char * query=(char*)args;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         int  rc = db_exec(lIoTsystemDatabase,query);
@@ -135,8 +135,12 @@ void SqlJSONLog(const char * from, const char * logLine) {
         lSysLog("SQL: No database\n");
         return;
     }
-    const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s','%s');";
-    char * query=(char*)ps_malloc(strlen(fmtStr)+strlen(from)+strlen(logLine)+200);
+    // https://github.com/siara-cc/esp32_arduino_sqlite3_lib#compression-with-unishox
+    // use shox96_0_2c/shox96_0_2d for compression
+    const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s',unishox1c('%s'));";
+    size_t totalsz = strlen(fmtStr)+strlen(from)+strlen(logLine)+200;
+    lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    char * query=(char*)ps_malloc(totalsz);
     sprintf(query,fmtStr,from,logLine);
     BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_APP_STACK_SIZE, query, uxTaskPriorityGet(NULL), NULL,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
@@ -224,6 +228,7 @@ void StartDatabase() {
 
     /*
     db_exec(lIoTsystemDatabase, "SELECT COUNT(*) FROM rawlog;");
+    db_exec(lIoTsystemDatabase, "SELECT COUNT(*) FROM jsonLog;");
 
     rc = db_exec(lIoTsystemDatabase, "SELECT * FROM rawlog ORDER BY id DESC LIMIT 5;");
     if (rc != SQLITE_OK) {

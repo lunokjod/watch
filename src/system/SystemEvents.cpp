@@ -339,6 +339,10 @@ static void DoSleepTask(void *args) {
 
     FreeSpace();
     lEvLog("ESP32: -- ZZz --\n");
+    // stupid take to get clarified about "before sleep and after"
+    if( pdTRUE == xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) )  {
+        xSemaphoreGive( lLogAsBlockSemaphore );
+    }
     uart_wait_tx_idle_polling(UART_NUM_0); // dontcare if fail
 
     int64_t beginSleepTime_us = esp_timer_get_time();

@@ -24,6 +24,8 @@
 #include "Datasources/kvo.hpp"
 #include "../app/LogView.hpp"
 #include <esp_task_wdt.h>
+#include "Datasources/database.hpp"
+
 // https://stackoverflow.com/questions/44951078/when-how-is-a-ble-gatt-notify-indicate-is-send-on-physical-layer
 extern char * latestBuildFoundString;
 #include "../app/OTAUpdate.hpp"
@@ -188,9 +190,9 @@ bool networkTaskResult = false; // result from last
 void NetworkTaskCallTask(void *data) {
     NetworkTaskDescriptor * task = (NetworkTaskDescriptor *)data;
     lNetLog("-[ NET TASK BEGIN ] ------------------------------------\n");
-    FreeSpace();
+    //FreeSpace();
     networkTaskResult = task->callback();
-    FreeSpace();
+    //FreeSpace();
     lNetLog("-[ NET TASK END   ] ------------------------------------\n");
     networkTaskRunning=false;
     vTaskDelete(NULL);
@@ -311,8 +313,9 @@ void NetworkTaskRun(void *data) {
 void NetworkTasksCheck() {
     if ( systemSleep ) { return; }
     if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
+    SqlJSONLog("check",""); // notify to the log the intention to gather data
     if ( false == NVS.getInt("WifiEnabled") ) {
-        liLog("WiFi: WiFi disabled by user\n");
+        liLog("WiFI: Refusing to start (disabled by user)\n");
         StartBLE(); // restore BLE
         return;
     }

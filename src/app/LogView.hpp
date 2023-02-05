@@ -81,6 +81,7 @@ class LogViewApplication: public TemplateApplication {
         GraphWidget * powerLog = nullptr;
         GraphWidget * activityLog = nullptr;
         GraphWidget * appLog = nullptr;
+        GraphWidget * dataLog = nullptr;
 
         //TFT_eSprite * ViewBuffer;
         static bool dirty;
