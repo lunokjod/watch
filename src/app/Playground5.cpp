@@ -6,7 +6,6 @@
 #include "../static/img_sample_400.c"
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 
 PlaygroundApplication5::~PlaygroundApplication5() {
     directDraw=false;
@@ -46,17 +45,17 @@ bool PlaygroundApplication5::Tick() {
     }
     int32_t cx = (TFT_WIDTH/2)-(clippingW/2);
     int32_t cy = (TFT_HEIGHT/2)-(clippingH/2);
-    tft->pushRect(cx,cy,clippingW,clippingH,bufferData);
+    ttgo->tft->pushRect(cx,cy,clippingW,clippingH,bufferData);
     const uint8_t border = 12;
     int32_t canx = cx;
     int32_t cany = cy;
     int32_t canh = clippingH;
     int32_t canw = clippingW;
 
-    tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
-    tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
-    tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
-    tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+    ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+    ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+    ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+    ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
 
 
     free(bufferData);

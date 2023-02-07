@@ -5,11 +5,10 @@
 #include <ArduinoNvs.h> // persistent values
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 
 // better save only on exit to save flash writes
 RotationApplication::~RotationApplication() {
-    NVS.setInt("ScreenRot",tft->getRotation(),false);
+    NVS.setInt("ScreenRot",ttgo->tft->getRotation(),false);
     delete up;
     delete right;
     delete down;
@@ -17,10 +16,10 @@ RotationApplication::~RotationApplication() {
 }
 
 RotationApplication::RotationApplication() {
-    down = new ButtonWidget(60,(TFT_HEIGHT-10)-60,60,TFT_WIDTH-120,[](void *unused) { tft->setRotation(0); });
-    left = new ButtonWidget(10,60,TFT_HEIGHT-120,60,[](void *unused) { tft->setRotation(1); });
-    up = new ButtonWidget(60,10,60,TFT_WIDTH-120,[](void *unused) { tft->setRotation(2); });
-    right = new ButtonWidget((TFT_WIDTH-10)-60,60,TFT_HEIGHT-120,60,[](void *unused) { tft->setRotation(3); });
+    down = new ButtonWidget(60,(TFT_HEIGHT-10)-60,60,TFT_WIDTH-120,[](void *unused) { ttgo->tft->setRotation(0); });
+    left = new ButtonWidget(10,60,TFT_HEIGHT-120,60,[](void *unused) { ttgo->tft->setRotation(1); });
+    up = new ButtonWidget(60,10,60,TFT_WIDTH-120,[](void *unused) { ttgo->tft->setRotation(2); });
+    right = new ButtonWidget((TFT_WIDTH-10)-60,60,TFT_HEIGHT-120,60,[](void *unused) { ttgo->tft->setRotation(3); });
     Tick();
 }
 
@@ -38,7 +37,7 @@ bool RotationApplication::Tick() {
                 (TFT_HEIGHT/2)-(img_happy_48_height/2),
                 img_happy_48_bits,img_happy_48_width,img_happy_48_height,TFT_WHITE);
 
-        uint8_t rot = tft->getRotation();
+        uint8_t rot = ttgo->tft->getRotation();
         up->DrawTo(canvas);
         right->DrawTo(canvas);
         down->DrawTo(canvas);

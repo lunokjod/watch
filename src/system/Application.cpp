@@ -3,7 +3,6 @@
 #include <LilyGoWatch.h>
 
 extern TTGOClass *ttgo; // access to ttgo specific libs
-extern TFT_eSPI *tft;
 
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
@@ -47,7 +46,7 @@ TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canva
 LunokIoTApplication::LunokIoTApplication() {
     directDraw=false;
     UILongTapOverride=false;
-    canvas = new TFT_eSprite(tft);
+    canvas = new TFT_eSprite(ttgo->tft);
     if ( nullptr == canvas ) { 
         lUILog("LunokIoTApplication: %p ERROR: unable to create their own canvas!!!\n", this);
         //LaunchWatchface(false);

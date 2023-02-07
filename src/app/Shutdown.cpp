@@ -8,7 +8,7 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 #include "../system/SystemEvents.hpp"
 
 #include "../static/img_poweroff_fullscreen.c"
-
+#include "../system/Network/BLE.hpp"
 #include "driver/uart.h"
 #include "../app/LogView.hpp"
 //@TODO https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/system.html?highlight=memory#_CPPv429esp_register_shutdown_handler18shutdown_handler_t

@@ -81,12 +81,12 @@ FreehandKeyboardTraining::FreehandKeyboardTraining() {
     btnBack->tapActivityCallback = [](void *unused) {
         LaunchApplication(new FreeHandKeyboardSetupApplication());
     };
-    freeHandCanvas = new TFT_eSprite(tft);
+    freeHandCanvas = new TFT_eSprite(ttgo->tft);
     freeHandCanvas->setColorDepth(16);
     freeHandCanvas->createSprite(canvas->width(),canvas->height());
     freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
 
-    perceptronCanvas = new TFT_eSprite(tft);
+    perceptronCanvas = new TFT_eSprite(ttgo->tft);
     perceptronCanvas->setColorDepth(1);
     perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
     perceptronCanvas->fillSprite(0);
@@ -237,7 +237,7 @@ bool FreehandKeyboardTraining::Tick() {
                 if ( ( boxW-boxX > MINIMALDRAWSIZE ) || ( boxH-boxY > MINIMALDRAWSIZE)) { valid=true; }
                 if ( false == valid ) {
                     lAppLog("Discarded (too small draw<%dpx)\n",MINIMALDRAWSIZE);
-                    tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
+                    ttgo->tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
                     Cleanup();
                     return false;
                 }

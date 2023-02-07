@@ -5,6 +5,7 @@
 #include "../system/Application.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/widgets/ButtonTextWidget.hpp"
 
 class AdvancedSettingsApplication: public LunokIoTApplication {
     private:
@@ -13,6 +14,7 @@ class AdvancedSettingsApplication: public LunokIoTApplication {
         const char *AppName() override { return "Advanced settings"; };
         ButtonImageXBMWidget * btnBack = nullptr;
         ButtonImageXBMWidget * btnErase = nullptr;
+        ButtonTextWidget * btnEraseSPIFFS = nullptr;
         ButtonImageXBMWidget * btnLog = nullptr;
         AdvancedSettingsApplication();
         ~AdvancedSettingsApplication();

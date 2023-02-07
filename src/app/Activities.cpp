@@ -10,8 +10,6 @@
 #include "../static/img_activity_walking.xbm"
 #include "../static/img_activity_stay.xbm"
 
-extern TFT_eSPI *tft;
-
 ActivitiesApplication::~ActivitiesApplication() {
     if ( nullptr != giroLog ) {
         giroLog->deleteSprite();

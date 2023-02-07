@@ -1,20 +1,20 @@
-#include <Arduino.h>
-//#include <cstdio>
-//#include <stdio.h>
-//#include <stdlib.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_timer.h>
 #include <esp_log.h>
 #include <esp_task_wdt.h>
 
-#include <LilyGoWatch.h>
-
-#include <SPI.h>
-#include <FS.h>
+#include <Arduino.h>
 #include <SPIFFS.h>
 #include <ArduinoNvs.h>
+
+#include <cstdio>
+//#include <LilyGoWatch.h>
+
+//#include <SPI.h>
+//#include <FS.h>
 
 #include "../lunokIoT.hpp"
 #include "../lunokiot_config.hpp"
@@ -30,7 +30,7 @@
 
 
 TTGOClass *ttgo = TTGOClass::getWatch();
-TFT_eSPI * tft = nullptr;
+//TFT_eSPI * tft = nullptr;
 //TFT_eSPI * tft = new TFT_eSPI();
 
 extern bool ntpSyncDone;
@@ -62,60 +62,66 @@ Do not use ESP_LOGI functions inside.
     ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
 }
 
+bool LunokIoT::IsNVSEnabled() { return NVSReady; }
+bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
     InitLogs();
-    
-    // announce myself with build information
+    // announce myself with build information if serial debug is enabled
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
+    // report memory
     FreeSpace();
-
-
-    // Initialize lilygo lib
+    // Initialize lilygo lib (mandatory)
     ttgo->begin();
-
-    tft=ttgo->tft;
-
     //ttgo->setTftExternal(*tft); // @TODO dream on!
-    bool gotSPIFFS = SPIFFS.begin(); // needed for SQLite activity database
-        
-    bool gotNVS = NVS.begin(); // need NVS to get the current settings
-    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
+    SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
+    NVSReady = NVS.begin(); // need NVS to get the current settings
+    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
     //lUILog("User screen rotation: %d\n", rotation);
-    tft->setRotation(rotation); // user selected rotation (0 by default)
+    ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
 
     size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
+
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
 
+    bool mustFormatSPIFFS = NVS.getInt("spiffsCleanup"); // get special key from NVS
+    if ( true == mustFormatSPIFFS ) {
+        lSysLog("SPIFFS: user wants format disk\n");
+        NVS.setInt("spiffsCleanup",false); // assume format reached and disable it in next boot
+        SPIFFSReady=false; // mark as clean forced
+    }
     // format SPIFFS if needed
-    if ( false == gotSPIFFS ) {
+    if ( false == SPIFFSReady ) {
         lSysLog("SPIFFS: Format SPIFFS....\n");
-        gotSPIFFS = SplashFormatSPIFFSAnnounce();
-        if ( false == gotSPIFFS ) {
+        SplashFormatSPIFFSAnnounce();
+        SPIFFSReady = SPIFFS.format();
+        if ( false == SPIFFSReady ) {
             lSysLog("SPIFFS: ERROR: Unable to format!!!\n");
+        } else {
+            SPIFFSReady = SPIFFS.begin(); // mount again
         }
     }
-    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (gotNVS?"yes":"NO"), (gotSPIFFS?"yes":"NO"));
-
-    ListSPIFFS();
-
-
+    // banner again
+    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
+    ListSPIFFS(); // show contents to serial
     /*
     esp_err_t taskStatus = esp_task_wdt_status(NULL);
     if ( ESP_ERR_INVALID_STATE != taskStatus ) {
         esp_task_wdt_deinit();
         lEvLog(" TWDT enabled by arduinoFW???\n");
     }*/
+    
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, false);
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
     }
+
     /* useless on arduinofw
     //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
@@ -125,6 +131,7 @@ LunokIoT::LunokIoT() {
         lEvLog("WARNING: Unable to start Task Watchdog on PRO_CPU(0)\n");
     }*/
     //#endif
+    
     //#if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
     if ( ESP_OK != taskWatchdogResult ) {
@@ -133,16 +140,13 @@ LunokIoT::LunokIoT() {
     //#endif
 
     #ifdef LILYGO_WATCH_2020_V3
-    ttgo->motor_begin();
+    ttgo->motor_begin(); // start the motor for haptic notifications
     #endif
 
-    BootReason();
-    // here comes!
-    SplashAnnounceBegin();
-
+    BootReason(); // announce boot reason and from what partition to serial
+    SplashAnnounceBegin(); // anounce user about boot begins
     lSysLog("System initializing...\n");
-
-    userTall= NVS.getInt("UserTall");        // get how high is the user
+    userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
 
     userMaleFemale = NVS.getInt("UserSex");  // maybe is better use "hip type A/B" due to no offend any gender
@@ -153,16 +157,13 @@ LunokIoT::LunokIoT() {
         // BIOLOGICAL MALE PROPS
         stepDistanceCm = userTall * MAN_STEP_PROPORTION;
     }
-
     // get if are in summertime
     int daylight = NVS.getInt("summerTime");
     // get the GMT timezone
     long timezone = NVS.getInt("timezoneTime");
     // announce values to log
-    //delay(50);
     lEvLog("RTC: Config: Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
-    //delay(50);
     struct tm timeinfo;
     if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
         lEvLog("RTC: The time-date seems valid, thanks to secondary battery :)\n");
@@ -175,40 +176,22 @@ LunokIoT::LunokIoT() {
             ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
         }
     }
-    StartDatabase(); // must be started after RTC sync (timestamped inserts)
 
-    FreeSpace();
-    //PerceptronTest();
-
-    //delay(50);
-    // Launch the lunokiot message bus
+    StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
+    // Build the lunokiot message bus
     SystemEventsStart();
-    //delay(50);
-
-    UIStart();  // Start the interface with the user via the screen and buttons!!! (born to serve xD)
-
+    // Start the interface with the user via the screen and buttons!!! (born to serve xD)
+    UIStart();
     NetworkHandler();   // already provisioned? start the network timed tasks loop
-    //delay(50);
     InstallStepManager();
-    //delay(50);
-
     StartPMUMonitor();
-
-    //delay(50);
     SplashAnnounceEnd();
-
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
+
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
-    /* disable multitask?
-    portMUX_TYPE mutex = portMUX_INITIALIZER_UNLOCKED;
-    portENTER_CRITICAL(&mutex);
-    vTaskDelay(8000 / portTICK_PERIOD_MS);
-    portEXIT_CRITICAL(&mutex);
-    */
 };
-
 
 void LunokIoT::InitLogs() {
     // Get serial comms with you
@@ -220,8 +203,6 @@ void LunokIoT::InitLogs() {
         #endif
     #endif
 }
-
-
 
 // https://github.com/espressif/esp-idf/tree/cab6b6d1824e1a1bf4d965b747d75cb6a77f5151/examples/bluetooth/bluedroid/classic_bt/bt_hid_mouse_device
 
@@ -239,3 +220,29 @@ void shit() {
   }
 }
 */
+
+void LunokIoT::ListSPIFFS() {
+    if ( false == SPIFFSReady ) { return; }
+    lSysLog("SPIFFS: contents:\n");
+    File root = SPIFFS.open("/");
+    if (!root) {
+        lLog("SPIFFS: ERROR: Failed to open directory\n");
+        return;
+    }
+    if (!root.isDirectory()) {
+        lLog("SPIFFS: ERROR: not a directory\n");
+        return;
+    }
+    File file = root.openNextFile();
+    while (file) {
+        if (file.isDirectory()) {
+            lSysLog("<DIR> '%s'\n",file.name());
+        } else {
+            lSysLog("      '%s' (%u byte)\n",file.name(),file.size());
+        }
+        file = root.openNextFile();
+    }
+    size_t totalSPIFFS = SPIFFS.totalBytes();
+    size_t usedSPIFFS = SPIFFS.usedBytes();
+    lSysLog("SPIFFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
+}

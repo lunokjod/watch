@@ -78,6 +78,7 @@
 #include "Playground10.hpp"
 #include "Playground11.hpp"
 #include "Playground12.hpp"
+#include "Playground13.hpp"
 #endif
 
 #include "../static/img_mainmenu_update.xbm"
@@ -96,6 +97,7 @@
 
 #include "ThumbTest.hpp"
 
+
 typedef struct {
     const char *name;
     unsigned char * imagebits;
@@ -108,9 +110,12 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
+//    {"Playground13",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication13()); } },
+//      {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },
+//      {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new AdvancedSettingsApplication()); } },
+//    {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, [](void *unused) { LaunchApplication(new BluetoothApplication()); } },
 //    {"Playground12",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication12()); } },
 //    {"Playground11",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication11()); } },
-//    {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },
 //    {"Keyboard",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new FreeHandKeyboardSetupApplication()); } },
 //    {"ThumbTest",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new ThumbTest()); } },
 //    {"Tasks", img_mainmenu_lastapps_bits, img_mainmenu_lastapps_height, img_mainmenu_lastapps_width, [](void *unused) { LaunchApplication(new TaskSwitcher()); } },

@@ -17,12 +17,12 @@ FreehandKeyboardQuery::FreehandKeyboardQuery() {
     btnBack->tapActivityCallback = [](void *unused) {
         LaunchApplication(new FreeHandKeyboardSetupApplication());
     };
-    freeHandCanvas = new TFT_eSprite(tft);
+    freeHandCanvas = new TFT_eSprite(ttgo->tft);
     freeHandCanvas->setColorDepth(16);
     freeHandCanvas->createSprite(canvas->width(),canvas->height());
     freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
 
-    perceptronCanvas = new TFT_eSprite(tft);
+    perceptronCanvas = new TFT_eSprite(ttgo->tft);
     perceptronCanvas->setColorDepth(1);
     perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
     perceptronCanvas->fillSprite(0);

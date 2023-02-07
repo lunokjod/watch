@@ -6,7 +6,6 @@
 #include "../static/img_happy_48.xbm" // center smiley to see the orientation
 #include <ArduinoNvs.h> // persistent values
 
-extern TFT_eSPI *tft;
 #include "LogView.hpp"
 
 #include "../UI/widgets/ButtonWidget.hpp"

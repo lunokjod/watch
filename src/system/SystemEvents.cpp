@@ -42,6 +42,7 @@ extern TTGOClass *ttgo; // ttgo library
 
 #include "esp_heap_task_info.h"
 #include <freertos/portable.h>
+#include "Network/BLE.hpp"
 //https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/mem_alloc.html#_CPPv431heap_caps_get_minimum_free_size8uint32_t
 
 #include "../app/Lamp.hpp"
@@ -532,8 +533,10 @@ void SaveDataBeforeShutdown() {
         SqlLog(usageStatics);
         free(usageStatics);
     }
-    StopDatabase();
-    delay(50);
+    //StopBLE();
+    //delay(50);
+    //StopDatabase();
+    //delay(50);
     SPIFFS.end();
     lEvLog("SPIFFS: Closed\n");
 }
@@ -814,6 +817,9 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "Auth leave";
             } else if ( WIFI_REASON_ASSOC_EXPIRE == disconnectData->reason ) {
                 ReasonText = "Assoc expire";
+                WiFi.disconnect();
+                delay(100);
+                WiFi.begin();
             } else if ( WIFI_REASON_ASSOC_TOOMANY == disconnectData->reason ) {
                 ReasonText = "Assoc too many";
             } else if ( WIFI_REASON_NOT_AUTHED == disconnectData->reason ) {
@@ -1056,7 +1062,6 @@ static void AXPInterruptController(void *args) {
         }
         irqAxp = false;
         xSemaphoreGive(I2cMutex);
-
     }
     lEvLog("AXPInterruptController is dead!\n");
     vTaskDelete(NULL);
@@ -1261,7 +1266,7 @@ static void BMAInterruptController(void *args) {
         }
         xSemaphoreGive(I2cMutex);
     }
-    lEvLog("BMAInterruptController is dead!\n");
+    //lEvLog("BMAInterruptController is dead!\n");
     vTaskDelete(NULL);
 }
 
@@ -1367,7 +1372,7 @@ static void RTCInterruptController(void *args) {
 
 
 
-void BootReason() {
+void BootReason() { // check boot status
     normalBoot = false;
     lEvLog("Boot reason: ");
     esp_reset_reason_t lastBootStatus = esp_reset_reason();
@@ -1447,7 +1452,7 @@ void SystemAllocFailed(size_t size, uint32_t caps, const char * function_name) {
 }
 
 void SystemShutdownHandler() {
-    lLog("lunokIoT: See you soon! :)\n");
+    lLog("======>> lunokIoT: See you soon! :) <<======\n");
     uart_wait_tx_idle_polling(UART_NUM_0);
 }
 
@@ -1495,18 +1500,15 @@ void SystemEventsStart() {
     } else if ( ESP_ERR_INVALID_ARG == espLoopCreated ) {
         lSysLog("SystemEventsStart: ERROR: Unable to create ESP32 Event Queue (invalid args)\n");
     }
-
-    //delay(50);
+    // register all crap to event default
     esp_err_t registered = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, FreeRTOSEventReceived, NULL);
     if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on ESP32 queue ANY_BASE ANY_ID\n");
     }
-
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LOWMEMORY, SystemEventLowMem, nullptr, NULL);
     if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: LOW MEMORY\n");
     }
-
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, SystemEventWake, nullptr, NULL);
     if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: WAKE\n");

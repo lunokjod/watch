@@ -9,7 +9,7 @@ void DrawLevelGeneratorMap(levelDescriptor * currentLevel) {
     delay(10);
     return;
     // show dungeon generation progress
-    tft->fillRect(0,0,currentLevel->width,currentLevel->height,TFT_WHITE);
+    ttgo->tft->fillRect(0,0,currentLevel->width,currentLevel->height,TFT_WHITE);
     currentLevel->floorMap->pushSprite(0,0,255);
     currentLevel->objectsMap->pushSprite(0,0,255);
     currentLevel->wallMap->pushSprite(0,0,255);

@@ -9,6 +9,8 @@
 #include "LogView.hpp"
 #include "../system/Network/BLE.hpp"
 #include <esp_task_wdt.h>
+#include "../system/Datasources/database.hpp"
+
 extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
 extern bool bleEnabled;
 unsigned long BLEMonitorTasknextBLEScan = 0;
@@ -16,10 +18,12 @@ TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
 bool lunokIoT_BLEMonitorTaskLoop = false;
 bool lunokIoT_BLEMonitorTaskLoopEnded = false;
 size_t BLEMonitorScanLoops = 0;
+bool BLEMonitorEnded=false;
 int BLEMonitorApplication::rotateVal=0;
 
 void BLEMonitorTask(void *data) {
     lunokIoT_BLEMonitorTaskLoopEnded = true;
+    BLEMonitorEnded=false;
     lNetLog("BLEMonitorTask: BLE scan task starts\n");
     BLEMonitorScanLoops=0;
     while (lunokIoT_BLEMonitorTaskLoop) {
@@ -50,6 +54,7 @@ void BLEMonitorTask(void *data) {
     }
     lNetLog("BLEMonitorTask: BLE scan task stops\n");
     lunokIoT_BLEMonitorTaskLoopEnded = false;
+    BLEMonitorEnded=true;
     vTaskDelete(NULL);
 }
 
@@ -57,9 +62,10 @@ BLEMonitorApplication::~BLEMonitorApplication()
 {
     lAppLog("BLEMonitor: Waiting BLE task stop...\n");
     lunokIoT_BLEMonitorTaskLoop = false;
-    while (lunokIoT_BLEMonitorTaskLoopEnded) {
-        delay(10);
-        esp_task_wdt_reset();
+    while (not BLEMonitorEnded) {
+        delay(100);
+        esp_task_wdt_reset();   
+        //lAppLog("BLEMonitor: Waiting stop...\n");
     }
     lAppLog("BLEMonitor: BLE task dies\n");
     // task is dead here, don't need vTaskDelete(lunokIoT_BLEMonitorTask);
@@ -72,6 +78,13 @@ BLEMonitorApplication::~BLEMonitorApplication()
 }
 
 BLEMonitorApplication::BLEMonitorApplication() {
+
+    lAppLog("KNOW DEVICES ON DATABASE:\n");
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        db_exec(lIoTsystemDatabase,"SELECT COUNT(*) FROM bluetooth;");
+        xSemaphoreGive( SqlLogSemaphore ); // free
+    }
+
     bool enabled = NVS.getInt("BLEEnabled");
     if ( enabled ) { StartBLE(); }
 

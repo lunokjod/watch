@@ -72,32 +72,31 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
 // callback from sqlite3 used to build the activity bar
 static int LogEventsParserJSON(void *data, int argc, char **argv, char **azColName) {
     int i;
-    const char appBanner[]="Data:";
     for (i = 0; i<argc; i++){
+        //lLog("%s = %s\n",azColName[i],argv[i]);
         if ( 0 != strcmp(azColName[i],"origin")) { continue; }
 
-        if ( 0 == strcmp(argv[i],"check")) { activityWidget->markColor = TFT_BLACK; } // is check?
-        else { dataWidget->markColor = TFT_YELLOW; } // event?
+        if ( 0 == strcmp(argv[i],"check")) { // is check?
+            dataWidget->markColor = TFT_BLACK;
+        } else if ( 0 == strcmp(argv[i],"error")) { // is error?
+            dataWidget->markColor = TFT_RED;
+        } else if ( 0 == strcmp(argv[i],"disabled")) {
+            dataWidget->markColor = TFT_DARKGREY;
+        } else if ( 0 == strcmp(argv[i],"noprovisioned")) {
+            dataWidget->markColor = TFT_BLUE;
+        } else if ( 0 == strcmp(argv[i],"nopendingtask")) {
+            dataWidget->markColor = TFT_BLACK;
+        } else if ( 0 == strcmp(argv[i],"nonetwork")) {
+            dataWidget->markColor = TFT_DARKGREEN;
+        } else if ( 0 == strcmp(argv[i],"tasktimeout")) {
+            dataWidget->markColor = TFT_RED;
+        } else if ( 0 == strcmp(argv[i],"taskdone")) {
+            dataWidget->markColor = TFT_GREEN;
+        } else {
+            dataWidget->markColor = TFT_YELLOW; // event?
+        }
         dataWidget->PushValue(1);
-        /*
-        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
-
-        // feed activity bar
-        if ( 0 == strcmp(argv[i],"Activity: Running")) { activityWidget->markColor = TFT_RED; }
-        else if ( 0 == strcmp(argv[i],"Activity: Walking")) { activityWidget->markColor = TFT_YELLOW; }
-        else if ( 0 == strcmp(argv[i],"Activity: None")) { activityWidget->markColor = TFT_GREEN; }
-        // feed power bar
-        else if ( 0 == strcmp(argv[i],"begin")) { powerWidget->markColor = TFT_GREEN; }
-        else if ( 0 == strcmp(argv[i],"end")) { powerWidget->markColor = TFT_BLACK; }
-        else if ( 0 == strcmp(argv[i],"wake")) { powerWidget->markColor = TFT_GREEN; }
-        else if ( 0 == strcmp(argv[i],"stop")) { powerWidget->markColor = TFT_DARKGREEN; }
-        
-        // feed app bar
-        else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
-        */
     }
-    dataWidget->markColor = TFT_BLACK;
-    dataWidget->PushValue(1);
     return 0;
 }
 
@@ -124,6 +123,7 @@ LogViewApplication::LogViewApplication() {
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
         sqlite3_exec(lIoTsystemDatabase, "SELECT message FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser, nullptr, &zErrMsg);
+        //sqlite3_exec(lIoTsystemDatabase, "SELECT jsonLog.origin FROM rawlog, jsonLog WHERE rawlog.timestamp!=jsonLog.timestamp ORDER BY id DESC LIMIT 200", LogEventsParserJSON, nullptr, &zErrMsg);
         sqlite3_exec(lIoTsystemDatabase, "SELECT origin FROM jsonLog ORDER BY id DESC LIMIT 200;", LogEventsParserJSON, nullptr, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
@@ -162,8 +162,8 @@ bool LogViewApplication::Tick() {
 
         y+=20+28;
         canvas->drawString("Network",40, y-border);
-        canvas->fillRect(x-border,y-border,appLog->canvas->width()+(border*2),appLog->canvas->height()+(border*2),ThCol(background_alt));
-        dataWidget->DrawTo(canvas,x,y);
+        canvas->fillRect(x-border,y-border,dataLog->canvas->width()+(border*2),dataLog->canvas->height()+(border*2),ThCol(background_alt));
+        dataLog->DrawTo(canvas,x,y);
 
 
 

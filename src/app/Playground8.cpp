@@ -4,7 +4,6 @@
 #include "../UI/UI.hpp"
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 
 // -s 240x240
 
@@ -27,7 +26,7 @@ PlaygroundApplication8::PlaygroundApplication8() {
     directDraw=true;
     //colorBuffer = (uint16_t *)ps_calloc(TOTALPIXELS, sizeof(uint16_t));
     videoPtr = (uint16_t*)rick_start;
-    tft->fillScreen(TFT_BLACK);
+    ttgo->tft->fillScreen(TFT_BLACK);
 }
 bool PlaygroundApplication8::Tick() {
     static uint32_t frames=0;
@@ -41,8 +40,8 @@ bool PlaygroundApplication8::Tick() {
         videoPtr = (uint16_t*)rick_start;
     }
     unsigned long b4 = millis();
-    tft->setSwapBytes(false);
-    tft->pushRect(33,53,175,135,colorBuffer);
+    ttgo->tft->setSwapBytes(false);
+    ttgo->tft->pushRect(33,53,175,135,colorBuffer);
     unsigned long used=millis()-b4;
     //Serial.printf("FPS: %d\n", 1000/used);
     return false;

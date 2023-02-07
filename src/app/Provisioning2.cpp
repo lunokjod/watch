@@ -3,7 +3,6 @@
 
 #include <LilyGoWatch.h>
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 #include "../system/Network/BLE.hpp"
 #include "Provisioning2.hpp"
 #include "../system/Application.hpp"
@@ -54,7 +53,7 @@ const int16_t QRSize = 240;
 
 extern bool wifiOverride;
 bool provisioned=false;
-
+extern TTGOClass *ttgo;
 
 Provisioning2Application *lastProvisioning2Instance = nullptr;
 
@@ -151,7 +150,7 @@ void Provisioning2Application::GenerateQRCode() {
         currentQRRendered = nullptr;
     }
     //@TODO  must be use canvasWidget instead of tft sprites!! 
-    currentQRRendered = new TFT_eSprite(tft);
+    currentQRRendered = new TFT_eSprite(ttgo->tft);
     currentQRRendered->setColorDepth(16);
     currentQRRendered->createSprite(QRSize, QRSize);
     currentQRRendered->fillSprite(TFT_BLACK);

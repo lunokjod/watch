@@ -9,8 +9,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 
-extern TFT_eSPI *tft;
-
+extern TTGOClass *ttgo; // ttgo lib
 const unsigned long AboutBoxTextScrollDelay = 1000/24;
 //const unsigned long 
 size_t AboutBoxTextScrollOffset = 0;
@@ -168,7 +167,7 @@ AboutApplication::AboutApplication() {
     colorBuffer = new CanvasWidget(perspectiveTextBuffer->canvas->height(),perspectiveTextBuffer->canvas->width());
 
     // here goes text (color/nocolor)
-    textBuffer = new TFT_eSprite(tft);
+    textBuffer = new TFT_eSprite(ttgo->tft);
     textBuffer->setColorDepth(1);
     textBuffer->createSprite((colorBuffer->canvas->width()/2),(colorBuffer->canvas->height()/2)+9); // font height
     textBuffer->fillSprite(TFT_BLACK);

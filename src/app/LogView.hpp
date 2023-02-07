@@ -6,7 +6,6 @@
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <LilyGoWatch.h>
-extern TFT_eSPI * tft;
 
 #include "../UI/AppTemplate.hpp"
 
@@ -44,7 +43,7 @@ void lRawLog(const char *fmt, ...); // don't use directly! best use lLog()
 #endif
 
 #ifdef LUNOKIOT_DEBUG_EVENTS
-#define lEvLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[event] "); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
+#define lEvLog(...) { if( xSemaphoreTake( lLogAsBlockSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  { lRawLog("[%lld][event] ",esp_timer_get_time()); lRawLog(__VA_ARGS__); xSemaphoreGive( lLogAsBlockSemaphore ); } }
 #else 
 #define lEvLog(...)
 #endif

@@ -4,6 +4,6 @@
 void SplashAnnounce();
 void SplashAnnounceBegin();
 void SplashAnnounceEnd();
-bool SplashFormatSPIFFSAnnounce();
+void SplashFormatSPIFFSAnnounce();
 
 #endif

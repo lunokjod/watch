@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <functional>
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 
 #include "lunokiot_config.hpp"
 

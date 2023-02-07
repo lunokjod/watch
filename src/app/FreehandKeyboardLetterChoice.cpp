@@ -205,7 +205,7 @@ bool FreehandKeyboardLetterChoiceApplication::Tick() {
                 if ( ( boxW-boxX > MINIMALDRAWSIZE ) || ( boxH-boxY > MINIMALDRAWSIZE)) { valid=true; }
                 if ( false == valid ) {
                     lAppLog("Discarded (too small draw<%dpx)\n",MINIMALDRAWSIZE);
-                    tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
+                    ttgo->tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
                     Cleanup();
                     return false;
                 }

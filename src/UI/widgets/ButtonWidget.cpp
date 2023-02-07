@@ -11,8 +11,6 @@
 #include "../UI.hpp"
 #include "ButtonWidget.hpp"
 
-extern TFT_eSPI *tft;
-
 ButtonWidget::~ButtonWidget() {
     delete buffer;
     lUIDeepLog("%s delete %p\n",__PRETTY_FUNCTION__,this);

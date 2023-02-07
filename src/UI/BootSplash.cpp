@@ -100,6 +100,7 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while (bootLoop) {
         delay(20);
+        esp_task_wdt_reset();
         splashLoadingBar->fillSprite(ThCol(boot_splash_background));
         offset++;
         if ( offset > splashLoadingBar->width() ) { break; }
@@ -117,11 +118,12 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     bootLoopEnds=true;
     vTaskDelete(NULL);
 }
-bool SplashFormatSPIFFSAnnounce() {
-    tft->setTextDatum(BC_DATUM);
-    tft->drawString("SPIFFS format...",TFT_WIDTH/2,TFT_HEIGHT-30);
-    return SPIFFS.begin(true);
+
+void SplashFormatSPIFFSAnnounce() { // announce the SPIFFS format to user
+    ttgo->tft->setTextDatum(BC_DATUM);
+    ttgo->tft->drawString("SPIFFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
 }
+
 void SplashAnnounce() {
     bootLoop=true;
     
@@ -166,7 +168,7 @@ void SplashAnnounceEnd() {
     }
 }
 
-void SplashAnnounceBegin() {
+void SplashAnnounceBegin() { // user eyecandy
     // 1 second bright up
     unsigned long oneSecond = millis()+1000;
     uint16_t bright = BaseBackLightBrightness;
@@ -176,8 +178,8 @@ void SplashAnnounceBegin() {
         if ( bright > 255 ) { break; }
         ttgo->setBrightness(bright);
     }
-#if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
-    // do sound only if boot is normal (crash-silent)
-    if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
-#endif
+    #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
+        // do sound only if boot is normal (crash-silent)
+        if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
+    #endif
 }

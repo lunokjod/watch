@@ -4,7 +4,6 @@
 #include <ArduinoNvs.h>
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-extern TFT_eSPI *tft;
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"

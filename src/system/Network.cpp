@@ -245,6 +245,7 @@ void NetworkTaskRun(void *data) {
         WiFi.disconnect();
         WiFi.mode(WIFI_OFF);
         lNetLog("Network: WiFi timeout! (more luck next time!)\n");
+        SqlJSONLog("nonetwork","");
         StartBLE();
         vTaskDelete(NULL);
     }
@@ -284,6 +285,7 @@ void NetworkTaskRun(void *data) {
                     if ( millis() > taskTimeout ) {
                         taskAborted = true;
                         lNetLog("NetworkTask: Abort task '%s' by TIMEOUT!\n", tsk->name);
+                        SqlJSONLog("tasktimeout",tsk->name);
                         if ( eDeleted != eTaskGetState(taskHandle) ) {
                             vTaskDelete(taskHandle);
                         }
@@ -292,6 +294,7 @@ void NetworkTaskRun(void *data) {
                 }
                 if ( false == taskAborted ) {
                     lNetLog("NetworkTask: Task end '%s' Result: '%s'\n", tsk->name, (networkTaskResult?"OK":"ERROR"));
+                    SqlJSONLog("taskdone",tsk->name);
                 }
 
                 tsk->_nextTrigger = millis()+tsk->everyTimeMS;
@@ -316,18 +319,26 @@ void NetworkTasksCheck() {
     SqlJSONLog("check",""); // notify to the log the intention to gather data
     if ( false == NVS.getInt("WifiEnabled") ) {
         liLog("WiFI: Refusing to start (disabled by user)\n");
+        SqlJSONLog("disabled",""); // notify to the log the user disable
         StartBLE(); // restore BLE
         return;
     }
 
-    if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); return; }
-    if ( false == NetworkTaskIsPending() ) { lNetLog("Network: No pending Timed Tasks\n"); return; }
+    if ( false == provisioned ) {
+        liLog("WiFi: WARNING: Not provisioned\n");
+        SqlJSONLog("noprovisioned","");
+        return;
+    }
+    if ( false == NetworkTaskIsPending() ) {
+        SqlJSONLog("nopendingtask","");
+        lNetLog("Network: No pending Timed Tasks\n");
+        return;
+    }
 
     if ( bleServiceRunning ) {
         lNetLog("Network: BLE must be temporaly disabled to maximize WiFi effort\n");
         StopBLE();
     }
-
     BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TASK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");

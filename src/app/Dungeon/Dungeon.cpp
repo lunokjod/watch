@@ -89,10 +89,10 @@ DungeonGameApplication::DungeonGameApplication() {
     canvas->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
 
 
-    tft->setTextColor(TFT_WHITE,tft->color24to16(0x191919));
-    tft->setTextDatum(BC_DATUM);
-    tft->setFreeFont(&FreeSerif12pt7b);
-    tft->setTextSize(1);
+    ttgo->tft->setTextColor(TFT_WHITE,tft->color24to16(0x191919));
+    ttgo->tft->setTextDatum(BC_DATUM);
+    ttgo->tft->setFreeFont(&FreeSerif12pt7b);
+    ttgo->tft->setTextSize(1);
     //lavaBackground->canvas->pushImage(0,0,16,16,(uint16_t *)img_lava.pixel_data);
 }
 void DungeonGameApplication::ManageSplashScreen() {
@@ -106,16 +106,16 @@ void DungeonGameApplication::ManageSplashScreen() {
             if ( millis() > waitGeneratorTimeout ) {
                 lAppLog("Map generator timeout, retrying...\n");
                 /* @TODO convert this in less invasive
-                tft->fillScreen(TFT_WHITE);
-                tft->setSwapBytes(true);
-                tft->pushImage(19,42,img_error_map.width,img_error_map.height, (uint16_t *)img_error_map.pixel_data);
-                tft->setSwapBytes(false);
+                ttgo->tft->fillScreen(TFT_WHITE);
+                ttgo->tft->setSwapBytes(true);
+                ttgo->tft->pushImage(19,42,img_error_map.width,img_error_map.height, (uint16_t *)img_error_map.pixel_data);
+                ttgo->tft->setSwapBytes(false);
                 */
                 vTaskDelete(MapGeneratorHandle);
                 MapGeneratorHandle=NULL;
                 currentLevel.running=false;
                 loadedSpawnPoint=false;
-                tft->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
+                ttgo->tft->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
 
                 lAppLog("Starting map generator (retry %d)...\n",generationRetries);
                 generationRetries++;
@@ -163,7 +163,7 @@ bool DungeonGameApplication::Tick() {
         //offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale);
         offsetX=((currentLevel.PlayerBeginX*tileW)*NormalScale)*-1;
         offsetY=((currentLevel.PlayerBeginY*tileH)*NormalScale)*-1;
-        tft->fillScreen(TFT_BLACK);
+        ttgo->tft->fillScreen(TFT_BLACK);
         loadedSpawnPoint=true;
         lAppLog("User location X: %d Y: %d px: %d py: %d\n",currentLevel.PlayerBeginX,currentLevel.PlayerBeginY,offsetX,offsetY);
         dirty=true;
@@ -193,16 +193,16 @@ bool DungeonGameApplication::Tick() {
             int32_t calculatedX2 = calculatedX+gameScreen->canvas->width()*NormalScale;
             int32_t calculatedY2 = calculatedY+gameScreen->canvas->height()*NormalScale;
             //lEvLog("UI: Continuous touch X: %d Y: %d CX: %d CY: %d \n",touchX,touchY,touchDragVectorX,touchDragVectorY);
-            tft->setPivot(0,0);
+            ttgo->tft->setPivot(0,0);
             gameScreen->canvas->setPivot(0,0);
             
             gameScreen->DrawTo(calculatedX,calculatedY,NormalScale,false);
             // ERASERS
             // spiral design to divide the effort of refresh
-            tft->fillRect(calculatedX,0,TFT_WIDTH-calculatedX,calculatedY,TFT_BLACK); // up eraser
-            tft->fillRect(0,0,calculatedX,calculatedY2,TFT_BLACK); // left window
-            tft->fillRect(calculatedX2,calculatedY,TFT_WIDTH-calculatedX2,TFT_HEIGHT-calculatedY,TFT_BLACK); // right window
-            tft->fillRect(0,calculatedY2,calculatedX2,TFT_HEIGHT-calculatedY2,TFT_BLACK); // down window
+            ttgo->tft->fillRect(calculatedX,0,TFT_WIDTH-calculatedX,calculatedY,TFT_BLACK); // up eraser
+            ttgo->tft->fillRect(0,0,calculatedX,calculatedY2,TFT_BLACK); // left window
+            ttgo->tft->fillRect(calculatedX2,calculatedY,TFT_WIDTH-calculatedX2,TFT_HEIGHT-calculatedY,TFT_BLACK); // right window
+            ttgo->tft->fillRect(0,calculatedY2,calculatedX2,TFT_HEIGHT-calculatedY2,TFT_BLACK); // down window
 
             return false;
         }
@@ -220,7 +220,7 @@ bool DungeonGameApplication::Tick() {
             PoToCXMap=0;
             PoToCYMap=0;
 
-            tft->setPivot(0,0);
+            ttgo->tft->setPivot(0,0);
             gameScreen->canvas->setPivot(0,0);
             //gameScreen->DirectDraw(calculatedX,calculatedY);
             //lEvLog("Thumb LEAVE X: %d Y: %d OffsetX: %d OffsetY: %d VecX: %d VecY: %d\n",touchX,touchY,offsetX,offsetY,touchDragVectorX,touchDragVectorY);
@@ -469,7 +469,7 @@ void DungeonGameApplication::Redraw() {
     //Serial.printf("DisX: %d DisY: %d\n",disX,disY);
     for(int16_t y=0;y<=(floorLayer->canvas->width())*NormalScale;y+=(tileH*NormalScale)) {
         for(int16_t x=0;x<=(floorLayer->canvas->height())*NormalScale;x+=(tileW*NormalScale)) {
-            tft->drawRect(x,y,tileW*NormalScale,tileH*NormalScale,TFT_YELLOW);
+            ttgo->tft->drawRect(x,y,tileW*NormalScale,tileH*NormalScale,TFT_YELLOW);
         }
     }*/
 
@@ -481,7 +481,7 @@ void DungeonGameApplication::Redraw() {
 
 void DungeonGameApplication::NoticesBanner(const char *what) {
     if ( false == currentLevel.running ) {
-        tft->fillRect(0,TFT_HEIGHT-40,TFT_WIDTH,40,tft->color24to16(0x191919));
-        tft->drawString(what, TFT_WIDTH/2,TFT_HEIGHT-10);
+        ttgo->tft->fillRect(0,TFT_HEIGHT-40,TFT_WIDTH,40,tft->color24to16(0x191919));
+        ttgo->tft->drawString(what, TFT_WIDTH/2,TFT_HEIGHT-10);
     }
 }

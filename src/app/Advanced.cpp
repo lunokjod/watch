@@ -27,6 +27,12 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
         NVS.eraseAll(true);
         LaunchApplication(new ShutdownApplication(true,false));
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
+
+    btnEraseSPIFFS = new ButtonTextWidget(79,5,64,240-5-79,[](void *bah) {
+        NVS.setInt("spiffsCleanup",true);
+        LaunchApplication(new ShutdownApplication(true,true));
+    },"SPIFFS",ThCol(text),ThCol(high));
+
     btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](void *bah){
         LaunchApplication(new LogViewApplication());
     },img_log_32_bits,img_log_32_height,img_log_32_width,ThCol(text),ThCol(background_alt));
@@ -37,11 +43,13 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
 bool AdvancedSettingsApplication::Tick() {
     btnBack->Interact(touched,touchX, touchY);
     btnErase->Interact(touched,touchX, touchY);
+    btnEraseSPIFFS->Interact(touched,touchX, touchY);
     btnLog->Interact(touched,touchX, touchY);
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         btnBack->DrawTo(canvas);
         btnErase->DrawTo(canvas);
+        btnEraseSPIFFS->DrawTo(canvas);
         btnLog->DrawTo(canvas);
         nextRedraw=millis()+(1000/10);
         return true;

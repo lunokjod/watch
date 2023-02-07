@@ -24,10 +24,25 @@
 #include <Arduino.h>           // more portable than esp-idf
 #include <freertos/task.h>     // vTaskDelete
 #include <esp_log.h>
+#include <esp_task_wdt.h>
 
 #include "lunokIoT.hpp"
 
 void setup() {
     LoT(); // thats all, folks! 
 }
-void loop() { vTaskDelete( NULL ); }
+extern TaskHandle_t BMAInterruptControllerHandle;
+extern TaskHandle_t AXPInterruptControllerHandle;
+
+void loop() {
+    /*
+    if ( nullptr == BMAInterruptControllerHandle ) {
+        Serial.printf("@TODO BMAInterruptControllerHandle DOWN!!!!\n");
+    }
+    if ( nullptr == AXPInterruptControllerHandle ) {
+        Serial.printf("@TODO AXPInterruptControllerHandle DOWN!!!!\n");
+    }
+    esp_task_wdt_reset();
+    */
+    vTaskDelete( NULL );
+}

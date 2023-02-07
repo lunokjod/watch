@@ -1,6 +1,6 @@
 //#include <Arduino.h>
 #include "AppTemplate.hpp"
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../lunokiot_config.hpp"
 
 #include "../app/LogView.hpp"   // for lLog functions

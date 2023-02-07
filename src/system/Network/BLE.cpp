@@ -9,7 +9,7 @@
 #include "../Datasources/kvo.hpp"
 
 #include "../../app/Bluetooth.hpp"
-
+#include "../Datasources/database.hpp"
 
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
@@ -20,8 +20,8 @@ EventKVO * battPercentPublish = nullptr;
 EventKVO * battTempPublish = nullptr; 
 EventKVO * envTempPublish = nullptr; 
 // service start/stop flag
-StaticTask_t BLETaskHandler;
-StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
+//StaticTask_t BLETaskHandler;
+//StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
 SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
 TaskHandle_t BLELoopTaskHandler;
 // monitor devices to publish on GATT
@@ -98,6 +98,8 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         return false;
     }
 };
+
+extern void SqlAddBluetoothDevice(const char * mac, double distance);
 // advertiser callbacks
 class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice* advertisedDevice) {
@@ -155,6 +157,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                 newDev->firstSeen = millis();
                 newDev->lastSeen = newDev->firstSeen;
                 BLEKnowDevices.push_back(newDev);
+                SqlAddBluetoothDevice(newDev->addr.toString().c_str(),newDev->distance);
             }
             //lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
             xSemaphoreGive( BLEKnowDevicesSemaphore );
@@ -338,13 +341,14 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-
+extern void _intrnalSqlStatic(void *args);
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
         lNetLog("BLE: ERROR: Unable to obtain the lock, cannot start\n");
         vTaskDelete(NULL);
     }
+
     // check if user wants BLE
     bool enabled = NVS.getInt("BLEEnabled");
     if ( false == enabled ) { 
@@ -355,6 +359,17 @@ static void BLEStartTask(void* args) {
     // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+        const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
+        esp_task_wdt_reset();
+        int  rc = db_exec(lIoTsystemDatabase,query3);
+        if (rc != SQLITE_OK) {
+            lSysLog("SQL: ERROR: Unable exec: '%s'\n", query3);
+        }
+        esp_task_wdt_reset();
+        xSemaphoreGive( SqlLogSemaphore ); // free
+    }
+
 
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
@@ -369,7 +384,7 @@ static void BLEStartTask(void* args) {
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
-    FreeSpace();
+    //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
 
@@ -469,7 +484,7 @@ static void BLEStartTask(void* args) {
     pBLEScan->setWindow(99);  // less or equal setInterval value
     pBLEScan->setMaxResults(3); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
-    bleWaitStop=true;
+    //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
                     LUNOKIOT_MID_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
@@ -489,16 +504,15 @@ void StartBLE(bool synced) {
     }
     if ( bleServiceRunning ) {
         liLog("BLE: Refusing to start (already running?)\n");
-        return; } // already enabled
+        return;
+    }
     if ( bleEnabled ) {
         liLog("BLE: Refusing to start (already started)\n");
-        return; } // already enabled
-
-    //lNetLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-    FreeSpace();
+        return;
+    }
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_MID_STACK_SIZE,
+                        LUNOKIOT_APP_STACK_SIZE,
                         nullptr,
                         tskIDLE_PRIORITY,
                         NULL,
@@ -510,7 +524,7 @@ void StartBLE(bool synced) {
     if ( synced ) {
         //if ( not bleServiceRunning ) {
         lNetLog("BLE: Waiting service starts...\n");
-        while(not bleServiceRunning) { delay(15); esp_task_wdt_reset(); }
+        while(not bleServiceRunning) { delay(50); esp_task_wdt_reset(); }
         lNetLog("BLE: Service started!\n");
         //}
     }
@@ -533,9 +547,11 @@ void BLEKickAllPeers() {
 }
 
 static void BLEStopTask(void* args) {
+    bool * setFlag=(bool *)args;
     lNetLog("BLE: Shut down...\n");
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_TIME_TICKS) != pdTRUE )  {
         lNetLog("BLE: ERROR: Unable to obtain the lock, cannot stop\n");
+        bleServiceRunning=false;
         vTaskDelete(NULL);
     }
 
@@ -549,78 +565,61 @@ static void BLEStopTask(void* args) {
         //delay(100);
     }
     bleEnabled=false;
-    if ( bleServiceRunning ) {
-        lNetLog("BLE: Waiting service stops...\n");
-        while(bleServiceRunning) { delay(15); esp_task_wdt_reset(); }
-        lNetLog("BLE: Service ended\n");
-    }
-    /*
-    delay(50);
-    if ( NULL != BLETaskHandler ) {
-        lNetLog("BLE: Killing BLE manager task?...\n");
-        vTaskDelete(BLETaskHandler);
-        BLETaskHandler=NULL;
-    }*/
-    FreeSpace();
-    /*
-    lNetLog("AAAAAAAAAAAAAAAAAAAA\n");
-    if ( nullptr != battPercentPublish ) {
-        delete battPercentPublish;
-        battPercentPublish=nullptr;
-    }
-    lNetLog("BBBBBBBBBBBBBBBBBBB\n");
-    if ( nullptr != battTempPublish ) {
-        delete battTempPublish;
-        battTempPublish=nullptr;
-    }
-    lNetLog("CCCCCCCCCCCCCCCCCCCCC\n");
-    if ( nullptr != envTempPublish ) {
-        delete envTempPublish;
-        envTempPublish=nullptr;
-    }*/
-    FreeSpace();
-    //lNetLog("LOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLOLO\n");
+    //if ( bleServiceRunning ) {
+    lNetLog("BLE: Waiting service stops...\n");
+    while(bleServiceRunning) { delay(50); esp_task_wdt_reset(); }
+    lNetLog("BLE: Service ended\n");
+    //}
+
     BLEDevice::deinit(true);
     battCharacteristic = nullptr;
     lBattTempCharacteristic=nullptr;
-
-
-
+    // destroy all BLE entries
+    if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
+        BLEKnowDevices.remove_if([](lBLEDevice *dev){
+            lNetLog("BLE: Free know device: '%s'\n", dev->addr.toString().c_str());
+            return true;
+        });
+        xSemaphoreGive( BLEKnowDevicesSemaphore );
+    }
     xSemaphoreGive( BLEUpDownStep );
-    bleWaitStop=false;
+    *setFlag=false;
     vTaskDelete(NULL);
 }
 
 // call for stop
 void StopBLE() {
     if ( not bleEnabled ) { return; }
-    //lNetLog("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
-    FreeSpace();
+    bool waitFor=true;
+    /*
     xTaskCreateStaticPinnedToCore( BLEStopTask,
                     "bleStopTask",
                     LUNOKIOT_TASK_STACK_SIZE,
-                    nullptr,
+                    &waitFor,
                     tskIDLE_PRIORITY+1,
                     BLEStack,
                     &BLETaskHandler,
                     1);
-    /*
+                    */
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStopTask,
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
-                        nullptr,
-                        tskIDLE_PRIORITY,
+                        &waitFor,
+                        tskIDLE_PRIORITY+3,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch stop Task\n");
         return;
-    }*/
-    lNetLog("BLE: Waiting stop...\n");
-    while (bleWaitStop) {
-        esp_task_wdt_reset();
-        delay(10);
     }
+
+    lNetLog("BLE: Waiting stop...\n");
+    while (waitFor) {
+        esp_task_wdt_reset();
+        delay(20);
+        //lNetLog("BLE: Waiting...\n");
+    }
+    lNetLog("BLE: Powerdown\n");
     //lNetLog("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB END\n");
 }
 

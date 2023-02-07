@@ -109,7 +109,7 @@ bool BatteryApplication::Tick() {
         }
         if ( false == charging ) {
             if ( PMUBattDischarge > 0.0 ) {
-                sprintf(buffer,"Usage: %.2f mA",PMUBattDischarge);
+                sprintf(buffer,"Usage: %.2f mAh",PMUBattDischarge);
                 canvas->setTextFont(0);
                 canvas->setTextSize(2);
                 canvas->setTextColor(ThCol(text));

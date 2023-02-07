@@ -33,7 +33,6 @@ BluetoothApplication::BluetoothApplication() {
         BLEKickAllPeers();
         NimBLEDevice::deleteAllBonds();
         StopBLE();
-        delay(100);
         StartBLE(true);
         lAppLog("BLE: Bound devices removed\n");
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
