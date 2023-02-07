@@ -5,6 +5,7 @@
 #include <esp_timer.h>
 #include <esp_log.h>
 #include <esp_task_wdt.h>
+#include <esp_ota_ops.h>
 
 #include <Arduino.h>
 #include <SPIFFS.h>
@@ -146,18 +147,9 @@ LunokIoT::LunokIoT() {
 
     BootReason(); // announce boot reason and from what partition to serial
     SplashAnnounceBegin(); // anounce user about boot begins
-    lSysLog("System initializing...\n");
-    userTall= NVS.getInt("UserTall");        // get how high is the user?
-    if ( 0 == userTall ) { userTall = 120; } // almost midget value
 
-    userMaleFemale = NVS.getInt("UserSex");  // maybe is better use "hip type A/B" due to no offend any gender
-    if ( true == userMaleFemale ) { // this code isn't trying to define any gender, only their hips proportions...
-        // BIOLOGICAL FEMALE PROPS
-        stepDistanceCm = userTall * WOMAN_STEP_PROPORTION;
-    } else {
-        // BIOLOGICAL MALE PROPS
-        stepDistanceCm = userTall * MAN_STEP_PROPORTION;
-    }
+    lSysLog("System initializing...\n");
+
     // get if are in summertime
     int daylight = NVS.getInt("summerTime");
     // get the GMT timezone
@@ -179,6 +171,14 @@ LunokIoT::LunokIoT() {
     }
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
+
+    userTall= NVS.getInt("UserTall");        // get how high is the user?
+    if ( 0 == userTall ) { userTall = 120; } // almost midget value
+    
+    userMaleFemale = NVS.getInt("UserSex");  // maybe is better use "hip type A/B" due to no offend any gender
+    if ( true == userMaleFemale ) { stepDistanceCm = userTall * WOMAN_STEP_PROPORTION; }
+    else { stepDistanceCm = userTall * MAN_STEP_PROPORTION; }
+
     // Build the lunokiot message bus
     SystemEventsStart();
     // Start the interface with the user via the screen and buttons!!! (born to serve xD)
@@ -246,4 +246,41 @@ void LunokIoT::ListSPIFFS() {
     size_t totalSPIFFS = SPIFFS.totalBytes();
     size_t usedSPIFFS = SPIFFS.usedBytes();
     lSysLog("SPIFFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
+}
+
+
+void LunokIoT::BootReason() { // check boot status
+    bool normalBoot = false;
+    lEvLog("Boot reason: ");
+    esp_reset_reason_t lastBootStatus = esp_reset_reason();
+    if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
+    else if ( ESP_RST_POWERON == lastBootStatus) { lLog("'Normal poweron'\n"); normalBoot = true; }
+    else if ( ESP_RST_EXT == lastBootStatus) { lLog("'External pin'\n"); }
+    else if ( ESP_RST_SW == lastBootStatus) { lLog("'Normal restart'\n"); normalBoot = true; }
+    else if ( ESP_RST_PANIC == lastBootStatus) { lLog("'System panic'\n"); }
+    else if ( ESP_RST_INT_WDT == lastBootStatus) { lLog("'Watchdog interrupt'\n"); }
+    else if ( ESP_RST_TASK_WDT == lastBootStatus) { lLog("'Watchdog TIMEOUT'\n"); }
+    else if ( ESP_RST_WDT == lastBootStatus) { lLog("'Watchdog reset'\n"); }
+    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n") normalBoot = true; }
+    else if ( ESP_RST_BROWNOUT == lastBootStatus) { lLog("'Brownout'\n"); }
+    else if ( ESP_RST_SDIO == lastBootStatus) { lLog("'Reset over SDIO'\n"); }
+    else { lLog("UNHANDLED UNKNOWN\n"); }
+
+    if ( false == normalBoot ){
+        lEvLog("/!\\ /!\\ /!\\ WARNING: Last boot FAIL\n");
+    } else {
+        #ifdef LILYGO_WATCH_2020_V3
+            ttgo->shake();
+            //delay(200);
+        #endif
+    }
+    const esp_partition_t *whereIAm = esp_ota_get_boot_partition();
+    lEvLog("Boot from: '%s'\n",whereIAm->label);
+    // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
+
+    #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
+        // do sound only if boot is normal (crash-silent)
+        if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
+    #endif
+
 }

@@ -51,8 +51,6 @@ extern TTGOClass *ttgo; // ttgo library
 #include <FS.h>
 #include <SPIFFS.h>
 
-bool normalBoot=true;
-
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
 
 uint32_t systemStatsBootCounter = 0;
@@ -277,6 +275,7 @@ static void DoSleepTask(void *args) {
     if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
         // the current app isn't a watchface... get out!
         LaunchApplication(nullptr,false,true); // Synched App Stop
+        delay(100);
     }
 
     // forcing wifi to get out!
@@ -286,7 +285,7 @@ static void DoSleepTask(void *args) {
             WiFi.disconnect(true,true);
             delay(200);
             WiFi.mode(WIFI_OFF);
-            delay(200);
+            delay(100);
         }
     }
 
@@ -317,7 +316,6 @@ static void DoSleepTask(void *args) {
     esp_err_t wakeBMA = esp_sleep_enable_ext0_wakeup((gpio_num_t)BMA423_INT1, HIGH);
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
     */
-
     // the only good ones :(
     esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
@@ -360,6 +358,9 @@ static void DoSleepTask(void *args) {
 
     lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
+    uint32_t nowSteps = ttgo->bma->getCounter();
+    lLog("@TODO STEPS: %u for LOW BATTERY MODE\n", nowSteps);
+
 
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     systemSleep = false;
@@ -371,7 +372,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        xTaskCreatePinnedToCore(DoSleepTask, "lSLEEP", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
     }
 }
 
@@ -482,9 +483,6 @@ static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_
 }
 
 static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-    FreeSpace();
-    lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     // Get step data from register
     uint32_t nowSteps = ttgo->bma->getCounter();
     if (nowSteps != (stepCount - lastBootStepCount))
@@ -1374,35 +1372,6 @@ static void RTCInterruptController(void *args) {
 
 
 
-void BootReason() { // check boot status
-    normalBoot = false;
-    lEvLog("Boot reason: ");
-    esp_reset_reason_t lastBootStatus = esp_reset_reason();
-    if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
-    else if ( ESP_RST_POWERON == lastBootStatus) { lLog("'Normal poweron'\n"); normalBoot = true; }
-    else if ( ESP_RST_EXT == lastBootStatus) { lLog("'External pin'\n"); }
-    else if ( ESP_RST_SW == lastBootStatus) { lLog("'Normal restart'\n"); normalBoot = true; }
-    else if ( ESP_RST_PANIC == lastBootStatus) { lLog("'System panic'\n"); }
-    else if ( ESP_RST_INT_WDT == lastBootStatus) { lLog("'Watchdog interrupt'\n"); }
-    else if ( ESP_RST_TASK_WDT == lastBootStatus) { lLog("'Watchdog TIMEOUT'\n"); }
-    else if ( ESP_RST_WDT == lastBootStatus) { lLog("'Watchdog reset'\n"); }
-    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n") normalBoot = true; }
-    else if ( ESP_RST_BROWNOUT == lastBootStatus) { lLog("'Brownout'\n"); }
-    else if ( ESP_RST_SDIO == lastBootStatus) { lLog("'Reset over SDIO'\n"); }
-    else { lLog("UNHANDLED UNKNOWN\n"); }
-    if ( false == normalBoot ){
-        lEvLog("/!\\ /!\\ /!\\ WARNING: Last boot FAIL\n");
-    }
-    if ( true == normalBoot ) {
-        #ifdef LILYGO_WATCH_2020_V3
-            ttgo->shake();
-            //delay(200);
-        #endif
-    }
-    const esp_partition_t *whereIAm = esp_ota_get_boot_partition();
-    lEvLog("Boot from: '%s'\n",whereIAm->label);
-    // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
-}
 /*
 #include <esp_expression_with_stack.h>
 void external_stack_function(void)

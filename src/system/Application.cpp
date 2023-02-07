@@ -279,7 +279,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
 
 
 }
-// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
 void LunokIoTApplication::LowMemory() {
     lAppLog("LunokIoTApplication: LOW MEMORY received\n");
     // free last apps!!

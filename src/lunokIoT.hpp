@@ -17,7 +17,8 @@ class LunokIoT {
         void ListSPIFFS();
         bool IsSPIFFSEnabled();
         bool IsNVSEnabled();
-        //void ListSPIFFS();
+        void BootReason();
+
         // delete copy and move constructors and assign operators
         LunokIoT(LunokIoT const&) = delete;             // Copy construct
         LunokIoT(LunokIoT&&) = delete;                  // Move construct
@@ -27,6 +28,7 @@ class LunokIoT {
         LunokIoT();
         ~LunokIoT() {}; // implemented here ¿what kind of singleton.... x'D
     private:
+        bool normalBoot=true;
         bool SPIFFSReady=false;
         bool NVSReady=false;
         void InitLogs();

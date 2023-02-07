@@ -29,8 +29,6 @@ bool bootLoopEnds = false; // this is used by the splash to know bootLoop is end
 extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
 extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
-extern bool normalBoot;
-
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT
     lUILog("Audio: Not initialized due Silent boot is enabled\n");
@@ -178,8 +176,4 @@ void SplashAnnounceBegin() { // user eyecandy
         if ( bright > 255 ) { break; }
         ttgo->setBrightness(bright);
     }
-    #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
-        // do sound only if boot is normal (crash-silent)
-        if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
-    #endif
 }

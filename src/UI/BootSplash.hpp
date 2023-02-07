@@ -5,5 +5,6 @@ void SplashAnnounce();
 void SplashAnnounceBegin();
 void SplashAnnounceEnd();
 void SplashFormatSPIFFSAnnounce();
+void SplashFanfare();
 
 #endif
