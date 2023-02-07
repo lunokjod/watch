@@ -481,8 +481,10 @@ static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
 
-static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
+static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+    FreeSpace();
+    lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     // Get step data from register
     uint32_t nowSteps = ttgo->bma->getCounter();
     if (nowSteps != (stepCount - lastBootStepCount))

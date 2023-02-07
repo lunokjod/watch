@@ -29,7 +29,7 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
 
     btnEraseSPIFFS = new ButtonTextWidget(79,5,64,240-5-79,[](void *bah) {
-        NVS.setInt("spiffsCleanup",true);
+        NVS.setInt("spiffsReady",false);
         LaunchApplication(new ShutdownApplication(true,true));
     },"SPIFFS",ThCol(text),ThCol(high));
 

@@ -89,21 +89,22 @@ LunokIoT::LunokIoT() {
 
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
 
-    bool mustFormatSPIFFS = NVS.getInt("spiffsCleanup"); // get special key from NVS
-    if ( true == mustFormatSPIFFS ) {
+    bool alreadyFormattedSPIFFS = NVS.getInt("spiffsReady"); // get special key from NVS
+    if ( false == alreadyFormattedSPIFFS ) {
         lSysLog("SPIFFS: user wants format disk\n");
-        NVS.setInt("spiffsCleanup",false); // assume format reached and disable it in next boot
         SPIFFSReady=false; // mark as clean forced
     }
     // format SPIFFS if needed
     if ( false == SPIFFSReady ) {
-        lSysLog("SPIFFS: Format SPIFFS....\n");
+        lSysLog("SPIFFS: Format SPIFFS....\n");        
         SplashFormatSPIFFSAnnounce();
         SPIFFSReady = SPIFFS.format();
         if ( false == SPIFFSReady ) {
             lSysLog("SPIFFS: ERROR: Unable to format!!!\n");
+            SPIFFSReady=false;
         } else {
             SPIFFSReady = SPIFFS.begin(); // mount again
+            NVS.setInt("spiffsReady",true); // assume format reached and disable it in next boot
         }
     }
     // banner again
