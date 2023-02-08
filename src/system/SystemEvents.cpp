@@ -117,6 +117,7 @@ volatile static bool irqRTC = false;
 
 
 extern NimBLECharacteristic *battCharacteristic;
+SemaphoreHandle_t I2cMutex = xSemaphoreCreateMutex();
 
 
 extern "C" // Extern C is used when we are using a funtion written in "C" language in a C++ code.
@@ -358,8 +359,13 @@ static void DoSleepTask(void *args) {
 
     lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
-    uint32_t nowSteps = ttgo->bma->getCounter();
-    lLog("@TODO STEPS: %u for LOW BATTERY MODE\n", nowSteps);
+
+    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    stepCount = ttgo->bma->getCounter();
+    xSemaphoreGive(I2cMutex);
+
+    //uint32_t nowSteps = ttgo->bma->getCounter();
+    //lLog("@TODO STEPS: %u for LOW BATTERY MODE\n", nowSteps);
 
 
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
@@ -376,7 +382,6 @@ void DoSleep() {
     }
 }
 
-SemaphoreHandle_t I2cMutex = xSemaphoreCreateMutex();
 
 static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
 
@@ -1124,7 +1129,10 @@ static void BMAInterruptController(void *args) {
 
 
     BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    //if (pdTRUE != done) { return; }
+    if (pdTRUE != done) {
+        lSysLog("BMA: ERROR: Unable to get i2c mutex!\n");
+        return;
+    }
 
 
     // lLog("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
@@ -1150,7 +1158,8 @@ static void BMAInterruptController(void *args) {
             - BMA4_OUTPUT_DATA_RATE_1600HZ
     */
     // cfg.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
-    cfg.odr = BMA4_OUTPUT_DATA_RATE_50HZ;
+    //cfg.odr = BMA4_OUTPUT_DATA_RATE_50HZ;
+    cfg.odr = BMA4_OUTPUT_DATA_RATE_25HZ;
     /*!
         G-range, Optional parameters:
             - BMA4_ACCEL_RANGE_2G
@@ -1211,9 +1220,10 @@ static void BMAInterruptController(void *args) {
     // Reset steps
     featureOK = ttgo->bma->resetStepCounter();
     if ( false == featureOK ) { lEvLog("BMA: Unable to reset stepCounter\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    // Isnt needed, the stepcount ocurrs internally on BMA
+    //featureOK = ttgo->bma->enableStepCountInterrupt();
+    //if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'step count'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
 
-    featureOK = ttgo->bma->enableStepCountInterrupt();
-    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'step count'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableActivityInterrupt();
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'activity'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableAnyNoMotionInterrupt();

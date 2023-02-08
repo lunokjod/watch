@@ -41,7 +41,6 @@ https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9
 $ git clone https://github.com/lunokjod/watch.git
 $ cd watch
 $ touch openWeatherKey.txt
-$ pio run -e Release-twatch2020_V3 -t uploadfs
 $ pio run -e Release-twatch2020_V3 -t upload
 ```
  * Replace '_V3' with your watch version

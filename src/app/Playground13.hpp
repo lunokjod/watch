@@ -1,5 +1,5 @@
-#ifndef __LUNOKIOT__APPLICATION__PLAYGROUND13__
-#define __LUNOKIOT__APPLICATION__PLAYGROUND13__
+#ifndef __LUNOKIOT__APPLICATION__PlaygroundApplication13__
+#define __LUNOKIOT__APPLICATION__PlaygroundApplication13__
 
 #include "../UI/AppTemplate.hpp"
 #include <esp_now.h>
@@ -8,7 +8,7 @@ class PlaygroundApplication13 : public TemplateApplication {
     private:
         unsigned long nextRefresh=0;
     public:
-        const char *AppName() override { return "Playground13"; };
+        const char *AppName() override { return "PlaygroundApplication13"; };
         PlaygroundApplication13();
         ~PlaygroundApplication13();
         bool Tick();
