@@ -14,6 +14,7 @@
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
+//EventKVO * BLEWLightSleepEvent = nullptr;
 EventKVO * BLEWStopEvent = nullptr;
 // monitor the sensors
 EventKVO * battPercentPublish = nullptr; 
@@ -629,8 +630,12 @@ void BLESetupHooks() {
         BLEWStartEvent = new EventKVO([](){ StartBLE(); },SYSTEM_EVENT_WAKE);
     }
     if ( nullptr == BLEWStopEvent ) {
-        BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_LIGHTSLEEP);
+        BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_STOP);
     }
+    //if ( nullptr == BLEWLightSleepEvent ) { // this call is later than stop
+    //    BLEWLightSleepEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_LIGHTSLEEP);
+    //}
+    
 
     // capture sensor events and push to BLE
     if ( nullptr == battPercentPublish ) {

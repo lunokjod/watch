@@ -134,9 +134,11 @@ void SqlAddBluetoothDevice(const char * mac, double distance) {
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStrDelete,mac);
 
-//    xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
+    
     BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, uxTaskPriorityGet(NULL), NULL,1);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
+    
+    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
     //delay(100);
 
     // https://github.com/siara-cc/esp32_arduino_sqlite3_lib#compression-with-unishox
@@ -191,7 +193,7 @@ void SqlLog(const char * logLine) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,logLine);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_QUERY_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);
 }

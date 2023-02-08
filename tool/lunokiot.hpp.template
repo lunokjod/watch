@@ -30,7 +30,7 @@
 
 #define uS_TO_S_FACTOR 1000000 // micros in a second
 
-const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*3; // used for wakeup the device every 3 minutes to get samples
+const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*15; // used for wakeup the device every 15 minutes to get samples
 
 const PROGMEM float LUNOKIOT_SYSTEM_HEARTBEAT_TIME = 1500; // system heartbeat in times per second
 const PROGMEM TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
@@ -58,7 +58,7 @@ const PROGMEM char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjo
 
 #define LUNOKIOT_LIL_STACK_SIZE     512 // app killer thread
 #define LUNOKIOT_TINY_STACK_SIZE 1024*2 // small task
-#define LUNOKIOT_QUERY_STACK_SIZE 1024*3 // size for queries
+#define LUNOKIOT_QUERY_STACK_SIZE 1024*3.5 // size for queries
 #define LUNOKIOT_TASK_STACK_SIZE 1024*4 // usual task
 #define LUNOKIOT_MID_STACK_SIZE 1024*6
 #define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task

@@ -39,7 +39,7 @@ extern TTGOClass *ttgo; // ttgo library
 #include <NimBLECharacteristic.h>
 
 #include <esp_ota_ops.h>
-
+#include "Datasources/database.hpp"
 #include "esp_heap_task_info.h"
 #include <freertos/portable.h>
 #include "Network/BLE.hpp"
@@ -124,7 +124,7 @@ extern "C" // Extern C is used when we are using a funtion written in "C" langua
 {
   uint8_t temprature_sens_read(); // This function is written in C language
 }
-uint8_t temprature_sens_read();
+uint8_t temprature_sens_read(); // on esp_idf 4.4 is faked to 55.33333 C :(
 
 void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callback due priority and recomends a queue :)
     if (false == ttgo->bl->isOn()) { return; } // only when screen is on
@@ -378,13 +378,38 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
+        BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
+        if ( pdPASS != intTaskOk ) {
+            lSysLog("ERROR: cannot launch DoSleep\n");
+            systemSleep = false;
+            if (false == ttgo->bl->isOn()) {
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                FreeSpace();
+                ScreenWake();
+            }
+        }
     }
 }
 
+const char *BMAMessages[] = {
+    "Activity: Stationary",
+    "Activity: Walking",
+    "Activity: Running",
+    "Activity: Invalid",
+    "Activity: None"
+};
+
+const uint16_t BMAActivitesBufferMaxEntries=64;
+uint8_t *BMAActivitesBuffer=nullptr;
+RTC_Date *BMAActivitesTimes=nullptr;
+size_t BMAActivitesOffset=0;
 
 static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-
+    if ( nullptr == BMAActivitesBuffer ) {
+        BMAActivitesBuffer = (uint8_t*)ps_malloc(BMAActivitesBufferMaxEntries);
+        BMAActivitesTimes=(RTC_Date*)ps_calloc(BMAActivitesBufferMaxEntries,sizeof(RTC_Date)); // mmmm, I'm not sure about this
+        BMAActivitesOffset=0;
+    }
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     const char *nowActivity = ttgo->bma->getActivity();
     xSemaphoreGive(I2cMutex);
@@ -416,22 +441,49 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             timeBMAActivityNone += totalBMAActivity;
         }
 
+
+        //@TODO use array to save this data, and push to sql when WAKE
+
+        int activity=-1; // the offset of strings BMAMessages
         // current activity mark
         if (0 == strcmp("BMA423_USER_STATIONARY", nowActivity)) {
-            SqlLog("Activity: Stationary");
+            activity=0;
+            //SqlLog("Activity: Stationary");
         }
         else if (0 == strcmp("BMA423_USER_WALKING", nowActivity)) {
-            SqlLog("Activity: Walking");
+            activity=1;
+            //SqlLog("Activity: Walking");
         }
         else if (0 == strcmp("BMA423_USER_RUNNING", nowActivity)) {
-            SqlLog("Activity: Running");
+            activity=2;
+            //SqlLog("Activity: Running");
         }
         else if (0 == strcmp("BMA423_STATE_INVALID", nowActivity)) {
-            SqlLog("Activity: Invalid");
+            activity=3;
+            //SqlLog("Activity: Invalid");
         }
         else if (0 == strcmp("None", nowActivity)) {
-            SqlLog("Activity: None");
+            activity=4;
+            //SqlLog("Activity: None");
         }
+        if ( -1 != activity ) {
+            //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            lSysLog("Activity: holding activity and data %d on offset: %u\n",activity,BMAActivitesOffset);
+            BMAActivitesBuffer[BMAActivitesOffset]=activity;
+            //RTC_Date r = ttgo->rtc->getDateTime();
+            if (pdTRUE == xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS)) {
+                BMAActivitesTimes[BMAActivitesOffset] = ttgo->rtc->getDateTime();
+                xSemaphoreGive(I2cMutex);
+            }
+            //void * ptrShit=BMAActivitesTimes+(BMAActivitesOffset*sizeof(RTC_Date));
+            //memcpy(ptrShit,&r,sizeof(RTC_Date));
+            BMAActivitesOffset++;
+            if ( BMAActivitesOffset >= BMAActivitesBufferMaxEntries ) {
+                BMAActivitesOffset=0;
+                lLog("\n\n\n@TODO ACTIVITIES MUST BE DUMPED TO SQL NOW!!!!!\n\n\n\n");
+            }
+        }
+        FreeSpace();
 
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);
         lEvLog("BMA423: Event: Current actity: %s\n", nowActivity);
@@ -742,6 +794,38 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
         }
     }
     // In case of already running a watchface, do nothing
+
+    // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    // check the BMA ACTIVITIES during sleep
+    const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
+    if (BMAActivitesOffset > 0 ) {
+        for(int c=0;c<BMAActivitesOffset;c++) {
+            uint8_t currAct=BMAActivitesBuffer[c];
+            RTC_Date r=BMAActivitesTimes[c];
+            lEvLog("BMA: Pending activity (%d): %02u:%02u:%02u date: %02u-%02u-%04u ",c,r.hour,r.minute,r.second,r.day,r.month,r.year); 
+            lLog("%u '%s' dump to SQLite\n",c,BMAMessages[currAct]);
+            size_t totalsz = strlen(fmtStr)+40;
+            char * query=(char*)ps_malloc(totalsz);
+            if ( nullptr == query ) {
+                lEvLog("BMA: ERROR: Pending activity (%d) unable to build SQL query!!!\n",c);
+                continue;
+            }
+            sprintf(query,fmtStr,r.day,r.month,r.year,r.hour,r.minute,r.second,BMAMessages[currAct]);
+            if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+                int  rc = db_exec(lIoTsystemDatabase,query);
+                if (rc != SQLITE_OK) {
+                    lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
+                }
+                xSemaphoreGive( SqlLogSemaphore ); // free
+            }
+            free(query);
+
+//BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_QUERY_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+//if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
+
+        }
+        BMAActivitesOffset=0;
+    }
 }
 // called when system is up
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
