@@ -213,6 +213,10 @@ void StopDatabase() {
     }
 }
 
+const char *queryCreate0=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+const char *queryCreate1=(char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
+const char *queryCreate2=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
+
 void StartDatabase() {
     lSysLog("Sqlite3 opening...\n");
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
@@ -230,22 +234,16 @@ void StartDatabase() {
         }
         xSemaphoreGive( SqlLogSemaphore ); // free
 
-        const char *query=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
-        //__internalSqlSend((void*)query);
-        //delay(100);
+        __internalSqlSend((void*)queryCreate0);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)query, uxTaskPriorityGet(NULL), NULL,1);
-        const char *query2=(char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
-        //__internalSqlSend((void*)query2);
-        //delay(100);
+        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate0, uxTaskPriorityGet(NULL), NULL,1);
+        __internalSqlSend((void*)queryCreate1);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query2,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)query2, uxTaskPriorityGet(NULL), NULL,1);
-        const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
-        //__internalSqlSend((void*)query3);
+        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate1, uxTaskPriorityGet(NULL), NULL,1);
+        __internalSqlSend((void*)queryCreate2);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query3,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)query3, uxTaskPriorityGet(NULL), NULL,1);
-        //delay(100);
-        //delay(100);
+        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, uxTaskPriorityGet(NULL), NULL,1);
+        //FreeSpace();
         /*
         delay(100);
         query=(char *)"DELETE FROM rawlog WHERE timestamp < datetime('now', '-90 days');";

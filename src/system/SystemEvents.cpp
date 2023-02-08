@@ -1211,14 +1211,6 @@ static void BMAInterruptController(void *args) {
     if (false != tempAccZMax) { accZMax = tempAccZMax; }
     if (false != tempAccZMin) { accZMin = tempAccZMin; }
 
-
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    if (pdTRUE != done) {
-        lSysLog("BMA: ERROR: Unable to get i2c mutex!\n");
-        return;
-    }
-
-
     // lLog("BMA423: NVS: Last session stepCount = %d\n",tempStepCount);
 
     // lLog("BMA423: NVS: X(%d/%d) ",accXMax,accXMin);
@@ -1272,6 +1264,12 @@ static void BMAInterruptController(void *args) {
         - BMA4_CONTINUOUS_MODE
     */
     cfg.perf_mode = BMA4_CONTINUOUS_MODE;
+
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if (pdTRUE != done) {
+        lSysLog("BMA: ERROR: Unable to get i2c mutex!\n");
+        return;
+    }
 
     // Configure the BMA423 accelerometer
     bool isConfigured = ttgo->bma->accelConfig(cfg);
@@ -1640,7 +1638,7 @@ void SystemEventsStart() {
     //if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
 
     LunokIoTSystemTickerStart();
-    delay(50);
+    //delay(50);
 }
 
 /*

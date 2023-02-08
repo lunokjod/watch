@@ -123,6 +123,7 @@ LunokIoT::LunokIoT() {
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
     }
+    BootReason(); // announce boot reason and from what partition to serial
 
     /* useless on arduinofw
     //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
@@ -144,9 +145,6 @@ LunokIoT::LunokIoT() {
     #ifdef LILYGO_WATCH_2020_V3
     ttgo->motor_begin(); // start the motor for haptic notifications
     #endif
-
-    BootReason(); // announce boot reason and from what partition to serial
-    SplashAnnounceBegin(); // anounce user about boot begins
 
     lSysLog("System initializing...\n");
 
@@ -171,6 +169,8 @@ LunokIoT::LunokIoT() {
     }
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
+
+    SplashAnnounceBegin(); // anounce user about boot begins
 
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
