@@ -459,8 +459,7 @@ void Watchface2Application::Handlers()
                 return true;
             }
             struct tm timeinfo;
-            if (getLocalTime(&timeinfo))
-            {
+            if (getLocalTime(&timeinfo)) {
                 lEvLog("ESP32: Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon, 1900 + timeinfo.tm_year);
             }
 

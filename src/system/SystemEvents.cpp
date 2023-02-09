@@ -399,7 +399,7 @@ const char *BMAMessages[] = {
     "Activity: None"
 };
 
-const uint16_t BMAActivitesBufferMaxEntries=64;
+const uint16_t BMAActivitesBufferMaxEntries=6;
 uint8_t *BMAActivitesBuffer=nullptr;
 RTC_Date *BMAActivitesTimes=nullptr;
 size_t BMAActivitesOffset=0;
@@ -594,7 +594,7 @@ void SaveDataBeforeShutdown() {
     //StopBLE();
     //delay(50);
     //delay(50);
-    LoT().SPIFFSReady=false; // dirty hack
+    LoT().SPIFFSReady=false; // mark as unused
     //IsSPIFFSEnabled()
     SPIFFS.end();
     lEvLog("SPIFFS: Closed\n");

@@ -106,7 +106,8 @@ bool SettingsApplication::Tick() {
     if (millis() > nextRefresh ) {
         canvas->fillSprite(ThCol(background));
         //btnHelp->DrawTo(canvas);
-        btnBack->DrawTo(canvas);
+        TemplateApplication::Tick();
+        //btnBack->DrawTo(canvas);
         ntpCheck->DrawTo(canvas);
         openweatherCheck->DrawTo(canvas);
         wifiCheck->DrawTo(canvas);

@@ -52,6 +52,7 @@
 
 #include "../static/img_mainmenu_dungeon.xbm"
 //#include "Dungeon/Dungeon.hpp"
+#include "LockPicking.hpp"
 
 #include "../static/img_mainmenu_stopwatch.xbm"
 #include "Stopwatch.hpp"
@@ -95,8 +96,10 @@
 #include "FreehandKeyboardSetup.hpp"
 #include "BLEMonitor.hpp"
 
-#include "ThumbTest.hpp"
+#include "../static/img_mainmenu_calendar.xbm"
+#include "Calendar.hpp"
 
+#include "ThumbTest.hpp"
 
 typedef struct {
     const char *name;
@@ -110,11 +113,13 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
+//    {"DEBUG",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](void *unused) { LaunchApplication(new CalendarApplication()); } },
+//    {"LockPick",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new LockPickingGameApplication()); } },
+//    {"Playground12",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication12()); } },
 //    {"Playground13",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication13()); } },
 //      {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },
 //      {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new AdvancedSettingsApplication()); } },
 //    {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, [](void *unused) { LaunchApplication(new BluetoothApplication()); } },
-//    {"Playground12",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication12()); } },
 //    {"Playground11",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new PlaygroundApplication11()); } },
 //    {"Keyboard",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new FreeHandKeyboardSetupApplication()); } },
 //    {"ThumbTest",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new ThumbTest()); } },
@@ -131,6 +136,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](void *unused) { LaunchApplication(new BatteryApplication()); } },
     {"Stopwatch",img_mainmenu_stopwatch_bits, img_mainmenu_stopwatch_height, img_mainmenu_stopwatch_width, [](void *unused) { LaunchApplication(new StopwatchApplication()); } },
     {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](void *unused) { LaunchApplication(new SettingsMenuApplication()); } },
+    {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](void *unused) { LaunchApplication(new CalendarApplication()); } },
     {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](void *unused) { LaunchApplication(new CalculatorApplication()); } },
     {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](void *unused) { LaunchApplication(new LampApplication()); } },
     {"Peers",img_mainmenu_chat_bits, img_mainmenu_chat_height, img_mainmenu_chat_width, [](void *unused) { LaunchApplication(new PeerApplication()); } },
