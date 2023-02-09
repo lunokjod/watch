@@ -24,12 +24,12 @@ class LunokIoT {
         LunokIoT(LunokIoT&&) = delete;                  // Move construct
         LunokIoT& operator=(LunokIoT const&) = delete;  // Copy assign
         LunokIoT& operator=(LunokIoT &&) = delete;      // Move assign
+        bool SPIFFSReady=false; // @TODO
     protected:
         LunokIoT();
         ~LunokIoT() {}; // implemented here ¿what kind of singleton.... x'D
     private:
         bool normalBoot=true;
-        bool SPIFFSReady=false;
         bool NVSReady=false;
         void InitLogs();
 };

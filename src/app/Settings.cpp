@@ -93,8 +93,8 @@ SettingsApplication::SettingsApplication() {
 
 bool SettingsApplication::Tick() {
     
-    TemplateApplication::Tick();
-
+    //TemplateApplication::Tick();
+    TemplateApplication::btnBack->Interact(touched,touchX, touchY);
     //btnHelp->Interact(touched,touchX, touchY);
     wifiCheck->Interact(touched,touchX, touchY);
     bleCheck->Interact(touched,touchX, touchY);
@@ -134,7 +134,7 @@ bool SettingsApplication::Tick() {
         textColor = ThCol(text_alt);
 #endif
         canvas->drawXBitmap(165,176,img_bluetooth_32_bits,img_bluetooth_32_width,img_bluetooth_32_height,textColor);
-        nextRefresh=millis()+(1000/3);
+        nextRefresh=millis()+(1000/6);
         return true;
     }
     return false;

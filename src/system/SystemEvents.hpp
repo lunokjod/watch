@@ -59,7 +59,7 @@ void TakeAllSamples();
 void SystemEventsStart();
 // Announce the end of boot
 void SystemEventBootEnd();
-
+void SystemBMARestitution();
 static inline void FreeSpace() {
     uint32_t minHeap = xPortGetMinimumEverFreeHeapSize();
     uint32_t freeHeap = xPortGetFreeHeapSize(); // portable of heap_caps_get_free_size(MALLOC_CAP_8BIT)

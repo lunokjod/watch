@@ -9,6 +9,7 @@
 
 #include "../../app/LogView.hpp"
 #include "database.hpp"
+#include "../../lunokIoT.hpp"
 #include "../SystemEvents.hpp"
 //#include "lunokIoT.hpp"
 
@@ -93,7 +94,11 @@ int db_exec(sqlite3 *db, const char *sql) {
 static void __internalSqlSend(void *args) {
     if ( nullptr == args ) {
         lSysLog("SQL: ERROR: unable to run empty query\n");
-        vTaskDelete(NULL);
+        return;
+    }
+    if ( false == LoT().IsSPIFFSEnabled() ) { 
+        lSysLog("SQL: ERROR: unable to run query due SPIFFS is disabled!\n");
+        return;
     }
     //FreeSpace();
     char * query=(char*)args;
@@ -193,24 +198,22 @@ void SqlLog(const char * logLine) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,logLine);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_QUERY_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);
 }
 
 void StopDatabase() {
-    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        if (nullptr != lIoTsystemDatabase ) {
-            lSysLog("SQL: closing...\n");
-            if ( false == sqliteDbProblem ) { SqlLog("end"); }            
-            //sqlite3_db_cacheflush(lIoTsystemDatabase);
-            sqlite3_close(lIoTsystemDatabase);
-            sqlite3_shutdown();
-            lIoTsystemDatabase=nullptr;
-            lSysLog("@TODO database backup here\n");
-        }
-        xSemaphoreGive( SqlLogSemaphore ); // free
-    }
+    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) !=  pdTRUE )  { return; }
+    if (nullptr == lIoTsystemDatabase ) { return; }
+    lSysLog("SQL: closing...\n");
+    if ( false == sqliteDbProblem ) { SqlLog("end"); }            
+    //sqlite3_db_cacheflush(lIoTsystemDatabase);
+    sqlite3_close(lIoTsystemDatabase);
+    sqlite3_shutdown();
+    lIoTsystemDatabase=nullptr;
+    lSysLog("@TODO database backup here\n");
+    xSemaphoreGive( SqlLogSemaphore ); // free
 }
 
 const char *queryCreate0=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
@@ -234,15 +237,18 @@ void StartDatabase() {
         }
         xSemaphoreGive( SqlLogSemaphore ); // free
 
-        __internalSqlSend((void*)queryCreate0);
+        //__internalSqlSend((void*)queryCreate0);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate0, uxTaskPriorityGet(NULL), NULL,1);
-        __internalSqlSend((void*)queryCreate1);
+        delay(100);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate0", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate0, uxTaskPriorityGet(NULL), NULL,1);
+        //__internalSqlSend((void*)queryCreate1);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query2,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate1, uxTaskPriorityGet(NULL), NULL,1);
-        __internalSqlSend((void*)queryCreate2);
+        delay(100);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate1", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate1, uxTaskPriorityGet(NULL), NULL,1);
+        //__internalSqlSend((void*)queryCreate2);
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query3,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-        //xTaskCreatePinnedToCore(_intrnalSqlStatic, "", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, uxTaskPriorityGet(NULL), NULL,1);
+        delay(100);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate2", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, uxTaskPriorityGet(NULL), NULL,1);
         //FreeSpace();
         /*
         delay(100);

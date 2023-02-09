@@ -176,6 +176,8 @@ StepsApplication::StepsApplication() {
 
 bool StepsApplication::Tick() {
     btnSetup->Interact(touched,touchX, touchY);
+    TemplateApplication::btnBack->Interact(touched,touchX, touchY);
+    
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         TemplateApplication::Tick();
@@ -306,7 +308,7 @@ bool StepsApplication::Tick() {
 
 
 
-        nextRedraw=millis()+(1000/16);
+        nextRedraw=millis()+(1000/8);
         return true;
     }
     return false;

@@ -2,7 +2,7 @@
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo library
 #include <ArduinoNvs.h>
-
+#include "../lunokIoT.hpp"
 #include "SystemEvents.hpp"
 
 #include "lunokiot_config.hpp"
@@ -467,7 +467,6 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             //SqlLog("Activity: None");
         }
         if ( -1 != activity ) {
-            //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
             lSysLog("Activity: holding activity and data %d on offset: %u\n",activity,BMAActivitesOffset);
             BMAActivitesBuffer[BMAActivitesOffset]=activity;
             //RTC_Date r = ttgo->rtc->getDateTime();
@@ -479,8 +478,8 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             //memcpy(ptrShit,&r,sizeof(RTC_Date));
             BMAActivitesOffset++;
             if ( BMAActivitesOffset >= BMAActivitesBufferMaxEntries ) {
+                SystemBMARestitution();
                 BMAActivitesOffset=0;
-                lLog("\n\n\n@TODO ACTIVITIES MUST BE DUMPED TO SQL NOW!!!!!\n\n\n\n");
             }
         }
         FreeSpace();
@@ -575,25 +574,28 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("tBMAANone", (int64_t)timeBMAActivityNone, false);
     // lLog("DEBUG stepCount: %d\n",stepCount);
     NVS.setInt("stepCount", stepCount, false);
-    delay(50);
+    delay(20);
     bool saved = NVS.commit();
     if (false == saved) {
         lLog("NVS: Unable to commit!! (data lost!?)\n");
     }
-    NVS.close();
-    lEvLog("NVS: Closed\n");
-
     char * usageStatics=(char *)ps_malloc(200);
     if ( nullptr != usageStatics ) {
         sprintf(usageStatics,"Usage stats: Sleep: %u secs, in use: %lu secs (usage ratio: %.2f%%%%)",
                 deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
         SqlLog(usageStatics);
-        free(usageStatics);
+        delay(100);
     }
+    //StopDatabase();
+    //delay(100);
+    NVS.close();
+    lEvLog("NVS: Closed\n");
+
     //StopBLE();
     //delay(50);
-    //StopDatabase();
     //delay(50);
+    LoT().SPIFFSReady=false; // dirty hack
+    //IsSPIFFSEnabled()
     SPIFFS.end();
     lEvLog("SPIFFS: Closed\n");
 }
@@ -769,34 +771,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
     }
     xSemaphoreGive( UISemaphore ); // free
 }
-
-static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    lSysLog("System event: Wake\n");
-    SqlLog("wake");
-
-    TakeAllSamples(); // get current pose
-    
-    //lSysLog("GESTURE? %f,%f,%f\n", degX, degY, degZ);
-
-    // enable lamp? @TODO THIS MUST BE A SETTING
-    bool launchLamp=false;
-    if ( degY > 340.0 ) { launchLamp = true; }
-    else if ( degY < 20.0 ) { launchLamp = true; }
-
-    if ( launchLamp ) { // is the correct pose to get light?
-        LaunchApplication(new LampApplication());
-        return;
-    } else if ( nullptr == currentApplication ) {
-        LaunchWatchface(false);
-    } else { // already have an app on currentApplication
-        if ( false == currentApplication->isWatchface() ) { // Isn't a watchface, run it now!
-            LaunchWatchface(false);
-        }
-    }
-    // In case of already running a watchface, do nothing
-
-    // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    // check the BMA ACTIVITIES during sleep
+void SystemBMARestitution() {
     const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
     if (BMAActivitesOffset > 0 ) {
         for(int c=0;c<BMAActivitesOffset;c++) {
@@ -826,6 +801,35 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
         }
         BMAActivitesOffset=0;
     }
+}
+
+static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lSysLog("System event: Wake\n");
+    SqlLog("wake");
+
+    TakeAllSamples(); // get current pose
+    
+    //lSysLog("GESTURE? %f,%f,%f\n", degX, degY, degZ);
+
+    // enable lamp? @TODO THIS MUST BE A SETTING
+    bool launchLamp=false;
+    if ( degY > 340.0 ) { launchLamp = true; }
+    else if ( degY < 20.0 ) { launchLamp = true; }
+
+    if ( launchLamp ) { // is the correct pose to get light?
+        LaunchApplication(new LampApplication());
+        return;
+    } else if ( nullptr == currentApplication ) {
+        LaunchWatchface(false);
+    } else { // already have an app on currentApplication
+        if ( false == currentApplication->isWatchface() ) { // Isn't a watchface, run it now!
+            LaunchWatchface(false);
+        }
+    }
+    // In case of already running a watchface, do nothing
+
+    // check the BMA ACTIVITIES during sleep
+    SystemBMARestitution();
 }
 // called when system is up
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
