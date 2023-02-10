@@ -82,7 +82,7 @@ const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <Arduino_JSON.h>
+
 String jsonBuffer;
 String httpGETRequest(const char* serverName) {
   WiFiClient client;
@@ -118,6 +118,7 @@ bool Watchface2Application::GetSecureNetworkWeather() {
     jsonBuffer = httpGETRequest(url);
     if ( nullptr != weatherReceivedData ) {
         free(weatherReceivedData);
+        weatherReceivedData=nullptr;
     }
     weatherReceivedData=(char*)ps_malloc(jsonBuffer.length()+1);
     sprintf(weatherReceivedData,"%s",jsonBuffer.c_str());
@@ -362,7 +363,7 @@ bool Watchface2Application::ParseWeatherData() {
     JSONVar myObject = JSON.parse(weatherReceivedData);
     if (JSON.typeof(myObject) == "undefined")
     {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON");
+        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON\n");
 #ifdef LUNOKIOT_DEBUG_NETWORK
         Serial.printf("%s\n", weatherReceivedData);
 #endif

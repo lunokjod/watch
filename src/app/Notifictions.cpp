@@ -4,45 +4,51 @@
 
 #include "Notifications.hpp"
 #include "UI/UI.hpp"
+#include "LogView.hpp"
 
 extern JSONVar localCloudNetworkHome;
 
 NotificacionsApplication::~NotificacionsApplication() {
-    
+    if ( nullptr != msgfrom ) { free(msgfrom); }
+    if ( nullptr != msgtitle ) { free(msgtitle); }
+    if ( nullptr != msgbody ) {  free(msgbody); }
 }
-NotificacionsApplication::NotificacionsApplication() {
 
-    // get notifications from lunoKloud
-    if ( localCloudNetworkHome.hasOwnProperty("notifications") ) {
-        JSONVar notificationsJSON = localCloudNetworkHome["notifications"];
-
-        Serial.println("");
-        Serial.println("");
-        localCloudNetworkHome.printTo(Serial);
-        Serial.println("");
-        Serial.println("");
-
-
-        int remaining = notificationsJSON.length();
-        for (int i = 0; i < remaining; i++) {
-            JSONVar currentNotification = notificationsJSON[i];
-            Serial.printf("NOTIFICATION:  %d\n",i);
-            Serial.printf("     Version:  %d\n",int(currentNotification["v"]));
-            Serial.printf("        UUID: '%s'\n",(const char *)(currentNotification["uuid"]));
-            Serial.printf("       title: '%s'\n",(const char *)currentNotification["title"]);
-            Serial.printf("        body: '%s'\n",(const char *)currentNotification["body"]);
-            Serial.printf("        date:  %d\n",int(currentNotification["date"]));
-            Serial.printf("        from: '%s'\n",(const char *)currentNotification["from"]);
-            Serial.printf("        read:  %s\n",((const char *)(currentNotification["read"])?"true":"false"));
-        }
+NotificacionsApplication::NotificacionsApplication(const char *subject,const char *from,const char *body) {
+    msgfrom=(char*)ps_malloc(sizeof(from)+1);
+    msgtitle=(char*)ps_malloc(sizeof(subject)+1);
+    msgbody=(char*)ps_malloc(sizeof(body)+1);
+    if ( nullptr != msgfrom ) {
+        sprintf(msgfrom,"%s",from);
     }
+    if ( nullptr != msgtitle ) {
+        sprintf(msgtitle,"%s",subject);
+    }
+    if ( nullptr != msgbody ) {
+        sprintf(msgbody,"%s",body);
+    }
+    //lAppLog("MESSAGE TO SHOW:\n FROM: '%s' Subject: '%s' Body: '%s'\n",msgfrom,msgtitle,msgbody);
     Tick();
 }
 
 bool NotificacionsApplication::Tick() {
+    //UINextTimeout = millis()+UITimeout;
+    TemplateApplication::btnBack->Interact(touched,touchX,touchY);
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
-        nextRedraw=millis()+(1000/2);
+        canvas->fillSprite(ThCol(background));
+        //lAppLog("MESSAGE TO SHOW:\n FROM: '%s' Subject: '%s' Body: '%s'\n",msgfrom,msgtitle,msgbody);
+        canvas->setTextFont(1);
+        canvas->setTextSize(2);
+        canvas->setTextColor(ThCol(text));
+        canvas->setTextDatum(TL_DATUM);
+        if ( nullptr != msgfrom ) { canvas->drawString(msgfrom, 35, 5); }
+        canvas->setTextSize(3);
+        if ( nullptr != msgtitle ) { canvas->drawString(msgtitle, 5, 35); }
+        canvas->setTextSize(2);
+        if ( nullptr != msgbody ) { canvas->drawString(msgbody, 15, 85); }
+
+        TemplateApplication::Tick();
+        nextRedraw=millis()+(1000/8);
         return true;
     }
     return false;
