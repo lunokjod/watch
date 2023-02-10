@@ -63,9 +63,9 @@ $ pio run -e Release-twatch2020_V3 -t upload
 ## What does:
 
 * WiFi time sync once every 24h (using network time protocol NTP)
-* Wake up every 180 seconds to monitor the user pose (future sleep monitor)
-* Wake up every activity/stepcounter (steps monitor app Home>Steps)
-* Screen capture can be shared via BLE UART (see tools/getScreenshoot.py) don't work due BLE security (script must be adapted)
+* WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
+* Wake up every 15 minutes to monitor the user pose (future sleep monitor)
+* Wake up every activity (steps monitor app Home>Steps)
  * BLE GATT support
   * Pairing with random pin (see "Home>Settings>Pair" on main menu)
    * Remove current bonded devices
@@ -74,8 +74,9 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * Color themes
  * Screen orientation
  * OTA update (wireless)
+ * Gadgetbridge compatibility
+ * Handwritting trainable keyboard
 
- 
 ## Full application list:
 
 [See App gallery](src/app/README.md)
@@ -92,7 +93,6 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * IR work, but only can send with this hardware (useless by now, I want to do jokes!)
 
 ### Pending to implement:
-* (BUGGY) WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
 * Multiple apps (seamless)
 * Add first launch application assistant to set or omit the desired setup parts
 * PDM Mic (voice assistant)

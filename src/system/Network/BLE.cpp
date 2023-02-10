@@ -10,6 +10,8 @@
 
 #include "../../app/Bluetooth.hpp"
 #include "../Datasources/database.hpp"
+#include "Gagetbridge.hpp"
+#include <cstring>
 
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
@@ -166,25 +168,65 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     }
 };
 
+// http://www.espruino.com/Gadgetbridge
+const size_t gadgetBridgeBufferSize=8*1024;
+char *gadgetBridgeBuffer=nullptr;
+size_t gadgetBridgeBufferOffset=0;
+
 class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
+    bool gadgetbridgeCommandInProgress=false;
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
         if (rxValue.length() > 0) {
             const char * receivedCommand = rxValue.c_str();
-            const char * ScreenShootCommand = "GETSCREENSHOOT";
-            const char * PushMessageCommand = "PUSHMSG";
+            const char GadgetbridgeCommand[] = "\x10";
+            // try to process gadgetbrige json first (pushed in small amounts of data over BLE)
+            if ( 0 == strncmp(receivedCommand,GadgetbridgeCommand, strlen(GadgetbridgeCommand))) {
+                //lNetLog("BLE: UART: Gadgetbridge (command)\n");
+                gadgetbridgeCommandInProgress=true;
+                if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
+                gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
+                sprintf(gadgetBridgeBuffer,"%s",receivedCommand+1); // ignore \x10
+                gadgetBridgeBufferOffset=rxValue.length()-1;
+            } else if ( gadgetbridgeCommandInProgress ) {
+                if (nullptr != gadgetBridgeBuffer) {
+                    for (int i = 0; i < rxValue.length(); i++) {
+                        if ( 0xa == rxValue[i] ) { // dont save
+                            gadgetbridgeCommandInProgress=false;
+                            //lNetLog("BLE: UART: Gadgetbridge: '%s'\n",gadgetBridgeBuffer);
+                            ParseGadgetBridgeMessage(gadgetBridgeBuffer);
+                            gadgetBridgeBufferOffset=0;
+                            free(gadgetBridgeBuffer);
+                            gadgetBridgeBuffer=nullptr;
+                            break;
+                        }
+                        gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
+                        gadgetBridgeBufferOffset++;
+                        //lLog("%c",rxValue[i]);
+                    }
+                }
+                return;
+            } else {
+                lNetLog("BLE: UART Received Value: ");
+                for (int i = 0; i < rxValue.length(); i++) { //ignore \0
+                    lLog("%c(0x%02x) ",rxValue[i],rxValue[i]);
+                }
+                lLog("\n");
+            }
 
+            /*
             if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(PushMessageCommand))) {
                 lNetLog("BLE: UART: '%s' command received\n",PushMessageCommand);
             } else if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
                 lNetLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
             } else {
-                lNetLog("BLE: UART Received Value: ");
-                for (int i = 0; i < rxValue.length(); i++) {
-                    lLog("'%c'(0x%x) ",rxValue[i],rxValue[i]);
+                lNetLog("BLE: UART Received Value: '");
+                for (int i = 0; i < rxValue.length(); i++) { //ignore \0
+                    lLog("%c",rxValue[i]);
                 }
-                lLog("\n");
+                lLog("'\n");
             }
+            */
         }
     }
 };
@@ -344,12 +386,14 @@ void BLELoopTask(void * data) {
 }
 extern void _intrnalSqlStatic(void *args);
 static void BLEStartTask(void* args) {
+    lNetLog("A\n");
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
         lNetLog("BLE: ERROR: Unable to obtain the lock, cannot start\n");
         vTaskDelete(NULL);
     }
-
+    lNetLog("B\n");
+    esp_task_wdt_reset();
     // check if user wants BLE
     bool enabled = NVS.getInt("BLEEnabled");
     if ( false == enabled ) { 
@@ -357,10 +401,12 @@ static void BLEStartTask(void* args) {
         xSemaphoreGive( BLEUpDownStep );
         vTaskDelete(NULL);
     }
+    lNetLog("C\n");
+    esp_task_wdt_reset();
     // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
-    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
+    if( xSemaphoreTake( SqlLogSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
         const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
         esp_task_wdt_reset();
         int  rc = db_exec(lIoTsystemDatabase,query3);
@@ -370,6 +416,7 @@ static void BLEStartTask(void* args) {
         esp_task_wdt_reset();
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
+    lNetLog("D\n");
 
 
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
@@ -377,10 +424,14 @@ static void BLEStartTask(void* args) {
 
     char BTName[14] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-
+    esp_task_wdt_reset();
+    delay(100);
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
+    esp_task_wdt_reset();
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
+    
+    lNetLog("E\n");
 
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
@@ -393,7 +444,10 @@ static void BLEStartTask(void* args) {
     // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
- 
+    esp_task_wdt_reset();
+
+    lNetLog("F\n");
+
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
     pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
@@ -414,7 +468,8 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * battDescriptor = battCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     battDescriptor->setValue("Percentage 0 - 100");
 #endif
-
+    lNetLog("G\n");
+    esp_task_wdt_reset();
 
     // lunokiot services
     pLunokIoTService = pServer->createService(BLE_SERVICE_LUNOKIOT);
@@ -431,6 +486,8 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * lVersionDescCharacteristic = lVersionCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     lVersionDescCharacteristic->setValue("Version");
 #endif
+    lNetLog("H\n");
+    esp_task_wdt_reset();
 
     // battery temp announce to peers from PMU_EVENT_TEMPERATURE event
     lBattTempCharacteristic = 
@@ -446,7 +503,7 @@ static void BLEStartTask(void* args) {
     lBattTempDescCharacteristic->setValue("Battery Temperature");
 #endif
 
-
+    lNetLog("I\n");
     // BMA temp announce to peers from BMA_EVENT_TEMP event
     lBMATempCharacteristic = 
                 pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_BMA_TEMP,
@@ -461,7 +518,8 @@ static void BLEStartTask(void* args) {
     lBMATempDescCharacteristic->setValue("Acceleromether Temperature");
 #endif
 
-
+    esp_task_wdt_reset();
+lNetLog("J\n");
     // Start the services
     pLunokIoTService->start();
     pBattService->start();
@@ -477,7 +535,7 @@ static void BLEStartTask(void* args) {
     adv->addServiceUUID(BLE_SERVICE_LUNOKIOT);
     adv->addServiceUUID(BLE_SERVICE_BATTERY);
     adv->start();
-
+lNetLog("K\n");
     BLEScan * pBLEScan = BLEDevice::getScan();
     pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power
@@ -485,14 +543,14 @@ static void BLEStartTask(void* args) {
     pBLEScan->setWindow(99);  // less or equal setInterval value
     pBLEScan->setMaxResults(3); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
+    xSemaphoreGive( BLEUpDownStep );
     //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
                     LUNOKIOT_MID_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
-
-    xSemaphoreGive( BLEUpDownStep );
+    lNetLog("L\n");
     vTaskDelete(NULL);
 }
 
@@ -511,11 +569,12 @@ void StartBLE(bool synced) {
         liLog("BLE: Refusing to start (already started)\n");
         return;
     }
+    delay(10);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_APP_STACK_SIZE,
+                        LUNOKIOT_NETWORK_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY,
+                        tskIDLE_PRIORITY+2,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {

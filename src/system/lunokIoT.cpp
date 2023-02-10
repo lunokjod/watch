@@ -29,6 +29,9 @@
 #include "app/Steps.hpp" // Step manager
 #include "app/LogView.hpp" // log
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+extern SemaphoreHandle_t I2cMutex;
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
@@ -156,16 +159,21 @@ LunokIoT::LunokIoT() {
     lEvLog("RTC: Config: Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
     configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
     struct tm timeinfo;
-    if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
-        lEvLog("RTC: The time-date seems valid, thanks to secondary battery :)\n");
-        // inquiry RTC via i2C
-        RTC_Date r = ttgo->rtc->getDateTime();
-        lEvLog("RTC: Time:        %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
-        ttgo->rtc->syncToSystem(); // feed ESP32 with correct time
-        if (getLocalTime(&timeinfo)) {
-            lEvLog("ESP32: Sync Time: %02d:%02d:%02d date: %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
-            ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
+
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    if (pdTRUE == done) {
+        if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
+            lEvLog("RTC: The time-date seems valid, thanks to secondary battery :)\n");
+            // inquiry RTC via i2C
+            RTC_Date r = ttgo->rtc->getDateTime();
+            lEvLog("RTC: Time:        %02u:%02u:%02u date: %02u-%02u-%04u\n",r.hour,r.minute,r.second,r.day,r.month,r.year);
+            ttgo->rtc->syncToSystem(); // feed ESP32 with correct time
+            if (getLocalTime(&timeinfo)) {
+                lEvLog("ESP32: Sync Time: %02d:%02d:%02d date: %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
+                ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
+            }
         }
+        xSemaphoreGive(I2cMutex);
     }
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)

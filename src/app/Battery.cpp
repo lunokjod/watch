@@ -49,7 +49,7 @@ bool BatteryApplication::Tick() {
     }
     //if ( millis() > scaleTempRedraw ) { // reescale graph every...
     if ( false == normalRange ) {
-        lAppLog("Graph reescaled\n");
+        //lAppLog("Graph reescaled\n");
         int64_t tmin = int64_t(axpTemp*10)-SCALE;
         int64_t tmax = int64_t(axpTemp*10)+SCALE;
         batteryTempMonitor->minValue = tmin;
