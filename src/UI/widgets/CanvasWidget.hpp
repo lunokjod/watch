@@ -12,8 +12,8 @@ class CanvasWidget : public Drawable {
         // BRG
         CanvasWidget(int16_t h, int16_t w, int8_t colorDepth=16);
         bool RebuildCanvas(int16_t h=0, int16_t w=0, int8_t colorDepth=16);
-        void DirectDraw(int16_t x,int16_t y);
-        void DrawTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0,int32_t maskColor=MASK_COLOR);
+        void DirectDraw(int16_t x,int16_t y) override;
+        void DrawTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0,int32_t maskColor=MASK_COLOR) override;
         virtual ~CanvasWidget();
 };
 

@@ -94,7 +94,7 @@ class SoftwareNumericKeyboard : public SoftwareKeyboard {
         //TFT_eSprite * destinationCanvas=nullptr;
         SoftwareNumericKeyboard(void * destinationWidget=nullptr );
         ~SoftwareNumericKeyboard();
-        bool Tick();
+        bool Tick() override;
         const char *AppName() override { return "Software numeric keyboard"; }
 };
 
@@ -105,7 +105,7 @@ class SoftwareFreehandKeyboard : public SoftwareKeyboard {
     public:
         SoftwareFreehandKeyboard(void * destinationWidget=nullptr );
         ~SoftwareFreehandKeyboard();
-        bool Tick();
+        bool Tick() override;
         const char *AppName() override { return "Software freehand keyboard"; }
         Perceptron **perceptrons;
     private:

@@ -89,7 +89,7 @@ class LogViewApplication: public TemplateApplication {
         static const uint8_t TextWidth=40;
         LogViewApplication();
         ~LogViewApplication();
-        bool Tick();
+        bool Tick() override;
 };
 
 #endif

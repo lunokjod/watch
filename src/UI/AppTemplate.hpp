@@ -12,7 +12,7 @@ class TemplateApplication: public LunokIoTApplication {
         const char *AppName() override { return "AppTemplate without name"; };
         TemplateApplication();
         virtual ~TemplateApplication();
-        bool Tick();
+        bool Tick() override;
 };
 
 #endif

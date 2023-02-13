@@ -6,6 +6,7 @@
 #include "../SystemEvents.hpp"
 #include "../../app/LogView.hpp"
 //#include "../Datasources/kvo.hpp"
+extern SemaphoreHandle_t I2cMutex;
 
 bool PMUCounterEnabled=false;
 Ticker PMUCounter;
@@ -16,10 +17,15 @@ float batteryTotalTimeHours = 0.0;
 
 static void PMUMonitorEventCallback(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // http://www.x-powers.com/en.php/Info/product_detail/article_id/30
-    
+
+    // -1 is no battery
     if ( batteryPercent < 1 ) { return; } // cannot calculate without battery or full discharge
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    if (pdTRUE != done) { return; }
     PMUBattDischarge = ttgo->power->getBattDischargeCurrent();
-    int chargeCurrent = ttgo->power->getChargeControlCur();
+    xSemaphoreGive(I2cMutex);
+
+    //int chargeCurrent = ttgo->power->getChargeControlCur();
     float battValue0to1 = float(batteryPercent/100.0);
     batteryTotalTimeHours = float(batteryCapacitymAh/PMUBattDischarge);
     if ( PMUBattDischarge > 0.0 ) {

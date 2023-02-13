@@ -110,8 +110,8 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
             advertisedDevice->getAddress().toString().c_str(),
             advertisedDevice->getName().c_str()
         ); */
-        bool alreadyKnown = false;
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
+            bool alreadyKnown = false;
             for (auto const& dev : BLEKnowDevices) {
                 if ( dev->addr == advertisedDevice->getAddress() ) {
                     /*
@@ -243,7 +243,7 @@ lBLEDevice::~lBLEDevice() {
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
     lNetLog("BLE: Task begin\n");
-
+    /*
     union RLEPackage { // description for send IMAGES via UART TX notification
         uint8_t bytes[5];
         struct {
@@ -252,7 +252,7 @@ void BLELoopTask(void * data) {
             uint8_t x; // screen is 240x240, don't waste my time! :(
             uint8_t y; // why send coordinates? because BLE notify can be lost
         };
-    };
+    };*/
 
     void *theScreenShotToSend=nullptr; // point to current screenshoot
     // temp values
@@ -572,9 +572,9 @@ void StartBLE(bool synced) {
     delay(10);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_NETWORK_STACK_SIZE,
+                        LUNOKIOT_MID_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY+2,
+                        tskIDLE_PRIORITY,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {

@@ -71,7 +71,7 @@ int db_open(const char *filename, sqlite3 **db) {
 
 int db_exec(sqlite3 *db, const char *sql) {
    //lSysLog("SQL: '%s'\n",sql);
-   long start = micros();
+   unsigned long startT = micros();
    int rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
    if (SQLITE_OK != rc) {
        lSysLog("SQL: ERROR: %s\n", zErrMsg);
@@ -87,7 +87,7 @@ int db_exec(sqlite3 *db, const char *sql) {
    } else {
        //lSysLog("SQL: Operation done successfully\n");
    }
-   lSysLog("SQL: Time taken: %lu\n", micros()-start);
+   lSysLog("SQL: Time taken: %lu\n", micros()-startT);
    return rc;
 }
 
@@ -104,10 +104,9 @@ static void __internalSqlSend(void *args) {
     char * query=(char*)args;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         int  rc = db_exec(lIoTsystemDatabase,query);
-        /*
         if (rc != SQLITE_OK) {
             lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
-        }
+        }/*
         delay(50);*/
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
@@ -223,7 +222,7 @@ const char *queryCreate2=(char *)"CREATE TABLE if not exists bluetooth ( id INTE
 void StartDatabase() {
     lSysLog("Sqlite3 opening...\n");
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        int rc;
+        //int rc;
         int sqlbegin = sqlite3_initialize();
         if ( SQLITE_OK == sqlbegin ) {
             sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
