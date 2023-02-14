@@ -238,21 +238,23 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
     }
 }
 Ticker LogAppRun;
-void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced) {
+void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced,bool force) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
 
-    if ( nullptr != instance ) {
-        if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
-            lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
-            return;
+    if ( false == force ) {
+        if ( nullptr != instance ) {
+            if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
+                lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
+                return;
+            }
         }
-    }
 
-    if ( ( nullptr != currentApplication ) && (nullptr != instance) ) {
-        if ( 0 == strcmp( currentApplication->AppName(),instance->AppName() )) {
-            lUILog("Application: %p Already running, ignoring re-launch of '%s'\n", currentApplication,currentApplication->AppName());
-            delete(instance);
-            return;
+        if ( ( nullptr != currentApplication ) && (nullptr != instance) ) {
+            if ( 0 == strcmp( currentApplication->AppName(),instance->AppName() )) {
+                lUILog("Application: %p Already running, ignoring re-launch of '%s'\n", currentApplication,currentApplication->AppName());
+                delete(instance);
+                return;
+            }
         }
     }
 

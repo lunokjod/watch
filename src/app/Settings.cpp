@@ -16,6 +16,8 @@
 #include "../system/Network.hpp"
 #include "LogView.hpp"
 #include "Watchface2.hpp"
+extern void StopBLE();
+extern void StartBLE(bool synched=false);
 
 SettingsApplication::~SettingsApplication() {
     // on destroy
@@ -31,6 +33,8 @@ SettingsApplication::~SettingsApplication() {
     if ( nullptr != Watchface2Application::weatherTask ) {
         Watchface2Application::weatherTask->enabled = openweatherCheck->switchEnabled;
     }
+    if ( bleCheck->switchEnabled ) { StartBLE(); }
+    else { StopBLE(); }
     //delete btnHelp;
     delete ntpCheck;
     delete openweatherCheck;

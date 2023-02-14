@@ -13,6 +13,10 @@ class AboutApplication: public TemplateApplication {
         unsigned long nextRedraw=0;
         //unsigned long nextScrollRedraw=0;
         uint8_t counterLines=0;
+        //const float MAXTIMEZOOM=1.0;
+        //const float MINTIMEZOOM=0.5;
+        const float TEXTZOOM=0.4;
+        bool upOrDown=true;
     public:
         const char *AppName() override { return "About"; };
         TFT_eSprite * textBuffer = nullptr;

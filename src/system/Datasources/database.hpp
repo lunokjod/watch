@@ -9,6 +9,9 @@ void SqlLog(const char * logLine);
 extern sqlite3 *lIoTsystemDatabase;
 extern SemaphoreHandle_t SqlLogSemaphore;
 void SqlJSONLog(const char * from, const char * logLine);
-extern int db_exec(sqlite3 *db, const char *sql);
+//extern int db_exec(sqlite3 *db, const char *sql);
+void NotificatioLog(const char * notificationData);
+
+int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback=nullptr);
 
 #endif

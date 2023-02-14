@@ -574,7 +574,7 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("tBMAANone", (int64_t)timeBMAActivityNone, false);
     // lLog("DEBUG stepCount: %d\n",stepCount);
     NVS.setInt("stepCount", stepCount, false);
-    delay(20);
+    //delay(20);
     bool saved = NVS.commit();
     if (false == saved) {
         lLog("NVS: Unable to commit!! (data lost!?)\n");
@@ -584,12 +584,10 @@ void SaveDataBeforeShutdown() {
         sprintf(usageStatics,"Usage stats: Sleep: %u secs, in use: %lu secs (usage ratio: %.2f%%%%)",
                 deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
         SqlLog(usageStatics);
-        delay(100);
+        delay(200);
     }
     //StopDatabase();
     //delay(100);
-    NVS.close();
-    lEvLog("NVS: Closed\n");
 
     //StopBLE();
     //delay(50);
@@ -598,6 +596,9 @@ void SaveDataBeforeShutdown() {
     //IsSPIFFSEnabled()
     SPIFFS.end();
     lEvLog("SPIFFS: Closed\n");
+
+    NVS.close();
+    lEvLog("NVS: Closed\n");
 }
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {

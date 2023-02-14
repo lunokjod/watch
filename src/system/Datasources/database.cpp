@@ -27,7 +27,7 @@ SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
 
 // https://www.sqlite.org/syntaxdiagrams.html
 
-static void SQLerrorLogCallback(void *pArg, int iErrCode, const char *zMsg){
+static void SQLerrorLogCallback(void *pArg, int iErrCode, const char *zMsg) {
     lSysLog("SQL: (%d) %s\n", iErrCode, zMsg);
 }
 
@@ -48,7 +48,7 @@ void CheckDatabase() {
 }
 
 
-static int callback(void *data, int argc, char **argv, char **azColName) {
+static int SQLiteCallback(void *data, int argc, char **argv, char **azColName) {
    int i;
    lSysLog("SQL: Data dump:\n");
    for (i = 0; i<argc; i++){
@@ -68,17 +68,19 @@ int db_open(const char *filename, sqlite3 **db) {
    return rc;
 }
 
-
-int db_exec(sqlite3 *db, const char *sql) {
+int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback) {
    //lSysLog("SQL: '%s'\n",sql);
    unsigned long startT = micros();
-   int rc = sqlite3_exec(db, sql, callback, nullptr, &zErrMsg);
+   if ( nullptr == resultCallback ) { resultCallback=SQLiteCallback; }
+   int rc = sqlite3_exec(db, sql, resultCallback, nullptr, &zErrMsg);
    if (SQLITE_OK != rc) {
-       lSysLog("SQL: ERROR: %s\n", zErrMsg);
+       lSysLog("SQL: ERROR: '%s' (%d)\n", zErrMsg, rc);
        lSysLog("SQL: ERROR QUERY: '%s'\n", sql);
        sqlite3_free(zErrMsg);
        if ( SQLITE_CORRUPT == rc ) {
             //lSysLog("SQL: ERROR: Data lost! (corruption)\n");
+            sqliteDbProblem=true;
+       } else if ( SQLITE_NOTADB == rc ) {
             sqliteDbProblem=true;
        } else if ( SQLITE_IOERR == rc ) {
             //lSysLog("SQL: ERROR: I/O ERROR!\n");
@@ -105,7 +107,7 @@ static void __internalSqlSend(void *args) {
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         int  rc = db_exec(lIoTsystemDatabase,query);
         if (rc != SQLITE_OK) {
-            lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
+            //lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
         }/*
         delay(50);*/
         xSemaphoreGive( SqlLogSemaphore ); // free
@@ -202,6 +204,46 @@ void SqlLog(const char * logLine) {
     //delay(50);
 }
 
+
+void NotificatioLog(const char * notificationData) {
+    CheckDatabase();
+    if ( nullptr == lIoTsystemDatabase ) {
+        return;
+    }
+    const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+    size_t totalsz = strlen(fmtStr)+strlen(notificationData)+1;
+    char * query=(char*)ps_malloc(totalsz);
+    if ( nullptr == query ) {
+        lSysLog("SQL: Unable to allocate: %u bytes\n", totalsz);
+        return;
+    }
+    //lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    sprintf(query,fmtStr,notificationData);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
+    //delay(50);
+}
+
+void NotificationLogSQL(const char * sqlQuery) {
+    CheckDatabase();
+    if ( nullptr == lIoTsystemDatabase ) {
+        return;
+    }
+    //const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+    //strlen(fmtStr)+
+    size_t totalsz = strlen(sqlQuery)+1;
+    char * query=(char*)ps_malloc(totalsz);
+    if ( nullptr == query ) {
+        lSysLog("SQL: Unable to allocate: %u bytes\n", totalsz);
+        return;
+    }
+    //lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    strcpy(query,sqlQuery);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
+    //delay(50);
+}
+
 void StopDatabase() {
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) !=  pdTRUE )  { return; }
     if (nullptr == lIoTsystemDatabase ) { return; }
@@ -218,6 +260,7 @@ void StopDatabase() {
 const char *queryCreate0=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 const char *queryCreate1=(char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
 const char *queryCreate2=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
+const char *queryCreate3=(char *)"CREATE TABLE if not exists notifications ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
 
 void StartDatabase() {
     lSysLog("Sqlite3 opening...\n");
@@ -248,6 +291,8 @@ void StartDatabase() {
         //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query3,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
         delay(100);
         xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate2", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, uxTaskPriorityGet(NULL), NULL,1);
+        delay(100);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate3", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate3, uxTaskPriorityGet(NULL), NULL,1);
         //FreeSpace();
         /*
         delay(100);

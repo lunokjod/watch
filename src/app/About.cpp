@@ -52,100 +52,142 @@ Dependency Graph
 |   |   |-- WiFi @ 2.0.0
 |-- ESP32 BLE Arduino @ 2.0.0
 */
+const char *AboutBoxTextEmptyLine="";
+
+const char *AboutBoxTextLogo=":lIoT:";
+#include "../../static/lunokiot_logo_32.xbm" // sputnik image for AboutBoxTextLogo
+
 const char *AboutBoxTextScroll[] = {
     "A short time ago",
     "in a galaxy far,",
     "far closer....",
-    "",
-    "",
-    "",
-    "",
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextLogo,
+    AboutBoxTextEmptyLine,
     "lunokIoT Watch",
     "version 0.a",
     LUNOKIOT_BUILD_STRING,
-    "",
-    "",
-
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "lunokWatch is",
     "open-source",
     "software",
-    "",
-
-    "",
-    "",
-    "",
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Libraries",
     "---------",
-    "xinyuan-lilygo",
-    "TTGO TWatch Library",
-    "",
+    "xinyuan",
+    "TTGO TWatch",
+    "lilygo",
+    "Library",
+    AboutBoxTextEmptyLine,
     "rpolitex",
     "ArduinoNvs",
-    "",
+    AboutBoxTextEmptyLine,
     "ricmoo",
     "QRCode",
-    "",
-    "arduino-libraries",
+    AboutBoxTextEmptyLine,
+    "arduino-",
+    " libraries",
+    "--------",
     "Arduino_JSON",
-    "",
+    AboutBoxTextEmptyLine,
     "earlephilhower",
     "ESP8266Audio",
-    "",
+    AboutBoxTextEmptyLine,
     "h2zero",
-    "NimBLE-Arduino",
-    "",
+    "NimBLE",
+    AboutBoxTextEmptyLine,
     "crankyoldgit",
-    "IRremoteESP8266",
-    "",
+    "IRremote-",
+    " ESP8266",
+    AboutBoxTextEmptyLine,
     "lewisxhe",
-    "PCF8563_Library",
-    "AXP202X_Libraries",
-    "",
+    "PCF8563 lib",
+    "AXP202X libs",
+    AboutBoxTextEmptyLine,
     "Bosch",
-    "bma423",
-    "",
+    "bma423 lib",
+    AboutBoxTextEmptyLine,
     "Tal H",
     "ccperceptron",
-    "",
-    "",
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Game tileset",
     "--------",
-    "dungeontileset-ii", // https://0x72.itch.io/dungeontileset-ii
+    "dungeon-",
+    "tileset-ii", // https://0x72.itch.io/dungeontileset-ii
     "from:",
     "Robert",
-    "",
-    "",
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    "Gadgetbridge",
+    "--------",
+    "esprunio",
+    "& banglejs",
+    "from:",
+    "Gordon",
+    "Williams",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Services",
     "--------",
     "OpenWeather",
     "geoplugin.net",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    "github",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    "Sound",
+    "effects",
+    "--------",
+    "MujiPiruji",
+    ":-***",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Thanks all!",
-    "",
-    "",
-    "",
-    "",
-    "",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Join telegram",
-    "channel!!!",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    "channel",
+    "and get:",
+    "--------",
+    AboutBoxTextEmptyLine,
+    "last updates",
+    AboutBoxTextEmptyLine,
+    "poll new",
+    "features",
+    AboutBoxTextEmptyLine,
+    "tips and tricks",
+    AboutBoxTextEmptyLine,
+    "devel support",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
 };
+
 AboutApplication::~AboutApplication() {
     directDraw=false;
     if ( nullptr != colorBuffer ) { delete colorBuffer; }
@@ -169,7 +211,7 @@ AboutApplication::AboutApplication() {
     // here goes text (color/nocolor)
     textBuffer = new TFT_eSprite(ttgo->tft);
     textBuffer->setColorDepth(1);
-    textBuffer->createSprite((colorBuffer->canvas->width()/2),(colorBuffer->canvas->height()/2)+9); // font height
+    textBuffer->createSprite((colorBuffer->canvas->width()*TEXTZOOM),(colorBuffer->canvas->height()*TEXTZOOM)+32); // buffer to print/draw
     textBuffer->fillSprite(TFT_BLACK);
     textBuffer->setTextFont(0);
     textBuffer->setTextColor(TFT_WHITE);
@@ -189,16 +231,24 @@ bool AboutApplication::Tick() {
         textBuffer->scroll(0,-2);
 
         // redraw the final canvas
+        int32_t x=0;
+        int32_t y=0;
         perspectiveTextBuffer->canvas->fillSprite(TFT_BLACK);
-        for(int32_t y=0;y<perspectiveTextBuffer->canvas->height();y++) {
-            uint8_t bytepc = ((y*255)/perspectiveTextBuffer->canvas->height());
+        for(x=0;x<perspectiveTextBuffer->canvas->width();x++) {
             //float divisor = 1.0+(bytepc/255.0);
+            uint8_t bytepc2 = ((x*255)/perspectiveTextBuffer->canvas->width());
+            uint16_t bcolor = canvas->alphaBlend(bytepc2,TFT_BLUE,TFT_ORANGE); // darken with distance
+            //uint16_t dcolor = canvas->alphaBlend(bytepc,TFT_YELLOW,TFT_CYAN); // darken with distance
+            for(y=0;y<perspectiveTextBuffer->canvas->height();y++) {
+                uint8_t bytepc = ((y*255)/perspectiveTextBuffer->canvas->height());
+                //uint8_t bytepc3 = (((x+(y*perspectiveTextBuffer->canvas->width()))*255)/(perspectiveTextBuffer->canvas->height()+(y*perspectiveTextBuffer->canvas->width())));
+                //uint16_t acolor = canvas->alphaBlend(bytepc,TFT_RED,TFT_CYAN); // darken with distance
+                uint16_t acolor = canvas->alphaBlend(bytepc,TFT_PURPLE,TFT_YELLOW); // darken with distance
+                uint16_t dcolor = canvas->alphaBlend(128,acolor,bcolor); // darken with distance
 
-            uint16_t dcolor = canvas->alphaBlend(bytepc,TFT_YELLOW,TFT_CYAN); // darken with distance
-            for(int32_t x=0;x<perspectiveTextBuffer->canvas->width();x++) {
                 int32_t rx = x; //((TFT_WIDTH/2)*-1)+(x*divisor);
-                if (( rx < 0 ) || ( rx/2 >= textBuffer->width() )) { continue; } // origin out of bounds
-                uint16_t ocolor = textBuffer->readPixel(rx/2,y/2);
+                if (( rx < 0 ) || ( rx*TEXTZOOM >= textBuffer->width() )) { continue; } // origin out of bounds
+                uint16_t ocolor = textBuffer->readPixel(rx*TEXTZOOM,y*TEXTZOOM);
                 int32_t dx = x; //(TFT_WIDTH/2)-(x*divisor);
                 if (( dx < 0 ) || ( dx >= perspectiveTextBuffer->canvas->width() )) { continue; } // destination out of bounds
                 if ( TFT_BLACK != ocolor ) { perspectiveTextBuffer->canvas->drawPixel(dx,y,dcolor); }
@@ -214,8 +264,19 @@ bool AboutApplication::Tick() {
         perspectiveTextBuffer->DrawTo(colorBuffer->canvas,0,0);
         counterLines++;
         
-        if ( 0 == (counterLines%(18/3))) { // every 18 lines draw new text line (font height)
-            textBuffer->drawString(AboutBoxTextScroll[AboutBoxTextScrollOffset],textBuffer->width()/2, textBuffer->height());
+        if ( 0 == (counterLines%4)) { // every 18 lines draw new text line (font height)
+            // is the logo???
+            if ( 0 == strcmp(AboutBoxTextScroll[AboutBoxTextScrollOffset],AboutBoxTextLogo) ) {
+                //lAppLog("LOGOOOOO\n");
+                textBuffer->drawXBitmap((textBuffer->width()-lunokiot_logo_32_width)/2,textBuffer->height()-lunokiot_logo_32_height,lunokiot_logo_32_bits, lunokiot_logo_32_width,lunokiot_logo_32_height, TFT_WHITE);
+            } else {
+                // centered on buffer
+                textBuffer->drawString(AboutBoxTextScroll[AboutBoxTextScrollOffset],textBuffer->width()/2, textBuffer->height());
+                /*
+                TEXTZOOM+=(upOrDown?0.01:-0.01);
+                if (( TEXTZOOM > MAXTIMEZOOM)||( TEXTZOOM < MINTIMEZOOM)) { upOrDown=(!upOrDown); }
+                */
+            }
 
             AboutBoxTextScrollOffset++;
             int AboutBoxTextSize = sizeof(AboutBoxTextScroll)/sizeof(AboutBoxTextScroll[0])-1;
@@ -224,7 +285,10 @@ bool AboutApplication::Tick() {
             }
         }
         TemplateApplication::Tick();
-        perspectiveTextBuffer->canvas->pushSprite(0,50);
+        // Direct draw xD
+        perspectiveTextBuffer->canvas->pushSprite(
+            (TFT_WIDTH-perspectiveTextBuffer->canvas->width())/2
+            ,(TFT_HEIGHT-perspectiveTextBuffer->canvas->height())/2);
 
         nextRedraw=millis()+AboutBoxTextScrollDelay;
     }

@@ -26,7 +26,7 @@ bool ButtonWidget::Interact(bool touch, int16_t tx,int16_t ty) {
     bool response = ActiveRect::Interact(touch,tx,ty);
     if ( pushed != lastPushed ) {
         InternalRedraw();
-        //DirectDraw();
+        DirectDraw();
         lastPushed=pushed;
     }
     return response;

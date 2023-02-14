@@ -29,6 +29,9 @@ bool bootLoopEnds = false; // this is used by the splash to know bootLoop is end
 extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
 extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
+extern const PROGMEM uint8_t boot_sound_muji_start[] asm("_binary_asset_boot_sound_muji_mp3_start");
+extern const PROGMEM uint8_t boot_sound_muji_end[] asm("_binary_asset_boot_sound_muji_mp3_end");
+
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT
     lUILog("Audio: Not initialized due Silent boot is enabled\n");
@@ -47,7 +50,9 @@ void SplashFanfare() {
     AudioOutputI2S *out;
     AudioFileSourceID3 *id3;
 
-    file = new AudioFileSourcePROGMEM(boot_sound_start, (uint32_t)(boot_sound_end-boot_sound_start));
+    // file = new AudioFileSourcePROGMEM(boot_sound_start, (uint32_t)(boot_sound_end-boot_sound_start));
+    file = new AudioFileSourcePROGMEM(boot_sound_muji_start, (uint32_t)(boot_sound_muji_end-boot_sound_muji_start));
+
     id3 = new AudioFileSourceID3(file);
     out = new AudioOutputI2S();
     out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);

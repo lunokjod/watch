@@ -386,14 +386,11 @@ void BLELoopTask(void * data) {
 }
 extern void _intrnalSqlStatic(void *args);
 static void BLEStartTask(void* args) {
-    lNetLog("A\n");
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
         lNetLog("BLE: ERROR: Unable to obtain the lock, cannot start\n");
         vTaskDelete(NULL);
     }
-    lNetLog("B\n");
-    esp_task_wdt_reset();
     // check if user wants BLE
     bool enabled = NVS.getInt("BLEEnabled");
     if ( false == enabled ) { 
@@ -401,11 +398,10 @@ static void BLEStartTask(void* args) {
         xSemaphoreGive( BLEUpDownStep );
         vTaskDelete(NULL);
     }
-    lNetLog("C\n");
-    esp_task_wdt_reset();
     // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
+    /*
     if( xSemaphoreTake( SqlLogSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
         const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
         esp_task_wdt_reset();
@@ -415,24 +411,22 @@ static void BLEStartTask(void* args) {
         }
         esp_task_wdt_reset();
         xSemaphoreGive( SqlLogSemaphore ); // free
-    }
-    lNetLog("D\n");
-
-
+    }*/
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
 
-    char BTName[14] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
+    char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-    esp_task_wdt_reset();
+
+    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
+    //BLEDevice::deinit();
+    lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
     delay(100);
+    FreeSpace();
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
     esp_task_wdt_reset();
-    lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
     
-    lNetLog("E\n");
-
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
@@ -440,13 +434,14 @@ static void BLEStartTask(void* args) {
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
 
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
+    NimBLEDevice::setPower(ESP_PWR_LVL_N3);
+        //ESP_PWR_LVL_P9); /** +9db */
     // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
     esp_task_wdt_reset();
 
-    lNetLog("F\n");
+    lNetLog("BLE: Server started\n");
 
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
@@ -468,8 +463,6 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * battDescriptor = battCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     battDescriptor->setValue("Percentage 0 - 100");
 #endif
-    lNetLog("G\n");
-    esp_task_wdt_reset();
 
     // lunokiot services
     pLunokIoTService = pServer->createService(BLE_SERVICE_LUNOKIOT);
@@ -486,8 +479,6 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * lVersionDescCharacteristic = lVersionCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     lVersionDescCharacteristic->setValue("Version");
 #endif
-    lNetLog("H\n");
-    esp_task_wdt_reset();
 
     // battery temp announce to peers from PMU_EVENT_TEMPERATURE event
     lBattTempCharacteristic = 
@@ -503,7 +494,6 @@ static void BLEStartTask(void* args) {
     lBattTempDescCharacteristic->setValue("Battery Temperature");
 #endif
 
-    lNetLog("I\n");
     // BMA temp announce to peers from BMA_EVENT_TEMP event
     lBMATempCharacteristic = 
                 pLunokIoTService->createCharacteristic(BLE_CHARACTERISTIC_LUNOKIOT_BMA_TEMP,
@@ -517,9 +507,6 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * lBMATempDescCharacteristic = lBMATempCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     lBMATempDescCharacteristic->setValue("Acceleromether Temperature");
 #endif
-
-    esp_task_wdt_reset();
-lNetLog("J\n");
     // Start the services
     pLunokIoTService->start();
     pBattService->start();
@@ -535,7 +522,7 @@ lNetLog("J\n");
     adv->addServiceUUID(BLE_SERVICE_LUNOKIOT);
     adv->addServiceUUID(BLE_SERVICE_BATTERY);
     adv->start();
-lNetLog("K\n");
+
     BLEScan * pBLEScan = BLEDevice::getScan();
     pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power
@@ -550,7 +537,7 @@ lNetLog("K\n");
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
-    lNetLog("L\n");
+    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake from ble :(
     vTaskDelete(NULL);
 }
 
@@ -569,7 +556,7 @@ void StartBLE(bool synced) {
         liLog("BLE: Refusing to start (already started)\n");
         return;
     }
-    delay(10);
+    delay(50);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
                         LUNOKIOT_MID_STACK_SIZE,
@@ -665,7 +652,7 @@ void StopBLE() {
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
                         &waitFor,
-                        tskIDLE_PRIORITY+3,
+                        tskIDLE_PRIORITY,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {
@@ -689,7 +676,8 @@ void BLESetupHooks() {
         BLEWStartEvent = new EventKVO([](){ StartBLE(); },SYSTEM_EVENT_WAKE);
     }
     if ( nullptr == BLEWStopEvent ) {
-        BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_STOP);
+        lNetLog("BLE: @TODO DISABLED STOP ON EVENT STOP\n");
+        //BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_STOP);
     }
     //if ( nullptr == BLEWLightSleepEvent ) { // this call is later than stop
     //    BLEWLightSleepEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_LIGHTSLEEP);

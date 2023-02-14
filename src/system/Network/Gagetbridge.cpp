@@ -7,33 +7,45 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "../../app/Notifications.hpp"
+#include "../Datasources/database.hpp"
 
 extern SemaphoreHandle_t I2cMutex;
 
 bool ParseGadgetBridgeJSON(JSONVar &json) {
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
+            // save to database
+            String jsonString = json.stringify(json);
+            char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
+            sprintf(myShitbuffer,"%s",jsonString.c_str());
+            NotificatioLog(myShitbuffer);
+            
             if ((json.hasOwnProperty("subject"))&&(json.hasOwnProperty("body"))&&(json.hasOwnProperty("sender"))) {
                 //'{"t":"notify","id":1676021184,"subject":"aaaaaaaaaaaa","body":"aaaaaaaaaaaa","sender":"aaaaaaaaaaaa","tel":"aaaaaaaaaaaa"}
-                lNetLog("BLE: NOTIFICATION: Subject: '%s' Body: '%s' From: '%s'\n",
+                lNetLog("BLE: NOTIFICATION type1: (%d) Subject: '%s' Body: '%s' From: '%s'\n",
+                    (int)json["id"],
                     (const char*)json["subject"],
                     (const char*)json["body"],
                     (const char*)json["sender"]);
-                LaunchApplication(new NotificacionsApplication((const char*)json["subject"],(const char*)json["sender"],(const char*)json["body"]));
+                LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
                 return true;
             } else if ((json.hasOwnProperty("src"))&&(json.hasOwnProperty("title"))){
                 //{"t":"notify","id":1676021183,"src":"aaaaaaaaaaaa","title":"aaaaaaaaaaaa","body":"aaaaaaaaaaaa"}'
                 if ((json.hasOwnProperty("body"))&&(0 != strncmp((const char*)json["body"],"0",1))) {
-                    lNetLog("BLE: NOTIFICATION: Title: '%s' Source: '%s' Body: '%s'\n",
+                    lNetLog("BLE: NOTIFICATION type2: (%d) Title: '%s' Source: '%s' Body: '%s'\n",
+                        (int)json["id"],
                         (const char*)json["title"],
                         (const char*)json["src"],
                         (const char*)json["body"]);
-                    LaunchApplication(new NotificacionsApplication((const char*)json["title"],(const char*)json["src"],(const char*)json["body"]));
+                    LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
+                    //(int)json["id"],(const char*)json["title"],(const char*)json["src"],(const char*)json["body"]));
                 } else {
-                    lNetLog("BLE: NOTIFICATION: Title: '%s' Source: '%s'\n",
+                    lNetLog("BLE: NOTIFICATION type3: (%d) Title: '%s' Source: '%s'\n",
+                        (int)json["id"],
                         (const char*)json["title"],
                         (const char*)json["src"]);
-                    LaunchApplication(new NotificacionsApplication((const char*)json["title"],(const char*)json["src"]));
+                    LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
+                    //(int)json["id"],(const char*)json["title"],(const char*)json["src"]));
                 }
                 return true; // for debug
             }
@@ -50,13 +62,14 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             lLog("@TODO MUSIC STATE NOTIFICATION\n");
             return false;
         } else if ( 0 == strcmp((const char*)json["t"],"find") ) {
+            lLog("@TODO FIND FUNCTION\n");
             if (json.hasOwnProperty("n")) {
                 if ( true == (bool)json["n"] ) {
                     lLog("USER FINDS ME!!!\n");
                 } else {
                     lLog("GREAT! Found me!\n");
                 }
-                return true;
+                return false;
             }
         }
         return false;
@@ -149,7 +162,7 @@ void ParseGadgetBridgeMessage(char * jsondata) {
                 xSemaphoreGive(I2cMutex);
             }
             continue;
-        } else { lNetLog("BLE: UART: GadgetBridge: UNKONW: '%s'\n", token); }
+        } //else { lNetLog("BLE: UART: GadgetBridge: UNKONW: '%s'\n", token); }
     }
     //lNetLog("Gadgetbridge: end\n");
 }
