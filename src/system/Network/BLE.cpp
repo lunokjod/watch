@@ -174,60 +174,106 @@ char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
 class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
+    
     bool gadgetbridgeCommandInProgress=false;
+    bool bangleCommandInProgress=false;
+
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
-        if (rxValue.length() > 0) {
-            const char * receivedCommand = rxValue.c_str();
-            const char GadgetbridgeCommand[] = "\x10";
-            // try to process gadgetbrige json first (pushed in small amounts of data over BLE)
-            if ( 0 == strncmp(receivedCommand,GadgetbridgeCommand, strlen(GadgetbridgeCommand))) {
-                //lNetLog("BLE: UART: Gadgetbridge (command)\n");
-                gadgetbridgeCommandInProgress=true;
-                if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
-                gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
-                sprintf(gadgetBridgeBuffer,"%s",receivedCommand+1); // ignore \x10
-                gadgetBridgeBufferOffset=rxValue.length()-1;
-            } else if ( gadgetbridgeCommandInProgress ) {
-                if (nullptr != gadgetBridgeBuffer) {
-                    for (int i = 0; i < rxValue.length(); i++) {
-                        if ( 0xa == rxValue[i] ) { // dont save
-                            gadgetbridgeCommandInProgress=false;
-                            //lNetLog("BLE: UART: Gadgetbridge: '%s'\n",gadgetBridgeBuffer);
-                            ParseGadgetBridgeMessage(gadgetBridgeBuffer);
-                            gadgetBridgeBufferOffset=0;
-                            free(gadgetBridgeBuffer);
-                            gadgetBridgeBuffer=nullptr;
-                            break;
-                        }
-                        gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
-                        gadgetBridgeBufferOffset++;
-                        //lLog("%c",rxValue[i]);
-                    }
-                }
-                return;
-            } else {
-                lNetLog("BLE: UART Received Value: ");
-                for (int i = 0; i < rxValue.length(); i++) { //ignore \0
-                    lLog("%c(0x%02x) ",rxValue[i],rxValue[i]);
-                }
-                lLog("\n");
-            }
+        const char * receivedData = rxValue.c_str();
 
-            /*
-            if ( 0 == strncmp(PushMessageCommand,receivedCommand, strlen(PushMessageCommand))) {
-                lNetLog("BLE: UART: '%s' command received\n",PushMessageCommand);
-            } else if ( 0 == strncmp(ScreenShootCommand,receivedCommand, strlen(ScreenShootCommand))) {
-                lNetLog("BLE: UART: '%s' command received\n",ScreenShootCommand);
-            } else {
-                lNetLog("BLE: UART Received Value: '");
-                for (int i = 0; i < rxValue.length(); i++) { //ignore \0
-                    lLog("%c",rxValue[i]);
-                }
-                lLog("'\n");
+        // check for GADGETBRIDGE commands
+        const char GadgetbridgeCommandEND[] = ")\n";
+        const char GadgetbridgeCommandBEGIN[] = "\x10GB(";
+
+        if ( 0 == strncmp(receivedData,GadgetbridgeCommandBEGIN,strlen(GadgetbridgeCommandBEGIN))) {
+            lNetLog("BLE: UART: Begin Gadgetbridge GB command\n");
+            gadgetbridgeCommandInProgress=true;
+            if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
+            gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
+            sprintf(gadgetBridgeBuffer,"%s",receivedData+strlen(GadgetbridgeCommandBEGIN)); // ignore cmd string
+            gadgetBridgeBufferOffset=strlen(gadgetBridgeBuffer);
+            return;
+        } else if ( gadgetbridgeCommandInProgress ) {
+            if (nullptr == gadgetBridgeBuffer) {
+                gadgetbridgeCommandInProgress=false;
+                lNetLog("BLE: UART: memory ERROR!\n");
+                gadgetBridgeBufferOffset=0;
+                return;
             }
-            */
+            lNetLog("BLE: UART: Continue Gadgetbridge GB command\n");
+            // copy to buffer
+            for (int i = 0; i < rxValue.length(); i++) {
+                gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
+                gadgetBridgeBufferOffset++;
+            }
+            // check if is the end
+            const char *toLast=receivedData;
+            toLast+=strlen(receivedData)-strlen(GadgetbridgeCommandEND);
+            if ( 0 == strcmp(GadgetbridgeCommandEND,toLast)) {
+                gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
+                gadgetbridgeCommandInProgress=false;
+                lNetLog("BLE: UART: End Gadgetbridge GB command\n");
+                bool parsed = ParseGadgetBridgeMessage(gadgetBridgeBuffer);
+                if ( false == parsed ) {
+                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge: '%s'\n");
+                }
+                gadgetBridgeBufferOffset=0;
+                free(gadgetBridgeBuffer);
+                gadgetBridgeBuffer=nullptr;
+            }
+            return;
         }
+        // check for BANGLEJS extra commands
+        // setTime
+        const char BangleJSCommandBEGIN[] = "\x10setTime(";
+        const char BangleJSCommandEND[] = "\n";
+
+        if ( 0 == strncmp(receivedData,BangleJSCommandBEGIN,strlen(BangleJSCommandBEGIN))) {
+            lNetLog("BLE: UART: Begin BangleJS command\n");
+            bangleCommandInProgress=true;
+            if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
+            gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
+            sprintf(gadgetBridgeBuffer,"%s",receivedData+1); // bypass \x10
+            gadgetBridgeBufferOffset=strlen(gadgetBridgeBuffer);
+            return;
+        } else if ( bangleCommandInProgress ) {
+            if (nullptr == gadgetBridgeBuffer) {
+                bangleCommandInProgress=false;
+                lNetLog("BLE: UART: memory ERROR!\n");
+                gadgetBridgeBufferOffset=0;
+                return;
+            }
+            lNetLog("BLE: UART: Continue BangleJS command\n");
+            // copy to buffer
+            for (int i = 0; i < rxValue.length(); i++) {
+                gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
+                gadgetBridgeBufferOffset++;
+            }
+            // check if is the end
+            const char *toLast=receivedData;
+            toLast+=strlen(receivedData)-strlen(BangleJSCommandEND);
+            if ( 0 == strcmp(BangleJSCommandEND,toLast)) {
+                gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
+                bangleCommandInProgress=false;
+                lNetLog("BLE: UART: End BangleJS command\n");
+                bool parsed = ParseBangleJSMessage(gadgetBridgeBuffer);
+                if ( false == parsed ) {
+                    lNetLog("BLE: UART: Received UNKNOWN BangleJS: '%s'\n",gadgetBridgeBuffer);
+                }
+                gadgetBridgeBufferOffset=0;
+                free(gadgetBridgeBuffer);
+                gadgetBridgeBuffer=nullptr;
+            }
+            return;
+        }
+
+        // no know howto parse... show as debug
+        lNetLog("BLE: UART Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) { //ignore \0
+            lLog("%c(0x%02x) ",rxValue[i],rxValue[i]);
+        }
+        lLog("\n");
     }
 };
 
@@ -578,16 +624,17 @@ void StartBLE(bool synced) {
 }
 
 
-void BLEKickAllPeers() {
+void BLEKickAllPeers() { //@TODO SEEMS NOT WORK
     if ( false == bleEnabled ) { return; }
     if ( nullptr != pServer ) {
         //DISCONNECT THE CLIENTS
         std::vector<uint16_t> clients = pServer->getPeerDevices();
         for(uint16_t client : clients) {
-            delay(100);
             lNetLog("BLE: kicking out client %d\n",client);
-            pServer->disconnect(client,0x13); // remote close
-            pServer->disconnect(client,0x16); // localhost close
+            pServer->disconnect(client);
+            //pServer->disconnect(client,0x13); // remote close
+            //pServer->disconnect(client,0x16); // localhost close
+            delay(100);
         }
     }
 

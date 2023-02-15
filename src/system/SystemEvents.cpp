@@ -268,8 +268,7 @@ static void DoSleepTask(void *args) {
     doSleepThreads++;
 
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
-
-    //ScreenSleep();
+    BLEKickAllPeers(); // anounche to others ble peers: I'm 'out of duty'
     LunokIoTSystemTickerStop();
 
     // destroy the app if isn't the watchface
@@ -1628,7 +1627,7 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_QUERY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     //delay(150);
 

@@ -48,35 +48,20 @@ SettingsApplication::SettingsApplication() {
         // this delay is to get the current value of switch :( due multitasking env
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
-        /*
-        delay(30);
-        //@TODO the value is inverted due callback is called BEFORE change of bool
-        bool inverVal = (!wifiCheck->switchEnabled);
-        ntpCheck->SetEnabled(inverVal);
-        openweatherCheck->SetEnabled(inverVal);
-        */
+    
         ntpCheck->SetEnabled(wifiCheck->switchEnabled);
+        // key defined?
         if ( 0 == strlen(openWeatherMapApiKey)) {
             openweatherCheck->SetEnabled(false);
         } else {
             openweatherCheck->SetEnabled(wifiCheck->switchEnabled);
         }
     });
-#ifdef LUNOKIOT_WIFI_ENABLED
-    wifiCheck->switchEnabled=NVS.getInt("WifiEnabled");
-#else
-    wifiCheck->switchEnabled=false;
-    wifiCheck->enabled=false;
-#endif
+    wifiCheck->switchEnabled=(bool)NVS.getInt("WifiEnabled");
     wifiCheck->InternalRedraw();
 
     bleCheck=new SwitchWidget(80,160);
-#ifdef LUNOKIOT_BLE_ENABLED
     bleCheck->switchEnabled=NVS.getInt("BLEEnabled");
-#else
-    bleCheck->enabled=false;
-    bleCheck->switchEnabled=false;
-#endif
     bleCheck->InternalRedraw();
 
     ntpCheck=new SwitchWidget(10,10);
@@ -87,10 +72,10 @@ SettingsApplication::SettingsApplication() {
     openweatherCheck=new SwitchWidget(10,60);
     openweatherCheck->switchEnabled=NVS.getInt("OWeatherEnabled");
     openweatherCheck->enabled=wifiCheck->switchEnabled;
-    openweatherCheck->InternalRedraw();
     if ( 0 == strlen(openWeatherMapApiKey)) {
         openweatherCheck->SetEnabled(false);
     }
+    openweatherCheck->InternalRedraw();
 
     Tick();
 }

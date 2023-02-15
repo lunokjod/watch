@@ -119,6 +119,7 @@ void ScreenSleep() {
     }
     if ( true == ttgo->bl->isOn() ) {
         ttgo->bl->off();
+        ttgo->tft->fillScreen(TFT_BLACK); // better than show outdated information on wake :(
         lUILog("Put screen to sleep now\n");
         ttgo->displaySleep();
         delay(1);

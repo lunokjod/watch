@@ -78,51 +78,30 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
     return false;
 }
 // http://www.espruino.com/Gadgetbridge
-void ParseGadgetBridgeMessage(char * jsondata) {
-    //lNetLog("BLE: UART: Gadgetbridge: '%s'\n",jsondata);
-
-    const char Separator[]=";"; 
-    const char SetTimeCMD[]="setTime(";
-    const char SetTimeZoneCMD[]="E.setTimeZone(";
-    const char GadgetBridgeCMD[]="GB(";
-    char* token;
-
-    for (token = strtok(jsondata, Separator); token; token = strtok(NULL, Separator)) {
-        if ( 0 == strncmp(token,GadgetBridgeCMD,strlen(GadgetBridgeCMD))) {
-            char *buff=(char*)ps_malloc(strlen(token)+1);
-            if(nullptr==buff) {
-                lNetLog("Gadgetbridge: ERROR: unable to get memory for parsing message\n");
-                continue;
-            }
-            //memset(buff,0,strlen(token));
-            sprintf(buff,"%s",token+strlen(GadgetBridgeCMD));
-            for(int i=strlen(buff);i>0;i--) {
-                if ( ( ')' == buff[i] )  && ( '}' == buff[i-1] ) ) {
-                    //lLog("FOUND ON %d\n",i);
-                    buff[i]=0; // terminate string
-                    break;
-                }
-            }
-            // now buff is a json stringified
-            JSONVar myObject = JSON.parse(buff);
-            if (JSON.typeof(myObject) == "undefined") {
-                lNetLog("Garadgebridge: ERROR: malformed JSON\n");
-                lNetLog("Gadgetbridge: RAW: '%s'\n",token);
-                lNetLog("Gadgetbridge: CLEAN BUFFER: '%s'\n",buff);
-                free(buff);
-                continue;
-            }
+bool ParseGadgetBridgeMessage(char * jsondata) {
+    // try to parse JSON
+    JSONVar myObject = JSON.parse(jsondata);
+    if (JSON.typeof(myObject) != "undefined") {
+        lNetLog("Gadgetbridge: JSON\n");
             // here is a JSON structure
             bool parsed = ParseGadgetBridgeJSON(myObject);
             if ( false == parsed ) {
-                lNetLog("Gadgetbridge: WARNING: cannot underestand message\n");
-                lNetLog("Gadgetbridge: CLEAN BUFFER: '%s'\n",JSON.stringify(myObject).c_str());
-                free(buff);
-                continue;
+                lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
+                return false;
             }
-            free(buff);
-            continue;
-        } else if ( 0 == strncmp(token,SetTimeZoneCMD,strlen(SetTimeZoneCMD))) {
+    }
+    return true;
+}
+
+bool ParseBangleJSMessage(char * javascript) {
+    const char Separator[]=";"; 
+    const char SetTimeCMD[]="setTime(";
+    const char SetTimeZoneCMD[]="E.setTimeZone(";
+    char* token;
+    bool containsSetTime=false;
+
+    for (token = strtok(javascript, Separator); token; token = strtok(NULL, Separator)) {
+        if ( 0 == strncmp(token,SetTimeZoneCMD,strlen(SetTimeZoneCMD))) {
             char numBuffer[30]={ 0 };
             sprintf(numBuffer,"%s",token+strlen(SetTimeZoneCMD));
             numBuffer[strlen(numBuffer)-1]=0; // remove last ")"
@@ -133,7 +112,8 @@ void ParseGadgetBridgeMessage(char * jsondata) {
                 NVS.setInt("timezoneTime",gbTimezone, false);
             }
             continue;
-        } else if ( 0 == strncmp(token,SetTimeCMD,strlen(SetTimeCMD))) {
+        }
+        if ( 0 == strncmp(token,SetTimeCMD,strlen(SetTimeCMD))) {
             char numBuffer[10]={ 0 };
             sprintf(numBuffer,"%s",token+strlen(SetTimeCMD));
             numBuffer[strlen(numBuffer)-1]=0; // remove last ")"
@@ -141,14 +121,9 @@ void ParseGadgetBridgeMessage(char * jsondata) {
             lNetLog("Gadgetbridge: setTime: '%s'\n",numBuffer);
             //lNetLog("Gadgetbridge: setTime: '%ld'\n",newTime);
             time_t utcCalc = newTime;// - 2208988800UL;
-
-            //time_t rawtime;
             struct tm * timeinfo;
-            //time(&rawtime);
             timeinfo = localtime (&utcCalc);
-            //lLog("DATETIME: %s",asctime(timeinfo));
-
-            RTC_Date test; // = ttgo->rtc->getDateTime();
+            RTC_Date test;
             test.day = timeinfo->tm_mday;
             test.month = timeinfo->tm_mon+1;
             test.year = timeinfo->tm_year;
@@ -161,8 +136,9 @@ void ParseGadgetBridgeMessage(char * jsondata) {
                 ttgo->rtc->syncToSystem();
                 xSemaphoreGive(I2cMutex);
             }
+            containsSetTime=true;
             continue;
-        } //else { lNetLog("BLE: UART: GadgetBridge: UNKONW: '%s'\n", token); }
+        }
     }
-    //lNetLog("Gadgetbridge: end\n");
+    return containsSetTime;
 }
