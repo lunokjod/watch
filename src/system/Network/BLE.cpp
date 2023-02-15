@@ -211,12 +211,12 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
             const char *toLast=receivedData;
             toLast+=strlen(receivedData)-strlen(GadgetbridgeCommandEND);
             if ( 0 == strcmp(GadgetbridgeCommandEND,toLast)) {
-                gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
+                gadgetBridgeBuffer[gadgetBridgeBufferOffset-2]=0; // correct eol
                 gadgetbridgeCommandInProgress=false;
                 lNetLog("BLE: UART: End Gadgetbridge GB command\n");
                 bool parsed = ParseGadgetBridgeMessage(gadgetBridgeBuffer);
                 if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge: '%s'\n");
+                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge: '%s'\n",gadgetBridgeBuffer);
                 }
                 gadgetBridgeBufferOffset=0;
                 free(gadgetBridgeBuffer);
