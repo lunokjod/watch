@@ -1,3 +1,7 @@
+[![PlatformIO](https://github.com/lunokjod/watch/workflows/PlatformIO/badge.svg)](https://github.com/lunokjod/watch/actions/) ![ViewCount](https://views.whatilearened.today/views/github/lunokjod/watch.svg)
+
+
+
 # LilyGo TWatch 2020 lunokIoTWatch firmware
 
 [Buy me a coffe!](https://www.buymeacoffee.com/lunokjod)
