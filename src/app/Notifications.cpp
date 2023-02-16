@@ -92,54 +92,27 @@ bool NotificacionsApplication::Tick() {
             const char NotifyChar[] = "notify";
             if ((notification.hasOwnProperty("t"))&&(0 == strncmp((const char*)notification["t"],NotifyChar,strlen(NotifyChar)))) {
                 //lAppLog("Is notify\n");
-                if (notification.hasOwnProperty("subject")) {
-                    //lAppLog("Have subject: '%s'\n",(const char*)notification["subject"]);
-                }
-                if (notification.hasOwnProperty("body")) {
-                    //lAppLog("Have body: '%s'\n",(const char*)notification["body"]);
-                    canvas->setTextSize(1);
-                    canvas->drawString("What:", 85, 80);
-                    canvas->setTextSize(2);
-                    const char *bodyText = (const char*)notification["body"];
-                    size_t bodyLen = strlen(bodyText);
-                    int16_t x=10;
-                    int16_t y=90;
-                    size_t curr=0;
-                    //lAppLog("bodyLen: %u\n",bodyLen);
-                    for(size_t o=0;o<=bodyLen;o++) {
-                        canvas->setCursor(x,y);
-                        canvas->print(bodyText[o]);
-                        x+=11;
-                        curr++;
-                        if ( x >= TFT_WIDTH-15 ) {
-                            y+=15;
-                            x=10;
-                        }
-                         // out of bounds?
-                        if ( ( curr > 145 )&&(bodyLen> 148)) {
-                            canvas->print("...");
-                            break;
-                        }
-                    }
-                    //canvas->drawString((const char*)notification["body"], 15, 100);
-                }
-                if (notification.hasOwnProperty("sender")) {
-                    //lAppLog("Have sender: '%s'\n",(const char*)notification["sender"]);
-                }
-                if (notification.hasOwnProperty("tel")) {
-                    //lAppLog("Have tel: '%s'\n",(const char*)notification["tel"]);
-                }
-                if (notification.hasOwnProperty("src")) {
+                if (notification.hasOwnProperty("src")) { // customize view
 
                     const char MailSrcChar[]="Gmail";
                     if (0 == strncmp((const char*)notification["src"],MailSrcChar,strlen(MailSrcChar))) {
                         CanvasWidget *mailImg = new CanvasWidget(img_icon_mail_48.height, img_icon_mail_48.width);
                         mailImg->canvas->pushImage(0,0,img_icon_mail_48.width,img_icon_mail_48.height,(uint16_t *)img_icon_mail_48.pixel_data);
                         mailImg->DrawTo(canvas,12,12);
+                        if (notification.hasOwnProperty("title")) {
+                            canvas->setTextDatum(TL_DATUM);
+                            canvas->setTextSize(1);
+                            canvas->drawString("From:", 85, 40);
+                            const char * from = (const char *)notification["title"];
+                            canvas->setTextSize(3);
+                            if ( 8 < strlen(from) ) {
+                                //lAppLog("Reduced Who font due doesn't fit\n");
+                                canvas->setTextSize(2);
+                            }
+                            canvas->drawString(from, 74, 50);
+                        }
                         delete(mailImg);
                     }
-                    //lAppLog("Have src: '%s'\n",(const char*)notification["src"]);
-
 
                     const char TelegramSrcChar[]="Telegram";
                     if (0 == strncmp((const char*)notification["src"],TelegramSrcChar,strlen(TelegramSrcChar))) {
@@ -193,6 +166,46 @@ bool NotificacionsApplication::Tick() {
                     canvas->drawString((const char*)notification["title"], 74, 15);
                 }
                 //{"t":"notify","id":1676306282,"src":"Telegram","title":"Cacharreando!: Paco Carabaza","body":"le hiciste caso a la madre de Fran???"}
+            } else {
+                if (notification.hasOwnProperty("subject")) {
+                    lAppLog("Have subject: '%s'\n",(const char*)notification["subject"]);
+                }
+
+                if (notification.hasOwnProperty("sender")) {
+                    lAppLog("Have sender: '%s'\n",(const char*)notification["sender"]);
+                }
+                if (notification.hasOwnProperty("tel")) {
+                    lAppLog("Have tel: '%s'\n",(const char*)notification["tel"]);
+                }
+            }
+
+            // draw body
+            if (notification.hasOwnProperty("body")) {
+                //lAppLog("Have body: '%s'\n",(const char*)notification["body"]);
+                canvas->setTextSize(1);
+                canvas->drawString("What:", 85, 80);
+                canvas->setTextSize(2);
+                const char *bodyText = (const char*)notification["body"];
+                size_t bodyLen = strlen(bodyText);
+                int16_t x=10;
+                int16_t y=90;
+                size_t curr=0;
+                //lAppLog("bodyLen: %u\n",bodyLen);
+                for(size_t o=0;o<=bodyLen;o++) {
+                    canvas->setCursor(x,y);
+                    canvas->print(bodyText[o]);
+                    x+=11;
+                    curr++;
+                    if ( x >= TFT_WIDTH-15 ) {
+                        y+=15;
+                        x=10;
+                    }
+                        // out of bounds?
+                    if ( ( curr > 145 )&&(bodyLen> 148)) {
+                        canvas->print("...");
+                        break;
+                    }
+                }
             }
         } else {
             canvas->setTextSize(4);
