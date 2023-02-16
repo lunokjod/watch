@@ -98,7 +98,7 @@ if "debug" == build_type:
         buildCount+=1 
     with open(counterFile,'w') as f:
         f.write(str(buildCount))
-    with open(openWeatherFile,'r') as f:
+    with open(openWeatherFile,'r') as f: # @TODO must be controlled error!!!
         openweatherKey = f.read()
     print("ADVICE: build in debug mode can leak personal information inside the flash image, like the OpenWeather key or your IP on LAN better don't share your debug builds")
 elif "release" == build_type:

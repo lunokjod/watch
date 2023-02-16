@@ -365,9 +365,9 @@ bool NetworkHandler() {
         lNetLog("WiFi: Network tasks handler\n");
         if ( provisioned ) {
             lNetLog("WiFi: Provisioned :) Task runs in few seconds...\n");
-            BootNetworkTicker.once(3,NetworkTasksCheck);
+            BootNetworkTicker.once(2,NetworkTasksCheck);
         }
-        NetworkTicker.attach(60*30,NetworkTasksCheck); // every 30 minutes
+        NetworkTicker.attach(60*5,NetworkTasksCheck); // every 5 minutes
 
         esp_err_t registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_UPDATE, SystemUpdateAvailiable, nullptr, NULL);
         if ( ESP_OK != registered ) {

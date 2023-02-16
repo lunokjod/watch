@@ -79,17 +79,17 @@ BLEMonitorApplication::~BLEMonitorApplication()
 
 BLEMonitorApplication::BLEMonitorApplication() {
 
-    lAppLog("KNOW DEVICES ON DATABASE:\n");
+    lAppLog("Already know devices:\n");
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         db_exec(lIoTsystemDatabase,"SELECT COUNT(*) FROM bluetooth;");
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
 
-    bool enabled = NVS.getInt("BLEEnabled");
-    if ( enabled ) { StartBLE(); }
+    //bool enabled = NVS.getInt("BLEEnabled");
+    //if ( enabled ) { StartBLE(); }
 
     lunokIoT_BLEMonitorTaskLoop = true;
-    xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_PROVISIONING_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
+    xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
     Tick(); // splash
     UINextTimeout = millis() + UITimeout;
 }

@@ -120,9 +120,12 @@ bool Watchface2Application::GetSecureNetworkWeather() {
         free(weatherReceivedData);
         weatherReceivedData=nullptr;
     }
-    weatherReceivedData=(char*)ps_malloc(jsonBuffer.length()+1);
-    sprintf(weatherReceivedData,"%s",jsonBuffer.c_str());
-    return true;
+    if ( jsonBuffer.length() > 0 ) {
+        weatherReceivedData=(char*)ps_malloc(jsonBuffer.length()+1);
+        sprintf(weatherReceivedData,"%s",jsonBuffer.c_str());
+        return true;
+    }
+    return false;
     
     //Serial.println(jsonBuffer);
     //JSONVar myObject = JSON.parse(jsonBuffer);
@@ -507,7 +510,7 @@ void Watchface2Application::Handlers()
     if (nullptr == geoIPTask) {
         geoIPTask = new NetworkTaskDescriptor();
         geoIPTask->name = (char *)"GeoIP Watchface";
-        geoIPTask->everyTimeMS = (60 * 1000) * 29;
+        geoIPTask->everyTimeMS = ((60 * 1000) * 60)*3; // every 3 hours
         geoIPTask->payload = (void *)this;
         geoIPTask->_lastCheck = millis();
         geoIPTask->_nextTrigger = 0; // launch NOW (as soon as system wants)
@@ -607,7 +610,7 @@ void Watchface2Application::Handlers()
     if (nullptr == weatherTask) {
         weatherTask = new NetworkTaskDescriptor();
         weatherTask->name = (char *)"OpenWeather Watchface";
-        weatherTask->everyTimeMS = (60 * 1000) * 29;
+        weatherTask->everyTimeMS = (60 * 1000) * 30; // every 30 minutes
         weatherTask->payload = (void *)this;
         weatherTask->_lastCheck = millis();
         weatherTask->_nextTrigger = 0; // launch NOW (as soon as system wants)

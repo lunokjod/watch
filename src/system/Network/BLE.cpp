@@ -169,7 +169,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
 
 // http://www.espruino.com/Gadgetbridge
-const size_t gadgetBridgeBufferSize=8*1024;
+const size_t gadgetBridgeBufferSize=16*1024;
 char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
@@ -761,6 +761,7 @@ void BLESetupHooks() {
             if ( nullptr != lBMATempCharacteristic ) {
                 // dont send if decimal change, only integers
                 const float currValFloat = lBMATempCharacteristic->getValue<float>();
+                //const float currValFloat = (float)lBMATempCharacteristic->getValue();
                 if ( round(bmaTemp) != round(currValFloat) ) {
                     //lNetLog("BLE: Notify BMA Temperature: %.1f ºC\n",bmaTemp);
                     lBMATempCharacteristic->setValue(bmaTemp);
