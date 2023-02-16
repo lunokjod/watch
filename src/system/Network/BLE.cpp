@@ -169,7 +169,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
 
 // http://www.espruino.com/Gadgetbridge
-const size_t gadgetBridgeBufferSize=16*1024;
+const size_t gadgetBridgeBufferSize=8*1024;
 char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
@@ -430,7 +430,7 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-extern void _intrnalSqlStatic(void *args);
+//extern void _intrnalSqlStatic(void *args);
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
@@ -579,11 +579,11 @@ static void BLEStartTask(void* args) {
     xSemaphoreGive( BLEUpDownStep );
     //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_MID_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
+                    LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
-    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake from ble :(
+    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake on ble from sleep :(
     vTaskDelete(NULL);
 }
 

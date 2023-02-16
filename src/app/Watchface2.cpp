@@ -111,6 +111,10 @@ String httpGETRequest(const char* serverName) {
   return payload;
 }
 bool Watchface2Application::GetSecureNetworkWeather() {
+    if (( nullptr == weatherCity )||( nullptr == weatherCountry )) {
+        lNetLog("OpenWeather: Unable to get location due no City or Country setted\n");
+        return false;
+    }
     char *url = (char *)ps_malloc(200); // usually ~130
     sprintf(url,urlOpenWeatherFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
     lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));

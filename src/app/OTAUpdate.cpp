@@ -351,7 +351,7 @@ bool OTAUpdateApplication::Tick() {
                 if ( progressBar->selectedAngle > 359 ) {
                     progressBar->selectedAngle=0;
                 }
-                int percentDone=percentDone =(imageDownloaded*100)/imageSize;
+                int percentDone=(imageDownloaded*100)/imageSize;
                 sprintf(percentAsString,"%d%%", percentDone);
                 //lAppLog("PERCENT: '%s'\n", percentAsString);
                 if ( imageSize > (1024*1024) ) { sprintf(bufferForText,"%.2f MB / %.2f MB", float(imageDownloaded/1024.0/1024), float(imageSize/1024.0/1024.0)); }
