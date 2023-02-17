@@ -81,6 +81,9 @@ bool NotificacionsApplication::Tick() {
             if ( false == parsedJSON ) {
                 lAppLog("Parsing: '%s'\n", NotificationDbData);
                 notification = JSON.parse(NotificationDbData);
+                NotificationDbObtained=false;
+                free(NotificationDbData);
+                NotificationDbData=nullptr;
                 parsedJSON=true;
             }
             // second chance, nothing to show, return to watchface

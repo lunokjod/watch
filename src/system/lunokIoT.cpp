@@ -111,7 +111,7 @@ LunokIoT::LunokIoT() {
             NVS.setInt("spiffsReady",true); // assume format reached and disable it in next boot
         }
     }
-    // banner again
+    // banner storages again
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
     ListSPIFFS(); // show contents to serial
     /*
@@ -125,6 +125,7 @@ LunokIoT::LunokIoT() {
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true);
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
+        FreeSpace();
     }
     BootReason(); // announce boot reason and from what partition to serial
 
@@ -279,7 +280,6 @@ void LunokIoT::BootReason() { // check boot status
     } else {
         #ifdef LILYGO_WATCH_2020_V3
             ttgo->shake();
-            //delay(200);
         #endif
     }
     const esp_partition_t *whereIAm = esp_ota_get_boot_partition();
