@@ -15,17 +15,27 @@ char *MusicInfo=nullptr;
 bool MusicInfoDbObtained=false;
 bool playing=false; // determine if is playing
 unsigned long playingMS=0; // from what time?
+size_t lastMusicStateID=-1;
+size_t lastMusicInfoID=-1;
+bool lastMusicInfoParsed=false;
+bool lastMusicStateParsed=false;
 
 static int MusicstateBLEPlayerApplicationSQLiteCallback(void *data, int argc, char **argv, char **azColName) {
    int i;
    //lSysLog("MUSIC STATE:\n");
    for (i = 0; i<argc; i++){
-        if ( 0 == strcmp(azColName[i],"data")) {
+        if ( 0 == strcmp(azColName[i],"id")) {
+            size_t newStateID=atoi(argv[i]);
+            if ( newStateID != lastMusicStateID ) {
+                lastMusicStateID=newStateID;
+                lastMusicStateParsed=true;
+            } else { lastMusicStateParsed=false; }
+        } else if ( 0 == strcmp(azColName[i],"data")) {
             if ( nullptr != MusicState ) { free(MusicState); MusicState=nullptr; }
             MusicState=(char*)ps_malloc(strlen(argv[i])+1);
             if ( nullptr != MusicState) {
                 strcpy(MusicState,argv[i]);
-                MusicStateDbObtained=true;
+                if ( lastMusicStateParsed ) { MusicStateDbObtained=true; }
             }
         }
         //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
@@ -37,12 +47,18 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
    int i;
    //lSysLog("MUSIC INFO\n");
    for (i = 0; i<argc; i++){
-        if ( 0 == strcmp(azColName[i],"data")) {
+        if ( 0 == strcmp(azColName[i],"id")) {
+            size_t newInfoID=atoi(argv[i]);
+            if ( newInfoID != lastMusicInfoID ) {
+                lastMusicInfoID=newInfoID;
+                lastMusicInfoParsed=true;
+            } else { lastMusicInfoParsed=false; }
+        } else if ( 0 == strcmp(azColName[i],"data")) {
             if ( nullptr != MusicInfo ) { free(MusicInfo); MusicInfo=nullptr; }
             MusicInfo=(char*)ps_malloc(strlen(argv[i])+1);
             if ( nullptr != MusicInfo) {
                 strcpy(MusicInfo,argv[i]);
-                MusicInfoDbObtained=true;
+                if ( lastMusicInfoParsed ) { MusicInfoDbObtained=true; }
             }
         }
         //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
@@ -52,26 +68,28 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
 
 void BLEPlayerApplication::DBRefresh() {
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        //int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback=SQLiteCallback)
-        db_exec(lIoTsystemDatabase,"SELECT data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
-        db_exec(lIoTsystemDatabase,"SELECT data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
+        db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
+        db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
-    FreeSpace();
 }
 
 BLEPlayerApplication::BLEPlayerApplication() {
-    playBtn = new ButtonImageXBMWidget(120-35,140,70,70,[this](void *unused) {
+    playBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
         lLog("@TODO BLEPLAYER BUTTOn PLAY\n");
         //@TODO send play to android
     },img_play_48_bits,img_play_48_height,img_play_48_width,ThCol(text),Drawable::MASK_COLOR,false);
     playBtn->SetEnabled(false);
-    pauseBtn = new ButtonImageXBMWidget(120-35,140,70,70,[this](void *unused) {
+    pauseBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
         lLog("@TODO BLEPLAYER BUTTOn PAUSE\n");
         //@TODO send play to android
     },img_pause_48_bits,img_pause_48_height,img_pause_48_width,ThCol(text),Drawable::MASK_COLOR,false);
     pauseBtn->SetEnabled(false);
     canvas->setTextFont(1);
+    lastMusicStateID=-1;
+    lastMusicInfoID=-1;
+    lastMusicInfoParsed=false;
+    lastMusicStateParsed=false;
     //Tick();
 }
 
@@ -85,7 +103,7 @@ BLEPlayerApplication::~BLEPlayerApplication() {
 bool BLEPlayerApplication::Tick() {
     if ( millis() > nextDBRefresh ) {
         DBRefresh();
-        nextDBRefresh=millis()+10000;
+        nextDBRefresh=millis()+5000;
     }
     playBtn->Interact(touched,touchX,touchY);
     pauseBtn->Interact(touched,touchX,touchY);

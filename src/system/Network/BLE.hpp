@@ -73,7 +73,8 @@ void StopBLE();
 
 void BLESetupHooks();
 void BLEKickAllPeers();
-
+bool IsBLEEnabled();
+bool IsBLEPeerConnected();
 
 //extern volatile bool bleServiceRunning;
 #endif

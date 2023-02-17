@@ -10,15 +10,14 @@
 
 https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9a0-77f161d2d659.mp4
 
-![wartchface0](/doc/watchface0.png)
-![wartchface0_day](/doc/day_watchface0.png)
-![playground example0](/doc/playground0.png)
-![playground example3](/doc/playground3.png)
-![set time app](/doc/settime.png)
-![battery app](/doc/battery.png)
-![ble upload](/doc/ble_upload.png)
-![provisioning menu](/doc/mainmenu_provisioning.png)
-![provisioning app](/doc/provisioning.png)
+<img src="./doc/watchface0.png" width="120" />
+<img src="./doc/playground0.png" width="120" />
+<img src="./doc/playground3.png" width="120" />
+<img src="./doc/settime.png" width="120" />
+<img src="./doc/battery.png" width="120" />
+<img src="./doc/ble_upload.png" width="120" />
+<img src="./doc/mainmenu_provisioning.png" width="120" />
+<img src="./doc/provisioning.png" width="120" />
 
 * Note: under heavy development (not ready for everyday use)
 
@@ -26,7 +25,7 @@ https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9
 * Supported devices:
  * lilyGo TWatch 2020 series v1
  * lilyGo TWatch 2020 series v2
- * lilyGo TWatch 2020 series v3 (both battery and UART/TTL) 380mAh and 500mAh
+ * lilyGo TWatch 2020 series v3 (both battery and UART/TTL) 380mAh and 500mAh (planned 400mAh version)
 
 
 
@@ -35,6 +34,9 @@ https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9
   * Apple iOS: https://apps.apple.com/us/app/esp-softap-provisioning/id1474040630
 
 * The BluetoothLE pairing can be archieved via "Home>Settings>Pair" can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
+
+* Can use Gadgetbridge https://www.gadgetbridge.org/ and receive android notifications on watch (use "BANGLEJS esprunio" as device)
+
 
 ## Build, upload & flash:
  * First take care about what hardware version have (at this time 1,2 and 3)
@@ -76,9 +78,11 @@ $ pio run -e Release-twatch2020_V3 -t upload
   * BLE Battery standard notification. Can use BatON https://play.google.com/store/apps/details?id=com.limi.baton on Android to remote battery monitoring
   * Man in the middle resistant (BLE)
  * Color themes
+ * Multiple watchfaces (call for designers!)
  * Screen orientation
  * OTA update (wireless)
- * Gadgetbridge compatibility
+ * Gadgetbridge compatibility (BangleJS-esprunio) for android/iOS notifications
+ * Media player
  * Handwritting trainable keyboard
 
 ## Full application list:
@@ -100,9 +104,9 @@ $ pio run -e Release-twatch2020_V3 -t upload
 * Multiple apps (seamless)
 * Add first launch application assistant to set or omit the desired setup parts
 * PDM Mic (voice assistant)
-* RTC (alarm)
+* RTC (alarm features)
 * espNow (locate other family watches, icon chat availiable)
-* Touch on sleep
+* Touch on sleep/doubletap
 * Custom activities (hidden app availiable for testing)
 * feedbacked apps (what do you need?)
 * LocalCloud, a support app for the watch (companion app or something)

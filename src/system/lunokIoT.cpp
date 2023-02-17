@@ -71,14 +71,20 @@ bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
-    InitLogs();
+    InitLogs(); // need for stdout on usb-uart
+
     // announce myself with build information if serial debug is enabled
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
+    
     // report memory
     FreeSpace();
-    // Initialize lilygo lib (mandatory)
+    
+    // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
+
     //ttgo->setTftExternal(*tft); // @TODO dream on!
+    
+    // storage init
     SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));

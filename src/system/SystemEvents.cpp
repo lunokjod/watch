@@ -18,6 +18,7 @@ extern TTGOClass *ttgo; // ttgo library
 #include <wifi_provisioning/manager.h>
 
 #include <esp_task_wdt.h>
+#include "Network/BLE.hpp"
 
 #include "UI/UI.hpp"
 
@@ -214,7 +215,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         //!< Wakeup caused by timer
         lLog("Wakeup caused by timer\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        continueSleep=false; // all fine
+        continueSleep=false; // don't sleep again, trying to catch bluetooth events
     } else if ( ESP_SLEEP_WAKEUP_TOUCHPAD == wakeup_reason) {
         //!< Wakeup caused by touchpad
     } else if ( ESP_SLEEP_WAKEUP_ULP == wakeup_reason) {
@@ -306,7 +307,8 @@ static void DoSleepTask(void *args) {
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
-    // bma interrupt gpio_39
+    // bma interrupt gpio_397
+
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * LUNOKIOT_WAKE_TIME_S); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",LUNOKIOT_WAKE_TIME_S); }
 
@@ -499,12 +501,26 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
 
+Ticker TimedDoSleep;
+
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    lEvLog("ESP Wakeup timer triggered\n")
+    lEvLog("ESP Wakeup timer triggered\n");
     TakeAllSamples();
-    if (false == ttgo->bl->isOn()) {
-        lEvLog("Timer triggered without screen... (going to sleep again)\n")
-        DoSleep();
+    // if bluetooth is enabled, do a chance to get notifications
+    if ( IsBLEEnabled() ) {
+        //delay(100); // let antena wharm
+        //BLEKickAllPeers(); // force clients to reconnect
+        TimedDoSleep.once(10,[]() { // get sleep in 10 seconds if no screen is on
+            if (false == ttgo->bl->isOn()) {
+                lEvLog("Timer triggered without screen... (going to sleep again)\n")
+                DoSleep();
+            }
+        });
+    } else { // no bluetooth, sleep now
+        if (false == ttgo->bl->isOn()) {
+            lEvLog("Timer triggered without screen... (going to sleep again)\n")
+            DoSleep();
+        }
     }
 }
 
@@ -813,8 +829,9 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
 
     // enable lamp? @TODO THIS MUST BE A SETTING
     bool launchLamp=false;
-    if ( degY > 340.0 ) { launchLamp = true; }
-    else if ( degY < 20.0 ) { launchLamp = true; }
+    lLog("@TODO DISABLED LAMP LAUNCH <=========================\n");
+    //if ( degY > 340.0 ) { launchLamp = true; }
+    //else if ( degY < 20.0 ) { launchLamp = true; }
 
     if ( launchLamp ) { // is the correct pose to get light?
         LaunchApplication(new LampApplication());

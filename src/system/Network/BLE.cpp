@@ -51,6 +51,8 @@ volatile bool blePeer = false;
 volatile bool deviceConnected = false;
 volatile bool oldDeviceConnected = false;
 
+bool IsBLEPeerConnected() { return blePeer; }
+bool IsBLEEnabled() { return bleEnabled; }
 // Server callbacks
 class LBLEServerCallbacks: public BLEServerCallbacks {
     /*
@@ -63,7 +65,9 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         deviceConnected = true;
         if ( nullptr != currentApplication ) {
             if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchApplication(new BluetoothApplication());
+                if ( ttgo->bl->isOn()) {
+                    LaunchApplication(new BluetoothApplication());
+                }
             }
         }
     }
@@ -87,7 +91,9 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         lNetLog("BLE: Authentication complete\n");
         if ( nullptr != currentApplication ) {
             if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchWatchface();
+                if ( ttgo->bl->isOn()) {
+                    LaunchWatchface();
+                }
             }
         }
     }
@@ -623,20 +629,19 @@ void StartBLE(bool synced) {
 }
 
 
-void BLEKickAllPeers() { //@TODO SEEMS NOT WORK
+void BLEKickAllPeers() {
     if ( false == bleEnabled ) { return; }
-    if ( nullptr != pServer ) {
-        //DISCONNECT THE CLIENTS
-        std::vector<uint16_t> clients = pServer->getPeerDevices();
-        for(uint16_t client : clients) {
-            lNetLog("BLE: kicking out client %d\n",client);
-            pServer->disconnect(client);
-            //pServer->disconnect(client,0x13); // remote close
-            //pServer->disconnect(client,0x16); // localhost close
-            delay(100);
-        }
+    if ( nullptr == pServer ) { return; }
+    if ( false == IsBLEPeerConnected() ) { return; }
+    //DISCONNECT THE CLIENTS
+    std::vector<uint16_t> clients = pServer->getPeerDevices();
+    for(uint16_t client : clients) {
+        lNetLog("BLE: kicking out client %d\n",client);
+        pServer->disconnect(client);
+        //pServer->disconnect(client,0x13); // remote close
+        //pServer->disconnect(client,0x16); // localhost close
+        delay(100);
     }
-
 }
 
 static void BLEStopTask(void* args) {

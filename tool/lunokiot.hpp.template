@@ -30,7 +30,7 @@
 
 #define uS_TO_S_FACTOR 1000000 // micros in a second
 
-const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*15; // used for wakeup the device every 15 minutes to get samples
+const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*1; // used for wakeup the device every X minutes to get samples and notifications
 
 const PROGMEM float LUNOKIOT_SYSTEM_HEARTBEAT_TIME = 1500; // system heartbeat in times per second
 const PROGMEM TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
