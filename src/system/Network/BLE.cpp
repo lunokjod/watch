@@ -12,7 +12,7 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
-
+esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
@@ -51,6 +51,8 @@ volatile bool blePeer = false;
 volatile bool deviceConnected = false;
 volatile bool oldDeviceConnected = false;
 
+bool IsBLEPeerConnected() { return blePeer; }
+bool IsBLEEnabled() { return bleEnabled; }
 // Server callbacks
 class LBLEServerCallbacks: public BLEServerCallbacks {
     /*
@@ -63,7 +65,9 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         deviceConnected = true;
         if ( nullptr != currentApplication ) {
             if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchApplication(new BluetoothApplication());
+                if ( ttgo->bl->isOn()) {
+                    LaunchApplication(new BluetoothApplication());
+                }
             }
         }
     }
@@ -87,7 +91,9 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         lNetLog("BLE: Authentication complete\n");
         if ( nullptr != currentApplication ) {
             if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchWatchface();
+                if ( ttgo->bl->isOn()) {
+                    LaunchWatchface();
+                }
             }
         }
     }
@@ -169,7 +175,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
 
 // http://www.espruino.com/Gadgetbridge
-const size_t gadgetBridgeBufferSize=16*1024;
+const size_t gadgetBridgeBufferSize=8*1024;
 char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
@@ -430,7 +436,7 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-extern void _intrnalSqlStatic(void *args);
+//extern void _intrnalSqlStatic(void *args);
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
@@ -479,8 +485,7 @@ static void BLEStartTask(void* args) {
     //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-
-    NimBLEDevice::setPower(ESP_PWR_LVL_N3);
+    NimBLEDevice::setPower(defaultBLEPowerLevel);
         //ESP_PWR_LVL_P9); /** +9db */
     // create GATT the server
     pServer = BLEDevice::createServer();
@@ -572,18 +577,18 @@ static void BLEStartTask(void* args) {
     BLEScan * pBLEScan = BLEDevice::getScan();
     pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power
-    pBLEScan->setInterval(100);
-    pBLEScan->setWindow(99);  // less or equal setInterval value
-    pBLEScan->setMaxResults(3); // dont waste memory with cache
+    pBLEScan->setInterval(300);
+    pBLEScan->setWindow(299);  // less or equal setInterval value
+    pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
     //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_MID_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
+                    LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
-    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake from ble :(
+    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake on ble from sleep :(
     vTaskDelete(NULL);
 }
 
@@ -624,20 +629,19 @@ void StartBLE(bool synced) {
 }
 
 
-void BLEKickAllPeers() { //@TODO SEEMS NOT WORK
+void BLEKickAllPeers() {
     if ( false == bleEnabled ) { return; }
-    if ( nullptr != pServer ) {
-        //DISCONNECT THE CLIENTS
-        std::vector<uint16_t> clients = pServer->getPeerDevices();
-        for(uint16_t client : clients) {
-            lNetLog("BLE: kicking out client %d\n",client);
-            pServer->disconnect(client);
-            //pServer->disconnect(client,0x13); // remote close
-            //pServer->disconnect(client,0x16); // localhost close
-            delay(100);
-        }
+    if ( nullptr == pServer ) { return; }
+    if ( false == IsBLEPeerConnected() ) { return; }
+    //DISCONNECT THE CLIENTS
+    std::vector<uint16_t> clients = pServer->getPeerDevices();
+    for(uint16_t client : clients) {
+        lNetLog("BLE: kicking out client %d\n",client);
+        pServer->disconnect(client);
+        //pServer->disconnect(client,0x13); // remote close
+        //pServer->disconnect(client,0x16); // localhost close
+        delay(100);
     }
-
 }
 
 static void BLEStopTask(void* args) {

@@ -99,6 +99,9 @@
 #include "../static/img_mainmenu_calendar.xbm"
 #include "Calendar.hpp"
 
+#include "../static/img_mainmenu_player.xbm"
+#include "BLEPlayer.hpp"
+
 #include "ThumbTest.hpp"
 
 typedef struct {
@@ -138,6 +141,7 @@ MainMenuApplicationEntry AllApps[] = {
     {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](void *unused) { LaunchApplication(new CalendarApplication()); } },
     {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](void *unused) { LaunchApplication(new CalculatorApplication()); } },
     {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](void *unused) { LaunchApplication(new LampApplication()); } },
+    {"Player",img_mainmenu_player_bits, img_mainmenu_player_height, img_mainmenu_player_width, [](void *unused) { LaunchApplication(new BLEPlayerApplication()); } },
     {"Peers",img_mainmenu_chat_bits, img_mainmenu_chat_height, img_mainmenu_chat_width, [](void *unused) { LaunchApplication(new PeerApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](void *unused) { LaunchApplication(new AboutApplication()); } },
 #ifdef LUNOKIOT_DEBUG_UI_DEMO

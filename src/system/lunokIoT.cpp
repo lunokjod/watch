@@ -71,14 +71,20 @@ bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
-    InitLogs();
+    InitLogs(); // need for stdout on usb-uart
+
     // announce myself with build information if serial debug is enabled
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
+    
     // report memory
     FreeSpace();
-    // Initialize lilygo lib (mandatory)
+    
+    // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
+
     //ttgo->setTftExternal(*tft); // @TODO dream on!
+    
+    // storage init
     SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
@@ -111,7 +117,7 @@ LunokIoT::LunokIoT() {
             NVS.setInt("spiffsReady",true); // assume format reached and disable it in next boot
         }
     }
-    // banner again
+    // banner storages again
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
     ListSPIFFS(); // show contents to serial
     /*
@@ -125,6 +131,7 @@ LunokIoT::LunokIoT() {
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true);
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
+        FreeSpace();
     }
     BootReason(); // announce boot reason and from what partition to serial
 
@@ -279,7 +286,6 @@ void LunokIoT::BootReason() { // check boot status
     } else {
         #ifdef LILYGO_WATCH_2020_V3
             ttgo->shake();
-            //delay(200);
         #endif
     }
     const esp_partition_t *whereIAm = esp_ota_get_boot_partition();

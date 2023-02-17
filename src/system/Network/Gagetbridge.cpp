@@ -7,11 +7,22 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "../../app/Notifications.hpp"
+#include "../../app/BLEPlayer.hpp"
 #include "../Datasources/database.hpp"
+#include "../SystemEvents.hpp"
 
 extern SemaphoreHandle_t I2cMutex;
 
 bool ParseGadgetBridgeJSON(JSONVar &json) {
+    if (false == ttgo->bl->isOn()) {
+        lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
+        ScreenWake();
+        #ifdef LILYGO_WATCH_2020_V3
+            ttgo->motor->onec(80);
+            delay(100);
+        #endif
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    }
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
             // save to database
@@ -55,12 +66,24 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             return false;
         } else if ( 0 == strcmp((const char*)json["t"],"musicinfo") ) {
             //{"t":"musicinfo","artist":"ffff(artist)","album":"ffff(album)","track":"ffff(track)","dur":10,"c":5,"n":2}
-            lLog("@TODO MUSICINFO NOTIFICATION\n");
-            return false;
+            lLog("BLE: Music Info\n");
+            // save to database
+            String jsonString = json.stringify(json);
+            char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
+            sprintf(myShitbuffer,"%s",jsonString.c_str());
+            NotificatioLog(myShitbuffer);
+            LaunchApplication(new BLEPlayerApplication(),false);
+            return true;
         } else if ( 0 == strcmp((const char*)json["t"],"musicstate") ) {
-            //{"t":"musicinfo","artist":"ffff(artist)","album":"ffff(album)","track":"ffff(track)","dur":10,"c":5,"n":2}
-            lLog("@TODO MUSIC STATE NOTIFICATION\n");
-            return false;
+            // {"t":"musicstate","state":"play","position":1891,"shuffle":1,"repeat":1}
+            lLog("BLE: Music State\n");
+            // save to database
+            String jsonString = json.stringify(json);
+            char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
+            sprintf(myShitbuffer,"%s",jsonString.c_str());
+            NotificatioLog(myShitbuffer);
+            LaunchApplication(new BLEPlayerApplication(),false);
+            return true;
         } else if ( 0 == strcmp((const char*)json["t"],"find") ) {
             lLog("@TODO FIND FUNCTION\n");
             if (json.hasOwnProperty("n")) {
