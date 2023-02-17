@@ -12,7 +12,7 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
-
+esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 extern bool networkActivity;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
@@ -479,8 +479,7 @@ static void BLEStartTask(void* args) {
     //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-
-    NimBLEDevice::setPower(ESP_PWR_LVL_N3);
+    NimBLEDevice::setPower(defaultBLEPowerLevel);
         //ESP_PWR_LVL_P9); /** +9db */
     // create GATT the server
     pServer = BLEDevice::createServer();
@@ -572,9 +571,9 @@ static void BLEStartTask(void* args) {
     BLEScan * pBLEScan = BLEDevice::getScan();
     pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power
-    pBLEScan->setInterval(100);
-    pBLEScan->setWindow(99);  // less or equal setInterval value
-    pBLEScan->setMaxResults(3); // dont waste memory with cache
+    pBLEScan->setInterval(300);
+    pBLEScan->setWindow(299);  // less or equal setInterval value
+    pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
     //bleWaitStop=true;

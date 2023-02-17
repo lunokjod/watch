@@ -4,7 +4,7 @@
 #include "../system/Datasources/database.hpp"
 #include <Arduino_JSON.h>
 #include "BLEPlayer.hpp"
-
+#include "../system/SystemEvents.hpp"
 #include "../static/img_play_48.xbm"
 //#include "../static/img_reload_48.xbm"
 #include "../static/img_pause_48.xbm"
@@ -57,6 +57,7 @@ void BLEPlayerApplication::DBRefresh() {
         db_exec(lIoTsystemDatabase,"SELECT data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
+    FreeSpace();
 }
 
 BLEPlayerApplication::BLEPlayerApplication() {
@@ -201,34 +202,34 @@ bool BLEPlayerApplication::Tick() {
             canvas->drawRect(5,105,230,10,ThCol(text_alt));
             int posDone=(currentPos*230)/dur;
             canvas->fillRect(5,105,posDone,10,ThCol(text));
-        }
-        if ( currentPos > -1 ) {
-            int seconds = currentPos;
-            int minutes = seconds / 60;
-            seconds %= 60;
-            int hours = minutes / 60;
-            minutes %= 60;
-            canvas->setTextDatum(TL_DATUM);
-            canvas->setTextSize(2);
-            canvas->setTextColor(ThCol(text));
-            char buff[10];
-            sprintf(buff,"%02d:%02d:%02d",hours,minutes,seconds);
-            canvas->drawString(buff, 10, 130);
-        }
-        if ( dur > 0 ) {
-            int seconds = dur;
-            int minutes = seconds / 60;
-            seconds %= 60;
-            int hours = minutes / 60;
-            minutes %= 60;
-            canvas->setTextDatum(TR_DATUM);
-            canvas->setTextSize(2);
-            canvas->setTextColor(ThCol(text));
-            char buff[10];
-            sprintf(buff,"%02d:%02d:%02d",hours,minutes,seconds);
-            canvas->drawString(buff, TFT_WIDTH-10, 130);
-        }
 
+            if ( currentPos > -1 ) {
+                int seconds = currentPos;
+                int minutes = seconds / 60;
+                seconds %= 60;
+                int hours = minutes / 60;
+                minutes %= 60;
+                canvas->setTextDatum(TL_DATUM);
+                canvas->setTextSize(2);
+                canvas->setTextColor(ThCol(text));
+                char buff[10];
+                sprintf(buff,"%02d:%02d:%02d",hours,minutes,seconds);
+                canvas->drawString(buff, 10, 130);
+            }
+            if ( dur > 0 ) {
+                int seconds = dur;
+                int minutes = seconds / 60;
+                seconds %= 60;
+                int hours = minutes / 60;
+                minutes %= 60;
+                canvas->setTextDatum(TR_DATUM);
+                canvas->setTextSize(2);
+                canvas->setTextColor(ThCol(text));
+                char buff[10];
+                sprintf(buff,"%02d:%02d:%02d",hours,minutes,seconds);
+                canvas->drawString(buff, TFT_WIDTH-10, 130);
+            }
+        }
         if ( playBtn->GetEnabled() ) { playBtn->DrawTo(canvas); }
         if ( pauseBtn->GetEnabled() ) { pauseBtn->DrawTo(canvas); }
 

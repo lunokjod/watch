@@ -20,6 +20,7 @@ bool lunokIoT_BLEMonitorTaskLoopEnded = false;
 size_t BLEMonitorScanLoops = 0;
 bool BLEMonitorEnded=false;
 int BLEMonitorApplication::rotateVal=0;
+extern esp_power_level_t defaultBLEPowerLevel;
 
 void BLEMonitorTask(void *data) {
     lunokIoT_BLEMonitorTaskLoopEnded = true;
@@ -42,7 +43,7 @@ void BLEMonitorTask(void *data) {
                 lNetLog("BLEMonitorTask: Scan %d begin\n", BLEMonitorScanLoops);
                 // pBLEScan->clearDuplicateCache();
                 // pBLEScan->clearResults();
-                // pBLEScan->setMaxResults(5);
+                //pBLEScan->setMaxResults(5);
                 BLEScanResults foundDevices = pBLEScan->start(4);
                 // lAppLog("BLE: Devices found: %d\n",foundDevices.getCount());
                 // pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
@@ -60,6 +61,7 @@ void BLEMonitorTask(void *data) {
 
 BLEMonitorApplication::~BLEMonitorApplication()
 {
+    NimBLEDevice::setPower(defaultBLEPowerLevel); // default power
     lAppLog("BLEMonitor: Waiting BLE task stop...\n");
     lunokIoT_BLEMonitorTaskLoop = false;
     while (not BLEMonitorEnded) {
@@ -78,6 +80,8 @@ BLEMonitorApplication::~BLEMonitorApplication()
 }
 
 BLEMonitorApplication::BLEMonitorApplication() {
+    // max power!
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
     lAppLog("Already know devices:\n");
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
