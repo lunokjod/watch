@@ -75,6 +75,6 @@ void BLESetupHooks();
 void BLEKickAllPeers();
 bool IsBLEEnabled();
 bool IsBLEPeerConnected();
-
+bool BLESendUART(const char * data);
 //extern volatile bool bleServiceRunning;
 #endif

@@ -18,7 +18,8 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
         lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
         ScreenWake();
         #ifdef LILYGO_WATCH_2020_V3
-            ttgo->motor->onec(80);
+            ttgo->shake();
+            //ttgo->motor->onec(80);
             delay(100);
         #endif
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);

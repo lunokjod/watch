@@ -8,7 +8,7 @@
 #include "../static/img_play_48.xbm"
 //#include "../static/img_reload_48.xbm"
 #include "../static/img_pause_48.xbm"
-
+#include "../system/Network/BLE.hpp"
 char *MusicState=nullptr;
 bool MusicStateDbObtained=false;
 char *MusicInfo=nullptr;
@@ -19,6 +19,9 @@ size_t lastMusicStateID=-1;
 size_t lastMusicInfoID=-1;
 bool lastMusicInfoParsed=false;
 bool lastMusicStateParsed=false;
+
+long musicNotificationTime=-1;
+long musicNotificationTimeFrom=-1;
 
 static int MusicstateBLEPlayerApplicationSQLiteCallback(void *data, int argc, char **argv, char **azColName) {
    int i;
@@ -37,8 +40,15 @@ static int MusicstateBLEPlayerApplicationSQLiteCallback(void *data, int argc, ch
                 strcpy(MusicState,argv[i]);
                 if ( lastMusicStateParsed ) { MusicStateDbObtained=true; }
             }
+        } else if ( 0 == strcmp(azColName[i],"timestampDB")) {
+            //lLog("TIMESTAMP CAPTURED!\n");
+            musicNotificationTime=atol(argv[i]);
+        } else if ( 0 == strcmp(azColName[i],"nowDb")) {
+            //lLog("TIME CAPTURED!\n");
+            musicNotificationTimeFrom=atol(argv[i]);
+        } else {
+            lSysLog("   SQL: '%s' = '%s'\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
         }
-        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
    }
    return 0;
 }
@@ -60,8 +70,9 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
                 strcpy(MusicInfo,argv[i]);
                 if ( lastMusicInfoParsed ) { MusicInfoDbObtained=true; }
             }
+        } else {
+            //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
         }
-        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
    }
    return 0;
 }
@@ -69,18 +80,25 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
 void BLEPlayerApplication::DBRefresh() {
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
-        db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
+        db_exec(lIoTsystemDatabase,"SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
 }
+const char MusicPlayGadgetbridgeCmd[] =  "{\"t\":\"music\",\"n\":\"play\"}";
+const char MusicPauseGadgetbridgeCmd[] = "{\"t\":\"music\",\"n\":\"pause\"}";
 
 BLEPlayerApplication::BLEPlayerApplication() {
+
+    // BLESendUART("{ t:\"music\", n:\"play/pause/next/previous/volumeup/volumedown\" }");
     playBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
+        BLESendUART(MusicPlayGadgetbridgeCmd);
         lLog("@TODO BLEPLAYER BUTTOn PLAY\n");
         //@TODO send play to android
     },img_play_48_bits,img_play_48_height,img_play_48_width,ThCol(text),Drawable::MASK_COLOR,false);
     playBtn->SetEnabled(false);
+    
     pauseBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
+        BLESendUART(MusicPauseGadgetbridgeCmd);
         lLog("@TODO BLEPLAYER BUTTOn PAUSE\n");
         //@TODO send play to android
     },img_pause_48_bits,img_pause_48_height,img_pause_48_width,ThCol(text),Drawable::MASK_COLOR,false);
@@ -184,23 +202,33 @@ bool BLEPlayerApplication::Tick() {
         if ( parsedStateJSON ) {
             // {"t":"musicstate","state":"play","position":1,"shuffle":1,"repeat":1}
             if (lastPlayerStateEntry.hasOwnProperty("state")) {
+                pauseBtn->SetEnabled(false);
+                playBtn->SetEnabled(false);
                 if ( strlen((const char*)lastPlayerStateEntry["state"]) > 0 ) {
                     const char playStr[]="play";
                     const char pauseStr[]="pause";
-                    pauseBtn->SetEnabled(false);
-                    playBtn->SetEnabled(false);
                     if ( 0 == strncmp((const char*)lastPlayerStateEntry["state"],playStr,strlen(playStr))) {
                         if ( false == playing ) {
                             playing=true;
-                            playingMS=millis(); // @TODO ADJUST WITH MESSAGE TIMESTAMP
+                            difference=musicNotificationTimeFrom-musicNotificationTime;
+                            //lLog("AAAAAAAAAAAAAAAAAAA: %ld = %ld - %ld\n",difference,musicNotificationTimeFrom,musicNotificationTime);
+                            playingMS=millis();
                         }
                         pauseBtn->SetEnabled(true);
                     } else if ( 0 == strncmp((const char*)lastPlayerStateEntry["state"],pauseStr,strlen(pauseStr))) {
                         playing=false;
                         playBtn->SetEnabled(true);
+                        difference=0;
                     } else {
                         playing=false;
+                        difference=0;
                     }
+                } else {
+                    // nothing playing
+                    canvas->setTextDatum(CC_DATUM);
+                    canvas->setTextSize(3);
+                    canvas->setTextColor(ThCol(text));
+                    canvas->drawString("No media", TFT_WIDTH/2, TFT_HEIGHT/2);
                 }
             }
             if (lastPlayerStateEntry.hasOwnProperty("position")) { position=lastPlayerStateEntry["position"]; }
@@ -209,7 +237,7 @@ bool BLEPlayerApplication::Tick() {
         }
         int currentPos = position;
         if ( playing ) { // fake the current position (eyecandy)
-            currentPos=position+((millis()-playingMS)/1000);
+            currentPos=(position+difference)+((millis()-playingMS)/1000);
             if ( currentPos > dur ) { playing=false; currentPos=dur; }
         }
         if (( dur > 0 )&&( currentPos > 0 )) {
