@@ -36,7 +36,7 @@ BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
 BLEService *pLunokIoTService = nullptr;
 BLEService *pBattService = nullptr;
-BLECharacteristic * pTxCharacteristic = nullptr;
+NimBLECharacteristic * pTxCharacteristic = nullptr;
 
 // list of know devices
 SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
@@ -53,6 +53,40 @@ volatile bool oldDeviceConnected = false;
 
 bool IsBLEPeerConnected() { return blePeer; }
 bool IsBLEEnabled() { return bleEnabled; }
+
+bool BLESendUART(const char * data) {
+    if ( false == IsBLEPeerConnected() ) {
+        lNetLog("BLE: ERROR: Unable to send UART data, no client connected\n");
+        return false;
+    }
+    if ( nullptr == pTxCharacteristic ) {
+        lNetLog("BLE: ERROR: No UART TX characteristic loaded\n");
+        return false;
+    }
+
+    uint16_t MaxDataSize = pServer->getPeerMTU(0)-3;
+    size_t currentOffset=0;
+    const size_t MaxOffset=strlen(data);
+    uint8_t *dataPtr=(uint8_t *)data;
+    lNetLog("BLE: Sending %u byte...\n",MaxOffset);
+    while(currentOffset < MaxOffset) {
+        dataPtr=((uint8_t *)data)+currentOffset;
+        uint16_t currentChunkSize=strlen((char*)dataPtr);
+        if ( 0 == currentChunkSize) { break; }
+        if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
+        /*
+        for(int i=0;i<currentChunkSize;i++) {  lLog("'%c' %02x, ",dataPtr[i],dataPtr[i]); }
+        lLog("\n");
+        */
+        pTxCharacteristic->notify(dataPtr,currentChunkSize);
+        lNetLog("BLE: Send (%u byte) package from: %u~%u\n",currentChunkSize,currentOffset,currentOffset+currentChunkSize);
+        currentOffset+=currentChunkSize;
+        delay(40);
+    }
+    pTxCharacteristic->notify((uint8_t*)"\n",1);
+    lNetLog("BLE: Sended UART message: '%s' %u bytes (MTU: %u)\n",data,strlen(data),MaxDataSize);
+    return true;
+}
 // Server callbacks
 class LBLEServerCallbacks: public BLEServerCallbacks {
     /*
@@ -179,10 +213,14 @@ const size_t gadgetBridgeBufferSize=8*1024;
 char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
-class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
+class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     
     bool gadgetbridgeCommandInProgress=false;
     bool bangleCommandInProgress=false;
+
+    void onRead(NimBLECharacteristic* pCharacteristic) {
+        lNetLog("BLE: UART: onREAD\n");
+    }
 
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
@@ -222,7 +260,7 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
                 lNetLog("BLE: UART: End Gadgetbridge GB command\n");
                 bool parsed = ParseGadgetBridgeMessage(gadgetBridgeBuffer);
                 if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge: '%s'\n",gadgetBridgeBuffer);
+                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge message: '%s'\n",gadgetBridgeBuffer);
                 }
                 gadgetBridgeBufferOffset=0;
                 free(gadgetBridgeBuffer);
@@ -496,8 +534,11 @@ static void BLEStartTask(void* args) {
 
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
-    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
+
     // UART data come here
+    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
+    pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
+
     BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
                     CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
     pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());

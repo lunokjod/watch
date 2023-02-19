@@ -8,6 +8,7 @@ class LampApplication : public LunokIoTApplication {
         const char *AppName() override { return "Lamp"; };
         LampApplication();
         //~LampApplication();
+        const bool mustShowAsTask() override { return false; }
         bool Tick();
 };
 

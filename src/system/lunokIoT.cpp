@@ -128,7 +128,7 @@ LunokIoT::LunokIoT() {
     }*/
     
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
-    esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true);
+    esp_err_t taskWatchdogResult = esp_task_wdt_init(8, true); // CONFIG_ESP_TASK_WDT_TIMEOUT_S
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
         FreeSpace();

@@ -11,6 +11,7 @@ class BLEPlayerApplication : public TemplateApplication {
         bool parsedInfoJSON=false;
         JSONVar lastPlayerStateEntry;
         bool parsedStateJSON=false;
+        long difference=0;
         int dur=-1;
         int n=-1;
         int c=-1;

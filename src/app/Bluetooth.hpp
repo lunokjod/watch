@@ -17,6 +17,7 @@ class BluetoothApplication: public TemplateApplication {
         uint32_t SetBLERandomPin();
         BluetoothApplication();
         ~BluetoothApplication();
+        const bool mustShowAsTask() override { return false; }
         bool Tick();
 };
 
