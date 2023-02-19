@@ -528,8 +528,8 @@ static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t 
     TakeAllSamples();
     // if bluetooth is enabled, do a chance to get notifications
     if ( IsBLEEnabled() ) {
-        delay(100);
-        BLEKickAllPeers(); // force clients to reconnect
+        //delay(100);
+        //BLEKickAllPeers(); // force clients to reconnect
         lEvLog("BLE: Wait a little bit for connection/notification...\n");
         //delay(100); // let antena wharm
         TimedDoSleep.once(9,[]() { // get sleep in some seconds if no screen is on

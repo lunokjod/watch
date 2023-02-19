@@ -473,6 +473,13 @@ void BLELoopTask(void * data) {
             //screenShootInProgress=false;
             blePeer=false;
             lNetLog("BLE: Device disconnected\n");
+            
+            //if (!esp_vhci_host_check_send_available()) {
+            // "Controller not ready to receive packets"
+            // https://github.com/h2zero/NimBLE-Arduino/blob/c2cd460792c96915058e4b2b9f4a73ffe9c38f9c/src/nimble/esp_port/esp-hci/src/esp_nimble_hci.c
+            //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            //xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) ); // wait a ittle bit
+
             //delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
             lNetLog("BLE: Start BLE advertising\n");

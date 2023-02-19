@@ -33,16 +33,7 @@
 extern SemaphoreHandle_t I2cMutex;
 
 bool ParseGadgetBridgeJSON(JSONVar &json) {
-    if (false == ttgo->bl->isOn()) {
-        lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
-        ScreenWake();
-        #ifdef LILYGO_WATCH_2020_V3
-            ttgo->shake();
-            //ttgo->motor->onec(80);
-            delay(100);
-        #endif
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    }
+
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
             // save to database
@@ -126,12 +117,23 @@ bool ParseGadgetBridgeMessage(char * jsondata) {
     JSONVar myObject = JSON.parse(jsondata);
     if (JSON.typeof(myObject) != "undefined") {
         lNetLog("Gadgetbridge: JSON\n");
-            // here is a JSON structure
-            bool parsed = ParseGadgetBridgeJSON(myObject);
-            if ( false == parsed ) {
-                lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
-                return false;
+        // here is a JSON structure
+        bool parsed = ParseGadgetBridgeJSON(myObject);
+        if ( false == parsed ) {
+            lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
+            return false;
+        } else {
+            if (false == ttgo->bl->isOn()) {
+                lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
+                ScreenWake();
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                #ifdef LILYGO_WATCH_2020_V3
+                    ttgo->shake();
+                    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+                    xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+                #endif
             }
+        }
     }
     return true;
 }
