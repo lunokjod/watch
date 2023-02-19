@@ -294,6 +294,13 @@ static void DoSleepTask(void *args) {
         lNetLog("Network in use, waiting to get a nap! ...\n");
         delay(1000);
     }
+    if ( ttgo->bl->isOn()) {
+        lSysLog("DoSleep cannot continue, screen is ON\n");
+        systemSleep = false;
+        xSemaphoreGive(DoSleepTaskSemaphore);
+        vTaskDelete(NULL);
+    }
+
 
     // forcing wifi to get out!
     if (WL_NO_SHIELD != WiFi.status() ) {
@@ -523,7 +530,7 @@ Ticker TimedDoSleep;
 
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("ESP Wakeup timer triggered\n");
-    if (false == ttgo->bl->isOn()) { setCpuFrequencyMhz(80); }
+    if (false == ttgo->bl->isOn()) { LoT().CpuSpeed(80); }
 
     TakeAllSamples();
     // if bluetooth is enabled, do a chance to get notifications

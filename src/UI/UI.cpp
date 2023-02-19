@@ -44,6 +44,7 @@
 #include "../app/TaskSwitcher.hpp"
 
 #include "../system/Application.hpp"
+#include "../lunokIoT.hpp"
 
 extern SoftwareKeyboard *keyboardInstance;
 
@@ -110,7 +111,7 @@ void ScreenWake() {
 #ifdef LUNOKIOT_SERIAL
         Serial.end();
 #endif
-        setCpuFrequencyMhz(240);
+        LoT().CpuSpeed(240);
 #ifdef LUNOKIOT_SERIAL
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
 #endif
@@ -148,7 +149,7 @@ void ScreenSleep() {
 #ifdef LUNOKIOT_SERIAL
         Serial.end();
 #endif
-        setCpuFrequencyMhz(80);
+        LoT().CpuSpeed(80);
 #ifdef LUNOKIOT_SERIAL
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
 #endif
@@ -556,6 +557,7 @@ void UITickEnd() { // @TODO this can be replaced by a Ticker stop
         vTaskDelete(UITickTaskHandler);
         UITickTaskHandler=NULL;
         lUILog("Tick disabled (app loses Tick now)\n");
+        ttgo->tft->fillScreen(TFT_BLACK);
     }
 }
 
@@ -575,7 +577,7 @@ void UIStart() {
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
-        .task_priority = uxTaskPriorityGet(NULL)+2, // tskIDLE_PRIORITY-1,
+        .task_priority = tskIDLE_PRIORITY, // tskIDLE_PRIORITY-1,
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
         .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };

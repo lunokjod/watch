@@ -39,6 +39,7 @@ class LunokIoT {
         bool IsNVSEnabled();
         void BootReason();
         bool IsNetworkInUse();
+        bool CpuSpeed(uint32_t mhz);
 
         // delete copy and move constructors and assign operators
         LunokIoT(LunokIoT const&) = delete;             // Copy construct
