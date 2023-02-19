@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo library
@@ -247,18 +266,11 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
-
+extern bool wifiOverride;
 static void DoSleepTask(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_timer.html
     // what about change all timers to:
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/freertos.html#timer-api
-
-
-    /*
-    if ( networkActivity ) {
-        Serial.println("ESP32: DoSleep DISCARDED due network activity");
-        vTaskDelete(NULL);
-    }*/
     lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
     BaseType_t done = xSemaphoreTake(DoSleepTaskSemaphore, LUNOKIOT_EVENT_TIME_TICKS);
     if (pdTRUE != done) {
@@ -273,10 +285,14 @@ static void DoSleepTask(void *args) {
     LunokIoTSystemTickerStop();
 
     // destroy the app if isn't the watchface
-    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+    if ( ( nullptr != currentApplication) && ( true != currentApplication->isWatchface() ) ) {
         // the current app isn't a watchface... get out!
         LaunchApplication(nullptr,false,true); // Synched App Stop
         delay(100);
+    }
+    while(LoT().IsNetworkInUse()) {
+        lNetLog("Network in use, waiting to get a nap! ...\n");
+        delay(1000);
     }
 
     // forcing wifi to get out!
@@ -309,8 +325,10 @@ static void DoSleepTask(void *args) {
     // touch panel interrupt gpio_38
     // bma interrupt gpio_397
 
-    esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * LUNOKIOT_WAKE_TIME_S); // periodical wakeup to take samples
-    if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",LUNOKIOT_WAKE_TIME_S); }
+    uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
+    if ( IsBLEEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
+    esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
+    if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
 
     esp_err_t wakeAXP = esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, LOW);
     if ( ESP_OK != wakeAXP ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
@@ -505,13 +523,16 @@ Ticker TimedDoSleep;
 
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("ESP Wakeup timer triggered\n");
+    if (false == ttgo->bl->isOn()) { setCpuFrequencyMhz(80); }
+
     TakeAllSamples();
     // if bluetooth is enabled, do a chance to get notifications
     if ( IsBLEEnabled() ) {
+        delay(100);
+        BLEKickAllPeers(); // force clients to reconnect
         lEvLog("BLE: Wait a little bit for connection/notification...\n");
         //delay(100); // let antena wharm
-        //BLEKickAllPeers(); // force clients to reconnect
-        TimedDoSleep.once(8,[]() { // get sleep in some seconds if no screen is on
+        TimedDoSleep.once(9,[]() { // get sleep in some seconds if no screen is on
             if (false == ttgo->bl->isOn()) {
                 lEvLog("Timer triggered without screen... (going to sleep again)\n")
                 DoSleep();
@@ -540,7 +561,7 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
 static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     if (0 != strcmp(SYSTEM_EVENTS, base)) {
-        lEvLog("WARNING! unkown base: '%s' args: %p id: %d data: %p\n", base, handler_args, id, event_data);
+        lEvLog("WARNING! unknown base: '%s' args: %p id: %d data: %p\n", base, handler_args, id, event_data);
         return;
     }
     if (SYSTEM_EVENT_TICK == id) { return; }
@@ -657,7 +678,7 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
 
 void TakeBMPSample() {
     
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (pdTRUE != done) { return; }
     
     Accel acc;
@@ -830,9 +851,9 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
 
     // enable lamp? @TODO THIS MUST BE A SETTING
     bool launchLamp=false;
-    lLog("@TODO DISABLED LAMP LAUNCH <=========================\n");
-    //if ( degY > 340.0 ) { launchLamp = true; }
-    //else if ( degY < 20.0 ) { launchLamp = true; }
+    //lLog("@TODO DISABLED LAMP LAUNCH <=========================\n");
+    if ( degY > 340.0 ) { launchLamp = true; }
+    else if ( degY < 20.0 ) { launchLamp = true; }
 
     if ( launchLamp ) { // is the correct pose to get light?
         LaunchApplication(new LampApplication());
@@ -984,6 +1005,9 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "Assoc fail";
             } else if ( WIFI_REASON_HANDSHAKE_TIMEOUT == disconnectData->reason ) {
                 ReasonText = "Handshake timeout";
+                WiFi.disconnect();
+                delay(100);
+                WiFi.begin();
             } else if ( WIFI_REASON_CONNECTION_FAIL == disconnectData->reason ) {
                 ReasonText = "Connection fail";
             } else if ( WIFI_REASON_AP_TSF_RESET == disconnectData->reason ) {
@@ -1671,7 +1695,7 @@ void SystemEventBootEnd() {
 }
 
 void TakeAXPSample() {
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (pdTRUE != done) { return; }
     // begin tick report
     float nowAXPTemp = ttgo->power->getTemp();

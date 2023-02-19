@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <functional>
 #include <list>
 #include <esp_task_wdt.h>
@@ -12,8 +31,7 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
-esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
-extern bool networkActivity;
+const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
 //EventKVO * BLEWLightSleepEvent = nullptr;
@@ -44,6 +62,7 @@ std::list <lBLEDevice*>BLEKnowDevices;
 // internal flags
 volatile bool bleWaitStop=false; // internal flag to wait BLEStop task
 volatile bool bleEnabled=false; // is the service on?
+volatile bool bleBeingUsed=false;   // downloading something
 
 //@TODO old style trash must be cleaned
 volatile bool bleServiceRunning=false;
@@ -53,6 +72,7 @@ volatile bool oldDeviceConnected = false;
 
 bool IsBLEPeerConnected() { return blePeer; }
 bool IsBLEEnabled() { return bleEnabled; }
+bool IsBLEInUse() { return bleBeingUsed; }
 
 bool BLESendUART(const char * data) {
     if ( false == IsBLEPeerConnected() ) {
@@ -232,6 +252,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
 
         if ( 0 == strncmp(receivedData,GadgetbridgeCommandBEGIN,strlen(GadgetbridgeCommandBEGIN))) {
             lNetLog("BLE: UART: Begin Gadgetbridge GB command\n");
+            bleBeingUsed=true;
             gadgetbridgeCommandInProgress=true;
             if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
             gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
@@ -243,6 +264,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
                 gadgetbridgeCommandInProgress=false;
                 lNetLog("BLE: UART: memory ERROR!\n");
                 gadgetBridgeBufferOffset=0;
+                bleBeingUsed=false;
                 return;
             }
             lNetLog("BLE: UART: Continue Gadgetbridge GB command\n");
@@ -250,6 +272,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
             for (int i = 0; i < rxValue.length(); i++) {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
                 gadgetBridgeBufferOffset++;
+
             }
             // check if is the end
             const char *toLast=receivedData;
@@ -265,6 +288,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
                 gadgetBridgeBufferOffset=0;
                 free(gadgetBridgeBuffer);
                 gadgetBridgeBuffer=nullptr;
+                bleBeingUsed=false;
             }
             return;
         }
@@ -275,6 +299,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
 
         if ( 0 == strncmp(receivedData,BangleJSCommandBEGIN,strlen(BangleJSCommandBEGIN))) {
             lNetLog("BLE: UART: Begin BangleJS command\n");
+            bleBeingUsed=true;
             bangleCommandInProgress=true;
             if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
             gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
@@ -286,6 +311,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
                 bangleCommandInProgress=false;
                 lNetLog("BLE: UART: memory ERROR!\n");
                 gadgetBridgeBufferOffset=0;
+                bleBeingUsed=false;
                 return;
             }
             lNetLog("BLE: UART: Continue BangleJS command\n");
@@ -300,6 +326,7 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
             if ( 0 == strcmp(BangleJSCommandEND,toLast)) {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
                 bangleCommandInProgress=false;
+                bleBeingUsed=false;
                 lNetLog("BLE: UART: End BangleJS command\n");
                 bool parsed = ParseBangleJSMessage(gadgetBridgeBuffer);
                 if ( false == parsed ) {
@@ -378,7 +405,6 @@ void BLELoopTask(void * data) {
                     lNetLog("Begin send screenshoot via BLE UART\n");
                     screenShootCurrentImageY=0;
                     screenShootCurrentImageX=0;
-                    networkActivity=true;
                     lastRLECount=0;
                 } else { // in progress
                     if ( nullptr != theScreenShotToSend) {
@@ -437,7 +463,6 @@ void BLELoopTask(void * data) {
                             screenShootInProgress = false;
                             //DISCONNECT THE CLIENT to notify end of picture
                             BLEKickAllPeers();
-                            networkActivity=false;
                         }
                     }
                 }
@@ -452,7 +477,7 @@ void BLELoopTask(void * data) {
             pServer->startAdvertising(); // restart advertising
             lNetLog("BLE: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
-            networkActivity=false;
+            bleBeingUsed=false;
         }
 
         // connecting
@@ -461,10 +486,8 @@ void BLELoopTask(void * data) {
             blePeer=true;
             lNetLog("BLE: Device connected\n");
             oldDeviceConnected=deviceConnected;
-            networkActivity=true;
         }
     }
-    networkActivity=false;
     //screenShootInProgress=false;
     deviceConnected = false;
     oldDeviceConnected = false;
@@ -523,7 +546,11 @@ static void BLEStartTask(void* args) {
     //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-    NimBLEDevice::setPower(defaultBLEPowerLevel);
+
+    NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
+    //NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_CONN_HDL0);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_ADV);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_SCAN);
         //ESP_PWR_LVL_P9); /** +9db */
     // create GATT the server
     pServer = BLEDevice::createServer();

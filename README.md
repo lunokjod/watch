@@ -10,14 +10,7 @@
 
 https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9a0-77f161d2d659.mp4
 
-<img src="./doc/watchface0.png" width="120" />
-<img src="./doc/playground0.png" width="120" />
-<img src="./doc/playground3.png" width="120" />
-<img src="./doc/settime.png" width="120" />
-<img src="./doc/battery.png" width="120" />
-<img src="./doc/ble_upload.png" width="120" />
-<img src="./doc/mainmenu_provisioning.png" width="120" />
-<img src="./doc/provisioning.png" width="120" />
+<img src="./doc/watchface0.png" width="120" /> <img src="./doc/playground0.png" width="120" /> <img src="./doc/playground3.png" width="120" /> <img src="./doc/settime.png" width="120" /> <img src="./doc/battery.png" width="120" /> <img src="./doc/ble_upload.png" width="120" /> <img src="./doc/mainmenu_provisioning.png" width="120" /> <img src="./doc/provisioning.png" width="120" />
 
 * Note: under heavy development (not ready for everyday use)
 
