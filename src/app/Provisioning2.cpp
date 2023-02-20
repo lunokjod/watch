@@ -144,7 +144,7 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
                 lastProvisioning2Instance->provisioningStarted = false;
                 NVS.setInt("provisioned",1, false);
                 provisioned = true;
-                LaunchApplication(new ShutdownApplication(true,true));
+                //LaunchApplication(new ShutdownApplication(true,true));
             }
             break;
         case ARDUINO_EVENT_PROV_END:
