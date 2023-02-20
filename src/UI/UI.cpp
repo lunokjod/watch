@@ -125,6 +125,7 @@ void ScreenWake() {
         //delay(1); // get time to queue digest ;)
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
+        ttgo->tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
         FPS = MAXFPS;
         UINextTimeout = millis()+UITimeout;
     }
@@ -139,7 +140,6 @@ void ScreenSleep() {
     }
     if ( true == ttgo->bl->isOn() ) {
         ttgo->bl->off();
-        ttgo->tft->fillScreen(TFT_BLACK); // better than show outdated information on wake :(
         lUILog("Put screen to sleep now\n");
         ttgo->displaySleep();
         delay(1);
@@ -557,7 +557,6 @@ void UITickEnd() { // @TODO this can be replaced by a Ticker stop
         vTaskDelete(UITickTaskHandler);
         UITickTaskHandler=NULL;
         lUILog("Tick disabled (app loses Tick now)\n");
-        ttgo->tft->fillScreen(TFT_BLACK);
     }
 }
 

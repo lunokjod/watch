@@ -133,10 +133,10 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
             lUILog("Application: None\n");
             currentApplication = nullptr;     // no one driving now x'D
-            ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is dead in a "null application"
+            ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is in a dead-end in a "null application"
+            // UI is dead beyond here, no app on foreground, only external events or timed triggers can solve this point :)
         } else {
            lUILog("Application: %p '%s' goes to front\n", instance,instance->AppName());
-
             FPS=MAXFPS; // reset refresh rate
             currentApplication = instance; // set as main app
             uint8_t userBright = NVS.getInt("lBright");

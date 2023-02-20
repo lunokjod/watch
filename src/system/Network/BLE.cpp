@@ -355,7 +355,7 @@ void BLELoopTask(void * data) {
     deviceConnected = false;
     while(bleEnabled) {
         esp_task_wdt_reset();
-        delay(100);
+        delay(300);
 
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
@@ -421,14 +421,6 @@ void BLELoopTask(void * data) {
             // data avaliable on gadgetBridgeBuffer
             xSemaphoreGive( BLEGadgetbridge );
         }
-        if ( nullptr != currentGadgetBridgeBufferPtr ) {
-                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
-                if ( false == parsed ) {
-                    lNetLog("BLE: Unknown Gadgetbridge message: '%s'\n",currentGadgetBridgeBufferPtr);
-                }
-                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
-                currentGadgetBridgeBufferPtr=nullptr; // dontcare
-        }
         if ( nullptr != currentBangleJSBridgeBufferPtr ) {
                 bool parsed = ParseBangleJSMessage(currentBangleJSBridgeBufferPtr);
                 if ( false == parsed ) {
@@ -436,6 +428,14 @@ void BLELoopTask(void * data) {
                 }
                 free(currentBangleJSBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
                 currentBangleJSBridgeBufferPtr=nullptr; // dontcare
+        }
+        if ( nullptr != currentGadgetBridgeBufferPtr ) {
+                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: Unknown Gadgetbridge message: '%s'\n",currentGadgetBridgeBufferPtr);
+                }
+                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentGadgetBridgeBufferPtr=nullptr; // dontcare
         }
     }
     deviceConnected = false;
@@ -469,8 +469,8 @@ static void BLEStartTask(void* args) {
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
     // Create the BLE Device
-    lSysLog("------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
-    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
+    lSysLog("------------------> DEBUG: free stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    lNetLog("------------------> DEBUG: @WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
     BLEDevice::init(std::string(BTName)); // hate strings    
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
@@ -575,10 +575,14 @@ static void BLEStartTask(void* args) {
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
+                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY+1,
+                    &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
+        vTaskDelete(NULL);
     }
+    FreeSpace();
+    lNetLog("BLE: Started!\n");
     vTaskDelete(NULL);
 }
 

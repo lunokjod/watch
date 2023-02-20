@@ -117,6 +117,9 @@ static inline void FreeSpace() {
 
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
+
+    lSysLog("Watermark Free Stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+
 /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();
