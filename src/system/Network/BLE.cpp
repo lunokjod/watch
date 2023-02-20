@@ -31,6 +31,7 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
+
 const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
@@ -44,6 +45,12 @@ EventKVO * envTempPublish = nullptr;
 //StaticTask_t BLETaskHandler;
 //StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
 SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
+
+// used to nofity when new message is ready for parsing
+bool BLEGadgetbridgeCommandPending = false;
+bool BLEBangleJSCommandPending = false;
+SemaphoreHandle_t BLEGadgetbridge = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
+
 TaskHandle_t BLELoopTaskHandler;
 TaskHandle_t BLEStartHandler;
 // monitor devices to publish on GATT
@@ -264,13 +271,13 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset-2]=0; // correct eol
                 gadgetbridgeCommandInProgress=false;
                 lNetLog("BLE: UART: End Gadgetbridge GB command\n");
-                bool parsed = ParseGadgetBridgeMessage(gadgetBridgeBuffer);
-                if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge message: '%s'\n",gadgetBridgeBuffer);
+                // Parse outside
+                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    BLEGadgetbridgeCommandPending=true;
+                    gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( BLEGadgetbridge );
                 }
-                gadgetBridgeBufferOffset=0;
-                free(gadgetBridgeBuffer);
-                gadgetBridgeBuffer=nullptr;
                 bleBeingUsed=false;
             }
             return;
@@ -311,13 +318,14 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
                 bangleCommandInProgress=false;
                 bleBeingUsed=false;
                 lNetLog("BLE: UART: End BangleJS command\n");
-                bool parsed = ParseBangleJSMessage(gadgetBridgeBuffer);
-                if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN BangleJS: '%s'\n",gadgetBridgeBuffer);
+
+                // Parse outside
+                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    BLEBangleJSCommandPending=true;
+                    gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( BLEGadgetbridge );
                 }
-                gadgetBridgeBufferOffset=0;
-                free(gadgetBridgeBuffer);
-                gadgetBridgeBuffer=nullptr;
             }
             return;
         }
@@ -347,7 +355,7 @@ void BLELoopTask(void * data) {
     deviceConnected = false;
     while(bleEnabled) {
         esp_task_wdt_reset();
-        delay(10);
+        delay(100);
 
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
@@ -391,6 +399,44 @@ void BLELoopTask(void * data) {
             lNetLog("BLE: Device connected\n");
             oldDeviceConnected=deviceConnected;
         }
+
+        
+
+        // parse gadgetbridge command
+        char * currentGadgetBridgeBufferPtr = nullptr;
+        char * currentBangleJSBridgeBufferPtr = nullptr;
+        if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+            // bangleJS
+            if ( BLEBangleJSCommandPending ) {
+                currentBangleJSBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEBangleJSCommandPending = false;
+            }
+            // gadgetbridge
+            if ( BLEGadgetbridgeCommandPending ) {
+                currentGadgetBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEGadgetbridgeCommandPending = false;
+            }
+            // data avaliable on gadgetBridgeBuffer
+            xSemaphoreGive( BLEGadgetbridge );
+        }
+        if ( nullptr != currentGadgetBridgeBufferPtr ) {
+                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: Unknown Gadgetbridge message: '%s'\n",currentGadgetBridgeBufferPtr);
+                }
+                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentGadgetBridgeBufferPtr=nullptr; // dontcare
+        }
+        if ( nullptr != currentBangleJSBridgeBufferPtr ) {
+                bool parsed = ParseBangleJSMessage(currentBangleJSBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: Unknown BangleJS message: '%s'\n",currentBangleJSBridgeBufferPtr);
+                }
+                free(currentBangleJSBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentBangleJSBridgeBufferPtr=nullptr; // dontcare
+        }
     }
     deviceConnected = false;
     oldDeviceConnected = false;
@@ -421,9 +467,10 @@ static void BLEStartTask(void* args) {
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
     char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
     // Create the BLE Device
+    lSysLog("------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
     BLEDevice::init(std::string(BTName)); // hate strings    
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
@@ -528,7 +575,7 @@ static void BLEStartTask(void* args) {
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY-2, &BLELoopTaskHandler,1);
+                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
@@ -556,7 +603,7 @@ void StartBLE(bool synced) {
                         nullptr,
                         tskIDLE_PRIORITY+1,
                         &BLEStartHandler,
-                        1);
+                        CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch start Task\n");
         return;
@@ -657,7 +704,7 @@ void StopBLE() {
                         &waitFor,
                         tskIDLE_PRIORITY-2,
                         NULL,
-                        1);
+                        CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch stop Task\n");
         return;

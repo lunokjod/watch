@@ -316,7 +316,7 @@ void LunokIoT::BootReason() { // check boot status
     // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
 
     #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
-        // do sound only if boot is normal (crash-silent)
+        // do sound only if boot is normal (crash-silent if last boot fail)
         if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
     #endif
 

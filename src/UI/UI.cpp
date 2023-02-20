@@ -577,7 +577,7 @@ void UIStart() {
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
-        .task_priority = tskIDLE_PRIORITY, // tskIDLE_PRIORITY-1,
+        .task_priority = tskIDLE_PRIORITY+4, // tskIDLE_PRIORITY-1,
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
         .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };

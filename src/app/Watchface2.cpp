@@ -893,8 +893,7 @@ bool Watchface2Application::Tick()
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
             unsigned char *img = img_bluetooth_24_bits; // bluetooth logo only icon
-            if (blePeer)
-            {
+            if (blePeer) {
                 img = img_bluetooth_peer_24_bits;
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));

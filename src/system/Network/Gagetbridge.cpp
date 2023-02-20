@@ -69,6 +69,7 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
                     LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
                     //(int)json["id"],(const char*)json["title"],(const char*)json["src"]));
                 }
+                lSysLog("-------------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
                 return true; // for debug
             }
         } else if ( 0 == strcmp((const char*)json["t"],"call") ) {
