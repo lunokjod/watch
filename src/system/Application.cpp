@@ -250,7 +250,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         } else {
             // kill app in other thread (some apps takes much time)
             //xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr,0);
-            xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr,0);
+            xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY-3, nullptr,0);
         }
         delay(80);
         FreeSpace();
