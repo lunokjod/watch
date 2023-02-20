@@ -477,7 +477,7 @@ void Watchface2Application::Handlers()
         ntpTask->_lastCheck = millis();
         // if ( false == ntpSyncDone ) {
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
-        ntpTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
+        ntpTask->desiredStack = LUNOKIOT_QUERY_STACK_SIZE;
         //}
         ntpTask->callback = [&, this]() {
             if (false == (bool)NVS.getInt("NTPEnabled"))
@@ -626,7 +626,7 @@ void Watchface2Application::Handlers()
             return true;
         };
         geoIPTask->enabled = oweatherValue;
-        geoIPTask->desiredStack=LUNOKIOT_MID_STACK_SIZE;
+        geoIPTask->desiredStack=LUNOKIOT_QUERY_STACK_SIZE;
         AddNetworkTask(geoIPTask);
     }
 
@@ -659,7 +659,7 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_MID_STACK_SIZE;
+        weatherTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif

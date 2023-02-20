@@ -45,6 +45,7 @@ EventKVO * envTempPublish = nullptr;
 //StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
 SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
 TaskHandle_t BLELoopTaskHandler;
+TaskHandle_t BLEStartHandler;
 // monitor devices to publish on GATT
 NimBLECharacteristic * battCharacteristic = nullptr;
 NimBLECharacteristic * lBattTempCharacteristic = nullptr;
@@ -238,9 +239,9 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     bool gadgetbridgeCommandInProgress=false;
     bool bangleCommandInProgress=false;
 
-    void onRead(NimBLECharacteristic* pCharacteristic) {
-        lNetLog("BLE: UART: onREAD\n");
-    }
+    //void onRead(NimBLECharacteristic* pCharacteristic) {
+    //    lNetLog("BLE: UART: onREAD\n");
+    //}
 
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
@@ -538,11 +539,11 @@ static void BLEStartTask(void* args) {
     char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
 
-    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
+    //lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
     //BLEDevice::deinit();
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
-    delay(100);
     FreeSpace();
+    esp_task_wdt_reset();
     // Create the BLE Device
     BLEDevice::init(std::string(BTName)); // hate strings
     esp_task_wdt_reset();
@@ -664,6 +665,9 @@ static void BLEStartTask(void* args) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
     /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake on ble from sleep :(
+    UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
+    lSysLog("BLE BLEStartTask free stack: %u/%u\n",highWater,LUNOKIOT_QUERY_STACK_SIZE);
+
     vTaskDelete(NULL);
 }
 
@@ -685,19 +689,29 @@ void StartBLE(bool synced) {
     delay(50);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_MID_STACK_SIZE,
+                        LUNOKIOT_QUERY_STACK_SIZE,
                         nullptr,
                         tskIDLE_PRIORITY,
-                        NULL,
+                        &BLEStartHandler,
                         1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch start Task\n");
         return;
     }
+
     if ( synced ) {
         //if ( not bleServiceRunning ) {
         lNetLog("BLE: Waiting service starts...\n");
-        while(not bleServiceRunning) { delay(50); esp_task_wdt_reset(); }
+        while(not bleServiceRunning) {
+            TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            /*
+            if ( NULL != BLEStartHandler ) {
+                UBaseType_t highWater = uxTaskGetStackHighWaterMark(BLEStartHandler);
+                lNetLog("BLE STACK: %u\n",highWater);
+            }*/
+            esp_task_wdt_reset();
+            xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        }
         lNetLog("BLE: Service started!\n");
         //}
     }

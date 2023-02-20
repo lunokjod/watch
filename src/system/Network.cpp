@@ -211,6 +211,9 @@ void NetworkTaskCallTask(void *data) {
     networkTaskResult = task->callback();
     //FreeSpace();
     lNetLog("-[ NET TASK END   ] ------------------------------------\n");
+    UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
+    lSysLog("NetworkTaskCallTask: free stack: %u/%u\n",highWater,task->desiredStack);
+
     networkTaskRunning=false;
     vTaskDelete(NULL);
 }
