@@ -286,7 +286,7 @@ void NetworkTaskRun(void *data) {
                 lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
                 networkTaskRunning=true;
                 TaskHandle_t taskHandle;
-                BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle,0);
+                BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,tskIDLE_PRIORITY,&taskHandle,0);
                 if ( pdPASS != taskOK ) {
                     lNetLog("NetworkTask: ERROR Trying to run task: '%s'\n", tsk->name);
                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
@@ -359,7 +359,7 @@ void NetworkTasksCheck() {
         lNetLog("Network: BLE must be temporaly disabled to maximize WiFi effort\n");
         StopBLE();
     }
-    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TASK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL,0);
+    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TASK_STACK_SIZE,NULL,tskIDLE_PRIORITY, NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         StartBLE();

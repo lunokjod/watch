@@ -110,27 +110,10 @@ bool BLESendUART(const char * data) {
 }
 // Server callbacks
 class LBLEServerCallbacks: public BLEServerCallbacks {
-    /*
-    void onConnect(BLEServer* pServer) {
-        lNetLog("BLE: Client connect A\n");
-        deviceConnected = true;
-    };*/
     void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
         lNetLog("BLE: Client connect\n");
         deviceConnected = true;
-        if ( nullptr != currentApplication ) {
-            if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
-                if ( ttgo->bl->isOn()) {
-                    LaunchApplication(new BluetoothApplication());
-                }
-            }
-        }
     }
-    /*
-    void onDisconnect(BLEServer* pServer) {
-        lNetLog("BLE: Client disconnect A\n");
-        deviceConnected = false;
-    }*/
     void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
         lNetLog("BLE: Client disconnect\n");
         deviceConnected = false;
@@ -246,7 +229,6 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
         const char * receivedData = rxValue.c_str();
-
         // check for GADGETBRIDGE commands
         const char GadgetbridgeCommandEND[] = ")\n";
         const char GadgetbridgeCommandBEGIN[] = "\x10GB(";
@@ -361,26 +343,12 @@ lBLEDevice::~lBLEDevice() {
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
     lNetLog("BLE: Task begin\n");
-    /*
-    union RLEPackage { // description for send IMAGES via UART TX notification
-        uint8_t bytes[5];
-        struct {
-            uint16_t color;
-            uint8_t repeat; // the same color must repeat in next N'th pixels (RLE)
-            uint8_t x; // screen is 240x240, don't waste my time! :(
-            uint8_t y; // why send coordinates? because BLE notify can be lost
-        };
-    };*/
-
-    void *theScreenShotToSend=nullptr; // point to current screenshoot
-    // temp values
-    screenShootCurrentImageX=0;
-    screenShootCurrentImageY=0;
     oldDeviceConnected = false;
     deviceConnected = false;
     while(bleEnabled) {
         esp_task_wdt_reset();
         delay(10);
+
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
             size_t b4Devs = BLEKnowDevices.size();
@@ -396,79 +364,7 @@ void BLELoopTask(void * data) {
             });
             xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
-        /*
-        if ( blePeer ) {
-            if ( BLESendScreenShootCommand ) { // the client has sended "GETSCREENSHOOT" in the BLE UART
-                // first iteration
-                if ( false == screenShootInProgress ) {
-                    theScreenShotToSend = (void*)screenShootCanvas;
-                    screenShootInProgress = true;
-                    lNetLog("Begin send screenshoot via BLE UART\n");
-                    screenShootCurrentImageY=0;
-                    screenShootCurrentImageX=0;
-                    lastRLECount=0;
-                } else { // in progress
-                    if ( nullptr != theScreenShotToSend) {
-                        rgb565 myColor;
-                        myColor.u16 = screenShootCanvas->readPixel(screenShootCurrentImageX,screenShootCurrentImageY);
-                        //Serial.printf("X: %d Y: %d VAL: 0x%x\n", imageX, imageY, myColor.u16);
-                        if ( myLastColor.u16 == myColor.u16 ) {
-                            lastRLECount++;
-                            if ( lastRLECount  > 254 ) { // byte full...must send
-                                RLEPackage valToSend = { .color = myLastColor.u16 };
-                                valToSend.repeat = 255;
-                                valToSend.x = screenShootCurrentImageX;
-                                valToSend.y = screenShootCurrentImageY;
-                                pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
-                                pTxCharacteristic->notify(true);
-                                delay(20);
-                                lastRLECount=0;
-                                myLastColor=myColor;
-                                continue;
-                            }                            
-                            //Serial.printf("REPEATED RLE: %d RGB565: 0x%x\n", lastRLECount,myLastColor.u16);
-                        } else if ( myLastColor.u16 != myColor.u16 ) {
-                            RLEPackage valToSend = { .color = myLastColor.u16 };
-                            valToSend.repeat = lastRLECount;
-                            valToSend.x = screenShootCurrentImageX;
-                            valToSend.y = screenShootCurrentImageY;
-                            //Serial.printf("RLEDATA: 0x%x\n", valToSend.rleData);
-                            pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
-                            pTxCharacteristic->notify(true);
-                            realImageSize +=(lastRLECount*2); // image is RGB565 (16bit per pixel)
-                            imageUploadSize+=sizeof(RLEPackage); // real packet data
-                            delay(20);
-                            lastRLECount=1;
-                            myLastColor=myColor;
-                            UINextTimeout=millis()+UITimeout; // don't allow the UI stops
-                            continue;
-                        }
 
-                        myLastColor=myColor;
-                        screenShootCurrentImageX++;
-                        if ( screenShootCurrentImageX >= screenShootCanvas->width() ) {
-                            screenShootCurrentImageY++;
-                            screenShootCurrentImageX=0;
-                            //imageY = screenShootCanvas->height()+1;
-                        }
-                        if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
-                            realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
-                            lNetLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
-                            delay(10);
-                            theScreenShotToSend=nullptr;
-                            realImageSize=0;
-                            imageUploadSize=0;
-                            screenShootCurrentImageY=0;
-                            screenShootCurrentImageX=0;
-                            BLESendScreenShootCommand=false;
-                            screenShootInProgress = false;
-                            //DISCONNECT THE CLIENT to notify end of picture
-                            BLEKickAllPeers();
-                        }
-                    }
-                }
-            }
-        }*/
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
             //screenShootInProgress=false;
@@ -496,7 +392,6 @@ void BLELoopTask(void * data) {
             oldDeviceConnected=deviceConnected;
         }
     }
-    //screenShootInProgress=false;
     deviceConnected = false;
     oldDeviceConnected = false;
     blePeer = false;
@@ -505,7 +400,7 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-//extern void _intrnalSqlStatic(void *args);
+
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
@@ -519,57 +414,31 @@ static void BLEStartTask(void* args) {
         xSemaphoreGive( BLEUpDownStep );
         vTaskDelete(NULL);
     }
-    // lets bring up BLE
+        // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
-    /*
-    if( xSemaphoreTake( SqlLogSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-        const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
-        esp_task_wdt_reset();
-        int  rc = db_exec(lIoTsystemDatabase,query3);
-        if (rc != SQLITE_OK) {
-            lSysLog("SQL: ERROR: Unable exec: '%s'\n", query3);
-        }
-        esp_task_wdt_reset();
-        xSemaphoreGive( SqlLogSemaphore ); // free
-    }*/
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
-
     char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-
-    //lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
-    //BLEDevice::deinit();
+    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
-    FreeSpace();
-    esp_task_wdt_reset();
     // Create the BLE Device
-    BLEDevice::init(std::string(BTName)); // hate strings
-    esp_task_wdt_reset();
-    
+    BLEDevice::init(std::string(BTName)); // hate strings    
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
-    //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-
     NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
-    //NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_CONN_HDL0);
     NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_ADV);
     NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_SCAN);
-        //ESP_PWR_LVL_P9); /** +9db */
     // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
-    esp_task_wdt_reset();
-
     lNetLog("BLE: Server started\n");
-
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
-
     // UART data come here
     pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
     pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
@@ -658,16 +527,11 @@ static void BLEStartTask(void* args) {
     pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
-    //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
+                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY-2, &BLELoopTaskHandler,1);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
     }
-    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake on ble from sleep :(
-    UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
-    lSysLog("BLE BLEStartTask free stack: %u/%u\n",highWater,LUNOKIOT_QUERY_STACK_SIZE);
-
     vTaskDelete(NULL);
 }
 
@@ -686,12 +550,11 @@ void StartBLE(bool synced) {
         liLog("BLE: Refusing to start (already started)\n");
         return;
     }
-    delay(50);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
                         LUNOKIOT_QUERY_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY,
+                        tskIDLE_PRIORITY+1,
                         &BLEStartHandler,
                         1);
     if ( pdPASS != taskOK ) {
@@ -792,7 +655,7 @@ void StopBLE() {
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
                         &waitFor,
-                        tskIDLE_PRIORITY,
+                        tskIDLE_PRIORITY-2,
                         NULL,
                         1);
     if ( pdPASS != taskOK ) {
