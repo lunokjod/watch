@@ -19,20 +19,25 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-#include "Playground7.hpp"
-#include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
-extern TTGOClass *ttgo; // ttgo library shit ;)
+#include "LogView.hpp" // log capabilities
+#include "WatchfaceAlwaysOn.hpp"
 
-PlaygroundApplication7::~PlaygroundApplication7() {
-    ttgo->setBrightness(128);    
+#define MINIMUM_BACKLIGHT 5
+
+WatchfaceAlwaysOn::WatchfaceAlwaysOn() {
+    Tick();
 }
-PlaygroundApplication7::PlaygroundApplication7() {
-    ttgo->setBrightness(5);
+
+WatchfaceAlwaysOn::~WatchfaceAlwaysOn() {
 }
-bool PlaygroundApplication7::Tick() {
-    if (millis() > nextRedraw ) {
-        // draw code here
+
+bool WatchfaceAlwaysOn::Tick() {
+    // low the brightness if system changes it
+    if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
+
+    if ( millis() > nextRefresh ) { // redraw full canvas
+        canvas->fillSprite(TFT_BLACK); // use theme colors
+
         time_t now;
         struct tm * tmpTime;
         struct tm timeinfo;
@@ -47,7 +52,8 @@ bool PlaygroundApplication7::Tick() {
         canvas->setTextColor(TFT_WHITE);
         canvas->fillSprite(TFT_BLACK);
         canvas->drawString(buffer, TFT_WIDTH/2, TFT_HEIGHT/2);
-        nextRedraw=millis()+(1000/1); // tune your required refresh
+
+        nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
         return true;
     }
     return false;

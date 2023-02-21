@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <freertos/FreeRTOS.h>
@@ -68,9 +87,11 @@ Do not use ESP_LOGI functions inside.
 
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
+#include <esp_console.h>
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
+    
     InitLogs(); // need for stdout on usb-uart
 
     // announce myself with build information if serial debug is enabled
@@ -128,7 +149,7 @@ LunokIoT::LunokIoT() {
     }*/
     
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
-    esp_err_t taskWatchdogResult = esp_task_wdt_init(8, true); // CONFIG_ESP_TASK_WDT_TIMEOUT_S
+    esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true); // CONFIG_ESP_TASK_WDT_TIMEOUT_S
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
         FreeSpace();
@@ -208,10 +229,35 @@ LunokIoT::LunokIoT() {
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };
+/*
+static int free_mem(int argc, char **argv)
+{
+    printf("%d\n", esp_get_free_heap_size());
+    return 0;
+}*/
 
 void LunokIoT::InitLogs() {
     // Get serial comms with you
     #ifdef LUNOKIOT_SERIAL
+        /*
+        // start command line
+        esp_console_repl_t *repl = NULL;
+        esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+        repl_config.prompt = "lunokWatch>";
+        repl_config.max_cmdline_length = 255;
+        esp_console_register_help_command();
+        esp_console_dev_uart_config_t hw_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+        esp_console_new_repl_uart(&hw_config, &repl_config, &repl);
+        esp_console_start_repl(repl);
+        const esp_console_cmd_t cmd = {
+            .command = "free",
+            .help = "Get the current size of free heap memory",
+            .hint = NULL,
+            .func = &free_mem,
+        };
+        ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+        */
+
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
         #ifdef LUNOKIOT_DEBUG_ESP32
             Serial.setDebugOutput(true);
@@ -236,7 +282,11 @@ void shit() {
   }
 }
 */
-
+extern bool wifiOverride;
+bool LunokIoT::IsNetworkInUse() {
+    if ( ( wifiOverride ) || ( IsBLEInUse() )) { return true; }
+    return false;
+}
 void LunokIoT::ListSPIFFS() {
     if ( false == SPIFFSReady ) { return; }
     lSysLog("SPIFFS: contents:\n");
@@ -293,8 +343,27 @@ void LunokIoT::BootReason() { // check boot status
     // default arduinoFW esp-idf config ~/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config
 
     #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
-        // do sound only if boot is normal (crash-silent)
+        // do sound only if boot is normal (crash-silent if last boot fail)
         if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
     #endif
+}
 
+
+bool LunokIoT::CpuSpeed(uint32_t mhz) {
+    uint32_t currentMhz = getCpuFrequencyMhz();
+    if ( mhz == currentMhz ) { return true; } // nothing to do :)
+    lSysLog("CPU: Freq: %u Mhz to %u Mhz\n", currentMhz, mhz);
+    #ifdef LUNOKIOT_SERIAL
+            Serial.end();
+    #endif
+    esp_task_wdt_reset();
+    bool res= setCpuFrequencyMhz(mhz);
+    esp_task_wdt_reset();
+    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
+    esp_task_wdt_reset();
+    #ifdef LUNOKIOT_SERIAL
+        Serial.begin(LUNOKIOT_SERIAL_SPEED);
+    #endif
+    return res;
 }

@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <Arduino.h>
 #include <Arduino_JSON.h>
 #include "Gagetbridge.hpp"
@@ -14,16 +33,28 @@
 extern SemaphoreHandle_t I2cMutex;
 
 bool ParseGadgetBridgeJSON(JSONVar &json) {
-    if (false == ttgo->bl->isOn()) {
-        lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
-        ScreenWake();
-        #ifdef LILYGO_WATCH_2020_V3
-            ttgo->shake();
-            //ttgo->motor->onec(80);
-            delay(100);
-        #endif
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+
+    String jsonString = json.stringify(json);
+    char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
+    sprintf(myShitbuffer,"%s",jsonString.c_str());
+    NotificatioLog(myShitbuffer);
+    lSysLog("------AAAAAAAAA------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    if (json.hasOwnProperty("t")) {
+        if ( 0 == strcmp((const char*)json["t"],"notify") ) {
+            LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        } else if ( 0 == strcmp((const char*)json["t"],"musicinfo") ) {
+            LaunchApplication(new BLEPlayerApplication(),false);
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        } else if ( 0 == strcmp((const char*)json["t"],"musicstate") ) {
+            LaunchApplication(new BLEPlayerApplication(),false);
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        }
     }
+    /*
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
             // save to database
@@ -31,7 +62,6 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
             sprintf(myShitbuffer,"%s",jsonString.c_str());
             NotificatioLog(myShitbuffer);
-            
             if ((json.hasOwnProperty("subject"))&&(json.hasOwnProperty("body"))&&(json.hasOwnProperty("sender"))) {
                 //'{"t":"notify","id":1676021184,"subject":"aaaaaaaaaaaa","body":"aaaaaaaaaaaa","sender":"aaaaaaaaaaaa","tel":"aaaaaaaaaaaa"}
                 lNetLog("BLE: NOTIFICATION type1: (%d) Subject: '%s' Body: '%s' From: '%s'\n",
@@ -59,6 +89,7 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
                     LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
                     //(int)json["id"],(const char*)json["title"],(const char*)json["src"]));
                 }
+                lSysLog("-------------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
                 return true; // for debug
             }
         } else if ( 0 == strcmp((const char*)json["t"],"call") ) {
@@ -97,8 +128,7 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             }
         }
         return false;
-    }
-    // no 't' entry
+    }*/
     return false;
 }
 // http://www.espruino.com/Gadgetbridge
@@ -107,12 +137,25 @@ bool ParseGadgetBridgeMessage(char * jsondata) {
     JSONVar myObject = JSON.parse(jsondata);
     if (JSON.typeof(myObject) != "undefined") {
         lNetLog("Gadgetbridge: JSON\n");
-            // here is a JSON structure
-            bool parsed = ParseGadgetBridgeJSON(myObject);
-            if ( false == parsed ) {
-                lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
-                return false;
+        // here is a JSON structure
+        bool parsed = ParseGadgetBridgeJSON(myObject);
+        if ( false == parsed ) {
+            lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
+            return false;
+        } else {
+            if (false == ttgo->bl->isOn()) {
+                lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
+                ScreenWake();
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                /*
+                #ifdef LILYGO_WATCH_2020_V3
+                    ttgo->shake();
+                    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+                    xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+                #endif
+                */
             }
+        }
     }
     return true;
 }

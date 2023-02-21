@@ -1,5 +1,23 @@
 #ifndef ___LUNOKIOT__CONFIG__GENERATED__
 #define ___LUNOKIOT__CONFIG__GENERATED__
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
 
 /*
  * @@LUNOKIOT_GENERATED_FILE_WARNING@@
@@ -30,7 +48,8 @@
 
 #define uS_TO_S_FACTOR 1000000 // micros in a second
 
-const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*1; // used for wakeup the device every X minutes to get samples and notifications
+const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_S=60*8; // used for wakeup the device every X minutes to get samples
+const PROGMEM uint16_t LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S=30; // used for wakeup the device every X minutes to get notifications
 
 const PROGMEM float LUNOKIOT_SYSTEM_HEARTBEAT_TIME = 1500; // system heartbeat in times per second
 const PROGMEM TickType_t LUNOKIOT_SYSTEM_LOOP_TIME = (150 / portTICK_PERIOD_MS); //  system message loops
