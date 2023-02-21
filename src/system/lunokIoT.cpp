@@ -87,9 +87,11 @@ Do not use ESP_LOGI functions inside.
 
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
+#include <esp_console.h>
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
+    
     InitLogs(); // need for stdout on usb-uart
 
     // announce myself with build information if serial debug is enabled
@@ -227,10 +229,35 @@ LunokIoT::LunokIoT() {
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };
+/*
+static int free_mem(int argc, char **argv)
+{
+    printf("%d\n", esp_get_free_heap_size());
+    return 0;
+}*/
 
 void LunokIoT::InitLogs() {
     // Get serial comms with you
     #ifdef LUNOKIOT_SERIAL
+        /*
+        // start command line
+        esp_console_repl_t *repl = NULL;
+        esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+        repl_config.prompt = "lunokWatch>";
+        repl_config.max_cmdline_length = 255;
+        esp_console_register_help_command();
+        esp_console_dev_uart_config_t hw_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+        esp_console_new_repl_uart(&hw_config, &repl_config, &repl);
+        esp_console_start_repl(repl);
+        const esp_console_cmd_t cmd = {
+            .command = "free",
+            .help = "Get the current size of free heap memory",
+            .hint = NULL,
+            .func = &free_mem,
+        };
+        ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+        */
+
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
         #ifdef LUNOKIOT_DEBUG_ESP32
             Serial.setDebugOutput(true);
@@ -319,17 +346,24 @@ void LunokIoT::BootReason() { // check boot status
         // do sound only if boot is normal (crash-silent if last boot fail)
         if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
     #endif
-
 }
 
 
 bool LunokIoT::CpuSpeed(uint32_t mhz) {
-    lSysLog("CPU: Setting speed to %u Mhz\n", mhz);
+    uint32_t currentMhz = getCpuFrequencyMhz();
+    if ( mhz == currentMhz ) { return true; } // nothing to do :)
+    lSysLog("CPU: Freq: %u Mhz to %u Mhz\n", currentMhz, mhz);
+    #ifdef LUNOKIOT_SERIAL
+            Serial.end();
+    #endif
     esp_task_wdt_reset();
     bool res= setCpuFrequencyMhz(mhz);
     esp_task_wdt_reset();
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
     esp_task_wdt_reset();
+    #ifdef LUNOKIOT_SERIAL
+        Serial.begin(LUNOKIOT_SERIAL_SPEED);
+    #endif
     return res;
 }

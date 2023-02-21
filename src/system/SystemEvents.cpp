@@ -44,6 +44,7 @@ extern TTGOClass *ttgo; // ttgo library
 
 #include "../app/Shutdown.hpp"
 #include "../app/Provisioning2.hpp"
+#include "../app/WatchfaceAlwaysOn.hpp"
 
 #include <HTTPClient.h>
 
@@ -409,7 +410,7 @@ void DoSleep() {
         if ( pdPASS != intTaskOk ) {
             lSysLog("ERROR: cannot launch DoSleep\n");
             systemSleep = false;
-            if (false == ttgo->bl->isOn()) {
+            if (false == ttgo->bl->isOn()) {                
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 FreeSpace();
                 ScreenWake();
@@ -576,6 +577,23 @@ static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id
     // tasks for any activity?
     lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
 }
+
+static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lEvLog("BMA423: Event: Double tap\n");
+    if (false == ttgo->bl->isOn()) {
+        lEvLog("BMA423: Event: Double tap: Bring up system\n");
+        ScreenWake();
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        LaunchApplication(new WatchfaceAlwaysOn());
+        //DoSleep();
+    }
+}
+
+static void BMAEventTilt(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lEvLog("BMA423: Event: Tilt\n");
+    if (false == ttgo->bl->isOn()) { DoSleep(); }
+}
+
 
 static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
@@ -1088,11 +1106,7 @@ static void AXPInterruptController(void *args) {
 
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {   
-        //delay(LUNOKIOT_SYSTEM_INTERRUPTS_TIME); // dont care time precision, only yeld
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
-        //if ( pdFALSE == isDelayed ) { continue; }
-        // check for AXP int's
-
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         if (pdTRUE != done) { continue; }
 
@@ -1193,15 +1207,9 @@ static void AXPInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
-            } /*else {
-                ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
-                lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
-                irqAxp = false;
-                continue;
-            }*/
+            }
             ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
             lSysLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
-            //irqAxp = false;
         }
         irqAxp = false;
         xSemaphoreGive(I2cMutex);
@@ -1352,7 +1360,10 @@ static void BMAInterruptController(void *args) {
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'no motion' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableFeature(BMA423_ACTIVITY, true);
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'activity' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
-
+    //featureOK = ttgo->bma->enableFeature(BMA423_TILT, true);
+    //if ( false == featureOK ) { lEvLog("BMA: Enable feature 'tilt' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableFeature(BMA423_WAKEUP, true);
+    if ( false == featureOK ) { lEvLog("BMA: Enable feature 'double tap' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     // Reset steps
     featureOK = ttgo->bma->resetStepCounter();
     if ( false == featureOK ) { lEvLog("BMA: Unable to reset stepCounter\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
@@ -1364,6 +1375,10 @@ static void BMAInterruptController(void *args) {
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'activity'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableAnyNoMotionInterrupt();
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'no motion'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableTiltInterrupt();
+    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'tilt'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableWakeupInterrupt();
+    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'double tap'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
 
     xSemaphoreGive(I2cMutex);
 
@@ -1396,6 +1411,11 @@ static void BMAInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
+            } else if (ttgo->bma->isTilt()) {
+                irqBMA = false;
+                xSemaphoreGive(I2cMutex);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TILT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             } else if (ttgo->bma->isActivity()) {
                 irqBMA = false;
                 xSemaphoreGive(I2cMutex);
@@ -1406,7 +1426,13 @@ static void BMAInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
+            } else if (ttgo->bma->isDoubleClick()) {
+                irqBMA = false;
+                xSemaphoreGive(I2cMutex);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
+            
             irqBMA = false;
             lLog("@TODO unknown unprocessed interrupt call from BMA423!\n");
         }
@@ -1674,6 +1700,17 @@ void SystemEventsStart() {
     if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: NO POWER\n");
     }
+
+    // tilt and doubletap
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TILT, BMAEventTilt, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Tilt\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, BMAEventDoubleTap, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Double tap\n");
+    }
+
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop

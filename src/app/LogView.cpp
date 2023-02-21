@@ -40,12 +40,9 @@ void lRawLog(const char *fmt, ...) {
 
     #ifdef LUNOKIOT_DEBUG
         if( xSemaphoreTake( lLogSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+            //printf(buf);
             Serial.printf(buf);
             xSemaphoreGive( lLogSemaphore );
-        } else {
-            #ifdef LUNOKIOT_DEBUG_UI
-                Serial.println("[UI] Timeout! last message wasn't included on visual log due draw timeout");
-            #endif
         }
     #endif
 

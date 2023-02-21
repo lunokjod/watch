@@ -70,7 +70,9 @@ enum {
     BMA_EVENT_ACTIVITY,         // activity
     BMA_EVENT_NOMOTION,         // @TODO why interrupt never received? :(
     BMA_EVENT_TEMP,             // device temperature
-    BMA_EVENT_DIRECTION         // pose/orientation
+    BMA_EVENT_DIRECTION,        // pose/orientation
+    BMA_EVENT_TILT,             // watch tilt
+    BMA_EVENT_DOUBLE_TAP        // tap twice on watch
 };
 // obtain data from all sensors
 void TakeAllSamples();
