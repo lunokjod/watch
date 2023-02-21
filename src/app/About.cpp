@@ -29,7 +29,8 @@
 #include "LogView.hpp"
 
 extern TTGOClass *ttgo; // ttgo lib
-const unsigned long AboutBoxTextScrollDelay = 1000/24;
+const unsigned long AboutBoxTextScrollDelay = 1000/12;
+const unsigned long AboutBoxTextScrollDelayScroll = 1000/24;
 //const unsigned long 
 size_t AboutBoxTextScrollOffset = 0;
 /* @TODO show all of them!
@@ -277,7 +278,9 @@ AboutApplication::AboutApplication() {
 
 bool AboutApplication::Tick() {
     UINextTimeout = millis()+UITimeout; // disable screen timeout
-    if ( millis() > nextRedraw) {
+    
+    TemplateApplication::btnBack->Interact(touched,touchX,touchY);
+    if ( millis() > nextStep) {
         // update the source canvas (plain text scroll)
         textBuffer->scroll(0,-2);
 
@@ -335,7 +338,12 @@ bool AboutApplication::Tick() {
                 AboutBoxTextScrollOffset=0;
             }
         }
-        TemplateApplication::Tick();
+        nextStep=millis()+AboutBoxTextScrollDelayScroll;
+    }
+
+    if ( millis() > nextRedraw) {
+
+        TemplateApplication::btnBack->DirectDraw();
         // Direct draw xD
         perspectiveTextBuffer->canvas->pushSprite(
             (TFT_WIDTH-perspectiveTextBuffer->canvas->width())/2

@@ -31,6 +31,7 @@ class AboutApplication: public TemplateApplication {
     private:
         //unsigned long drawOneSecond=0;
         unsigned long nextRedraw=0;
+        unsigned long nextStep=0;
         //unsigned long nextScrollRedraw=0;
         uint8_t counterLines=0;
         //const float MAXTIMEZOOM=1.0;
