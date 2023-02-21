@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include "Watchface2.hpp"
 
 #include <esp_log.h>
@@ -458,7 +477,7 @@ void Watchface2Application::Handlers()
         ntpTask->_lastCheck = millis();
         // if ( false == ntpSyncDone ) {
         ntpTask->_nextTrigger = 0; // launch NOW if no synched never again
-        ntpTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
+        ntpTask->desiredStack = LUNOKIOT_QUERY_STACK_SIZE;
         //}
         ntpTask->callback = [&, this]() {
             if (false == (bool)NVS.getInt("NTPEnabled"))
@@ -607,7 +626,7 @@ void Watchface2Application::Handlers()
             return true;
         };
         geoIPTask->enabled = oweatherValue;
-        geoIPTask->desiredStack=LUNOKIOT_MID_STACK_SIZE;
+        geoIPTask->desiredStack=LUNOKIOT_QUERY_STACK_SIZE;
         AddNetworkTask(geoIPTask);
     }
 
@@ -640,7 +659,7 @@ void Watchface2Application::Handlers()
             return getDone;
         };
         weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_MID_STACK_SIZE;
+        weatherTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
         AddNetworkTask(weatherTask);
     }
 #endif
@@ -874,8 +893,7 @@ bool Watchface2Application::Tick()
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
             unsigned char *img = img_bluetooth_24_bits; // bluetooth logo only icon
-            if (blePeer)
-            {
+            if (blePeer) {
                 img = img_bluetooth_peer_24_bits;
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));

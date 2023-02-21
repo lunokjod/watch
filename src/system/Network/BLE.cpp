@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <functional>
 #include <list>
 #include <esp_task_wdt.h>
@@ -12,8 +31,8 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
-esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
-extern bool networkActivity;
+
+const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE
 EventKVO * BLEWStartEvent = nullptr; 
 //EventKVO * BLEWLightSleepEvent = nullptr;
@@ -26,7 +45,14 @@ EventKVO * envTempPublish = nullptr;
 //StaticTask_t BLETaskHandler;
 //StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
 SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
+
+// used to nofity when new message is ready for parsing
+bool BLEGadgetbridgeCommandPending = false;
+bool BLEBangleJSCommandPending = false;
+SemaphoreHandle_t BLEGadgetbridge = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
+
 TaskHandle_t BLELoopTaskHandler;
+TaskHandle_t BLEStartHandler;
 // monitor devices to publish on GATT
 NimBLECharacteristic * battCharacteristic = nullptr;
 NimBLECharacteristic * lBattTempCharacteristic = nullptr;
@@ -36,7 +62,7 @@ BLEServer *pServer = nullptr;
 BLEService *pService = nullptr;
 BLEService *pLunokIoTService = nullptr;
 BLEService *pBattService = nullptr;
-BLECharacteristic * pTxCharacteristic = nullptr;
+NimBLECharacteristic * pTxCharacteristic = nullptr;
 
 // list of know devices
 SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
@@ -44,6 +70,7 @@ std::list <lBLEDevice*>BLEKnowDevices;
 // internal flags
 volatile bool bleWaitStop=false; // internal flag to wait BLEStop task
 volatile bool bleEnabled=false; // is the service on?
+volatile bool bleBeingUsed=false;   // downloading something
 
 //@TODO old style trash must be cleaned
 volatile bool bleServiceRunning=false;
@@ -51,27 +78,49 @@ volatile bool blePeer = false;
 volatile bool deviceConnected = false;
 volatile bool oldDeviceConnected = false;
 
+bool IsBLEPeerConnected() { return blePeer; }
+bool IsBLEEnabled() { return bleEnabled; }
+bool IsBLEInUse() { return bleBeingUsed; }
+
+bool BLESendUART(const char * data) {
+    if ( false == IsBLEPeerConnected() ) {
+        lNetLog("BLE: ERROR: Unable to send UART data, no client connected\n");
+        return false;
+    }
+    if ( nullptr == pTxCharacteristic ) {
+        lNetLog("BLE: ERROR: No UART TX characteristic loaded\n");
+        return false;
+    }
+
+    uint16_t MaxDataSize = pServer->getPeerMTU(0)-3;
+    size_t currentOffset=0;
+    const size_t MaxOffset=strlen(data);
+    uint8_t *dataPtr=(uint8_t *)data;
+    lNetLog("BLE: Sending %u byte...\n",MaxOffset);
+    while(currentOffset < MaxOffset) {
+        dataPtr=((uint8_t *)data)+currentOffset;
+        uint16_t currentChunkSize=strlen((char*)dataPtr);
+        if ( 0 == currentChunkSize) { break; }
+        if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
+        /*
+        for(int i=0;i<currentChunkSize;i++) {  lLog("'%c' %02x, ",dataPtr[i],dataPtr[i]); }
+        lLog("\n");
+        */
+        pTxCharacteristic->notify(dataPtr,currentChunkSize);
+        lNetLog("BLE: Send (%u byte) package from: %u~%u\n",currentChunkSize,currentOffset,currentOffset+currentChunkSize);
+        currentOffset+=currentChunkSize;
+        delay(40);
+    }
+    pTxCharacteristic->notify((uint8_t*)"\n",1);
+    lNetLog("BLE: Sended UART message: '%s' %u bytes (MTU: %u)\n",data,strlen(data),MaxDataSize);
+    return true;
+}
 // Server callbacks
 class LBLEServerCallbacks: public BLEServerCallbacks {
-    /*
-    void onConnect(BLEServer* pServer) {
-        lNetLog("BLE: Client connect A\n");
-        deviceConnected = true;
-    };*/
     void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
         lNetLog("BLE: Client connect\n");
         deviceConnected = true;
-        if ( nullptr != currentApplication ) {
-            if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchApplication(new BluetoothApplication());
-            }
-        }
     }
-    /*
-    void onDisconnect(BLEServer* pServer) {
-        lNetLog("BLE: Client disconnect A\n");
-        deviceConnected = false;
-    }*/
     void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
         lNetLog("BLE: Client disconnect\n");
         deviceConnected = false;
@@ -87,7 +136,9 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
         lNetLog("BLE: Authentication complete\n");
         if ( nullptr != currentApplication ) {
             if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
-                LaunchWatchface();
+                if ( ttgo->bl->isOn()) {
+                    LaunchWatchface();
+                }
             }
         }
     }
@@ -173,21 +224,25 @@ const size_t gadgetBridgeBufferSize=8*1024;
 char *gadgetBridgeBuffer=nullptr;
 size_t gadgetBridgeBufferOffset=0;
 
-class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
+class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     
     bool gadgetbridgeCommandInProgress=false;
     bool bangleCommandInProgress=false;
 
+    //void onRead(NimBLECharacteristic* pCharacteristic) {
+    //    lNetLog("BLE: UART: onREAD\n");
+    //}
+
     void onWrite(BLECharacteristic *pCharacteristic) {
         std::string rxValue = pCharacteristic->getValue();
         const char * receivedData = rxValue.c_str();
-
         // check for GADGETBRIDGE commands
         const char GadgetbridgeCommandEND[] = ")\n";
         const char GadgetbridgeCommandBEGIN[] = "\x10GB(";
 
         if ( 0 == strncmp(receivedData,GadgetbridgeCommandBEGIN,strlen(GadgetbridgeCommandBEGIN))) {
             lNetLog("BLE: UART: Begin Gadgetbridge GB command\n");
+            bleBeingUsed=true;
             gadgetbridgeCommandInProgress=true;
             if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
             gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
@@ -199,6 +254,7 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
                 gadgetbridgeCommandInProgress=false;
                 lNetLog("BLE: UART: memory ERROR!\n");
                 gadgetBridgeBufferOffset=0;
+                bleBeingUsed=false;
                 return;
             }
             lNetLog("BLE: UART: Continue Gadgetbridge GB command\n");
@@ -206,6 +262,7 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
             for (int i = 0; i < rxValue.length(); i++) {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
                 gadgetBridgeBufferOffset++;
+
             }
             // check if is the end
             const char *toLast=receivedData;
@@ -214,13 +271,14 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset-2]=0; // correct eol
                 gadgetbridgeCommandInProgress=false;
                 lNetLog("BLE: UART: End Gadgetbridge GB command\n");
-                bool parsed = ParseGadgetBridgeMessage(gadgetBridgeBuffer);
-                if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN Gadgetbridge: '%s'\n",gadgetBridgeBuffer);
+                // Parse outside
+                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    BLEGadgetbridgeCommandPending=true;
+                    gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( BLEGadgetbridge );
                 }
-                gadgetBridgeBufferOffset=0;
-                free(gadgetBridgeBuffer);
-                gadgetBridgeBuffer=nullptr;
+                bleBeingUsed=false;
             }
             return;
         }
@@ -231,6 +289,7 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
 
         if ( 0 == strncmp(receivedData,BangleJSCommandBEGIN,strlen(BangleJSCommandBEGIN))) {
             lNetLog("BLE: UART: Begin BangleJS command\n");
+            bleBeingUsed=true;
             bangleCommandInProgress=true;
             if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
             gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
@@ -242,6 +301,7 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
                 bangleCommandInProgress=false;
                 lNetLog("BLE: UART: memory ERROR!\n");
                 gadgetBridgeBufferOffset=0;
+                bleBeingUsed=false;
                 return;
             }
             lNetLog("BLE: UART: Continue BangleJS command\n");
@@ -256,14 +316,16 @@ class LBLEUARTCallbacks: public BLECharacteristicCallbacks {
             if ( 0 == strcmp(BangleJSCommandEND,toLast)) {
                 gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
                 bangleCommandInProgress=false;
+                bleBeingUsed=false;
                 lNetLog("BLE: UART: End BangleJS command\n");
-                bool parsed = ParseBangleJSMessage(gadgetBridgeBuffer);
-                if ( false == parsed ) {
-                    lNetLog("BLE: UART: Received UNKNOWN BangleJS: '%s'\n",gadgetBridgeBuffer);
+
+                // Parse outside
+                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    BLEBangleJSCommandPending=true;
+                    gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( BLEGadgetbridge );
                 }
-                gadgetBridgeBufferOffset=0;
-                free(gadgetBridgeBuffer);
-                gadgetBridgeBuffer=nullptr;
             }
             return;
         }
@@ -289,26 +351,12 @@ lBLEDevice::~lBLEDevice() {
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
     lNetLog("BLE: Task begin\n");
-    /*
-    union RLEPackage { // description for send IMAGES via UART TX notification
-        uint8_t bytes[5];
-        struct {
-            uint16_t color;
-            uint8_t repeat; // the same color must repeat in next N'th pixels (RLE)
-            uint8_t x; // screen is 240x240, don't waste my time! :(
-            uint8_t y; // why send coordinates? because BLE notify can be lost
-        };
-    };*/
-
-    void *theScreenShotToSend=nullptr; // point to current screenshoot
-    // temp values
-    screenShootCurrentImageX=0;
-    screenShootCurrentImageY=0;
     oldDeviceConnected = false;
     deviceConnected = false;
     while(bleEnabled) {
         esp_task_wdt_reset();
-        delay(10);
+        delay(300);
+
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) == pdTRUE )  {
             size_t b4Devs = BLEKnowDevices.size();
@@ -324,91 +372,24 @@ void BLELoopTask(void * data) {
             });
             xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
-        /*
-        if ( blePeer ) {
-            if ( BLESendScreenShootCommand ) { // the client has sended "GETSCREENSHOOT" in the BLE UART
-                // first iteration
-                if ( false == screenShootInProgress ) {
-                    theScreenShotToSend = (void*)screenShootCanvas;
-                    screenShootInProgress = true;
-                    lNetLog("Begin send screenshoot via BLE UART\n");
-                    screenShootCurrentImageY=0;
-                    screenShootCurrentImageX=0;
-                    networkActivity=true;
-                    lastRLECount=0;
-                } else { // in progress
-                    if ( nullptr != theScreenShotToSend) {
-                        rgb565 myColor;
-                        myColor.u16 = screenShootCanvas->readPixel(screenShootCurrentImageX,screenShootCurrentImageY);
-                        //Serial.printf("X: %d Y: %d VAL: 0x%x\n", imageX, imageY, myColor.u16);
-                        if ( myLastColor.u16 == myColor.u16 ) {
-                            lastRLECount++;
-                            if ( lastRLECount  > 254 ) { // byte full...must send
-                                RLEPackage valToSend = { .color = myLastColor.u16 };
-                                valToSend.repeat = 255;
-                                valToSend.x = screenShootCurrentImageX;
-                                valToSend.y = screenShootCurrentImageY;
-                                pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
-                                pTxCharacteristic->notify(true);
-                                delay(20);
-                                lastRLECount=0;
-                                myLastColor=myColor;
-                                continue;
-                            }                            
-                            //Serial.printf("REPEATED RLE: %d RGB565: 0x%x\n", lastRLECount,myLastColor.u16);
-                        } else if ( myLastColor.u16 != myColor.u16 ) {
-                            RLEPackage valToSend = { .color = myLastColor.u16 };
-                            valToSend.repeat = lastRLECount;
-                            valToSend.x = screenShootCurrentImageX;
-                            valToSend.y = screenShootCurrentImageY;
-                            //Serial.printf("RLEDATA: 0x%x\n", valToSend.rleData);
-                            pTxCharacteristic->setValue(&valToSend.bytes[0], sizeof(RLEPackage));
-                            pTxCharacteristic->notify(true);
-                            realImageSize +=(lastRLECount*2); // image is RGB565 (16bit per pixel)
-                            imageUploadSize+=sizeof(RLEPackage); // real packet data
-                            delay(20);
-                            lastRLECount=1;
-                            myLastColor=myColor;
-                            UINextTimeout=millis()+UITimeout; // don't allow the UI stops
-                            continue;
-                        }
 
-                        myLastColor=myColor;
-                        screenShootCurrentImageX++;
-                        if ( screenShootCurrentImageX >= screenShootCanvas->width() ) {
-                            screenShootCurrentImageY++;
-                            screenShootCurrentImageX=0;
-                            //imageY = screenShootCanvas->height()+1;
-                        }
-                        if ( screenShootCurrentImageY >= screenShootCanvas->height() ) {
-                            realImageSize=TFT_WIDTH*TFT_HEIGHT*sizeof(uint16_t);
-                            lNetLog("Network: Screenshot served by BLE (image: %d byte) upload: %d byte\n",realImageSize,imageUploadSize);
-                            delay(10);
-                            theScreenShotToSend=nullptr;
-                            realImageSize=0;
-                            imageUploadSize=0;
-                            screenShootCurrentImageY=0;
-                            screenShootCurrentImageX=0;
-                            BLESendScreenShootCommand=false;
-                            screenShootInProgress = false;
-                            //DISCONNECT THE CLIENT to notify end of picture
-                            BLEKickAllPeers();
-                            networkActivity=false;
-                        }
-                    }
-                }
-            }
-        }*/
         // disconnecting
         if (!deviceConnected && oldDeviceConnected) {
             //screenShootInProgress=false;
             blePeer=false;
             lNetLog("BLE: Device disconnected\n");
+            
+            //if (!esp_vhci_host_check_send_available()) {
+            // "Controller not ready to receive packets"
+            // https://github.com/h2zero/NimBLE-Arduino/blob/c2cd460792c96915058e4b2b9f4a73ffe9c38f9c/src/nimble/esp_port/esp-hci/src/esp_nimble_hci.c
+            //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            //xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) ); // wait a ittle bit
+
             //delay(500); // give the bluetooth stack the chance to get things ready
             pServer->startAdvertising(); // restart advertising
             lNetLog("BLE: Start BLE advertising\n");
             oldDeviceConnected = deviceConnected;
-            networkActivity=false;
+            bleBeingUsed=false;
         }
 
         // connecting
@@ -417,11 +398,46 @@ void BLELoopTask(void * data) {
             blePeer=true;
             lNetLog("BLE: Device connected\n");
             oldDeviceConnected=deviceConnected;
-            networkActivity=true;
+        }
+
+        
+
+        // parse gadgetbridge command
+        char * currentGadgetBridgeBufferPtr = nullptr;
+        char * currentBangleJSBridgeBufferPtr = nullptr;
+        if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+            // bangleJS
+            if ( BLEBangleJSCommandPending ) {
+                currentBangleJSBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEBangleJSCommandPending = false;
+            }
+            // gadgetbridge
+            if ( BLEGadgetbridgeCommandPending ) {
+                currentGadgetBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEGadgetbridgeCommandPending = false;
+            }
+            // data avaliable on gadgetBridgeBuffer
+            xSemaphoreGive( BLEGadgetbridge );
+        }
+        if ( nullptr != currentBangleJSBridgeBufferPtr ) {
+                bool parsed = ParseBangleJSMessage(currentBangleJSBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: Unknown BangleJS message: '%s'\n",currentBangleJSBridgeBufferPtr);
+                }
+                free(currentBangleJSBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentBangleJSBridgeBufferPtr=nullptr; // dontcare
+        }
+        if ( nullptr != currentGadgetBridgeBufferPtr ) {
+                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: Unknown Gadgetbridge message: '%s'\n",currentGadgetBridgeBufferPtr);
+                }
+                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentGadgetBridgeBufferPtr=nullptr; // dontcare
         }
     }
-    networkActivity=false;
-    //screenShootInProgress=false;
     deviceConnected = false;
     oldDeviceConnected = false;
     blePeer = false;
@@ -430,7 +446,7 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-//extern void _intrnalSqlStatic(void *args);
+
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
@@ -444,54 +460,36 @@ static void BLEStartTask(void* args) {
         xSemaphoreGive( BLEUpDownStep );
         vTaskDelete(NULL);
     }
-    // lets bring up BLE
+        // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
-    /*
-    if( xSemaphoreTake( SqlLogSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-        const char *query3=(char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0);";
-        esp_task_wdt_reset();
-        int  rc = db_exec(lIoTsystemDatabase,query3);
-        if (rc != SQLITE_OK) {
-            lSysLog("SQL: ERROR: Unable exec: '%s'\n", query3);
-        }
-        esp_task_wdt_reset();
-        xSemaphoreGive( SqlLogSemaphore ); // free
-    }*/
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
-
     char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-
-    lNetLog("@WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
-    //BLEDevice::deinit();
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
-    delay(100);
-    FreeSpace();
     // Create the BLE Device
-    BLEDevice::init(std::string(BTName)); // hate strings
-    esp_task_wdt_reset();
-    
+    lSysLog("------------------> DEBUG: free stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    lNetLog("------------------> DEBUG: @WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
+    BLEDevice::init(std::string(BTName)); // hate strings    
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
-    //FreeSpace();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-    NimBLEDevice::setPower(defaultBLEPowerLevel);
-        //ESP_PWR_LVL_P9); /** +9db */
+    NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_ADV);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_SCAN);
     // create GATT the server
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
-    esp_task_wdt_reset();
-
     lNetLog("BLE: Server started\n");
-
     // Create the BLE Service UART
     pService = pServer->createService(SERVICE_UART_UUID);
-    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
     // UART data come here
+    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
+    pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
+
     BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
                     CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
     pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
@@ -576,13 +574,15 @@ static void BLEStartTask(void* args) {
     pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
-    //bleWaitStop=true;
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &BLELoopTaskHandler,1);
+                    LUNOKIOT_NETWORK_STACK_SIZE, NULL, tskIDLE_PRIORITY+1,
+                    &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
+        vTaskDelete(NULL);
     }
-    /// esp_err_t sleepEnabled = esp_bt_sleep_enable(); <== @TODO looking for device wake on ble from sleep :(
+    FreeSpace();
+    lNetLog("BLE: Started!\n");
     vTaskDelete(NULL);
 }
 
@@ -601,42 +601,50 @@ void StartBLE(bool synced) {
         liLog("BLE: Refusing to start (already started)\n");
         return;
     }
-    delay(50);
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_MID_STACK_SIZE,
+                        LUNOKIOT_QUERY_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY,
-                        NULL,
-                        1);
+                        tskIDLE_PRIORITY+1,
+                        &BLEStartHandler,
+                        CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch start Task\n");
         return;
     }
+
     if ( synced ) {
         //if ( not bleServiceRunning ) {
         lNetLog("BLE: Waiting service starts...\n");
-        while(not bleServiceRunning) { delay(50); esp_task_wdt_reset(); }
+        while(not bleServiceRunning) {
+            TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            /*
+            if ( NULL != BLEStartHandler ) {
+                UBaseType_t highWater = uxTaskGetStackHighWaterMark(BLEStartHandler);
+                lNetLog("BLE STACK: %u\n",highWater);
+            }*/
+            esp_task_wdt_reset();
+            xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        }
         lNetLog("BLE: Service started!\n");
         //}
     }
 }
 
 
-void BLEKickAllPeers() { //@TODO SEEMS NOT WORK
+void BLEKickAllPeers() {
     if ( false == bleEnabled ) { return; }
-    if ( nullptr != pServer ) {
-        //DISCONNECT THE CLIENTS
-        std::vector<uint16_t> clients = pServer->getPeerDevices();
-        for(uint16_t client : clients) {
-            lNetLog("BLE: kicking out client %d\n",client);
-            pServer->disconnect(client);
-            //pServer->disconnect(client,0x13); // remote close
-            //pServer->disconnect(client,0x16); // localhost close
-            delay(100);
-        }
+    if ( nullptr == pServer ) { return; }
+    if ( false == IsBLEPeerConnected() ) { return; }
+    //DISCONNECT THE CLIENTS
+    std::vector<uint16_t> clients = pServer->getPeerDevices();
+    for(uint16_t client : clients) {
+        lNetLog("BLE: kicking out client %d\n",client);
+        pServer->disconnect(client);
+        //pServer->disconnect(client,0x13); // remote close
+        //pServer->disconnect(client,0x16); // localhost close
+        delay(100);
     }
-
 }
 
 static void BLEStopTask(void* args) {
@@ -698,9 +706,9 @@ void StopBLE() {
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
                         &waitFor,
-                        tskIDLE_PRIORITY,
+                        tskIDLE_PRIORITY-2,
                         NULL,
-                        1);
+                        CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch stop Task\n");
         return;

@@ -1,3 +1,21 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
@@ -37,7 +55,6 @@ extern bool provisioned;
 bool wifiOverride=false; // this var disables the wifi automatic disconnection
 extern TFT_eSprite *screenShootCanvas;
 
-bool networkActivity = false;
 extern TFT_eSprite *screenShootCanvas;    // the last screenshoot
 extern bool screenShootInProgress;        // Notify Watchface about send screenshoot
 size_t imageUploadSize=0;
@@ -194,6 +211,9 @@ void NetworkTaskCallTask(void *data) {
     networkTaskResult = task->callback();
     //FreeSpace();
     lNetLog("-[ NET TASK END   ] ------------------------------------\n");
+    UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
+    lSysLog("NetworkTaskCallTask: free stack: %u/%u\n",highWater,task->desiredStack);
+
     networkTaskRunning=false;
     vTaskDelete(NULL);
 }
@@ -266,7 +286,7 @@ void NetworkTaskRun(void *data) {
                 lNetLog("NetworkTask: Running task '%s' (stack: %u)...\n", tsk->name,tsk->desiredStack);
                 networkTaskRunning=true;
                 TaskHandle_t taskHandle;
-                BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,uxTaskPriorityGet(NULL),&taskHandle,0);
+                BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskCallTask,"",tsk->desiredStack,(void*)tsk,tskIDLE_PRIORITY,&taskHandle,0);
                 if ( pdPASS != taskOK ) {
                     lNetLog("NetworkTask: ERROR Trying to run task: '%s'\n", tsk->name);
                     tsk->_nextTrigger = millis()+tsk->everyTimeMS;
@@ -310,7 +330,6 @@ void NetworkTaskRun(void *data) {
     wifiOverride=false;
     lNetLog("Network: Pending tasks end!\n");
     StartBLE();
-
     vTaskDelete(NULL);
 }
 void NetworkTasksCheck() {
@@ -339,7 +358,7 @@ void NetworkTasksCheck() {
         lNetLog("Network: BLE must be temporaly disabled to maximize WiFi effort\n");
         StopBLE();
     }
-    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TASK_STACK_SIZE,NULL,uxTaskPriorityGet(NULL), NULL,0);
+    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TINY_STACK_SIZE,NULL,tskIDLE_PRIORITY-6, NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         StartBLE();
@@ -365,9 +384,9 @@ bool NetworkHandler() {
         lNetLog("WiFi: Network tasks handler\n");
         if ( provisioned ) {
             lNetLog("WiFi: Provisioned :) Task runs in few seconds...\n");
-            BootNetworkTicker.once(2,NetworkTasksCheck);
+            BootNetworkTicker.once(4,NetworkTasksCheck);
         }
-        NetworkTicker.attach(60*5,NetworkTasksCheck); // every 5 minutes
+        NetworkTicker.attach(60*5,NetworkTasksCheck); // check for tasks every 5 minutes
 
         esp_err_t registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_UPDATE, SystemUpdateAvailiable, nullptr, NULL);
         if ( ESP_OK != registered ) {
