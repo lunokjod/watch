@@ -324,8 +324,10 @@ void LunokIoT::BootReason() { // check boot status
 
 
 bool LunokIoT::CpuSpeed(uint32_t mhz) {
+    //lSysLog("@DEBUG CPU SPEED NO CHANGE <--------------------\n");
+    //return true;
     bool res= setCpuFrequencyMhz(mhz);
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-    xTaskDelayUntil( &nextCheck, (20 / portTICK_PERIOD_MS) ); // wait a ittle bit
+    xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
     return res;
 }
