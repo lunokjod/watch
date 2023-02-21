@@ -34,6 +34,27 @@ extern SemaphoreHandle_t I2cMutex;
 
 bool ParseGadgetBridgeJSON(JSONVar &json) {
 
+    String jsonString = json.stringify(json);
+    char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
+    sprintf(myShitbuffer,"%s",jsonString.c_str());
+    NotificatioLog(myShitbuffer);
+    lSysLog("------AAAAAAAAA------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    if (json.hasOwnProperty("t")) {
+        if ( 0 == strcmp((const char*)json["t"],"notify") ) {
+            LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        } else if ( 0 == strcmp((const char*)json["t"],"musicinfo") ) {
+            LaunchApplication(new BLEPlayerApplication(),false);
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        } else if ( 0 == strcmp((const char*)json["t"],"musicstate") ) {
+            LaunchApplication(new BLEPlayerApplication(),false);
+            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            return true;
+        }
+    }
+    /*
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
             // save to database
@@ -41,7 +62,6 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
             sprintf(myShitbuffer,"%s",jsonString.c_str());
             NotificatioLog(myShitbuffer);
-            
             if ((json.hasOwnProperty("subject"))&&(json.hasOwnProperty("body"))&&(json.hasOwnProperty("sender"))) {
                 //'{"t":"notify","id":1676021184,"subject":"aaaaaaaaaaaa","body":"aaaaaaaaaaaa","sender":"aaaaaaaaaaaa","tel":"aaaaaaaaaaaa"}
                 lNetLog("BLE: NOTIFICATION type1: (%d) Subject: '%s' Body: '%s' From: '%s'\n",
@@ -108,8 +128,7 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
             }
         }
         return false;
-    }
-    // no 't' entry
+    }*/
     return false;
 }
 // http://www.espruino.com/Gadgetbridge
@@ -128,11 +147,13 @@ bool ParseGadgetBridgeMessage(char * jsondata) {
                 lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
                 ScreenWake();
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+                /*
                 #ifdef LILYGO_WATCH_2020_V3
                     ttgo->shake();
                     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
                     xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
                 #endif
+                */
             }
         }
     }

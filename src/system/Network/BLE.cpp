@@ -575,7 +575,7 @@ static void BLEStartTask(void* args) {
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY+1,
+                    LUNOKIOT_NETWORK_STACK_SIZE, NULL, tskIDLE_PRIORITY+1,
                     &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");

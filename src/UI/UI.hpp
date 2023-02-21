@@ -121,7 +121,7 @@ struct UICallbackData {
 };
 */
 
-void AlertLedEnable(bool enabled, uint32_t ledColor = TFT_RED, uint32_t x = 120, uint32_t y = 20);
+//void AlertLedEnable(bool enabled, uint32_t ledColor = TFT_RED, uint32_t x = 120, uint32_t y = 20);
 extern bool directDraw;
 extern unsigned long UINextTimeout;
 extern const unsigned long UITimeout;

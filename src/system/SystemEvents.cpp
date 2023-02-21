@@ -25,8 +25,9 @@ extern TTGOClass *ttgo; // ttgo library
 #include "SystemEvents.hpp"
 
 #include "lunokiot_config.hpp"
-
+#include <FreeRTOSConfig.h>
 #include <freertos/FreeRTOS.h>
+#include <freertos/portable.h>
 #include <freertos/task.h>
 
 #include <esp_event.h>

@@ -28,6 +28,7 @@
 #include "../app/LogView.hpp"
 #include <freertos/portable.h>
 #include <freertos/task.h>
+
 /*
  * Event loop for the system
  */
@@ -79,6 +80,7 @@ void SystemEventsStart();
 // Announce the end of boot
 void SystemEventBootEnd();
 void SystemBMARestitution();
+
 static inline void FreeSpace() {
     uint32_t minHeap = xPortGetMinimumEverFreeHeapSize();
     uint32_t freeHeap = xPortGetFreeHeapSize(); // portable of heap_caps_get_free_size(MALLOC_CAP_8BIT)
@@ -119,7 +121,6 @@ static inline void FreeSpace() {
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
 
     lSysLog("Watermark Free Stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
-
 /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();

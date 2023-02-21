@@ -79,11 +79,11 @@ size_t screenShootCurrentImageX=0;
 size_t screenShootCurrentImageY=0;
 
 
-std::list<TFT_eSprite *>ScreenShots;
+//std::list<TFT_eSprite *>ScreenShots;
 
 uint8_t pendingNotifications = 0;
 
-SemaphoreHandle_t UISemaphore = NULL;
+SemaphoreHandle_t UISemaphore = xSemaphoreCreateMutex();
 
 const unsigned long UITimeout = 20*1000;
 
@@ -380,7 +380,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             lUILog("Unable to get app canvas!\n");
             xSemaphoreGive( UISemaphore );
             return;
-        } // cannot do nothing
+        } // do nothing
         
         // verify long tap to launch TaskSwitcher
         if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
@@ -421,10 +421,12 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 }
             }
         }
+        // if screen-keyboard is enabled, send the Tick like normal application
         if ( nullptr != keyboardInstance ) {
             changes = keyboardInstance->Tick();
         } else {
             if ( false == UIlongTap ) { // only if no long tap in progress
+
                 // perform the call to the app logic
                 changes = currentApplication->Tick();
             }
@@ -438,41 +440,8 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     appView->pushSprite(0,0); // push appView to tft
             }
         }
-        #ifdef LUNOKIOT_SCREENSHOOT_ENABLED
-        else {
-            
-            // no changes in this frame
-
-            // don't allow screenshoots meanwhile directDraw is enabled
-            if ( false == directDraw ) {
-                if ( false == touched ) { touchDownTimeMS=0; }
-                //Serial.printf("DIST: %f %d\n",touchDragDistance,touchDragDistance);
-                if ( touchDragDistance > 5.0 ) { touchDownTimeMS=0;} // Say Cheese!!! (don't allow movement when shooting)
-                if ( (touched ) && ( 0 != touchDownTimeMS ) && ( touchDragDistance < 5.0 ) ) {
-                    unsigned long pushedTime = millis()-touchDownTimeMS; 
-                    if ( pushedTime > 2300 ) {
-                        touchDownTimeMS=0;
-                        ScreenShots.push_back(TakeScreenShoot());
-                        lUILog("UI: New ScreenShoot availiable, use ./tools/getScreenshoot.py to obtain the screenshoot as PNG\n");
-                        lUILog("UI: Saved screenshoots: %d\n",ScreenShots.size());
-                    }
-                }
-            }
-        }
-        #endif
         xSemaphoreGive( UISemaphore );
     }
-}
-
-bool lastAlarmLedStatus = false;
-uint32_t alarmLedColor = TFT_RED;
-
-void AlertLedEnable(bool enabled, uint32_t ledColor, uint32_t x, uint32_t y) {
-    return;
-    alarmLedColor = ledColor;
-    ttgo->tft->fillCircle(120,25,6,alarmLedColor); // on screen NOW
-
-    lastAlarmLedStatus = enabled;
 }
 
 static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -534,6 +503,7 @@ static void UITickTask(void* args) {
     lEvLog("UITickTask: is dead!!!\n");
     vTaskDelete(NULL);
 }
+
 StaticTask_t UITickBuffer;
 StackType_t UITickStack[LUNOKIOT_TINY_STACK_SIZE];
 void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
@@ -542,7 +512,7 @@ void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
                                                 "lUITick",
                                                 LUNOKIOT_TINY_STACK_SIZE,
                                                 nullptr,
-                                                tskIDLE_PRIORITY+1,
+                                                tskIDLE_PRIORITY,
                                                 UITickStack,
                                                 &UITickBuffer,
                                                 1);
@@ -568,28 +538,32 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
     UITickEnd();
 }
 
+/*
+ * UIStart begin the UI loop, to handle UI events
+ */
 void UIStart() {
-    //ttgo->tft->setSwapBytes(true);
-    if ( NULL == UISemaphore ) { UISemaphore = xSemaphoreCreateMutex(); }
-
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
-        .task_priority = tskIDLE_PRIORITY+4, // tskIDLE_PRIORITY-1,
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE,
+        .task_priority = tskIDLE_PRIORITY+4, // priorize UI over rest of system (responsive UI)
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // normal arduinofw setup task stack
         .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 
-    UINextTimeout = millis()+UITimeout;
-     // Create the event loops
-    esp_event_loop_create(&uiEventloopConfig, &uiEventloopHandle);
+    UINextTimeout = millis()+UITimeout; // poweroff the screen when no activity timeout
 
+    // Create the event loops
+    esp_err_t uiLoopRc = esp_event_loop_create(&uiEventloopConfig, &uiEventloopHandle);
+    if ( ESP_OK !=  uiLoopRc ) {
+        lUILog("ERROR: Unable to create event loop: '%s' ABORTING UI!\n",esp_err_to_name(uiLoopRc));
+        return;
+    }
     // Register the handler for task iteration event. Notice that the same handler is used for handling event on different loops.
     // The loop handle is provided as an argument in order for this example to display the loop the handler is being run on.
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL);
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL);
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL);
     //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL);
 
     // Useless if is sended later than whake x'D
@@ -597,15 +571,15 @@ void UIStart() {
     //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP, UIEventStop, nullptr, NULL);
     
 
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UITickStartCallback, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UITickStartCallback, nullptr, NULL);
 
     // disable ticks
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, UITickStopCallback, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, UITickStopCallback, nullptr, NULL);
     // enable ticks
-    esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, UITickStartCallback, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, UITickStartCallback, nullptr, NULL);
     //esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, UITickStartCallback, nullptr, NULL);
 
-    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+    uiLoopRc = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 
 }
 
