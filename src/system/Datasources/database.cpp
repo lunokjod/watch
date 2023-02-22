@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3.h>
@@ -6,13 +25,13 @@
 #include <SPI.h>
 #include <FS.h>
 #include <SPIFFS.h>
-
+#include <esp_task_wdt.h>
 #include "../../app/LogView.hpp"
 #include "database.hpp"
 #include "../../lunokIoT.hpp"
 #include "../SystemEvents.hpp"
 //#include "lunokIoT.hpp"
-
+#define DATABASE_CORE 0
 const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
 
@@ -72,6 +91,7 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback) {
    //lSysLog("SQL: '%s'\n",sql);
    unsigned long startT = micros();
    if ( nullptr == resultCallback ) { resultCallback=SQLiteCallback; }
+   esp_task_wdt_reset();
    int rc = sqlite3_exec(db, sql, resultCallback, nullptr, &zErrMsg);
    if (SQLITE_OK != rc) {
        lSysLog("SQL: ERROR: '%s' (%d)\n", zErrMsg, rc);
@@ -90,6 +110,9 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback) {
        //lSysLog("SQL: Operation done successfully\n");
    }
    lSysLog("SQL: Time taken: %lu\n", micros()-startT);
+   esp_task_wdt_reset();
+    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
    return rc;
 }
 
@@ -108,8 +131,7 @@ static void __internalSqlSend(void *args) {
         int  rc = db_exec(lIoTsystemDatabase,query);
         if (rc != SQLITE_OK) {
             //lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
-        }/*
-        delay(50);*/
+        }
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
 }
@@ -141,10 +163,10 @@ void SqlAddBluetoothDevice(const char * mac, double distance) {
     sprintf(query,fmtStrDelete,mac);
 
     
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     
-    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
+    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
     //delay(100);
 
     // https://github.com/siara-cc/esp32_arduino_sqlite3_lib#compression-with-unishox
@@ -158,8 +180,8 @@ void SqlAddBluetoothDevice(const char * mac, double distance) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,mac,distance);
-    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-    intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, uxTaskPriorityGet(NULL), NULL,1);
+    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
+    intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
 }
 
@@ -180,8 +202,8 @@ void SqlJSONLog(const char * from, const char * logLine) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,from,logLine);
-    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, uxTaskPriorityGet(NULL), NULL,1);
+    //xTaskCreateStaticPinnedToCore( _intrnalSql,"",LUNOKIOT_TASK_STACK_SIZE,query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE, query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
 }
 
@@ -199,7 +221,7 @@ void SqlLog(const char * logLine) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,logLine);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);
 }
@@ -219,7 +241,7 @@ void NotificatioLog(const char * notificationData) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     sprintf(query,fmtStr,notificationData);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);
 }
@@ -239,7 +261,7 @@ void NotificationLogSQL(const char * sqlQuery) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     strcpy(query,sqlQuery);
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);
 }
@@ -280,19 +302,19 @@ void StartDatabase() {
         xSemaphoreGive( SqlLogSemaphore ); // free
 
         //__internalSqlSend((void*)queryCreate0);
-        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
+        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
         delay(100);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate0", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate0, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate0", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate0, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
         //__internalSqlSend((void*)queryCreate1);
-        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query2,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
+        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query2,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
         delay(100);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate1", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate1, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate1", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate1, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
         //__internalSqlSend((void*)queryCreate2);
-        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query3,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,1);
+        //xTaskCreateStaticPinnedToCore( _intrnalSqlStatic,"",LUNOKIOT_TASK_STACK_SIZE,(void*)query3,tskIDLE_PRIORITY,SQLStack,&SQLTaskHandler,DATABASE_CORE);
         delay(100);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate2", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate2", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate2, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
         delay(100);
-        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate3", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate3, uxTaskPriorityGet(NULL), NULL,1);
+        xTaskCreatePinnedToCore(_intrnalSqlStatic, "queryCreate3", LUNOKIOT_TASK_STACK_SIZE, (void*)queryCreate3, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
         //FreeSpace();
         /*
         delay(100);

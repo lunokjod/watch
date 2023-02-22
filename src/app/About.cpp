@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
@@ -10,7 +29,8 @@
 #include "LogView.hpp"
 
 extern TTGOClass *ttgo; // ttgo lib
-const unsigned long AboutBoxTextScrollDelay = 1000/24;
+const unsigned long AboutBoxTextScrollDelay = 1000/12;
+const unsigned long AboutBoxTextScrollDelayScroll = 1000/24;
 //const unsigned long 
 size_t AboutBoxTextScrollOffset = 0;
 /* @TODO show all of them!
@@ -71,7 +91,8 @@ const char *AboutBoxTextScroll[] = {
     AboutBoxTextLogo,
     AboutBoxTextEmptyLine,
     "lunokIoT Watch",
-    "version 0.a",
+    "version 0.1a",
+    "build #",
     LUNOKIOT_BUILD_STRING,
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
@@ -97,8 +118,8 @@ const char *AboutBoxTextScroll[] = {
     "ricmoo",
     "QRCode",
     AboutBoxTextEmptyLine,
-    "arduino-",
-    " libraries",
+    "arduino",
+    "libraries",
     "--------",
     "Arduino_JSON",
     AboutBoxTextEmptyLine,
@@ -160,6 +181,22 @@ const char *AboutBoxTextScroll[] = {
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
+    "Personal",
+    "Thanks",
+    "--------",
+    "@hpsaturn",
+    "colaborator",
+    AboutBoxTextEmptyLine,
+    "@MujiPiruji",
+    "colaborator",
+    AboutBoxTextEmptyLine,
+    "@Roberbike",
+    "suffered beta",
+    "tester ;)",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
     "Thanks all!",
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
@@ -171,7 +208,9 @@ const char *AboutBoxTextScroll[] = {
     "and get:",
     "--------",
     AboutBoxTextEmptyLine,
-    "last updates",
+    "early",
+    "updates",
+    "and howtos",
     AboutBoxTextEmptyLine,
     "poll new",
     "features",
@@ -180,6 +219,19 @@ const char *AboutBoxTextScroll[] = {
     AboutBoxTextEmptyLine,
     "devel support",
     AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    "buy me a coffe",
+    "if you like",
+    "this software",
+    AboutBoxTextEmptyLine,
+    AboutBoxTextEmptyLine,
+    "GPL-v3",
+    "--------",
+    "get source",
+    "and details",
+    "on our site",
+    "in github",
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
     AboutBoxTextEmptyLine,
@@ -226,7 +278,9 @@ AboutApplication::AboutApplication() {
 
 bool AboutApplication::Tick() {
     UINextTimeout = millis()+UITimeout; // disable screen timeout
-    if ( millis() > nextRedraw) {
+    
+    TemplateApplication::btnBack->Interact(touched,touchX,touchY);
+    if ( millis() > nextStep) {
         // update the source canvas (plain text scroll)
         textBuffer->scroll(0,-2);
 
@@ -284,7 +338,12 @@ bool AboutApplication::Tick() {
                 AboutBoxTextScrollOffset=0;
             }
         }
-        TemplateApplication::Tick();
+        nextStep=millis()+AboutBoxTextScrollDelayScroll;
+    }
+
+    if ( millis() > nextRedraw) {
+
+        TemplateApplication::btnBack->DirectDraw();
         // Direct draw xD
         perspectiveTextBuffer->canvas->pushSprite(
             (TFT_WIDTH-perspectiveTextBuffer->canvas->width())/2

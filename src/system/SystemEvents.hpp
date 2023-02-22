@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #ifndef __LUNOKIOT__SYSTEM_EVENTS__
 #define __LUNOKIOT__SYSTEM_EVENTS__
 
@@ -9,6 +28,7 @@
 #include "../app/LogView.hpp"
 #include <freertos/portable.h>
 #include <freertos/task.h>
+
 /*
  * Event loop for the system
  */
@@ -50,7 +70,9 @@ enum {
     BMA_EVENT_ACTIVITY,         // activity
     BMA_EVENT_NOMOTION,         // @TODO why interrupt never received? :(
     BMA_EVENT_TEMP,             // device temperature
-    BMA_EVENT_DIRECTION         // pose/orientation
+    BMA_EVENT_DIRECTION,        // pose/orientation
+    BMA_EVENT_TILT,             // watch tilt
+    BMA_EVENT_DOUBLE_TAP        // tap twice on watch
 };
 // obtain data from all sensors
 void TakeAllSamples();
@@ -60,6 +82,7 @@ void SystemEventsStart();
 // Announce the end of boot
 void SystemEventBootEnd();
 void SystemBMARestitution();
+
 static inline void FreeSpace() {
     uint32_t minHeap = xPortGetMinimumEverFreeHeapSize();
     uint32_t freeHeap = xPortGetFreeHeapSize(); // portable of heap_caps_get_free_size(MALLOC_CAP_8BIT)
@@ -98,6 +121,8 @@ static inline void FreeSpace() {
 
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
+
+    lSysLog("Watermark Free Stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
 /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();

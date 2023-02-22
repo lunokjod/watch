@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo library
@@ -6,8 +25,9 @@ extern TTGOClass *ttgo; // ttgo library
 #include "SystemEvents.hpp"
 
 #include "lunokiot_config.hpp"
-
+#include <FreeRTOSConfig.h>
 #include <freertos/FreeRTOS.h>
+#include <freertos/portable.h>
 #include <freertos/task.h>
 
 #include <esp_event.h>
@@ -18,11 +38,13 @@ extern TTGOClass *ttgo; // ttgo library
 #include <wifi_provisioning/manager.h>
 
 #include <esp_task_wdt.h>
+#include "Network/BLE.hpp"
 
 #include "UI/UI.hpp"
 
 #include "../app/Shutdown.hpp"
 #include "../app/Provisioning2.hpp"
+#include "../app/WatchfaceAlwaysOn.hpp"
 
 #include <HTTPClient.h>
 
@@ -214,7 +236,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         //!< Wakeup caused by timer
         lLog("Wakeup caused by timer\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TIMER, nullptr, 0, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        continueSleep=false; // all fine
+        continueSleep=false; // don't sleep again, trying to catch bluetooth events
     } else if ( ESP_SLEEP_WAKEUP_TOUCHPAD == wakeup_reason) {
         //!< Wakeup caused by touchpad
     } else if ( ESP_SLEEP_WAKEUP_ULP == wakeup_reason) {
@@ -246,18 +268,11 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
-
+extern bool wifiOverride;
 static void DoSleepTask(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_timer.html
     // what about change all timers to:
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/freertos.html#timer-api
-
-
-    /*
-    if ( networkActivity ) {
-        Serial.println("ESP32: DoSleep DISCARDED due network activity");
-        vTaskDelete(NULL);
-    }*/
     lEvLog("ESP32: DoSleep Trying to obtain the lock...\n");
     BaseType_t done = xSemaphoreTake(DoSleepTaskSemaphore, LUNOKIOT_EVENT_TIME_TICKS);
     if (pdTRUE != done) {
@@ -272,11 +287,22 @@ static void DoSleepTask(void *args) {
     LunokIoTSystemTickerStop();
 
     // destroy the app if isn't the watchface
-    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+    if ( ( nullptr != currentApplication) && ( true != currentApplication->isWatchface() ) ) {
         // the current app isn't a watchface... get out!
         LaunchApplication(nullptr,false,true); // Synched App Stop
         delay(100);
     }
+    while(LoT().IsNetworkInUse()) {
+        lNetLog("Network in use, waiting to get a nap! ...\n");
+        delay(1000);
+    }
+    if ( ttgo->bl->isOn()) {
+        lSysLog("DoSleep cannot continue, screen is ON\n");
+        systemSleep = false;
+        xSemaphoreGive(DoSleepTaskSemaphore);
+        vTaskDelete(NULL);
+    }
+
 
     // forcing wifi to get out!
     if (WL_NO_SHIELD != WiFi.status() ) {
@@ -306,9 +332,12 @@ static void DoSleepTask(void *args) {
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
-    // bma interrupt gpio_39
-    esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * LUNOKIOT_WAKE_TIME_S); // periodical wakeup to take samples
-    if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",LUNOKIOT_WAKE_TIME_S); }
+    // bma interrupt gpio_397
+
+    uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
+    if ( IsBLEEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
+    esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
+    if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
 
     esp_err_t wakeAXP = esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, LOW);
     if ( ESP_OK != wakeAXP ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
@@ -377,11 +406,11 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (false == systemSleep) {
         systemSleep = true;
-        BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), NULL,1);
+        BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY-3, NULL,1);
         if ( pdPASS != intTaskOk ) {
             lSysLog("ERROR: cannot launch DoSleep\n");
             systemSleep = false;
-            if (false == ttgo->bl->isOn()) {
+            if (false == ttgo->bl->isOn()) {                
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 FreeSpace();
                 ScreenWake();
@@ -398,7 +427,7 @@ const char *BMAMessages[] = {
     "Activity: None"
 };
 
-const uint16_t BMAActivitesBufferMaxEntries=6;
+const uint16_t BMAActivitesBufferMaxEntries=3;
 uint8_t *BMAActivitesBuffer=nullptr;
 RTC_Date *BMAActivitesTimes=nullptr;
 size_t BMAActivitesOffset=0;
@@ -499,12 +528,30 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
 
+Ticker TimedDoSleep;
+
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    lEvLog("ESP Wakeup timer triggered\n")
+    lEvLog("ESP Wakeup timer triggered\n");
+    if (false == ttgo->bl->isOn()) { LoT().CpuSpeed(80); }
+
     TakeAllSamples();
-    if (false == ttgo->bl->isOn()) {
-        lEvLog("Timer triggered without screen... (going to sleep again)\n")
-        DoSleep();
+    // if bluetooth is enabled, do a chance to get notifications
+    if ( IsBLEEnabled() ) {
+        //delay(100);
+        //BLEKickAllPeers(); // force clients to reconnect
+        lEvLog("BLE: Wait a little bit for connection/notification...\n");
+        //delay(100); // let antena wharm
+        TimedDoSleep.once(9,[]() { // get sleep in some seconds if no screen is on
+            if (false == ttgo->bl->isOn()) {
+                lEvLog("Timer triggered without screen... (going to sleep again)\n")
+                DoSleep();
+            }
+        });
+    } else { // no bluetooth, sleep now
+        if (false == ttgo->bl->isOn()) {
+            lEvLog("Timer triggered without screen... (going to sleep again)\n")
+            DoSleep();
+        }
     }
 }
 
@@ -523,13 +570,30 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
 static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     if (0 != strcmp(SYSTEM_EVENTS, base)) {
-        lEvLog("WARNING! unkown base: '%s' args: %p id: %d data: %p\n", base, handler_args, id, event_data);
+        lEvLog("WARNING! unknown base: '%s' args: %p id: %d data: %p\n", base, handler_args, id, event_data);
         return;
     }
     if (SYSTEM_EVENT_TICK == id) { return; }
     // tasks for any activity?
     lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
 }
+
+static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lEvLog("BMA423: Event: Double tap\n");
+    if (false == ttgo->bl->isOn()) {
+        lEvLog("BMA423: Event: Double tap: Bring up system\n");
+        ScreenWake();
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        LaunchApplication(new WatchfaceAlwaysOn());
+        //DoSleep();
+    }
+}
+
+static void BMAEventTilt(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    lEvLog("BMA423: Event: Tilt\n");
+    if (false == ttgo->bl->isOn()) { DoSleep(); }
+}
+
 
 static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
@@ -640,7 +704,7 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
 
 void TakeBMPSample() {
     
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (pdTRUE != done) { return; }
     
     Accel acc;
@@ -813,6 +877,7 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
 
     // enable lamp? @TODO THIS MUST BE A SETTING
     bool launchLamp=false;
+    //lLog("@TODO DISABLED LAMP LAUNCH <=========================\n");
     if ( degY > 340.0 ) { launchLamp = true; }
     else if ( degY < 20.0 ) { launchLamp = true; }
 
@@ -966,6 +1031,9 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "Assoc fail";
             } else if ( WIFI_REASON_HANDSHAKE_TIMEOUT == disconnectData->reason ) {
                 ReasonText = "Handshake timeout";
+                WiFi.disconnect();
+                delay(100);
+                WiFi.begin();
             } else if ( WIFI_REASON_CONNECTION_FAIL == disconnectData->reason ) {
                 ReasonText = "Connection fail";
             } else if ( WIFI_REASON_AP_TSF_RESET == disconnectData->reason ) {
@@ -1038,11 +1106,7 @@ static void AXPInterruptController(void *args) {
 
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {   
-        //delay(LUNOKIOT_SYSTEM_INTERRUPTS_TIME); // dont care time precision, only yeld
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
-        //if ( pdFALSE == isDelayed ) { continue; }
-        // check for AXP int's
-
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         if (pdTRUE != done) { continue; }
 
@@ -1143,15 +1207,9 @@ static void AXPInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
                 continue;
-            } /*else {
-                ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
-                lLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
-                irqAxp = false;
-                continue;
-            }*/
+            }
             ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
             lSysLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
-            //irqAxp = false;
         }
         irqAxp = false;
         xSemaphoreGive(I2cMutex);
@@ -1302,7 +1360,10 @@ static void BMAInterruptController(void *args) {
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'no motion' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableFeature(BMA423_ACTIVITY, true);
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'activity' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
-
+    //featureOK = ttgo->bma->enableFeature(BMA423_TILT, true);
+    //if ( false == featureOK ) { lEvLog("BMA: Enable feature 'tilt' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableFeature(BMA423_WAKEUP, true);
+    if ( false == featureOK ) { lEvLog("BMA: Enable feature 'double tap' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     // Reset steps
     featureOK = ttgo->bma->resetStepCounter();
     if ( false == featureOK ) { lEvLog("BMA: Unable to reset stepCounter\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
@@ -1314,6 +1375,10 @@ static void BMAInterruptController(void *args) {
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'activity'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableAnyNoMotionInterrupt();
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'no motion'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableTiltInterrupt();
+    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'tilt'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    featureOK = ttgo->bma->enableWakeupInterrupt();
+    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'double tap'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
 
     xSemaphoreGive(I2cMutex);
 
@@ -1346,6 +1411,11 @@ static void BMAInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
+            } else if (ttgo->bma->isTilt()) {
+                irqBMA = false;
+                xSemaphoreGive(I2cMutex);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TILT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             } else if (ttgo->bma->isActivity()) {
                 irqBMA = false;
                 xSemaphoreGive(I2cMutex);
@@ -1356,7 +1426,13 @@ static void BMAInterruptController(void *args) {
                 xSemaphoreGive(I2cMutex);
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
+            } else if (ttgo->bma->isDoubleClick()) {
+                irqBMA = false;
+                xSemaphoreGive(I2cMutex);
+                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+                continue;
             }
+            
             irqBMA = false;
             lLog("@TODO unknown unprocessed interrupt call from BMA423!\n");
         }
@@ -1625,20 +1701,31 @@ void SystemEventsStart() {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: NO POWER\n");
     }
 
+    // tilt and doubletap
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TILT, BMAEventTilt, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Tilt\n");
+    }
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, BMAEventDoubleTap, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Double tap\n");
+    }
+
+
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &AXPInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     //delay(150);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &BMAInterruptControllerHandle,0);
+    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &BMAInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
 
     lSysLog("RTC interrupts @DEBUG @TODO DISABLED\n");
     // Start the RTC interrupt controller loop
-    //intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), &RTCInterruptControllerHandle,0);
+    //intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &RTCInterruptControllerHandle,0);
     //if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
 
     LunokIoTSystemTickerStart();
@@ -1653,7 +1740,7 @@ void SystemEventBootEnd() {
 }
 
 void TakeAXPSample() {
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (pdTRUE != done) { return; }
     // begin tick report
     float nowAXPTemp = ttgo->power->getTemp();

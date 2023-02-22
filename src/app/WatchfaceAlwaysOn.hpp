@@ -17,20 +17,20 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__PlaygroundApplication6_APP__
-#define __LUNOKIOT__PlaygroundApplication6_APP__
+#ifndef __LUNOKIOT__WATCHFACE_ALWAYS_ON__
+#define __LUNOKIOT__WATCHFACE_ALWAYS_ON__
 
-#include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "../system/Application.hpp"
 
-class PlaygroundApplication7: public LunokIoTApplication {
+class WatchfaceAlwaysOn : public LunokIoTApplication {
     private:
-        unsigned long nextRedraw=0;
+        unsigned long nextRefresh=0;
     public:
-        const char *AppName() override { return "Playground7 test"; };
-        PlaygroundApplication7();
-        ~PlaygroundApplication7();
+        const char *AppName() override { return "Always on"; };
+        WatchfaceAlwaysOn();
+        ~WatchfaceAlwaysOn();
+        virtual const bool isWatchface() { return false; } // FAKED response, due the system don't kill the watchfaces
+        virtual const bool mustShowAsTask() { return false; } // false=Not show in task switcher (menus and intermediate views must be hidden)
         bool Tick();
 };
 
