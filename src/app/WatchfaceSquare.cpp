@@ -13,6 +13,8 @@
 
 #define MINIMUM_BACKLIGHT 10
 
+char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
+
 WatchfaceSquare::WatchfaceSquare() {
     // Init here any you need
     lAppLog("WatchfaceSquare On\n");
@@ -56,18 +58,58 @@ bool WatchfaceSquare::Tick() {
         tmpTime = localtime(&now);
         memcpy(&timeinfo,tmpTime, sizeof(struct tm));
         char buffer[64] = { 0 };
+        canvas->fillSprite(TFT_BLACK);
+        // update day and month        
         canvas->setTextSize(4);
+        canvas->setFreeFont(&TomThumb);
+        canvas->setTextColor(TFT_WHITE);
+        canvas->setTextDatum(TL_DATUM);
+        sprintf(buffer,"%02d.%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
+        canvas->drawString(buffer, 0, 1);
+        // update day of week
+        int weekday=timeinfo.tm_wday;
+        canvas->setTextColor(TFT_CYAN);
+        canvas->setTextDatum(TC_DATUM);
+        sprintf(buffer,"%s",DAY[weekday]);
+        canvas->drawString(buffer, TFT_WIDTH/2+5, 1);
+        // update hours
+        canvas->setTextSize(3);
         canvas->setFreeFont(&FreeMonoBold18pt7b);
         canvas->setTextColor(TFT_CYAN);
-        canvas->fillSprite(TFT_BLACK);
         canvas->setTextDatum(TR_DATUM);
+        // canvas->setTextPadding(5);
         sprintf(buffer,"%02d", timeinfo.tm_hour);
-        canvas->drawString(buffer, TFT_WIDTH, 15);
-        sprintf(buffer,"%02d",timeinfo.tm_min);
+        canvas->drawString(buffer, TFT_WIDTH+7, 30);
+        // update minutes
         canvas->setTextColor(TFT_WHITE);
-        canvas->setTextDatum(BR_DATUM);
-        canvas->drawString(buffer, TFT_WIDTH, TFT_HEIGHT);
+        canvas->setTextDatum(CR_DATUM);
+        sprintf(buffer,"%02d",timeinfo.tm_min);
+        canvas->drawString(buffer, TFT_WIDTH+7, TFT_HEIGHT/2+15);
+        // update battery 
+        canvas->setFreeFont(&TomThumb);
+        canvas->setTextSize(4);
+        if (batteryPercent > -1) {
+            uint32_t battColor = TFT_DARKGREY;
+            bool battActivity = false;
+            if (vbusPresent) battColor = TFT_GREEN;
+            else if (batteryPercent < 10) battColor = ThCol(high);
+            else if (batteryPercent < 35) battColor = TFT_YELLOW;
+            else battColor = TFT_WHITE;
+            canvas->setTextColor(battColor);
+            int battFiltered = batteryPercent;
+            if (battFiltered > 99) battFiltered = 99;
+            sprintf(buffer, "%2d", battFiltered);
+            canvas->setTextDatum(TR_DATUM);
+            canvas->drawString(buffer, TFT_WIDTH-10,1);
+        }
+        else {
+            canvas->setTextColor(TFT_DARKGREY);
+            canvas->setTextDatum(TR_DATUM);
+            canvas->drawString("NB", TFT_WIDTH-10, 1);
+        }
+
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
+
         return true;
     }
     return false;
