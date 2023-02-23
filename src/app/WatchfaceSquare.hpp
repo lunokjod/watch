@@ -22,12 +22,18 @@
 
 // #include "../UI/AppTemplate.hpp"
 #include "MainMenu.hpp"
+#include "Steps.hpp"
+#include "Calendar.hpp"
+#include "Battery.hpp"
 #include "../system/Application.hpp"
 #include "../UI/activator/ActiveRect.hpp"
 
 class WatchfaceSquare : public LunokIoTApplication {
     protected:
+        ActiveRect *topRightButton = nullptr;
         ActiveRect *bottomRightButton = nullptr;
+        ActiveRect *topLeftButton = nullptr;
+        ActiveRect *bottomLeftButton = nullptr;
 
     private:
         unsigned long nextRefresh=0;

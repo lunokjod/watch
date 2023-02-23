@@ -18,14 +18,15 @@
 char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
 
 WatchfaceSquare::WatchfaceSquare() {
-    // Init here any you need
     lAppLog("WatchfaceSquare On\n");
 
-    // initalize here widgets
-    //mywidget=new .....
-
-    // Remember to dump anything to canvas to get awesome splash screen
-    // draw of TFT_eSPI canvas for splash here
+    topRightButton = new ActiveRect(160, 0, 80, 80, [](void *unused) {
+        LaunchApplication(new BatteryApplication());
+    });
+    if ( nullptr == topRightButton ) {
+        lAppLog("Unable to allocate topRightButton\n");
+        return;
+    }
 
     bottomRightButton = new ActiveRect(160, 160, 80, 80, [](void *unused) {
         LaunchApplication(new MainMenuApplication());
@@ -35,18 +36,41 @@ WatchfaceSquare::WatchfaceSquare() {
         return;
     }
 
+    topLeftButton = new ActiveRect(0, 0, 80, 80, [](void *unused) {
+        LaunchApplication(new CalendarApplication());
+    });
+
+    if ( nullptr == topLeftButton ) {
+        lAppLog("Unable to allocate bottomTopButton\n");
+        return;
+    }
+
+    bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](void *unused) {
+        LaunchApplication(new StepsApplication());
+    });
+    if ( nullptr == bottomLeftButton ) {
+        lAppLog("Unable to allocate bottomLeftButton\n");
+        return;
+    }
+
     Tick(); // OR call this if no splash 
 }
 
 WatchfaceSquare::~WatchfaceSquare() {
     // please remove/delete/free all to avoid leaks!
     //delete mywidget;
+    delete topRightButton;
     delete bottomRightButton;
+    delete topLeftButton;
+    delete bottomLeftButton;
 }
 
 bool WatchfaceSquare::Tick() {
 
+    topRightButton->Interact(touched, touchX, touchY);
     bottomRightButton->Interact(touched, touchX, touchY);
+    topLeftButton->Interact(touched, touchX, touchY);
+    bottomLeftButton->Interact(touched, touchX, touchY);
     // low the brightness if system changes it
     if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
 
