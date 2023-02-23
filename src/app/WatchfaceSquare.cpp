@@ -12,6 +12,8 @@
 
 
 #define MINIMUM_BACKLIGHT 10
+#define MARGIN_TOP 3
+#define MARGIN_LFT 2
 
 char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
 
@@ -65,26 +67,25 @@ bool WatchfaceSquare::Tick() {
         canvas->setTextColor(TFT_WHITE);
         canvas->setTextDatum(TL_DATUM);
         sprintf(buffer,"%02d.%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
-        canvas->drawString(buffer, 0, 1);
+        canvas->drawString(buffer, MARGIN_LFT, MARGIN_TOP);
         // update day of week
         int weekday=timeinfo.tm_wday;
         canvas->setTextColor(TFT_CYAN);
         canvas->setTextDatum(TC_DATUM);
         sprintf(buffer,"%s",DAY[weekday]);
-        canvas->drawString(buffer, TFT_WIDTH/2+5, 1);
+        canvas->drawString(buffer, TFT_WIDTH/2+15, MARGIN_TOP);
         // update hours
         canvas->setTextSize(3);
         canvas->setFreeFont(&FreeMonoBold18pt7b);
         canvas->setTextColor(TFT_CYAN);
         canvas->setTextDatum(TR_DATUM);
-        // canvas->setTextPadding(5);
         sprintf(buffer,"%02d", timeinfo.tm_hour);
         canvas->drawString(buffer, TFT_WIDTH+7, 30);
         // update minutes
         canvas->setTextColor(TFT_WHITE);
         canvas->setTextDatum(CR_DATUM);
         sprintf(buffer,"%02d",timeinfo.tm_min);
-        canvas->drawString(buffer, TFT_WIDTH+7, TFT_HEIGHT/2+15);
+        canvas->drawString(buffer, TFT_WIDTH+7, TFT_HEIGHT/2+17);
         // update battery 
         canvas->setFreeFont(&TomThumb);
         canvas->setTextSize(4);
@@ -100,12 +101,14 @@ bool WatchfaceSquare::Tick() {
             if (battFiltered > 99) battFiltered = 99;
             sprintf(buffer, "%2d", battFiltered);
             canvas->setTextDatum(TR_DATUM);
-            canvas->drawString(buffer, TFT_WIDTH-10,1);
+            canvas->drawString(buffer, TFT_WIDTH-5, MARGIN_TOP);
+            if(battFiltered == 0) battFiltered=1;
+            canvas->fillRect(TFT_WIDTH-16,MARGIN_TOP,12,(int)(20/(100/battFiltered)),battColor);
         }
         else {
             canvas->setTextColor(TFT_DARKGREY);
             canvas->setTextDatum(TR_DATUM);
-            canvas->drawString("NB", TFT_WIDTH-10, 1);
+            canvas->drawString("NB", TFT_WIDTH-10, MARGIN_TOP);
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
