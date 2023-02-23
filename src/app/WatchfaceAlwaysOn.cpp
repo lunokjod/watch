@@ -38,6 +38,21 @@ bool WatchfaceAlwaysOn::Tick() {
     if ( millis() > nextRefresh ) { // redraw full canvas
         canvas->fillSprite(TFT_BLACK); // use theme colors
 
+        /* https://www.desmos.com/calculator/w9jrdpvsmk
+        int angle = 0;
+        double x, y;
+        // generate a sine wave
+        for(x = 0; x < canvas->width(); x+=3) {
+            // calculate y value given x
+            y = 50*sin(angle*3.141/180);
+            y = canvas->height()/2 - y;
+            // color a pixel at the given position
+            //canvas->fillCircle(x,y,5,TFT_WHITE);
+            canvas->drawPixel(x, y, TFT_WHITE);
+            // increment angle
+            angle+=5;
+        }*/
+        
         time_t now;
         struct tm * tmpTime;
         struct tm timeinfo;
@@ -50,7 +65,6 @@ bool WatchfaceAlwaysOn::Tick() {
         canvas->setTextDatum(CC_DATUM);
         canvas->setFreeFont(&FreeMonoBold18pt7b);
         canvas->setTextColor(TFT_WHITE);
-        canvas->fillSprite(TFT_BLACK);
         canvas->drawString(buffer, TFT_WIDTH/2, TFT_HEIGHT/2);
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
