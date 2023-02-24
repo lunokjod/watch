@@ -75,8 +75,8 @@ uint32_t FPS=0;         // current FPS
 int16_t downTouchX=120;
 int16_t downTouchY=120;
 
-size_t screenShootCurrentImageX=0;
-size_t screenShootCurrentImageY=0;
+//size_t screenShootCurrentImageX=0;
+//size_t screenShootCurrentImageY=0;
 
 
 //std::list<TFT_eSprite *>ScreenShots;

@@ -647,8 +647,11 @@ void SaveDataBeforeShutdown() {
     if ( nullptr != usageStatics ) {
         sprintf(usageStatics,"Usage stats: Sleep: %u secs, in use: %lu secs (usage ratio: %.2f%%%%)",
                 deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
+
         SqlLog(usageStatics);
-        delay(200);
+
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
     //StopDatabase();
     //delay(100);

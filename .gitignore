@@ -10,4 +10,5 @@ openWeatherKey.txt
 tool/site/sessions/*
 tool/site/devices/*
 tool/site/log/*
-tool/emulator/*.vscode
+tool/emulator/
+*.vscode
