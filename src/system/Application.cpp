@@ -28,8 +28,8 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../UI/UI.hpp"
 #include "../app/LogView.hpp"
 
-// #include "../app/Watchface2.hpp"
-#include "../app/WatchfaceSquare.hpp"
+#include "../app/Watchface2.hpp"
+// #include "../app/WatchfaceSquare.hpp"
 // #include "../app/WatchfaceAlwaysOn.hpp"
 
 #include "SystemEvents.hpp"
@@ -52,8 +52,8 @@ SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
 // WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>, MakeWatch<WatchfaceSquare>, MakeWatch<WatchfaceAlwaysOn>};
-// WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
-WatchfaceMaker* Watchfaces[] = { MakeWatch<WatchfaceSquare> };
+WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
+// WatchfaceMaker* Watchfaces[] = { MakWatch<WatchfaceSquare> };
 LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
 void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
 
