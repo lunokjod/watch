@@ -200,61 +200,54 @@ bool WatchfaceSquare::Tick() {
           canvas->setTextColor(TFT_WHITE);
           canvas->drawString(textBuffer, WT_MISC_MC_X, 137);
 
-          // steps
-          uint32_t activityColor = TFT_WHITE;
-          bool doingSomething = false;
-          if (vbusPresent) {
-            activityColor = TFT_DARKGREY;
-          } else if (nullptr != currentActivity) {
-            if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
-              activityColor = TFT_GREEN;
-              doingSomething = true;
-            } else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
-              activityColor = TFT_YELLOW;
-              doingSomething = true;
-            }
-            if (doingSomething) {
-              canvas->fillCircle(120,TFT_HEIGHT-10, 5, activityColor);
-            }
-          }
-          canvas->setTextColor(activityColor);
-          canvas->setTextSize(4);
-          canvas->setTextDatum(BR_DATUM);
-          
-          canvas->drawXBitmap(MARGIN_LFT+75,200,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
-          sprintf(textBuffer, "%06dS", stepCount);
-          canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT);
-          int distance = (int) (stepCount * stepDistanceCm) / 100;
-          sprintf(textBuffer, "%06dM", stepCount);
-          canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT-23);
-
-          // connectivity notifications
-          uint32_t dotColor = TFT_DARKGREY;  // enabled but service isn't up yet
-          wl_status_t whatBoutWifi = WiFi.status();
-          if ((WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi)) {
-            lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
-            if (WL_CONNECTED == whatBoutWifi) {
-              canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
-            } else if (WL_CONNECT_FAILED == whatBoutWifi) {
-              canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
-            }
-          }
-
-          if (wfhandler.bleEnabled) {
-            if (wfhandler.bleServiceRunning) {
-              dotColor = ThCol(medium);
-            }
-            if (wfhandler.blePeer) {
-              dotColor = ThCol(low);
-            }
-            unsigned char *img = img_bluetooth_24_bits;  // bluetooth logo only icon
-            if (wfhandler.blePeer) {
-              img = img_bluetooth_peer_24_bits;
-            }  // bluetooth with peer icon
-            canvas->drawXBitmap(MARGIN_LFT, 200, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
-          }
-
           free(textBuffer); 
+        }
+
+        // steps
+        uint32_t activityColor = TFT_WHITE;
+        bool doingSomething = false;
+        if (vbusPresent) {
+          activityColor = TFT_DARKGREY;
+        } else if (nullptr != currentActivity) {
+          if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
+            activityColor = TFT_GREEN;
+            doingSomething = true;
+          } else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
+            activityColor = TFT_YELLOW;
+            doingSomething = true;
+          }
+          if (doingSomething) {
+            canvas->fillCircle(120,TFT_HEIGHT-10, 5, activityColor);
+          }
+        }
+        canvas->setTextColor(activityColor);
+        canvas->setTextSize(4);
+        canvas->setTextDatum(BR_DATUM);
+        
+        canvas->drawXBitmap(MARGIN_LFT+75,200,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
+        sprintf(textBuffer, "%06dS", stepCount);
+        canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT);
+        int distance = (int) (stepCount * stepDistanceCm) / 100;
+        sprintf(textBuffer, "%06dM", stepCount);
+        canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT-23);
+
+        // connectivity notifications
+        wl_status_t whatBoutWifi = WiFi.status();
+        if ((WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi)) {
+          lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
+          if (WL_CONNECTED == whatBoutWifi) {
+            canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+          } else if (WL_CONNECT_FAILED == whatBoutWifi) {
+            canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+          }
+        }
+
+        if (wfhandler.bleEnabled) {
+          unsigned char *img = img_bluetooth_24_bits;  // bluetooth logo only icon
+          if (wfhandler.blePeer) {
+            img = img_bluetooth_peer_24_bits;
+          }  // bluetooth with peer icon
+          canvas->drawXBitmap(MARGIN_LFT, 200, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI

@@ -237,7 +237,7 @@ bool Watchface2Application::Tick()
         }
 
         // connectivity notifications
-        if (wfhandler.bleEnabled) {
+        if (wfhandler.bleEnabled) {  // TODO: it doesn't work for now
             int16_t posX = 36;
             int16_t posY = 171;
             uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet

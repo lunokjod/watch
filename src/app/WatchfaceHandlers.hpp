@@ -50,7 +50,7 @@ class WatchfaceHandlers {
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_WFHANDLER)
 extern WatchfaceHandlers wfhandler;
-extern bool ntpSyncDone;
+extern bool ntpSyncDone; //@TODO this is a crap!!!
 #endif
 
 #endif
