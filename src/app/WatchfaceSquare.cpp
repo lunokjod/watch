@@ -51,24 +51,12 @@ WatchfaceSquare::WatchfaceSquare() {
         lAppLog("Unable to allocate bottomLeftButton\n");
         return;
     }
-    Handlers();
+    wfhandler.Handlers();
     // Tick(); // OR call this if no splash 
 }
 
-void WatchfaceSquare::FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    WatchfaceSquare *self = reinterpret_cast<WatchfaceSquare*>(handler_args);
-    if (WIFI_EVENT == base) {
-        if (WIFI_EVENT_STA_START == id) {
-            self->wifiEnabled = true;
-        }
-        else if (WIFI_EVENT_STA_STOP == id) {
-            self->wifiEnabled = false;
-        }
-    }
-}
 
 WatchfaceSquare::~WatchfaceSquare() {
-  esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceSquare::FreeRTOSEventReceived);
   // please remove/delete/free all to avoid leaks!
   //delete mywidget;
   delete topRightButton;
@@ -148,7 +136,7 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString("NB", TFT_WIDTH-10, MARGIN_TOP);
         }
 
-        if (weatherSyncDone) {
+        if (wfhandler.weatherSyncDone) {
           char *textBuffer = (char *)ps_malloc(255);
           // weather icon
           canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
