@@ -7,309 +7,7 @@
 //----------------------------------------------------------------
 
 #include "WatchfaceSquare.hpp"
-
-extern float PMUBattDischarge;
-
-extern const PROGMEM char openWeatherMapApiKey[];
-extern const PROGMEM uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
-extern const PROGMEM uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
-const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
-
-// network timed tasks
-NetworkTaskDescriptor *WatchfaceSquare::weatherTask = nullptr;
-NetworkTaskDescriptor *WatchfaceSquare::geoIPTask = nullptr;
-
-int weatherId = -1;
-char *weatherMain = nullptr;
-char *weatherDescription = nullptr;
-char *weatherIcon = nullptr;
-char *weatherReceivedData = nullptr;
-char *geoIPReceivedData = nullptr;
-char *weatherCity = nullptr;
-char *weatherCountry = nullptr;
-
-double weatherTemp = -1000;
-double weatherFTemp = -1000;
-double wspeed = 0;
-String jsonBuffer;
-
-String WatchfaceSquare::httpGETRequest(const char* serverName) {
-  WiFiClient client;
-  HTTPClient http;
-    
-  // Your Domain name with URL path or IP address with path
-  http.begin(client, serverName);
-  
-  // Send HTTP POST request
-  int httpResponseCode = http.GET();
-  
-  String payload = "{}"; 
-  
-  if (httpResponseCode>0) {
-    //Serial.print("HTTP Response code: ");
-    //Serial.println(httpResponseCode);
-    payload = http.getString();
-  }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
-
-  return payload;
-}
-
-bool WatchfaceSquare::GetSecureNetworkWeather() {
-    if (( nullptr == weatherCity )||( nullptr == weatherCountry )) {
-        lNetLog("OpenWeather: Unable to get location due no City or Country setted\n");
-        return false;
-    }
-    char *url = (char *)ps_malloc(200); // usually ~130
-    sprintf(url,urlOpenWeatherFormatString,weatherCity,weatherCountry,openWeatherMapApiKey);
-    lNetLog("GetSecureNetworkWeather: URL: %s Len: %d\n",url,strlen(url));
-
-    jsonBuffer = WatchfaceSquare::httpGETRequest(url);
-    if ( nullptr != weatherReceivedData ) {
-        free(weatherReceivedData);
-        weatherReceivedData=nullptr;
-    }
-    if ( jsonBuffer.length() > 0 ) {
-        weatherReceivedData=(char*)ps_malloc(jsonBuffer.length()+1);
-        sprintf(weatherReceivedData,"%s",jsonBuffer.c_str());
-        return true;
-    }
-    return false;
-}
-
-bool WatchfaceSquare::ParseWeatherData() {
-
-    if (nullptr == weatherReceivedData) {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: Empty string ''\n");
-        weatherId = -1;
-        return false;
-    }
-    JSONVar myObject = JSON.parse(weatherReceivedData);
-    if (JSON.typeof(myObject) == "undefined")
-    {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: malformed JSON\n");
-#ifdef LUNOKIOT_DEBUG_NETWORK
-        Serial.printf("%s\n", weatherReceivedData);
-#endif
-        return false;
-    }
-    if (false == myObject.hasOwnProperty("weather"))
-    {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property 'weather' not found\n");
-#ifdef LUNOKIOT_DEBUG_NETWORK
-        Serial.printf("%s\n", weatherReceivedData);
-#endif
-        weatherId = -1;
-        return false;
-    }
-    JSONVar weatherBranch = myObject["weather"][0];
-
-    if (false == weatherBranch.hasOwnProperty("description"))
-    {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property '[weather][0][description]' not found\n");
-#ifdef LUNOKIOT_DEBUG_NETWORK
-        Serial.printf("%s\n", weatherReceivedData);
-#endif
-        weatherId = -1;
-        return false;
-    }
-    weatherId = weatherBranch["id"];
-    const char *weatherMainConst = weatherBranch["main"];
-
-    if (nullptr != weatherMain)
-    {
-        free(weatherMain);
-        weatherMain = nullptr;
-    }
-    weatherMain = (char *)ps_malloc(strlen(weatherMainConst) + 1);
-    strcpy(weatherMain, weatherMainConst);
-
-    const char *weatherDescriptionConst = weatherBranch["description"];
-    if (nullptr != weatherDescription)
-    {
-        free(weatherDescription);
-        weatherDescription = nullptr;
-    }
-    weatherDescription = (char *)ps_malloc(strlen(weatherDescriptionConst) + 1);
-    strcpy(weatherDescription, weatherDescriptionConst);
-
-    const char *weatherIconConst = weatherBranch["icon"];
-    if (nullptr != weatherIcon)
-    {
-        free(weatherIcon);
-        weatherIcon = nullptr;
-    }
-    weatherIcon = (char *)ps_malloc(strlen(weatherIconConst) + 1);
-    strcpy(weatherIcon, weatherIconConst);
-
-    if (false == myObject.hasOwnProperty("main"))
-    {
-        lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property 'main' not found\n");
-#ifdef LUNOKIOT_DEBUG
-        Serial.printf("%s\n", weatherReceivedData);
-#endif
-        return false;
-    }
-    JSONVar mainBranch = myObject["main"];
-    weatherTemp = mainBranch["temp"];
-    weatherFTemp = mainBranch["feels_like"];
-    
-    JSONVar wind = myObject["main"];
-    wspeed = wind["speed"];
-
-
-    String jsonString = myObject.stringify(myObject);
-    SqlJSONLog("oweather",jsonString.c_str());
-
-    return true;
-}
-
-void WatchfaceSquare::Handlers()
-{
-    #ifdef LUNOKIOT_WIFI_ENABLED
-    esp_err_t done = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceSquare::FreeRTOSEventReceived, this);
-    if ( ESP_OK != done ) {
-        lAppLog("Unable to register into WiFi freeRTOS event loop\n");
-        return;
-    }
-    bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
-    if (nullptr == geoIPTask) {
-        geoIPTask = new NetworkTaskDescriptor();
-        geoIPTask->name = (char *)"GeoIP Watchface";
-        geoIPTask->everyTimeMS = ((60 * 1000) * 60)*3; // every 3 hours
-        geoIPTask->payload = (void *)this;
-        geoIPTask->_lastCheck = millis();
-        geoIPTask->_nextTrigger = 0; // launch NOW (as soon as system wants)
-        geoIPTask->callback = [&]() {
-            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
-            if (false == oweatherValue) {
-                lNetLog("Watchface: Openweather Sync disabled (geoip is futile)\n");
-                return true;
-            }
-            const char url[] = "http://www.geoplugin.net/json.gp";
-            // geoplugin_city
-            // geoplugin_countryCode
-            HTTPClient geoIPClient;
-            geoIPClient.begin(url);
-            int httpResponseCode = geoIPClient.GET();
-            if (httpResponseCode < 1) {
-                lNetLog("Watchface: ERROR: geoIP HTTP response code: %d\n", httpResponseCode);
-                geoIPClient.end();
-                return false;
-            }
-            lNetLog("Watchface: geoIP HTTP response code: %d\n", httpResponseCode);
-            // clean old buffer if needed
-            if (nullptr != geoIPReceivedData) {
-                free(geoIPReceivedData);
-                geoIPReceivedData = nullptr;
-            }
-            String payload = geoIPClient.getString(); // fuck strings
-            
-            lNetLog("Watchface: free geoIPClient\n");
-            geoIPClient.end();
-
-            // Generate the received data buffer
-            if (nullptr == geoIPReceivedData) {
-                lNetLog("Allocate: geoIPReceivedData size: %d\n",payload.length());
-                geoIPReceivedData = (char *)ps_malloc(payload.length() + 1);
-                strcpy(geoIPReceivedData, payload.c_str());
-            }
-            lNetLog("Parsing response...\n");
-            // process response
-            JSONVar myObject = JSON.parse(geoIPReceivedData);
-            if (JSON.typeof(myObject) == "undefined") {
-                lNetLog("Watchface: ERROR: geoIP JSON parsing: malformed JSON\n");
-                lNetLog("HTTP: %s\n",payload.c_str());
-                return false;
-            
-            }
-            //delete myObject["geoplugin_credit"];
-            myObject["geoplugin_credit"] = undefined; // sorry,so expensive credits :( thanks geoIP!!!! :**
-            //delete myObject["geoplugin_currencySymbol_UTF8"];
-            myObject["geoplugin_currencySymbol_UTF8"] = undefined; // no utf problems please!
-            //delete myObject["geoplugin_currencySymbol"];
-            myObject["geoplugin_currencySymbol"] = undefined; // no utf problems please!
-
-            //lLog("JSON:\n%s\n",myObject.stringify(myObject).c_str());
-            if (false == myObject.hasOwnProperty("geoplugin_city")) {
-                lNetLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_city'\n");
-                return false;
-            }
-            if (false == myObject.hasOwnProperty("geoplugin_countryCode")) {
-                lNetLog("Watchface: ERROR: geoIP JSON parsing: unable to get 'geoplugin_countryCode'\n");
-                return false;
-            }
-            JSONVar cityVar = myObject["geoplugin_city"];
-            JSONVar countryVar = myObject["geoplugin_countryCode"];
-            const char *cityString = cityVar;
-            const char *countryString = countryVar;
-            if (nullptr != weatherCountry) {
-                free(weatherCountry);
-                weatherCountry = nullptr;
-            }
-            if (nullptr != weatherCity) {
-                free(weatherCity);
-                weatherCity = nullptr;
-            }
-            if (nullptr == weatherCity) {
-                weatherCity = (char *)ps_malloc(strlen(cityString) + 1);
-            }
-            if (nullptr == weatherCountry) {
-                weatherCountry = (char *)ps_malloc(strlen(countryString) + 1);
-            }
-            strcpy(weatherCountry, countryString);
-            strcpy(weatherCity, cityString);
-            lNetLog("GeoIP: Country: '%s' City: '%s' (innacurate)\n",weatherCountry,weatherCity);
-
-            String jsonString = myObject.stringify(myObject);
-            SqlJSONLog("geoip",jsonString.c_str());
-
-            return true;
-        };
-        geoIPTask->enabled = oweatherValue;
-        geoIPTask->desiredStack=LUNOKIOT_QUERY_STACK_SIZE;
-        AddNetworkTask(geoIPTask);
-    }
-
-    if (nullptr == weatherTask) {
-        weatherTask = new NetworkTaskDescriptor();
-        weatherTask->name = (char *)"OpenWeather Watchface";
-        weatherTask->everyTimeMS = (60 * 1000) * 30; // every 30 minutes
-        weatherTask->payload = (void *)this;
-        weatherTask->_lastCheck = millis();
-        weatherTask->_nextTrigger = 0; // launch NOW (as soon as system wants)
-        weatherTask->callback = [&]() {
-            weatherSyncDone = false;
-            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
-            if (false == oweatherValue) {
-                lNetLog("Watchface: Openweather Sync disabled by NVS\n");
-                return true;
-            }
-            lNetLog("Openweather KEY: '%s'\n",openWeatherMapApiKey);
-            if (0 == strlen(openWeatherMapApiKey)) {
-                lNetLog("Watchface: Openweather Cannot get weather without API KEY https://openweathermap.org/api\n");
-                return true;
-            }
-            bool getDone = WatchfaceSquare::GetSecureNetworkWeather();
-
-            if (getDone) {
-                bool parseDone = WatchfaceSquare::ParseWeatherData();
-                weatherSyncDone = parseDone;
-                return parseDone;
-            }
-            return getDone;
-        };
-        weatherTask->enabled = oweatherValue;
-        weatherTask->desiredStack = LUNOKIOT_TASK_STACK_SIZE;
-        AddNetworkTask(weatherTask);
-    }
-#endif
-}
+#include "WatchfaceHandlers.hpp"
 
 #define MINIMUM_BACKLIGHT 10
 #define MARGIN_TOP 3
@@ -455,25 +153,25 @@ bool WatchfaceSquare::Tick() {
           // weather icon
           canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
           // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
-          if (-1 != weatherId) {
-            if ((200 <= weatherId) && (300 > weatherId)) {
+          if (-1 != wfhandler.weatherId) {
+            if ((200 <= wfhandler.weatherId) && (300 > wfhandler.weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
-            } else if ((300 <= weatherId) && (400 > weatherId)) {
+            } else if ((300 <= wfhandler.weatherId) && (400 > wfhandler.weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
-            } else if ((500 <= weatherId) && (600 > weatherId)) {
+            } else if ((500 <= wfhandler.weatherId) && (600 > wfhandler.weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
-            } else if ((600 <= weatherId) && (700 > weatherId)) {
+            } else if ((600 <= wfhandler.weatherId) && (700 > wfhandler.weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-            } else if ((700 <= weatherId) && (800 > weatherId)) {
+            } else if ((700 <= wfhandler.weatherId) && (800 > wfhandler.weatherId)) {
               //lAppLog("@TODO Watchface: openweather 700 condition code\n");
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-            } else if ((800 <= weatherId) && (900 > weatherId)) {
+            } else if ((800 <= wfhandler.weatherId) && (900 > wfhandler.weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             }
           }
           // temperature
-          if (-1000 != weatherTemp) {
-            sprintf(textBuffer, "%3.1f", weatherTemp);
+          if (-1000 != wfhandler.weatherTemp) {
+            sprintf(textBuffer, "%3.1f", wfhandler.weatherTemp);
             canvas->setFreeFont(&TomThumb);
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
@@ -481,8 +179,8 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 35);  //, 185, 96);
           }
 
-          if (-1000 != weatherFTemp) {
-            sprintf(textBuffer, "%3.1f", weatherFTemp);
+          if (-1000 != wfhandler.weatherFTemp) {
+            sprintf(textBuffer, "%3.1f", wfhandler.weatherFTemp);
             canvas->setFreeFont(&TomThumb);
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
@@ -490,13 +188,13 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 60);  //, 185, 96);
           }
 
-          if (nullptr != weatherMain) {
+          if (nullptr != wfhandler.weatherMain) {
             canvas->setTextFont(0);
             canvas->setTextSize(2);
             canvas->setTextDatum(TL_DATUM);
             canvas->setTextWrap(false, false);
             canvas->setTextColor(TFT_WHITE);
-            canvas->drawString(weatherMain, MARGIN_LFT, 100);
+            canvas->drawString(wfhandler.weatherMain, MARGIN_LFT, 100);
           }
 
           free(textBuffer);

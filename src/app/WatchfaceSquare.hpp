@@ -17,27 +17,19 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__APPLICATION__BASE__
-#define __LUNOKIOT__APPLICATION__BASE__
+#ifndef __LUNOKIOT__WATCHFACESQUARE_APP__
+#define __LUNOKIOT__WATCHFACESQUARE_APP__
 
 #include <Arduino.h>
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <Arduino_JSON.h>
-#include <ArduinoNvs.h>
-#include "LogView.hpp" // log capabilities
-#include "../app/LogView.hpp" // for lLog functions
-#include "../system/SystemEvents.hpp"
-#include "../system/Datasources/database.hpp"
-#include "../system/Network.hpp"
+#include "WatchfaceHandlers.hpp"
 #include "../system/Application.hpp"
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
+#include "../app/LogView.hpp" // for lLog functions
 
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
 #include "../static/img_seconds_hand.c"
-
 #include "../static/img_wifi_24.xbm"
 #include "../static/img_bluetooth_24.xbm"
 #include "../static/img_bluetooth_peer_24.xbm"

@@ -21,10 +21,28 @@
 #define __LUNOKIOT__WATCHFACE2_APP__
 
 #include <Arduino.h>
-#include "../system/Network.hpp"
+#include "WatchfaceHandlers.hpp"
 #include "../system/Application.hpp"
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
+#include "../app/LogView.hpp" // for lLog functions
+
+#include "../static/img_hours_hand.c"
+#include "../static/img_minutes_hand.c"
+#include "../static/img_seconds_hand.c"
+#include "../static/img_wifi_24.xbm"
+#include "../static/img_bluetooth_24.xbm"
+#include "../static/img_bluetooth_peer_24.xbm"
+#include "../static/img_usb_24.xbm"
+
+#include "../static/img_weather_200.c"
+#include "../static/img_weather_300.c"
+#include "../static/img_weather_500.c"
+#include "../static/img_weather_600.c"
+#include "../static/img_weather_800.c"
+
+#include "MainMenu.hpp"
+#include "Stopwatch.hpp"
 
 class Watchface2Application: public LunokIoTApplication {
     protected:
@@ -41,36 +59,17 @@ class Watchface2Application: public LunokIoTApplication {
         const int16_t margin = 5;
         const float DEGREE_HRS = (360/24);
         int markAngle=0;
-        void Handlers();
+        // void Handlers();
     public:
         const char *AppName() override { return "Analogic watchface"; };
-        bool wifiEnabled = false;
-        static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
-        bool GetSecureNetworkWeather();
-        bool ParseWeatherData();
 
-        String jsonBuffer;
-
-        int weatherId = -1;
-        char *weatherMain = nullptr;
-        char *weatherDescription = nullptr;
-        char *weatherIcon = nullptr;
-        double weatherTemp = -1000;
-
-        char *geoIPReceivedData = nullptr;
-        char *weatherReceivedData = nullptr;
-        char *weatherCity = nullptr;
-        char *weatherCountry = nullptr;
-
-        static NetworkTaskDescriptor * ntpTask;
-        static NetworkTaskDescriptor * geoIPTask;
-        static NetworkTaskDescriptor * weatherTask;
         Watchface2Application();
         virtual ~Watchface2Application();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
         void LowMemory();
+
 };
 
 #endif
