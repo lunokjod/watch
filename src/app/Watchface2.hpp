@@ -48,6 +48,20 @@ class Watchface2Application: public LunokIoTApplication {
         static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
         bool GetSecureNetworkWeather();
         bool ParseWeatherData();
+
+        String jsonBuffer;
+
+        int weatherId = -1;
+        char *weatherMain = nullptr;
+        char *weatherDescription = nullptr;
+        char *weatherIcon = nullptr;
+        double weatherTemp = -1000;
+
+        char *geoIPReceivedData = nullptr;
+        char *weatherReceivedData = nullptr;
+        char *weatherCity = nullptr;
+        char *weatherCountry = nullptr;
+
         static NetworkTaskDescriptor * ntpTask;
         static NetworkTaskDescriptor * geoIPTask;
         static NetworkTaskDescriptor * weatherTask;

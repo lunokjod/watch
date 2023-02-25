@@ -82,27 +82,13 @@ extern float PMUBattDischarge;
 
 //extern const char *openWeatherMapApiKey;
 extern const PROGMEM char openWeatherMapApiKey[];
-
-int weatherId = -1;
-char *weatherMain = nullptr;
-char *weatherDescription = nullptr;
-char *weatherIcon = nullptr;
-double weatherTemp = -1000;
-
 extern const PROGMEM uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
 extern const PROGMEM uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
-
-char *geoIPReceivedData = nullptr;
-char *weatherReceivedData = nullptr;
-
-char *weatherCity = nullptr;
-char *weatherCountry = nullptr;
 const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
 
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-String jsonBuffer;
 String httpGETRequest(const char* serverName) {
   WiFiClient client;
   HTTPClient http;

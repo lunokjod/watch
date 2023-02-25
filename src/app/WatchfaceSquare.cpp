@@ -11,7 +11,6 @@
 extern float PMUBattDischarge;
 
 extern const PROGMEM char openWeatherMapApiKey[];
-
 extern const PROGMEM uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
 extern const PROGMEM uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
 const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org/data/2.5/weather?q=%s,%s&units=metric&appid=%s";
@@ -19,6 +18,20 @@ const PROGMEM char urlOpenWeatherFormatString[] = "http://api.openweathermap.org
 // network timed tasks
 NetworkTaskDescriptor *WatchfaceSquare::weatherTask = nullptr;
 NetworkTaskDescriptor *WatchfaceSquare::geoIPTask = nullptr;
+
+int weatherId = -1;
+char *weatherMain = nullptr;
+char *weatherDescription = nullptr;
+char *weatherIcon = nullptr;
+char *weatherReceivedData = nullptr;
+char *geoIPReceivedData = nullptr;
+char *weatherCity = nullptr;
+char *weatherCountry = nullptr;
+
+double weatherTemp = -1000;
+double weatherFTemp = -1000;
+double wspeed = 0;
+String jsonBuffer;
 
 String WatchfaceSquare::httpGETRequest(const char* serverName) {
   WiFiClient client;
@@ -306,6 +319,7 @@ char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
 
 WatchfaceSquare::WatchfaceSquare() {
     lAppLog("WatchfaceSquare On\n");
+    directDraw=false;
 
     topRightButton = new ActiveRect(160, 0, 80, 80, [](void *unused) {
         LaunchApplication(new BatteryApplication());
@@ -340,7 +354,7 @@ WatchfaceSquare::WatchfaceSquare() {
         return;
     }
     Handlers();
-    Tick(); // OR call this if no splash 
+    // Tick(); // OR call this if no splash 
 }
 
 void WatchfaceSquare::FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {

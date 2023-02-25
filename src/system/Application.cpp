@@ -52,6 +52,7 @@ SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
 // WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>, MakeWatch<WatchfaceSquare>, MakeWatch<WatchfaceAlwaysOn>};
+// WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
 WatchfaceMaker* Watchfaces[] = { MakeWatch<WatchfaceSquare> };
 LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
 void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }

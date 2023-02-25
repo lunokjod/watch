@@ -63,25 +63,11 @@ class WatchfaceSquare : public LunokIoTApplication {
         ActiveRect *bottomLeftButton = nullptr;
         void Handlers();
 
-        char *weatherCity = nullptr;
-        char *weatherCountry = nullptr;
-        int weatherId = -1;
-        char *weatherMain = nullptr;
-        char *weatherDescription = nullptr;
-        char *weatherIcon = nullptr;
-        double weatherTemp = -1000;
-        double weatherFTemp = -1000;
-        double wspeed = 0;
-        char *weatherReceivedData = nullptr;
-        char *geoIPReceivedData = nullptr;
-        String jsonBuffer;
-
-    private:
-        
+    private:     
         unsigned long nextRefresh=0;
         bool weatherSyncDone = false;
     public:
-        const char *AppName() override { return "Square Watchface"; };
+        const char *AppName() override { return "Square watchface"; };
         static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
         bool wifiEnabled = false;
         bool GetSecureNetworkWeather();
