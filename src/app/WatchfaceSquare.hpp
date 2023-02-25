@@ -47,7 +47,6 @@
 #include "../static/img_weather_300.c"
 #include "../static/img_weather_500.c"
 #include "../static/img_weather_600.c"
-
 #include "../static/img_weather_800.c"
 
 #include "MainMenu.hpp"
@@ -72,6 +71,8 @@ class WatchfaceSquare : public LunokIoTApplication {
         char *weatherDescription = nullptr;
         char *weatherIcon = nullptr;
         double weatherTemp = -1000;
+        double weatherFTemp = -1000;
+        double wspeed = 0;
         char *weatherReceivedData = nullptr;
         char *geoIPReceivedData = nullptr;
         String jsonBuffer;

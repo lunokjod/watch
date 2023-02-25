@@ -34,7 +34,8 @@
 
 #include "../system/Network.hpp"
 #include "LogView.hpp"
-#include "Watchface2.hpp"
+// #include "Watchface2.hpp"
+#include "WatchfaceSquare.hpp"
 extern void StopBLE();
 extern void StartBLE(bool synched=false);
 
@@ -45,12 +46,13 @@ SettingsApplication::~SettingsApplication() {
     NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
     NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-    if ( nullptr != Watchface2Application::ntpTask ) { 
-        Watchface2Application::ntpTask->enabled = ntpCheck->switchEnabled;
-    }
+
+    // if ( nullptr != WatchfaceSquare::ntpTask ) { 
+    //     WatchfaceSquare::ntpTask->enabled = ntpCheck->switchEnabled;
+    // }
     NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-    if ( nullptr != Watchface2Application::weatherTask ) {
-        Watchface2Application::weatherTask->enabled = openweatherCheck->switchEnabled;
+    if ( nullptr != WatchfaceSquare::weatherTask ) {
+        WatchfaceSquare::weatherTask->enabled = openweatherCheck->switchEnabled;
     }
     if ( bleCheck->switchEnabled ) { StartBLE(); }
     else { StopBLE(); }

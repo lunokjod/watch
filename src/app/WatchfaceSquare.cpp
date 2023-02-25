@@ -144,6 +144,11 @@ bool WatchfaceSquare::ParseWeatherData() {
     }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
+    weatherFTemp = mainBranch["feels_like"];
+    
+    JSONVar wind = myObject["main"];
+    wspeed = wind["speed"];
+
 
     String jsonString = myObject.stringify(myObject);
     SqlJSONLog("oweather",jsonString.c_str());
@@ -436,53 +441,58 @@ bool WatchfaceSquare::Tick() {
           // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
           if (-1 != weatherId) {
             if ((200 <= weatherId) && (300 > weatherId)) {
-              canvas->pushImage(120 - (img_weather_200.width / 2), 52, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
             } else if ((300 <= weatherId) && (400 > weatherId)) {
-              canvas->pushImage(120 - (img_weather_300.width / 2), 52, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
             } else if ((500 <= weatherId) && (600 > weatherId)) {
-              canvas->pushImage(120 - (img_weather_500.width / 2), 52, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
             } else if ((600 <= weatherId) && (700 > weatherId)) {
-              canvas->pushImage(120 - (img_weather_600.width / 2), 52, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
             } else if ((700 <= weatherId) && (800 > weatherId)) {
               //lAppLog("@TODO Watchface: openweather 700 condition code\n");
-              // watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-              canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-              // watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             } else if ((800 <= weatherId) && (900 > weatherId)) {
-              canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             }
           }
           // temperature
           if (-1000 != weatherTemp) {
-            sprintf(textBuffer, "%2.1f C", weatherTemp);
-            int16_t posX = 150;
-            int16_t posY = 74;
-            canvas->setTextFont(0);
-            canvas->setTextSize(2);
+            sprintf(textBuffer, "%3.1f", weatherTemp);
+            canvas->setFreeFont(&TomThumb);
+            canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
-            canvas->setTextDatum(TL_DATUM);
-            canvas->drawString(textBuffer, posX, posY);  //, 185, 96);
+            canvas->setTextDatum(TR_DATUM);
+            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 35);  //, 185, 96);
+          }
+
+          if (-1000 != weatherFTemp) {
+            sprintf(textBuffer, "%3.1f", weatherFTemp);
+            canvas->setFreeFont(&TomThumb);
+            canvas->setTextSize(4);
+            canvas->setTextColor(TFT_WHITE);
+            canvas->setTextDatum(TR_DATUM);
+            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 60);  //, 185, 96);
           }
 
           if (nullptr != weatherMain) {
             canvas->setTextFont(0);
             canvas->setTextSize(2);
-            canvas->setTextDatum(CC_DATUM);
+            canvas->setTextDatum(TL_DATUM);
             canvas->setTextWrap(false, false);
             canvas->setTextColor(TFT_WHITE);
-            canvas->drawString(weatherMain, 120, 40);
+            canvas->drawString(weatherMain, MARGIN_LFT, 100);
           }
 
-          if (nullptr != weatherDescription) {
-            canvas->setTextFont(0);
-            canvas->setTextSize(1);
-            canvas->setTextDatum(CC_DATUM);
-            canvas->setTextWrap(false, false);
-            canvas->setTextColor(TFT_BLACK);
-            canvas->drawString(weatherDescription, 122, 62);
-            canvas->setTextColor(TFT_WHITE);
-            canvas->drawString(weatherDescription, 120, 60);
-          }
+        //   if (nullptr != weatherDescription) {
+        //     canvas->setTextFont(0);
+        //     canvas->setTextSize(1);
+        //     canvas->setTextDatum(TL_DATUM);
+        //     canvas->setTextWrap(false, false);
+        //     canvas->setTextColor(TFT_BLACK);
+        //     canvas->drawString(weatherDescription, MARGIN_LFT+2, 107);
+        //     canvas->setTextColor(TFT_WHITE);
+        //     canvas->drawString(weatherDescription, MARGIN_LFT, 105);
+        //   }
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
