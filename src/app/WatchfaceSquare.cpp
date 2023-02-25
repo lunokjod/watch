@@ -12,6 +12,8 @@
 #define MINIMUM_BACKLIGHT 10
 #define MARGIN_TOP 3
 #define MARGIN_LFT 2
+#define WTI_POS_Y 37    // Weather icon
+#define WT_MISC_MC_X 70    // Weather icon
 
 char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
 
@@ -76,41 +78,43 @@ bool WatchfaceSquare::Tick() {
     if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
 
     if ( millis() > nextRefresh ) { // redraw full canvas
-        canvas->fillSprite(TFT_BLACK); // use theme colors
 
+
+        char *textBuffer = (char *)ps_malloc(255);
+        canvas->fillSprite(TFT_BLACK); // use theme colors
+ 
         time_t now;
         struct tm * tmpTime;
         struct tm timeinfo;
         time(&now);
         tmpTime = localtime(&now);
         memcpy(&timeinfo,tmpTime, sizeof(struct tm));
-        char buffer[64] = { 0 };  // TODO: buffer using malloc
         canvas->fillSprite(TFT_BLACK);
         // update day and month        
         canvas->setTextSize(4);
         canvas->setFreeFont(&TomThumb);
         canvas->setTextColor(TFT_WHITE);
         canvas->setTextDatum(TL_DATUM);
-        sprintf(buffer,"%02d.%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
-        canvas->drawString(buffer, MARGIN_LFT, MARGIN_TOP);
+        sprintf(textBuffer,"%02d.%02d", timeinfo.tm_mday, timeinfo.tm_mon+1);
+        canvas->drawString(textBuffer, MARGIN_LFT, MARGIN_TOP);
         // update day of week
         int weekday=timeinfo.tm_wday;
         canvas->setTextColor(TFT_CYAN);
         canvas->setTextDatum(TC_DATUM);
-        sprintf(buffer,"%s",DAY[weekday]);
-        canvas->drawString(buffer, TFT_WIDTH/2+15, MARGIN_TOP);
+        sprintf(textBuffer,"%s",DAY[weekday]);
+        canvas->drawString(textBuffer, TFT_WIDTH/2+15, MARGIN_TOP);
         // update hours
         canvas->setTextSize(3);
         canvas->setFreeFont(&FreeMonoBold18pt7b);
         canvas->setTextColor(TFT_CYAN);
         canvas->setTextDatum(TR_DATUM);
-        sprintf(buffer,"%02d", timeinfo.tm_hour);
-        canvas->drawString(buffer, TFT_WIDTH+7, 30);
+        sprintf(textBuffer,"%02d", timeinfo.tm_hour);
+        canvas->drawString(textBuffer, TFT_WIDTH+7, 30);
         // update minutes
         canvas->setTextColor(TFT_WHITE);
         canvas->setTextDatum(CR_DATUM);
-        sprintf(buffer,"%02d",timeinfo.tm_min);
-        canvas->drawString(buffer, TFT_WIDTH+7, TFT_HEIGHT/2+17);
+        sprintf(textBuffer,"%02d",timeinfo.tm_min);
+        canvas->drawString(textBuffer, TFT_WIDTH+7, TFT_HEIGHT/2+17);
         // update battery 
         canvas->setFreeFont(&TomThumb);
         canvas->setTextSize(4);
@@ -124,9 +128,9 @@ bool WatchfaceSquare::Tick() {
             canvas->setTextColor(battColor);
             int battFiltered = batteryPercent;
             if (battFiltered > 99) battFiltered = 99;
-            sprintf(buffer, "%2d", battFiltered);
+            sprintf(textBuffer, "%2d", battFiltered);
             canvas->setTextDatum(TR_DATUM);
-            canvas->drawString(buffer, TFT_WIDTH-5, MARGIN_TOP);
+            canvas->drawString(textBuffer, TFT_WIDTH-5, MARGIN_TOP);
             if(battFiltered == 0) battFiltered=1;
             canvas->fillRect(TFT_WIDTH-16,MARGIN_TOP,12,(int)(20/(100/battFiltered)),battColor);
         }
@@ -137,24 +141,23 @@ bool WatchfaceSquare::Tick() {
         }
 
         if (wfhandler.weatherSyncDone) {
-          char *textBuffer = (char *)ps_malloc(255);
           // weather icon
           canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
           // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
           if (-1 != wfhandler.weatherId) {
             if ((200 <= wfhandler.weatherId) && (300 > wfhandler.weatherId)) {
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
             } else if ((300 <= wfhandler.weatherId) && (400 > wfhandler.weatherId)) {
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
             } else if ((500 <= wfhandler.weatherId) && (600 > wfhandler.weatherId)) {
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
             } else if ((600 <= wfhandler.weatherId) && (700 > wfhandler.weatherId)) {
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
             } else if ((700 <= wfhandler.weatherId) && (800 > wfhandler.weatherId)) {
               //lAppLog("@TODO Watchface: openweather 700 condition code\n");
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             } else if ((800 <= wfhandler.weatherId) && (900 > wfhandler.weatherId)) {
-              canvas->pushImage(MARGIN_LFT+5, 35, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+              canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             }
           }
           // temperature
@@ -164,7 +167,7 @@ bool WatchfaceSquare::Tick() {
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
             canvas->setTextDatum(TR_DATUM);
-            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 35);  //, 185, 96);
+            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+95, WTI_POS_Y); 
           }
 
           if (-1000 != wfhandler.weatherFTemp) {
@@ -173,30 +176,85 @@ bool WatchfaceSquare::Tick() {
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
             canvas->setTextDatum(TR_DATUM);
-            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+80, 60);  //, 185, 96);
+            canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+95, WTI_POS_Y+23);  
           }
 
           if (nullptr != wfhandler.weatherMain) {
-            canvas->setTextFont(0);
-            canvas->setTextSize(2);
-            canvas->setTextDatum(TL_DATUM);
-            canvas->setTextWrap(false, false);
-            canvas->setTextColor(TFT_WHITE);
-            canvas->drawString(wfhandler.weatherMain, MARGIN_LFT, 100);
+            canvas->setTextSize(3);
+            canvas->setTextDatum(MC_DATUM);
+            canvas->setTextColor(TFT_CYAN);
+            canvas->drawString(wfhandler.weatherMain, WT_MISC_MC_X, 95);
           }
 
-          free(textBuffer);
+          if (-1000 != wfhandler.weatherTempMin && -1000 != wfhandler.weatherTempMax) {
+            sprintf(textBuffer, "TL: %3.1f TM: %3.1f", wfhandler.weatherTempMin,wfhandler.weatherTempMax);
+            canvas->setTextSize(2);
+            canvas->setTextColor(TFT_WHITE);
+            canvas->setTextDatum(MC_DATUM);
+            canvas->drawString(textBuffer, WT_MISC_MC_X, 120);  
+          }
 
-          //   if (nullptr != weatherDescription) {
-          //     canvas->setTextFont(0);
-          //     canvas->setTextSize(1);
-          //     canvas->setTextDatum(TL_DATUM);
-          //     canvas->setTextWrap(false, false);
-          //     canvas->setTextColor(TFT_BLACK);
-          //     canvas->drawString(weatherDescription, MARGIN_LFT+2, 107);
-          //     canvas->setTextColor(TFT_WHITE);
-          //     canvas->drawString(weatherDescription, MARGIN_LFT, 105);
-          //   }
+          sprintf(textBuffer, "Wind: %4.1f Kmh", wfhandler.wspeed);
+          canvas->setTextSize(2);
+          canvas->setTextDatum(MC_DATUM);
+          canvas->setTextColor(TFT_WHITE);
+          canvas->drawString(textBuffer, WT_MISC_MC_X, 137);
+
+          // steps
+          uint32_t activityColor = TFT_WHITE;
+          bool doingSomething = false;
+          if (vbusPresent) {
+            activityColor = TFT_DARKGREY;
+          } else if (nullptr != currentActivity) {
+            if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
+              activityColor = TFT_GREEN;
+              doingSomething = true;
+            } else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
+              activityColor = TFT_YELLOW;
+              doingSomething = true;
+            }
+            if (doingSomething) {
+              canvas->fillCircle(120,TFT_HEIGHT-10, 5, activityColor);
+            }
+          }
+          canvas->setTextColor(activityColor);
+          canvas->setTextSize(4);
+          canvas->setTextDatum(BR_DATUM);
+          
+          canvas->drawXBitmap(MARGIN_LFT+75,200,img_step_32_bits,img_step_32_width,img_step_32_height,ThCol(text));
+          sprintf(textBuffer, "%06dS", stepCount);
+          canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT);
+          int distance = (int) (stepCount * stepDistanceCm) / 100;
+          sprintf(textBuffer, "%06dM", stepCount);
+          canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT-23);
+
+          // connectivity notifications
+          uint32_t dotColor = TFT_DARKGREY;  // enabled but service isn't up yet
+          wl_status_t whatBoutWifi = WiFi.status();
+          if ((WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi)) {
+            lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
+            if (WL_CONNECTED == whatBoutWifi) {
+              canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+            } else if (WL_CONNECT_FAILED == whatBoutWifi) {
+              canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+            }
+          }
+
+          if (wfhandler.bleEnabled) {
+            if (wfhandler.bleServiceRunning) {
+              dotColor = ThCol(medium);
+            }
+            if (wfhandler.blePeer) {
+              dotColor = ThCol(low);
+            }
+            unsigned char *img = img_bluetooth_24_bits;  // bluetooth logo only icon
+            if (wfhandler.blePeer) {
+              img = img_bluetooth_peer_24_bits;
+            }  // bluetooth with peer icon
+            canvas->drawXBitmap(MARGIN_LFT, 200, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
+          }
+
+          free(textBuffer); 
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI

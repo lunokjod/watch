@@ -26,6 +26,10 @@ class WatchfaceHandlers {
   char* weatherIcon = nullptr;
   double weatherTemp = -1000;
   double weatherFTemp = -1000;
+  double weatherTempMin = -1000;
+  double weatherTempMax = -1000;
+  double weatherHumidity = 0;
+  double weatherPressure = 0;
   double wspeed = 0;
 
   bool bleEnabled;         //@TODO this is a crap!!!

@@ -388,6 +388,10 @@ bool WatchfaceHandlers::ParseWeatherData() {
     }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
+    weatherTempMin = mainBranch["temp_min"];
+    weatherTempMax = mainBranch["temp_max"];
+    weatherHumidity = mainBranch["humidity"];
+    weatherPressure = mainBranch["pressure"];
 
     weatherFTemp = mainBranch["feels_like"];
     

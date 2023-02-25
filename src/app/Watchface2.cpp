@@ -22,7 +22,6 @@
 #include <esp_log.h>
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include <LilyGoWatch.h> // thanks for the warnings :/
 
 #include "WatchfaceHandlers.hpp"
