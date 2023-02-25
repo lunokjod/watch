@@ -356,12 +356,14 @@ void WatchfaceSquare::FreeRTOSEventReceived(void *handler_args, esp_event_base_t
 }
 
 WatchfaceSquare::~WatchfaceSquare() {
-    // please remove/delete/free all to avoid leaks!
-    //delete mywidget;
-    delete topRightButton;
-    delete bottomRightButton;
-    delete topLeftButton;
-    delete bottomLeftButton;
+  esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, WatchfaceSquare::FreeRTOSEventReceived);
+  // please remove/delete/free all to avoid leaks!
+  //delete mywidget;
+  delete topRightButton;
+  delete bottomRightButton;
+  delete topLeftButton;
+  delete bottomLeftButton;
+  lAppLog("Watchface Square is gone\n");
 }
 
 bool WatchfaceSquare::Tick() {
@@ -382,7 +384,7 @@ bool WatchfaceSquare::Tick() {
         time(&now);
         tmpTime = localtime(&now);
         memcpy(&timeinfo,tmpTime, sizeof(struct tm));
-        char buffer[64] = { 0 };
+        char buffer[64] = { 0 };  // TODO: buffer using malloc
         canvas->fillSprite(TFT_BLACK);
         // update day and month        
         canvas->setTextSize(4);
@@ -483,16 +485,18 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString(weatherMain, MARGIN_LFT, 100);
           }
 
-        //   if (nullptr != weatherDescription) {
-        //     canvas->setTextFont(0);
-        //     canvas->setTextSize(1);
-        //     canvas->setTextDatum(TL_DATUM);
-        //     canvas->setTextWrap(false, false);
-        //     canvas->setTextColor(TFT_BLACK);
-        //     canvas->drawString(weatherDescription, MARGIN_LFT+2, 107);
-        //     canvas->setTextColor(TFT_WHITE);
-        //     canvas->drawString(weatherDescription, MARGIN_LFT, 105);
-        //   }
+          free(textBuffer);
+
+          //   if (nullptr != weatherDescription) {
+          //     canvas->setTextFont(0);
+          //     canvas->setTextSize(1);
+          //     canvas->setTextDatum(TL_DATUM);
+          //     canvas->setTextWrap(false, false);
+          //     canvas->setTextColor(TFT_BLACK);
+          //     canvas->drawString(weatherDescription, MARGIN_LFT+2, 107);
+          //     canvas->setTextColor(TFT_WHITE);
+          //     canvas->drawString(weatherDescription, MARGIN_LFT, 105);
+          //   }
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
@@ -500,4 +504,9 @@ bool WatchfaceSquare::Tick() {
         return true;
     }
     return false;
+}
+
+void WatchfaceSquare::LowMemory() {
+    LunokIoTApplication::LowMemory(); // call parent
+    lAppLog("YEAH WATCHFACE RECEIVED TOO\n");
 }

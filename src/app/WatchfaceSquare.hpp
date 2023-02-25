@@ -63,7 +63,6 @@ class WatchfaceSquare : public LunokIoTApplication {
         ActiveRect *bottomLeftButton = nullptr;
         void Handlers();
 
-    private:
         char *weatherCity = nullptr;
         char *weatherCountry = nullptr;
         int weatherId = -1;
@@ -76,6 +75,9 @@ class WatchfaceSquare : public LunokIoTApplication {
         char *weatherReceivedData = nullptr;
         char *geoIPReceivedData = nullptr;
         String jsonBuffer;
+
+    private:
+        
         unsigned long nextRefresh=0;
         bool weatherSyncDone = false;
     public:
@@ -88,8 +90,11 @@ class WatchfaceSquare : public LunokIoTApplication {
         static NetworkTaskDescriptor * geoIPTask;
         static NetworkTaskDescriptor * weatherTask;
         WatchfaceSquare();
-        ~WatchfaceSquare();
+        virtual ~WatchfaceSquare();
         bool Tick();
+        const bool isWatchface() override { return true; }
+        const bool mustShowAsTask() override { return false; }
+        void LowMemory();
 };
 
 #endif

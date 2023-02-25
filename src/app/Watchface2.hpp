@@ -57,7 +57,6 @@ class Watchface2Application: public LunokIoTApplication {
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
         void LowMemory();
-
 };
 
 #endif
