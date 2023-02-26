@@ -878,14 +878,18 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
     
     //lSysLog("GESTURE? %f,%f,%f\n", degX, degY, degZ);
 
-    // enable lamp? @TODO THIS MUST BE A SETTING
     bool launchLamp=false;
-    //lLog("@TODO DISABLED LAMP LAUNCH <=========================\n");
-    if ( degY > 340.0 ) { launchLamp = true; }
-    else if ( degY < 20.0 ) { launchLamp = true; }
+    // rightHanded
+    if ( ( degY < 120.0 ) && ( degY > 80.0 ) ) { launchLamp = true; }
+    // leftHanded
+    else if ( ( degY > 280.0 ) && ( degY < 300.0 ) ) { launchLamp = true; }
 
+
+    lSysLog("Launch Lamp on this pose: %s (deg: %.2f)\n",(launchLamp?"true":"false"),degY);
     if ( launchLamp ) { // is the correct pose to get light?
-        LaunchApplication(new LampApplication());
+        bool lampGestureSetting = NVS.getInt("lampGesture");
+        lSysLog("User wants Lamp? %s\n",(launchLamp?"YES":"no"));
+        if (lampGestureSetting  ) { LaunchApplication(new LampApplication()); }
         return;
     } else if ( nullptr == currentApplication ) {
         LaunchWatchface(false);
@@ -1380,8 +1384,11 @@ static void BMAInterruptController(void *args) {
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'no motion'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
     featureOK = ttgo->bma->enableTiltInterrupt();
     if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'tilt'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
-    featureOK = ttgo->bma->enableWakeupInterrupt();
-    if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'double tap'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    bool doubleTapSetting=NVS.getInt("doubleTap");
+    if ( doubleTapSetting ){
+        featureOK = ttgo->bma->enableWakeupInterrupt();
+        if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'double tap'\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
+    }
 
     xSemaphoreGive(I2cMutex);
 

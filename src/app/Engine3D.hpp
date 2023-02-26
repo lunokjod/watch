@@ -23,11 +23,7 @@
 #include "../UI/AppTemplate.hpp"
 #include "../UI/base/Widget.hpp"
 //#include <cmath> 
-
-// almost empty defines to clarify the paramethers direction (see declarations below)
-#define IN const // clarify to developer if the data is input or output
-#define OUT
-#define INOUT
+#include "../lunokIoT.hpp"
 
 typedef struct {
     int32_t Min;
