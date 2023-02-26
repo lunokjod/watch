@@ -21,7 +21,7 @@
 #define __LUNOKIOT__PLAYGROUND11_APP__
 
 #include "../UI/AppTemplate.hpp"
-#include "../UI/representation/Point2D.hpp"
+//#include "../UI/representation/Point2D.hpp"
 /*
  * Pretends demonstrate the use of anchors and animators
  */
@@ -32,8 +32,8 @@ class PlaygroundApplication11: public TemplateApplication {
         PlaygroundApplication11();
         ~PlaygroundApplication11();
         bool Tick();
-        Point2D *pointOne=nullptr;
-        Point2D *pointTwo=nullptr;
+        //Point2D *pointOne=nullptr;
+        //Point2D *pointTwo=nullptr;
 };
 
 #endif

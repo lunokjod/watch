@@ -112,7 +112,7 @@ BLEMonitorApplication::BLEMonitorApplication() {
     //if ( enabled ) { StartBLE(); }
 
     lunokIoT_BLEMonitorTaskLoop = true;
-    xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_APP_STACK_SIZE, NULL, uxTaskPriorityGet(NULL), &lunokIoT_BLEMonitorTask,1);
+    xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY, &lunokIoT_BLEMonitorTask,1);
     Tick(); // splash
     UINextTimeout = millis() + UITimeout;
 }

@@ -21,9 +21,6 @@
 #define __LUNOKIOT__WIDGET__BASE__
 
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
-//extern TFT_eSPI *tft;
-
 
 // https://github.com/Bodmer/TFT_eSPI/blob/master/examples/Sprite/Orrery/Orrery.ino
 class Drawable {
