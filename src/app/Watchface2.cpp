@@ -18,11 +18,25 @@
 //
 
 #include "Watchface2.hpp"
-
-#include <esp_log.h>
+#include "../lunokIoT.hpp"
 #include <Arduino.h>
 #include <WiFi.h>
 #include <LilyGoWatch.h> // thanks for the warnings :/
+extern TTGOClass *ttgo;
+#include <WiFi.h>
+
+#include "../app/LogView.hpp" // for lLog functions
+#include "../system/SystemEvents.hpp"
+#include "MainMenu.hpp"
+
+#include "../static/img_hours_hand.c"
+#include "../static/img_minutes_hand.c"
+#include "../static/img_seconds_hand.c"
+
+#include "../static/img_wifi_24.xbm"
+#include "../static/img_bluetooth_24.xbm"
+#include "../static/img_bluetooth_peer_24.xbm"
+#include "../static/img_usb_24.xbm"
 
 #include "WatchfaceHandlers.hpp"
 
@@ -32,9 +46,20 @@ int currentHour = random(0, 24);
 int currentDay = random(1, 30);
 int currentMonth = random(0, 11);
 
+extern bool bleEnabled;        //@TODO this is a crap!!!
+extern volatile bool bleServiceRunning; //@TODO this is a crap!!!
+extern bool blePeer;
+
+extern float PMUBattDischarge;
+
+extern bool weatherSyncDone;
+extern int weatherId;
+extern double weatherTemp;
+extern char *weatherMain;
+extern char *weatherDescription;
+extern char *weatherIcon;
+
 Watchface2Application::~Watchface2Application() {
-    // esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, Watchface2Application::FreeRTOSEventReceived);
-    // directDraw=false;
     delete bottomRightButton;
     delete hourHandCanvas;
     delete minuteHandCanvas;
@@ -51,9 +76,7 @@ Watchface2Application::Watchface2Application() {
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
 
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](void *unused) {
-        LaunchApplication(new MainMenuApplication());
-    });
+    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new MainMenuApplication()); });
     if ( nullptr == bottomRightButton ) {
         lAppLog("Unable to allocate bottomRightButton\n");
         return;
@@ -128,11 +151,9 @@ Watchface2Application::Watchface2Application() {
 
     colorBuffer->DrawTo(canvas, 0, 0); // for splash
     // directDraw=true;
-    wfhandler.Handlers();
 }
 
-bool Watchface2Application::Tick()
-{
+bool Watchface2Application::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY);
 
     if (millis() > nextRefresh) {
@@ -214,8 +235,7 @@ bool Watchface2Application::Tick()
                 canvas->drawString(textBuffer, posX, posY); //, 185, 96);
             }
 
-            if (nullptr != wfhandler.weatherMain)
-            {
+            if (nullptr != weatherMain) {
                 canvas->setTextFont(0);
                 canvas->setTextSize(2);
                 canvas->setTextDatum(CC_DATUM);
@@ -475,10 +495,4 @@ bool Watchface2Application::Tick()
         return true;
     }
     return false;
-}
-
-
-void Watchface2Application::LowMemory() {
-    LunokIoTApplication::LowMemory(); // call parent
-    lAppLog("YEAH WATCHFACE RECEIVED TOO\n");
 }

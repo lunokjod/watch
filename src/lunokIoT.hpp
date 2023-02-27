@@ -21,8 +21,15 @@
 #define ___lunokIoT___H____
 
 #include "lunokiot_config.hpp" // WARNING: generated file, the original from "tools/lunokiot_config.hpp.template"
-
 #include "system/Network/BLE.hpp"
+
+// almost empty defines to clarify the paramethers direction (see declarations below)
+#define IN const // clarify to developer if the data is input or output
+#define OUT
+#define INOUT
+// other convenient syntactic-sugar
+#define NO_CALLBACK nullptr
+#define IGNORE_PARAM void *unused
 
 // LoT is all you need for use it! ;)
 #define LoT LunokIoT::Get
@@ -39,7 +46,7 @@ class LunokIoT {
         bool IsNVSEnabled();
         void BootReason();
         bool IsNetworkInUse();
-        bool CpuSpeed(uint32_t mhz);
+        bool CpuSpeed(IN uint32_t mhz);
 
         // delete copy and move constructors and assign operators
         LunokIoT(LunokIoT const&) = delete;             // Copy construct
@@ -47,6 +54,7 @@ class LunokIoT {
         LunokIoT& operator=(LunokIoT const&) = delete;  // Copy assign
         LunokIoT& operator=(LunokIoT &&) = delete;      // Move assign
         bool SPIFFSReady=false; // @TODO
+        size_t selectedWatchFace=0;
     protected:
         LunokIoT();
         ~LunokIoT() {}; // implemented here ¿what kind of singleton.... x'D

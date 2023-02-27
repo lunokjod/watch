@@ -175,8 +175,13 @@ bool ParseBangleJSMessage(char * javascript) {
             int timezone = NVS.getInt("timezoneTime");
             int gbTimezone = atoi(numBuffer);
             lNetLog("Gadgetbridge: Current timezone: %+d offered: %+d\n",timezone,gbTimezone);
-            if ( gbTimezone != timezone ) {
-                NVS.setInt("timezoneTime",gbTimezone, false);
+            bool userWants = NVS.getInt("NTPBLEEnabled");
+            if ( userWants ) {
+                if ( gbTimezone != timezone ) {
+                    NVS.setInt("timezoneTime",gbTimezone, false);
+                }
+            } else {
+                lNetLog("Gadgetbridge: User setting discard BLE timezone offer\n");
             }
             continue;
         }
@@ -186,6 +191,13 @@ bool ParseBangleJSMessage(char * javascript) {
             numBuffer[strlen(numBuffer)-1]=0; // remove last ")"
             long newTime = atol(numBuffer);
             lNetLog("Gadgetbridge: setTime: '%s'\n",numBuffer);
+            bool userWants = NVS.getInt("NTPBLEEnabled");
+            if ( false == userWants ) {
+                lNetLog("Gadgetbridge: User setting discard BLE set time offer\n");
+                containsSetTime=true;
+                continue;
+            }
+
             //lNetLog("Gadgetbridge: setTime: '%ld'\n",newTime);
             time_t utcCalc = newTime;// - 2208988800UL;
             struct tm * timeinfo;
@@ -197,6 +209,7 @@ bool ParseBangleJSMessage(char * javascript) {
             test.hour = timeinfo->tm_hour;
             test.minute = timeinfo->tm_min;
             test.second = timeinfo->tm_sec;
+
             BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
             if (pdTRUE == done) {
                 ttgo->rtc->setDateTime(test);

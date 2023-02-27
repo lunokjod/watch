@@ -58,7 +58,7 @@ class LaunchApplicationDescriptor {
  * Push the application to foreground
  */
 void LaunchApplication(LunokIoTApplication *instance,bool animation=true,bool synced=false, bool force=false);
-void LaunchWatchface(bool animation=true);
+void LaunchWatchface(bool animation=true, bool force=false);
 void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched=false);
 
 

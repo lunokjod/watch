@@ -17,27 +17,18 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__SETTINGS_APP__
-#define __LUNOKIOT__SETTINGS_APP__
+#ifndef __LUNOKIOT__APPLICATION__WATCHFACESELECTOR__
+#define __LUNOKIOT__APPLICATION__WATCHFACESELECTOR__
 
-#include "../UI/AppTemplate.hpp" // typical app design base with back button
+#include "../UI/AppTemplate.hpp"
 
-// widgets used
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
-
-class SettingsApplication: public TemplateApplication {
+class WatchfaceSelectorApplication : public TemplateApplication {
     private:
-        ButtonImageXBMWidget * btnHelp = nullptr;
-        SwitchWidget * ntpCheck = nullptr;
-        SwitchWidget * openweatherCheck = nullptr;
-        SwitchWidget * wifiCheck = nullptr;
-        SwitchWidget * bleCheck = nullptr;
-        SwitchWidget * ntpBLECheck = nullptr;
+        unsigned long nextRefresh=0;
     public:
-        const char *AppName() override { return "Basic settings"; };
-        SettingsApplication();
-        virtual ~SettingsApplication();
+        const char *AppName() override { return "Watchface Select"; };
+        WatchfaceSelectorApplication();
+        ~WatchfaceSelectorApplication();
         bool Tick();
 };
 

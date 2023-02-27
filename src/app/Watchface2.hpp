@@ -61,13 +61,13 @@ class Watchface2Application: public LunokIoTApplication {
         int markAngle=0;
     public:
         const char *AppName() override { return "Analogic watchface"; };
-
+        //bool GetSecureNetworkWeather();
+        //bool ParseWeatherData();
         Watchface2Application();
         virtual ~Watchface2Application();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
-        void LowMemory();
 
 };
 
