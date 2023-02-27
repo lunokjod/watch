@@ -678,11 +678,6 @@ void _SendEventWakeTask(void *data) {
     vTaskDelete(NULL);
 }
 static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-
-    /*
-    static unsigned long lastPEK = 0;
-    if ( millis() > lastPEK ) {
-        */
     if (ttgo->bl->isOn()) {
         lEvLog("Event: user wants to put device to sleep\n");
         FreeSpace();
@@ -695,15 +690,9 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         FreeSpace();
         ScreenWake();
+        LaunchWatchface(false,true);
     }
-    /*
-    lastPEK = millis()+50;
-} else {
-    Serial.println("Event: discarded PEK by: Too fast rule");
 }
-*/
-}
-
 
 void TakeBMPSample() {
     

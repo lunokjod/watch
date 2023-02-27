@@ -20,7 +20,7 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
 #include <LilyGoWatch.h>
-
+#include "../lunokIoT.hpp"
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
 #include "Application.hpp"
@@ -29,6 +29,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../app/LogView.hpp"
 
 #include "../app/Watchface2.hpp"
+#include "../app/WatchfaceAlwaysOn.hpp"
 
 #include "SystemEvents.hpp"
 
@@ -49,9 +50,18 @@ SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
-WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
-LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
-void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
+WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>,MakeWatch<WatchfaceAlwaysOn> };
+LunokIoTApplication *GetWatchFace() { return Watchfaces[LoT().selectedWatchFace](); } // hardcoded by now
+void LaunchWatchface(bool animation, bool forced) {
+    bool launch=false;
+    if ( nullptr == currentApplication ) {
+        launch=true;
+    } else if ( false == currentApplication->isWatchface() ) {
+        launch=true;
+    }
+    if ( forced ) { launch = true; }
+    if (launch) { LaunchApplication(GetWatchFace(),animation); }
+}
 
 LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 

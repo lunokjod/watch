@@ -54,6 +54,7 @@ class LunokIoT {
         LunokIoT& operator=(LunokIoT const&) = delete;  // Copy assign
         LunokIoT& operator=(LunokIoT &&) = delete;      // Move assign
         bool SPIFFSReady=false; // @TODO
+        size_t selectedWatchFace=0;
     protected:
         LunokIoT();
         ~LunokIoT() {}; // implemented here ¿what kind of singleton.... x'D
