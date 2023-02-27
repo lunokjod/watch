@@ -21,28 +21,10 @@
 #define __LUNOKIOT__WATCHFACE2_APP__
 
 #include <Arduino.h>
-#include "WatchfaceHandlers.hpp"
+#include "../system/Network.hpp"
 #include "../system/Application.hpp"
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
-#include "../app/LogView.hpp" // for lLog functions
-
-#include "../static/img_hours_hand.c"
-#include "../static/img_minutes_hand.c"
-#include "../static/img_seconds_hand.c"
-#include "../static/img_wifi_24.xbm"
-#include "../static/img_bluetooth_24.xbm"
-#include "../static/img_bluetooth_peer_24.xbm"
-#include "../static/img_usb_24.xbm"
-
-#include "../static/img_weather_200.c"
-#include "../static/img_weather_300.c"
-#include "../static/img_weather_500.c"
-#include "../static/img_weather_600.c"
-#include "../static/img_weather_800.c"
-
-#include "MainMenu.hpp"
-#include "Stopwatch.hpp"
 
 class Watchface2Application: public LunokIoTApplication {
     protected:

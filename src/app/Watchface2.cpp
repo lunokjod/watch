@@ -20,7 +20,6 @@
 #include "Watchface2.hpp"
 #include "../lunokIoT.hpp"
 #include <Arduino.h>
-#include <WiFi.h>
 #include <LilyGoWatch.h> // thanks for the warnings :/
 extern TTGOClass *ttgo;
 #include <WiFi.h>
@@ -38,7 +37,13 @@ extern TTGOClass *ttgo;
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
 
-#include "WatchfaceHandlers.hpp"
+#include "../static/img_weather_200.c"
+#include "../static/img_weather_300.c"
+#include "../static/img_weather_500.c"
+#include "../static/img_weather_600.c"
+
+#include "../static/img_weather_800.c"
+#include "Stopwatch.hpp"
 
 int currentSec = random(0, 60);
 int currentMin = random(0, 60);
@@ -71,7 +76,6 @@ Watchface2Application::~Watchface2Application() {
 
 Watchface2Application::Watchface2Application() {
     directDraw=false;
-    // this->handler = handlers;
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
@@ -188,44 +192,44 @@ bool Watchface2Application::Tick() {
 
         // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
 
-        if (wfhandler.weatherSyncDone) {
+        if (weatherSyncDone) {
             // weather icon
             canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
             // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
-            if (-1 != wfhandler.weatherId)
+            if (-1 != weatherId)
             {
-                if ((200 <= wfhandler.weatherId) && (300 > wfhandler.weatherId))
+                if ((200 <= weatherId) && (300 > weatherId))
                 {
                     canvas->pushImage(120 - (img_weather_200.width / 2), 52, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
                 }
-                else if ((300 <= wfhandler.weatherId) && (400 > wfhandler.weatherId))
+                else if ((300 <= weatherId) && (400 > weatherId))
                 {
                     canvas->pushImage(120 - (img_weather_300.width / 2), 52, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
                 }
-                else if ((500 <= wfhandler.weatherId) && (600 > wfhandler.weatherId))
+                else if ((500 <= weatherId) && (600 > weatherId))
                 {
                     canvas->pushImage(120 - (img_weather_500.width / 2), 52, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
                 }
-                else if ((600 <= wfhandler.weatherId) && (700 > wfhandler.weatherId))
+                else if ((600 <= weatherId) && (700 > weatherId))
                 {
                     canvas->pushImage(120 - (img_weather_600.width / 2), 52, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
                 }
-                else if ((700 <= wfhandler.weatherId) && (800 > wfhandler.weatherId))
+                else if ((700 <= weatherId) && (800 > weatherId))
                 {
                     //lAppLog("@TODO Watchface: openweather 700 condition code\n");
                     // watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
                     canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
                     // watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
                 }
-                else if ((800 <= wfhandler.weatherId) && (900 > wfhandler.weatherId))
+                else if ((800 <= weatherId) && (900 > weatherId))
                 {
                     canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
                 }
             }
             // temperature
-            if (-1000 != wfhandler.weatherTemp)
+            if (-1000 != weatherTemp)
             {
-                sprintf(textBuffer, "%2.1f C", wfhandler.weatherTemp);
+                sprintf(textBuffer, "%2.1f C", weatherTemp);
                 int16_t posX = 150;
                 int16_t posY = 74;
                 canvas->setTextFont(0);
@@ -241,35 +245,35 @@ bool Watchface2Application::Tick() {
                 canvas->setTextDatum(CC_DATUM);
                 canvas->setTextWrap(false, false);
                 canvas->setTextColor(TFT_WHITE);
-                canvas->drawString(wfhandler.weatherMain, 120, 40);
+                canvas->drawString(weatherMain, 120, 40);
             }
 
-            if (nullptr != wfhandler.weatherDescription) {
+            if (nullptr != weatherDescription) {
                 canvas->setTextFont(0);
                 canvas->setTextSize(1);
                 canvas->setTextDatum(CC_DATUM);
                 canvas->setTextWrap(false, false);
                 canvas->setTextColor(TFT_BLACK);
-                canvas->drawString(wfhandler.weatherDescription, 122, 62);
+                canvas->drawString(weatherDescription, 122, 62);
                 canvas->setTextColor(TFT_WHITE);
-                canvas->drawString(wfhandler.weatherDescription, 120, 60);
+                canvas->drawString(weatherDescription, 120, 60);
             }
         }
 
         // connectivity notifications
-        if (wfhandler.bleEnabled) {  // TODO: it doesn't work for now
+        if (bleEnabled) {
             int16_t posX = 36;
             int16_t posY = 171;
             uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-            if (wfhandler.bleServiceRunning) {
+            if (bleServiceRunning) {
                 dotColor = ThCol(medium);
             }
-            if (wfhandler.blePeer) {
+            if (blePeer) {
                 dotColor = ThCol(low);
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
             unsigned char *img = img_bluetooth_24_bits; // bluetooth logo only icon
-            if (wfhandler.blePeer) {
+            if (blePeer) {
                 img = img_bluetooth_peer_24_bits;
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));

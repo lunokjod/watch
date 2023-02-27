@@ -51,13 +51,6 @@ SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
-<<<<<<< HEAD
-// WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>, MakeWatch<WatchfaceSquare>, MakeWatch<WatchfaceAlwaysOn>};
-// WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application> };
-WatchfaceMaker* Watchfaces[] = { MakeWatch<WatchfaceSquare> };
-LunokIoTApplication *GetWatchFace() { return Watchfaces[0](); } // hardcoded by now
-void LaunchWatchface(bool animation) { LaunchApplication(GetWatchFace(),animation); }
-=======
 WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>,MakeWatch<WatchfaceAlwaysOn> };
 LunokIoTApplication *GetWatchFace() { return Watchfaces[LoT().selectedWatchFace](); } // hardcoded by now
 void LaunchWatchface(bool animation, bool forced) {
@@ -70,7 +63,6 @@ void LaunchWatchface(bool animation, bool forced) {
     if ( forced ) { launch = true; }
     if (launch) { LaunchApplication(GetWatchFace(),animation); }
 }
->>>>>>> upstream/devel
 
 LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 
