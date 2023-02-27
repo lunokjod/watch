@@ -29,7 +29,7 @@ class WatchfaceAlwaysOn : public LunokIoTApplication {
         const char *AppName() override { return "Always on"; };
         WatchfaceAlwaysOn();
         ~WatchfaceAlwaysOn();
-        virtual const bool isWatchface() { return false; } // FAKED response, due the system don't kill the watchfaces
+        virtual const bool isWatchface() { return true; }
         virtual const bool mustShowAsTask() { return false; } // false=Not show in task switcher (menus and intermediate views must be hidden)
         bool Tick();
 };

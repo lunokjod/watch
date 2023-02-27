@@ -118,6 +118,7 @@ bool WatchfaceSquare::Tick() {
         // update battery 
         canvas->setFreeFont(&TomThumb);
         canvas->setTextSize(4);
+        
         if (batteryPercent > -1) {
             uint32_t battColor = TFT_DARKGREY;
             bool battActivity = false;
@@ -228,7 +229,7 @@ bool WatchfaceSquare::Tick() {
         sprintf(textBuffer, "%06dS", stepCount);
         canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT);
         int distance = (int) (stepCount * stepDistanceCm) / 100;
-        sprintf(textBuffer, "%06dM", stepCount);
+        sprintf(textBuffer, "%06dM", distance);
         canvas->drawString(textBuffer, TFT_WIDTH, TFT_HEIGHT-23);
 
         // connectivity notifications
@@ -236,9 +237,9 @@ bool WatchfaceSquare::Tick() {
         if ((WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi)) {
           lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
           if (WL_CONNECTED == whatBoutWifi) {
-            canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+            canvas->drawXBitmap(MARGIN_LFT + 30, 205, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
           } else if (WL_CONNECT_FAILED == whatBoutWifi) {
-            canvas->drawXBitmap(MARGIN_LFT + 28, 200, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+            canvas->drawXBitmap(MARGIN_LFT + 30, 205, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
           }
         }
 
@@ -247,7 +248,7 @@ bool WatchfaceSquare::Tick() {
           if (wfhandler.blePeer) {
             img = img_bluetooth_peer_24_bits;
           }  // bluetooth with peer icon
-          canvas->drawXBitmap(MARGIN_LFT, 200, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
+          canvas->drawXBitmap(MARGIN_LFT, 205, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
 
         nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI

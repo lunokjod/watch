@@ -29,7 +29,7 @@
 #include "BootSplash.hpp"
 #include "../system/SystemEvents.hpp"
 #include "../system/Application.hpp"
-#include "representation/Point2D.hpp"
+//#include "representation/Point2D.hpp"
 #include "widgets/CanvasWidget.hpp"
 #include "../app/LogView.hpp"
 
@@ -145,7 +145,7 @@ void ScreenSleep() {
     xSemaphoreGive(ScreenSemaphore);
 }
 
-
+/*
 static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     // @TODO recovered object contains uninitialized data ¿maybe a copy constructor?
     //return;
@@ -155,7 +155,7 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
     int16_t deltaY = 0;
     anchor->GetDelta(deltaX,deltaY);
     lUILog("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
-}
+}*/
 
 void TakeScreenShootSound() {
 #ifdef LUNOKIOT_SILENT_BOOT
@@ -265,6 +265,7 @@ TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int
     }
     return canvas;
 }
+/*
 TFT_eSprite *TakeScreenShoot() {
     TFT_eSprite *appView = currentApplication->canvas;
     if ( nullptr == appView ) { return nullptr; }
@@ -293,7 +294,7 @@ TFT_eSprite *TakeScreenShoot() {
 #endif
     return myCopy;
 }
-
+*/
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
     screenShootCanvas = new TFT_eSprite(ttgo->tft);
     if ( nullptr == screenShootCanvas ) { return nullptr; }
@@ -306,7 +307,25 @@ TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
 
 extern SemaphoreHandle_t I2cMutex;
 
+SemaphoreHandle_t UIDrawProcess = xSemaphoreCreateMutex();
+
+/*
+void UIEventScreenRefreshTask(void *data) {
+    vTaskDelete(NULL);
+}
+*/
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    /*
+    lSysLog("REFRESh\n");
+    // remains locked until next
+    if( xSemaphoreTake( UIDrawProcess, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
+        BaseType_t intTaskOk = xTaskCreatePinnedToCore(UIEventScreenRefreshTask, "", LUNOKIOT_APP_STACK_SIZE, nullptr, tskIDLE_PRIORITY, NULL,1);
+        if ( pdPASS != intTaskOk ) {
+            lSysLog("ERROR: Unable to create UI Refresh Task!\n");
+        }
+    }
+    */
+
     // touch data handling
     static bool oldTouchState = false;
 
@@ -315,7 +334,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         newTouch = ttgo->getTouch(newTouchX,newTouchY);
         xSemaphoreGive( I2cMutex );
-    }    
+    } else { return; } // don't mess me 
     bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
         touchDragAngle = 0;
@@ -360,6 +379,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         if ( nullptr == currentApplication ) {
             xSemaphoreGive( UISemaphore );
+            xSemaphoreGive( UIDrawProcess );
             return;
         }
 
@@ -367,6 +387,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         if ( nullptr == appView ) {
             lUILog("Unable to get app canvas!\n");
             xSemaphoreGive( UISemaphore );
+            xSemaphoreGive( UIDrawProcess );
             return;
         } // do nothing
         
@@ -402,9 +423,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     // and more...
 
                     xSemaphoreGive( UISemaphore );
+                    
                     if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
                         LaunchWatchface(); // return to user configured watchface
                     } else { LaunchApplication(new TaskSwitcher()); }
+                    xSemaphoreGive( UIDrawProcess );
                     return;
                 }
             }
@@ -414,7 +437,6 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             changes = keyboardInstance->Tick();
         } else {
             if ( false == UIlongTap ) { // only if no long tap in progress
-
                 // perform the call to the app logic
                 changes = currentApplication->Tick();
             }
@@ -430,6 +452,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         }
         xSemaphoreGive( UISemaphore );
     }
+    xSemaphoreGive( UIDrawProcess );
 }
 
 static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -570,13 +593,14 @@ void UIStart() {
     uiLoopRc = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 
 }
-
+/*
 void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D
     esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, (void*)point, sizeof(point), LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
     if ( ESP_ERR_TIMEOUT == what ) {
         //Serial.println("UI: Poin2D: Change Notification timeout");
     }
 }
+*/
 /*
 
 

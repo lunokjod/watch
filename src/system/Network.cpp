@@ -47,20 +47,20 @@
 // https://stackoverflow.com/questions/44951078/when-how-is-a-ble-gatt-notify-indicate-is-send-on-physical-layer
 extern char * latestBuildFoundString;
 #include "../app/OTAUpdate.hpp"
-extern bool screenShootInProgress;
+#include "Network/OpenWeather.hpp"
+//extern bool screenShootInProgress;
 #include <Ticker.h>
 Ticker BootNetworkTicker; // first shoot
 Ticker NetworkTicker; // loop every 5 minutes
 extern bool provisioned;
 bool wifiOverride=false; // this var disables the wifi automatic disconnection
-extern TFT_eSprite *screenShootCanvas;
-
-extern TFT_eSprite *screenShootCanvas;    // the last screenshoot
-extern bool screenShootInProgress;        // Notify Watchface about send screenshoot
-size_t imageUploadSize=0;
-size_t realImageSize=0;
-rgb565 myLastColor = { .u16 = (uint16_t)TFT_TRANSPARENT }; // improbable color
-uint16_t lastRLECount = 0;
+//extern TFT_eSprite *screenShootCanvas;
+//extern TFT_eSprite *screenShootCanvas;    // the last screenshoot
+//extern bool screenShootInProgress;        // Notify Watchface about send screenshoot
+//size_t imageUploadSize=0;
+//size_t realImageSize=0;
+//rgb565 myLastColor = { .u16 = (uint16_t)TFT_TRANSPARENT }; // improbable color
+//uint16_t lastRLECount = 0;
 #ifdef LUNOKIOT_UPDATES_LOCAL_URL
 // Use alternative keys
 extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_server_pem_start");
@@ -393,7 +393,7 @@ bool NetworkHandler() {
             lSysLog("NetworkHandler: ERROR: Unable register UPDATE manager\n");
         }
 
-        
+        OpenWeatherTaskHandler();
         #ifdef LUNOKIOT_UPDATES_ENABLED
             SearchUpdateAsNetworkTask();
         #endif

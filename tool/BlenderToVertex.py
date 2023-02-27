@@ -26,6 +26,7 @@ def dump(obj, level=0):
 #entrypoint
 if __name__ == '__main__':
     obj = bpy.data.objects["Sphere"]  # particular object by name
+    #obj = bpy.context.scene.objects.active
     mesh = obj.data
     with open('/home/sharek/Documents/PlatformIO/Projects/LWatch2/static/meshData.c', 'w') as f:
         f.write("myPointsNumber = %d;\n" % len(mesh.vertices))

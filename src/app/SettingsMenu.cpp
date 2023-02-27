@@ -48,8 +48,12 @@
 #include "BLEMonitor.hpp"
 #include "Theme.hpp"
 #include "../static/img_mainmenu_themes.xbm"
+
 #include "../static/img_mainmenu_keyboard.xbm"
 #include "FreehandKeyboardSetup.hpp"
+
+#include "../static/img_mainmenu_gesture.xbm"
+#include "GestureSettings.hpp"
 
 typedef struct {
     const char *name;
@@ -63,6 +67,7 @@ typedef struct {
 MainMenuApplicationEntry SettingsApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](void *unused) { LaunchApplication(new SettingsApplication()); } },
+    {"Gestures",img_mainmenu_gesture_bits, img_mainmenu_gesture_height, img_mainmenu_gesture_width, [](void *unused) { LaunchApplication(new GestureSettings()); } },
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, [](void *unused) { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, [](void *unused) { LaunchApplication(new BluetoothApplication()); } },
     {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new AdvancedSettingsApplication()); } },

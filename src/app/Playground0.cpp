@@ -22,6 +22,7 @@
 #include "Playground0.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
+#include "../system/SystemEvents.hpp"
 
 PlaygroundApplication0::~PlaygroundApplication0() {
 }

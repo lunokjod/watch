@@ -147,7 +147,7 @@ MicApplication::MicApplication() {
     // Init here any you need
     lAppLog("Hello from MicApplication!\n");
     audioWaveGraph = new GraphWidget(60,160,0,200,TFT_GREEN,TFT_BLACK,TFT_RED);
-    xTaskCreatePinnedToCore(MicApplication::_RecordThread, "", LUNOKIOT_TASK_STACK_SIZE, this, uxTaskPriorityGet(NULL), NULL,0);
+    xTaskCreatePinnedToCore(MicApplication::_RecordThread, "", LUNOKIOT_TASK_STACK_SIZE, this, tskIDLE_PRIORITY, NULL,0);
 
     // compose the background
     canvas->fillSprite(ThCol(background)); // use theme colors

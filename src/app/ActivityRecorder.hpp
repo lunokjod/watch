@@ -28,7 +28,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/NotificationWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
-#include "../UI/representation/Point2D.hpp"
+//#include "../UI/representation/Point2D.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../UI/widgets/GaugeWidget.hpp"
 

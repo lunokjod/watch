@@ -17,28 +17,24 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__SETTINGS_APP__
-#define __LUNOKIOT__SETTINGS_APP__
+#include <Arduino.h>
+#include "LogView.hpp" // log capabilities
+#include "../UI/AppTemplate.hpp"
+#include "WatchfaceSelector.hpp"
 
-#include "../UI/AppTemplate.hpp" // typical app design base with back button
+WatchfaceSelectorApplication::WatchfaceSelectorApplication() {
+    Tick(); // OR call this if no splash 
+}
 
-// widgets used
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
+WatchfaceSelectorApplication::~WatchfaceSelectorApplication() {
+}
 
-class SettingsApplication: public TemplateApplication {
-    private:
-        ButtonImageXBMWidget * btnHelp = nullptr;
-        SwitchWidget * ntpCheck = nullptr;
-        SwitchWidget * openweatherCheck = nullptr;
-        SwitchWidget * wifiCheck = nullptr;
-        SwitchWidget * bleCheck = nullptr;
-        SwitchWidget * ntpBLECheck = nullptr;
-    public:
-        const char *AppName() override { return "Basic settings"; };
-        SettingsApplication();
-        virtual ~SettingsApplication();
-        bool Tick();
-};
-
-#endif
+bool WatchfaceSelectorApplication::Tick() {
+    if ( millis() > nextRefresh ) { // redraw full canvas
+        canvas->fillSprite(ThCol(background)); // use theme colors
+        TemplateApplication::Tick();
+        nextRefresh=millis()+(1000/8); // 8 FPS is enought for GUI
+        return true;
+    }
+    return false;
+}

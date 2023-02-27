@@ -197,6 +197,7 @@ bool BLEPlayerApplication::Tick() {
                     }
                     canvas->setTextDatum(TR_DATUM);
                     if (strlen(artist) > 0 ) {
+                        //@TODO canvas->decodeUTF8()
                         canvas->drawString(artist, TFT_WIDTH-20, 15);
                     }
                 }
@@ -238,7 +239,6 @@ bool BLEPlayerApplication::Tick() {
                         if ( false == playing ) {
                             playing=true;
                             difference=musicNotificationTimeFrom-musicNotificationTime;
-                            //lLog("AAAAAAAAAAAAAAAAAAA: %ld = %ld - %ld\n",difference,musicNotificationTimeFrom,musicNotificationTime);
                             playingMS=millis();
                         }
                         pauseBtn->SetEnabled(true);
