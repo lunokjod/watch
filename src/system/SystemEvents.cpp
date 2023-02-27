@@ -45,7 +45,7 @@ extern TTGOClass *ttgo; // ttgo library
 #include "../app/Shutdown.hpp"
 #include "../app/Provisioning2.hpp"
 #include "../app/WatchfaceAlwaysOn.hpp"
-// #include "../app/WatchfaceSquare.hpp"
+#include "../app/WatchfaceSquare.hpp"
 
 #include <HTTPClient.h>
 
@@ -587,6 +587,9 @@ static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 #ifdef WATCHFACE_DEFAULT
         LaunchApplication(new WatchfaceAlwaysOn());
+#endif
+#ifdef WATCHFACE_SQUARE
+        LaunchApplication(new WatchfaceSquare());
 #endif
         //DoSleep();
     }

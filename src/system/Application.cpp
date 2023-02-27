@@ -28,14 +28,8 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../UI/UI.hpp"
 #include "../app/LogView.hpp"
 
-#ifdef WATCHFACE_DEFAULT
 #include "../app/Watchface2.hpp"
-#else
-#ifdef WATCHFACE_SQUARE
 #include "../app/WatchfaceSquare.hpp"
-#endif
-#endif
-
 #include "../app/WatchfaceAlwaysOn.hpp"
 
 #include "SystemEvents.hpp"
