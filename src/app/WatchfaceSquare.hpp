@@ -11,8 +11,8 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include "WatchfaceHandlers.hpp"
 #include "../system/Application.hpp"
+#include "../system/SystemEvents.hpp"
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 #include "../app/LogView.hpp" // for lLog functions

@@ -7,7 +7,6 @@
 //----------------------------------------------------------------
 
 #include "WatchfaceSquare.hpp"
-#include "WatchfaceHandlers.hpp"
 
 #define MINIMUM_BACKLIGHT 10
 #define MARGIN_TOP 3
@@ -16,6 +15,25 @@
 #define WT_MISC_MC_X 70    // Weather icon
 
 char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
+
+extern bool bleEnabled;        //@TODO this is a crap!!!
+extern volatile bool bleServiceRunning; //@TODO this is a crap!!!
+extern bool blePeer;
+
+extern float PMUBattDischarge;
+
+extern bool weatherSyncDone;
+extern int weatherId;
+extern double weatherTemp;
+extern char *weatherMain;
+extern char *weatherDescription;
+extern char *weatherIcon;
+extern double weatherFeelsTemp;
+extern double weatherTempMin;
+extern double weatherTempMax;
+extern double weatherHumidity;
+extern double weatherPressure;
+extern double weatherWindSpeed;
 
 WatchfaceSquare::WatchfaceSquare() {
     lAppLog("WatchfaceSquare On\n");
@@ -53,7 +71,6 @@ WatchfaceSquare::WatchfaceSquare() {
         lAppLog("Unable to allocate bottomLeftButton\n");
         return;
     }
-    wfhandler.Handlers();
     // Tick(); // OR call this if no splash 
 }
 
@@ -141,29 +158,29 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString("NB", TFT_WIDTH-10, MARGIN_TOP);
         }
 
-        if (wfhandler.weatherSyncDone) {
+        if (weatherSyncDone) {
           // weather icon
           canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
           // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
-          if (-1 != wfhandler.weatherId) {
-            if ((200 <= wfhandler.weatherId) && (300 > wfhandler.weatherId)) {
+          if (-1 != weatherId) {
+            if ((200 <= weatherId) && (300 > weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
-            } else if ((300 <= wfhandler.weatherId) && (400 > wfhandler.weatherId)) {
+            } else if ((300 <= weatherId) && (400 > weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
-            } else if ((500 <= wfhandler.weatherId) && (600 > wfhandler.weatherId)) {
+            } else if ((500 <= weatherId) && (600 > weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
-            } else if ((600 <= wfhandler.weatherId) && (700 > wfhandler.weatherId)) {
+            } else if ((600 <= weatherId) && (700 > weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-            } else if ((700 <= wfhandler.weatherId) && (800 > wfhandler.weatherId)) {
+            } else if ((700 <= weatherId) && (800 > weatherId)) {
               //lAppLog("@TODO Watchface: openweather 700 condition code\n");
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-            } else if ((800 <= wfhandler.weatherId) && (900 > wfhandler.weatherId)) {
+            } else if ((800 <= weatherId) && (900 > weatherId)) {
               canvas->pushImage(MARGIN_LFT+5, WTI_POS_Y, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
             }
           }
           // temperature
-          if (-1000 != wfhandler.weatherTemp) {
-            sprintf(textBuffer, "%3.1f", wfhandler.weatherTemp);
+          if (-1000 != weatherTemp) {
+            sprintf(textBuffer, "%3.1f", weatherTemp);
             canvas->setFreeFont(&TomThumb);
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
@@ -171,8 +188,8 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+95, WTI_POS_Y); 
           }
 
-          if (-1000 != wfhandler.weatherFTemp) {
-            sprintf(textBuffer, "%3.1f", wfhandler.weatherFTemp);
+          if (-1000 != weatherFeelsTemp) {
+            sprintf(textBuffer, "%3.1f", weatherFeelsTemp);
             canvas->setFreeFont(&TomThumb);
             canvas->setTextSize(4);
             canvas->setTextColor(TFT_WHITE);
@@ -180,22 +197,22 @@ bool WatchfaceSquare::Tick() {
             canvas->drawString(textBuffer,MARGIN_LFT+img_weather_200.width+95, WTI_POS_Y+23);  
           }
 
-          if (nullptr != wfhandler.weatherMain) {
+          if (nullptr != weatherMain) {
             canvas->setTextSize(3);
             canvas->setTextDatum(MC_DATUM);
             canvas->setTextColor(TFT_CYAN);
-            canvas->drawString(wfhandler.weatherMain, WT_MISC_MC_X, 95);
+            canvas->drawString(weatherMain, WT_MISC_MC_X, 95);
           }
 
-          if (-1000 != wfhandler.weatherTempMin && -1000 != wfhandler.weatherTempMax) {
-            sprintf(textBuffer, "TL: %3.1f TM: %3.1f", wfhandler.weatherTempMin,wfhandler.weatherTempMax);
+          if (-1000 != weatherTempMin && -1000 != weatherTempMax) {
+            sprintf(textBuffer, "TL: %3.1f TM: %3.1f", weatherTempMin,weatherTempMax);
             canvas->setTextSize(2);
             canvas->setTextColor(TFT_WHITE);
             canvas->setTextDatum(MC_DATUM);
             canvas->drawString(textBuffer, WT_MISC_MC_X, 120);  
           }
 
-          sprintf(textBuffer, "Wind: %4.1f Kmh", wfhandler.wspeed);
+          sprintf(textBuffer, "Wind: %4.1f Kmh", weatherWindSpeed);
           canvas->setTextSize(2);
           canvas->setTextDatum(MC_DATUM);
           canvas->setTextColor(TFT_WHITE);
@@ -243,9 +260,9 @@ bool WatchfaceSquare::Tick() {
           }
         }
 
-        if (wfhandler.bleEnabled) {
+        if (bleEnabled) {
           unsigned char *img = img_bluetooth_24_bits;  // bluetooth logo only icon
-          if (wfhandler.blePeer) {
+          if (blePeer) {
             img = img_bluetooth_peer_24_bits;
           }  // bluetooth with peer icon
           canvas->drawXBitmap(MARGIN_LFT, 205, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
