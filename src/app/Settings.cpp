@@ -22,8 +22,6 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
 
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
-
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 
@@ -34,7 +32,12 @@
 
 #include "../system/Network.hpp"
 #include "LogView.hpp"
-#include "Watchface2.hpp"
+
+#include "../system/Network.hpp"
+extern NetworkTaskDescriptor * NetworkNTPTask;
+extern NetworkTaskDescriptor * NetworkWeatherTask;
+extern NetworkTaskDescriptor * NetworkGeoIPTask;
+
 extern void StopBLE();
 extern void StartBLE(bool synched=false);
 
@@ -45,12 +48,13 @@ SettingsApplication::~SettingsApplication() {
     NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
     NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-    if ( nullptr != Watchface2Application::ntpTask ) { 
-        Watchface2Application::ntpTask->enabled = ntpCheck->switchEnabled;
+    if ( nullptr != NetworkNTPTask ) { 
+        NetworkNTPTask->enabled = ntpCheck->switchEnabled;
     }
     NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-    if ( nullptr != Watchface2Application::weatherTask ) {
-        Watchface2Application::weatherTask->enabled = openweatherCheck->switchEnabled;
+    if ( nullptr != NetworkWeatherTask ) {
+        NetworkWeatherTask->enabled = openweatherCheck->switchEnabled;
+        NetworkGeoIPTask->enabled = openweatherCheck->switchEnabled;
     }
     if ( bleCheck->switchEnabled ) { StartBLE(); }
     else { StopBLE(); }
@@ -101,8 +105,8 @@ SettingsApplication::SettingsApplication() {
 
 bool SettingsApplication::Tick() {
     
-    //TemplateApplication::Tick();
-    TemplateApplication::btnBack->Interact(touched,touchX, touchY);
+    TemplateApplication::Tick();
+    //TemplateApplication::btnBack->Interact(touched,touchX, touchY);
     //btnHelp->Interact(touched,touchX, touchY);
     wifiCheck->Interact(touched,touchX, touchY);
     bleCheck->Interact(touched,touchX, touchY);

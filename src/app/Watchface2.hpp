@@ -41,7 +41,6 @@ class Watchface2Application: public LunokIoTApplication {
         const int16_t margin = 5;
         const float DEGREE_HRS = (360/24);
         int markAngle=0;
-        void Handlers();
     public:
         const char *AppName() override { return "Analogic watchface"; };
         bool wifiEnabled = false;
