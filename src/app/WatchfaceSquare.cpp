@@ -92,7 +92,7 @@ bool WatchfaceSquare::Tick() {
     topLeftButton->Interact(touched, touchX, touchY);
     bottomLeftButton->Interact(touched, touchX, touchY);
     // low the brightness if system changes it
-    if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
+    // if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
 
     if ( millis() > nextRefresh ) { // redraw full canvas
 
