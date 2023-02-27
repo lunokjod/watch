@@ -85,7 +85,7 @@ typedef struct {
 
 class Engine3DApplication : public TemplateApplication {
     private:
-        const float MeshSize = 60.0;     // size of mesh
+        const float MeshSize = 1.0;     // size of mesh
         TFT_eSprite *buffer3d = nullptr; // where 3D are rendered
         TFT_eSprite *zbuffer = nullptr;  // the deep of pixels
         TFT_eSprite *alphaChannel = nullptr;  // have mesh on the area?

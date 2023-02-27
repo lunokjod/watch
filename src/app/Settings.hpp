@@ -33,6 +33,7 @@ class SettingsApplication: public TemplateApplication {
         SwitchWidget * openweatherCheck = nullptr;
         SwitchWidget * wifiCheck = nullptr;
         SwitchWidget * bleCheck = nullptr;
+        SwitchWidget * ntpBLECheck = nullptr;
     public:
         const char *AppName() override { return "Basic settings"; };
         SettingsApplication();
