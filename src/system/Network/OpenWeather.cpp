@@ -575,6 +575,7 @@ void OpenWeatherTaskHandler() {
         NetworkWeatherTask->_nextTrigger = 0; // launch NOW (as soon as system wants)
         NetworkWeatherTask->callback = [&]() {
             weatherSyncDone = false;
+            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if (false == oweatherValue) {
                 lNetLog("Watchface: Openweather Sync disabled by NVS\n");
                 return true;
