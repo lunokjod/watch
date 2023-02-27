@@ -132,8 +132,8 @@ void UIStart();
 // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html
 // @NOTE try to add some kind of animations, like fades, movements... (maybe tomorrow)
 
-#include "representation/Point2D.hpp"
-void _UINotifyPoint2DChange(Point2D *point);
+//#include "representation/Point2D.hpp"
+//void _UINotifyPoint2DChange(Point2D *point);
 
 // bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
 typedef std::function<bool(int, int, int, int, int, int, void *)> DescribeCircleCallback;
@@ -143,7 +143,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
 void ScreenSleep();
 void ScreenWake();
 
-TFT_eSprite *TakeScreenShoot();
+//TFT_eSprite *TakeScreenShoot();
 TFT_eSprite *DuplicateSprite(TFT_eSprite *view);
 TFT_eSprite *ScaleSprite(TFT_eSprite *view, float divisor = 0.5);
 TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int16_t maxH);

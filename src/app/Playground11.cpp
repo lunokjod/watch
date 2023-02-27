@@ -27,14 +27,14 @@
 #include "../UI/widgets/EntryTextWidget.hpp"
 
 PlaygroundApplication11::~PlaygroundApplication11() {
-    delete pointOne;
-    delete pointTwo;
+//    delete pointOne;
+ //   delete pointTwo;
 }
 
 PlaygroundApplication11::PlaygroundApplication11() {
-    pointOne=new Point2D(0,0);
-    pointTwo=new Point2D(canvas->width(),canvas->height());
-    pointOne->Goto(240,240,1000);
+    //pointOne=new Point2D(0,0);
+    //pointTwo=new Point2D(canvas->width(),canvas->height());
+    //pointOne->Goto(240,240,1000);
     Tick();
 }
 
