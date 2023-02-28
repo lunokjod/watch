@@ -44,8 +44,10 @@ class LunokIoTApplication {
         virtual void LowMemory(); // called when system fails to allocate memory (malloc)
         //virtual RunApplicationCallback GetRunCallback();
 };
-
-
+typedef LunokIoTApplication* WatchfaceMaker();
+template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
+size_t WatchFacesAvailiable();
+LunokIoTApplication *GetWatchFaceFromOffset(size_t off);
 typedef std::function<LunokIoTApplication*()> RunApplicationCallback;
 
 class LaunchApplicationDescriptor {

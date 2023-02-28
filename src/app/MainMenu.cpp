@@ -121,8 +121,13 @@
 #include "../static/img_mainmenu_player.xbm"
 #include "BLEPlayer.hpp"
 
-#include "ThumbTest.hpp"
+#include "../static/img_mainmenu_watchface.xbm"
+#include "WatchfaceSelector.hpp"
 
+#include "WatchfaceAlwaysOn.hpp"
+#include "Engine3D.hpp"
+#include "ThumbTest.hpp"
+#include "GestureSettings.hpp"
 typedef struct {
     const char *name;
     unsigned char * imagebits;
@@ -135,8 +140,10 @@ typedef struct {
 int32_t currentAppOffset = 0;
 MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
+//    {"TEST",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new Engine3DApplication()); } },
+//    {"Select",img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](void *unused) { LaunchApplication(new WatchfaceSelectorApplication()); } },
+//    {"Gestures",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new GestureSettings()); } },
 //    {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](void *unused) { LaunchApplication(new AboutApplication()); } },
-//    {"DEBUG",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](void *unused) { LaunchApplication(new CalendarApplication()); } },
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, [](void *unused) { LaunchApplication(new DungeonGameApplication()); } },
 //    {"LockPick",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new LockPickingGameApplication()); } },
 //    {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },

@@ -21,10 +21,15 @@
 #define __LUNOKIOT__APPLICATION__WATCHFACESELECTOR__
 
 #include "../UI/AppTemplate.hpp"
+#include "../UI/widgets/SwitchWidget.hpp"
 
 class WatchfaceSelectorApplication : public TemplateApplication {
     private:
         unsigned long nextRefresh=0;
+        TFT_eSprite ** watchfaceCapture=nullptr;
+        size_t watchfacesCaptures=0;
+        SwitchWidget * SwitchUseOnAlwaysOn=nullptr;
+        size_t mySelection=0;
     public:
         const char *AppName() override { return "Watchface Select"; };
         WatchfaceSelectorApplication();

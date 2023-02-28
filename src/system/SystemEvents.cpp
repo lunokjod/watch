@@ -585,13 +585,13 @@ static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t
         lEvLog("BMA423: Event: Double tap: Bring up system\n");
         ScreenWake();
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-#ifdef WATCHFACE_DEFAULT
-        LaunchApplication(new WatchfaceAlwaysOn());
-#endif
-#ifdef WATCHFACE_SQUARE
-        LaunchApplication(new WatchfaceSquare());
-#endif
-        //DoSleep();
+        // check what user wants
+        bool useAlwaysOn = NVS.getInt("AOnWaface");
+        if ( useAlwaysOn ) {
+            LaunchApplication(new WatchfaceAlwaysOn());
+        } else {
+            LaunchWatchface();
+        }
     }
 }
 

@@ -55,6 +55,9 @@
 #include "../static/img_mainmenu_gesture.xbm"
 #include "GestureSettings.hpp"
 
+#include "../static/img_mainmenu_watchface.xbm"
+#include "WatchfaceSelector.hpp"
+
 typedef struct {
     const char *name;
     unsigned char * imagebits;
@@ -68,6 +71,7 @@ MainMenuApplicationEntry SettingsApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](void *unused) { LaunchWatchface(); } },
     {"Options",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](void *unused) { LaunchApplication(new SettingsApplication()); } },
     {"Gestures",img_mainmenu_gesture_bits, img_mainmenu_gesture_height, img_mainmenu_gesture_width, [](void *unused) { LaunchApplication(new GestureSettings()); } },
+    {"Watchface",img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](void *unused) { LaunchApplication(new WatchfaceSelectorApplication()); } },
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, [](void *unused) { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, [](void *unused) { LaunchApplication(new BluetoothApplication()); } },
     {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new AdvancedSettingsApplication()); } },
