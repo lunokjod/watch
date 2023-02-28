@@ -101,15 +101,18 @@ bool WatchfaceSelectorApplication::Tick() {
         canvas->setTextSize(2);
         canvas->setTextColor(ThCol(text));
         canvas->drawString("Select Watchface", canvas->width()/2, 8);
-        int16_t x=40;
-        int16_t y=70;
+        int16_t x=0;
+        int16_t y=30;
         for(size_t off=0;off<watchfacesCaptures;off++) {
             if ( nullptr != watchfaceCapture[off] ) {
                 if ( off == mySelection ) {
-                    canvas->fillRoundRect(x-40,y-40,80,80,5,TFT_YELLOW);
+                    canvas->fillRoundRect(x,y,80,80,5,ThCol(mark));
                 }
                 canvas->setPivot(x,y);
-                watchfaceCapture[off]->pushRotated(canvas,0);
+                CanvasWidget * colorBuffer = new CanvasWidget(watchfaceCapture[off]->height(),watchfaceCapture[off]->width());
+                watchfaceCapture[off]->pushRotated(colorBuffer->canvas,0);
+                colorBuffer->DrawTo(canvas,x+10,y+10);
+                delete colorBuffer;
             }
             x+=canvas->width()/3;
             if ( x >= canvas->width() ) {
