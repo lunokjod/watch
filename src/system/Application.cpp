@@ -29,6 +29,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../app/LogView.hpp"
 
 #include "../app/Watchface2.hpp"
+#include "../app/WatchfaceSquare.hpp"
 #include "../app/WatchfaceAlwaysOn.hpp"
 
 #include "SystemEvents.hpp"
@@ -50,7 +51,15 @@ SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 typedef LunokIoTApplication* WatchfaceMaker();
 template <class WFA> LunokIoTApplication* MakeWatch() { return new WFA; }
+
+#ifdef WATCHFACE_DEFAULT
 WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>,MakeWatch<WatchfaceAlwaysOn> };
+#else
+#ifdef WATCHFACE_SQUARE
+WatchfaceMaker* Watchfaces[] = { MakeWatch<WatchfaceSquare>,MakeWatch<WatchfaceAlwaysOn> };
+#endif
+#endif
+
 LunokIoTApplication *GetWatchFace() { return Watchfaces[LoT().selectedWatchFace](); } // hardcoded by now
 void LaunchWatchface(bool animation, bool forced) {
     bool launch=false;
