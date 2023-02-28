@@ -77,11 +77,10 @@ WatchfaceSquare::WatchfaceSquare() {
 
 WatchfaceSquare::~WatchfaceSquare() {
   // please remove/delete/free all to avoid leaks!
-  //delete mywidget;
-  delete topRightButton;
-  delete bottomRightButton;
-  delete topLeftButton;
-  delete bottomLeftButton;
+  if ( nullptr == topRightButton ) { delete topRightButton; } // why check? maybe the app cannot reach allocate of elements
+  if ( nullptr == bottomRightButton ) { delete bottomRightButton; }
+  if ( nullptr == topLeftButton ) { delete topLeftButton; }
+  if ( nullptr == bottomLeftButton ) { delete bottomLeftButton; }
   lAppLog("Watchface Square is gone\n");
 }
 

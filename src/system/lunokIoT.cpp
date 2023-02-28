@@ -222,6 +222,10 @@ LunokIoT::LunokIoT() {
     NetworkHandler();   // already provisioned? start the network timed tasks loop
     InstallStepManager();
     StartPMUMonitor();
+    selectedWatchFace=NVS.getInt("UWatchF");
+    if ( selectedWatchFace >= WatchFacesAvailiable() ) {
+        selectedWatchFace=0; // reset to defaults if out of range
+    }
     SplashAnnounceEnd();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
