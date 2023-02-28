@@ -684,7 +684,16 @@ void _SendEventWakeTask(void *data) {
     vTaskDelete(NULL);
 }
 static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    if (ttgo->bl->isOn()) {
+    const char AlwaysOnAppName[] = "Always on";
+    bool screenOn = ttgo->bl->isOn();
+    if (screenOn) {
+        if ( nullptr != currentApplication ) {
+            if ( 0 == strncmp(currentApplication->AppName(),AlwaysOnAppName,strlen(AlwaysOnAppName)) ) {
+                lEvLog("Event: user wants launch watchface\n");
+                LaunchWatchface(true,true);
+                return;
+            }
+        }
         lEvLog("Event: user wants to put device to sleep\n");
         FreeSpace();
         ScreenSleep();
