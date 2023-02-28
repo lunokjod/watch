@@ -399,8 +399,8 @@ Engine3DApplication::Engine3DApplication() {
 
 
     // from generated meshdata blender python script
-myPointsNumber = 169;
-myFacesNumber = 334;
+myPointsNumber = 188;
+myFacesNumber = 372;
     myVectorsNumber=0;
 
     lAppLog("Trying to allocate: %u byte...\n",sizeof(Point3D)*myPointsNumber);

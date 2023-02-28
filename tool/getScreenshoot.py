@@ -1,5 +1,22 @@
 #!/bin/python3
 
+"""
+getScreenshot -- utility for takes a screenshot via Bluetooth
+
+Usage:
+  getScreenshot  <macaddress> 
+  getScreenshot  <macaddress> -s
+  getScreenshot -h | --help
+  getScreenshot -v | --version
+
+Options:
+  -h --help                     Show help screen.
+  -v --version                  Show version.
+  -s --verbose                  Enable verbose output
+  macaddress                    The MAC address of your paired device
+
+"""
+
 from time import time
 import asyncio, logging
 from ble_serial.scan import main as scanner
@@ -7,6 +24,7 @@ from ble_serial.bluetooth.ble_interface import BLE_interface
 import numpy as np
 import sys
 from PIL import Image
+from docopt import docopt
 
 PIXELSIZE=240
 TIMEPROGRESS=10000
@@ -82,8 +100,8 @@ def receive_callback(valueByteArray: bytes):
 async def hello_sender(ble: BLE_interface):
     ble.queue_send(b"GETSCREENSHOOT\n")
 
-async def main():
-    print("Searching for lunokIoT device...")
+async def main(target, verbose=False):
+    print("Searching for lunokIoT device..."+target)
     ### general scan
     ADAPTER = "hci0"
     SCAN_TIME = 5 #seconds
@@ -93,7 +111,8 @@ async def main():
         devices = await scanner.scan(ADAPTER, SCAN_TIME, SERVICE_UUID)
         found=False
         DEVICEBASENAME = "lunokIoT_"
-        DEVICE = "DE:AD:BE:EF:FE:ED"
+        DEVICE = target
+        # DEVICE = target
         for dev in devices:
             if dev.name[0:len(DEVICEBASENAME)] == DEVICEBASENAME:
                 DEVICE=dev.address
@@ -136,4 +155,11 @@ async def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+    arguments = docopt(__doc__, version='0.0.2')
+    verbose = arguments["--verbose"]
+    target = arguments["<macaddress>"]
+
+    if verbose:
+        print(arguments)
+
+    asyncio.run(main(target, verbose))

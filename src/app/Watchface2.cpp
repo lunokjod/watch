@@ -156,21 +156,8 @@ Watchface2Application::Watchface2Application() {
     colorBuffer->DrawTo(canvas, 0, 0); // for splash
     // directDraw=true;
 }
-/*
-void Watchface2Application::FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    Watchface2Application *self = reinterpret_cast<Watchface2Application *>(handler_args);
-    if (WIFI_EVENT == base) {
-        if (WIFI_EVENT_STA_START == id) {
-            self->wifiEnabled = true;
-        }
-        else if (WIFI_EVENT_STA_STOP == id) {
-            self->wifiEnabled = false;
-        }
-    }
-}
-*/
-bool Watchface2Application::Tick()
-{
+
+bool Watchface2Application::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY);
 
     if (millis() > nextRefresh) {
@@ -512,10 +499,4 @@ bool Watchface2Application::Tick()
         return true;
     }
     return false;
-}
-
-
-void Watchface2Application::LowMemory() {
-    LunokIoTApplication::LowMemory(); // call parent
-    lAppLog("YEAH WATCHFACE RECEIVED TOO\n");
 }

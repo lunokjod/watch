@@ -32,7 +32,6 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../system/Application.hpp"
-#include "../static/img_back_32.xbm" // back buton image
 #include "../system/SystemEvents.hpp"   // the event bus
 
 class BatteryApplication: public TemplateApplication {

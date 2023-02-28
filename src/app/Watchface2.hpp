@@ -43,19 +43,13 @@ class Watchface2Application: public LunokIoTApplication {
         int markAngle=0;
     public:
         const char *AppName() override { return "Analogic watchface"; };
-        bool wifiEnabled = false;
-        static void FreeRTOSEventReceived(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
-        bool GetSecureNetworkWeather();
-        bool ParseWeatherData();
-        static NetworkTaskDescriptor * ntpTask;
-        static NetworkTaskDescriptor * geoIPTask;
-        static NetworkTaskDescriptor * weatherTask;
+        //bool GetSecureNetworkWeather();
+        //bool ParseWeatherData();
         Watchface2Application();
         virtual ~Watchface2Application();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
-        void LowMemory();
 
 };
 

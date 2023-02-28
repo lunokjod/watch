@@ -31,6 +31,14 @@ char *weatherDescription = nullptr;
 char *weatherIcon = nullptr;
 double weatherTemp = -1000;
 
+// Extra Weather variables
+double weatherFeelsTemp = -1000;
+double weatherTempMin = -1000;
+double weatherTempMax = -1000;
+double weatherHumidity = 0;
+double weatherPressure = 0;
+double weatherWindSpeed = 0;
+
 extern const PROGMEM uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
 extern const PROGMEM uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
 extern const PROGMEM char openWeatherMapApiKey[];
@@ -147,8 +155,23 @@ bool NetworkParseWeatherData() {
 #endif
         return false;
     }
+    if (false == myObject.hasOwnProperty("wind")) {
+      lNetLog("Watchface: ERROR: OpenWeather JSON parsing: property 'wind' not found\n");
+#ifdef LUNOKIOT_DEBUG
+      Serial.printf("%s\n", weatherReceivedData);
+#endif
+      return false;
+    }
     JSONVar mainBranch = myObject["main"];
     weatherTemp = mainBranch["temp"];
+    weatherTempMin = mainBranch["temp_min"];
+    weatherTempMax = mainBranch["temp_max"];
+    weatherHumidity = mainBranch["humidity"];
+    weatherPressure = mainBranch["pressure"];
+    weatherFeelsTemp = mainBranch["feels_like"];
+
+    JSONVar wind = myObject["wind"];
+    weatherWindSpeed = wind["speed"];
 
     String jsonString = myObject.stringify(myObject);
     SqlJSONLog("oweather",jsonString.c_str());
@@ -575,6 +598,7 @@ void OpenWeatherTaskHandler() {
         NetworkWeatherTask->_nextTrigger = 0; // launch NOW (as soon as system wants)
         NetworkWeatherTask->callback = [&]() {
             weatherSyncDone = false;
+            bool oweatherValue = (bool)NVS.getInt("OWeatherEnabled");
             if (false == oweatherValue) {
                 lNetLog("Watchface: Openweather Sync disabled by NVS\n");
                 return true;
