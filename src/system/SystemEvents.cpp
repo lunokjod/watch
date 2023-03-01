@@ -390,7 +390,7 @@ static void DoSleepTask(void *args) {
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
 
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    stepCount = ttgo->bma->getCounter();
+    stepCount = lastBootStepCount+ttgo->bma->getCounter();
     xSemaphoreGive(I2cMutex);
 
     //uint32_t nowSteps = ttgo->bma->getCounter();
@@ -614,6 +614,7 @@ static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32
     {
         stepCount = nowSteps + lastBootStepCount;
         lEvLog("BMA423: Event: Steps: %d\n", stepCount);
+        //lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaA\n");
     }
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
@@ -642,9 +643,10 @@ void SaveDataBeforeShutdown() {
     NVS.setInt("sBMAANone", stepsBMAActivityNone, false);
     NVS.setInt("tBMAANone", (int64_t)timeBMAActivityNone, false);
     // lLog("DEBUG stepCount: %d\n",stepCount);
-    NVS.setInt("stepCount", stepCount, false);
+    bool saved = NVS.setInt("stepCount", (int)stepCount, false);
+    //lLog("@TODO @DEBUG ===============================> SAVE STEPCOUNTER: %d %s\n",(int)stepCount,(saved?"true":"false"));
     //delay(20);
-    bool saved = NVS.commit();
+    saved = NVS.commit();
     if (false == saved) {
         lLog("NVS: Unable to commit!! (data lost!?)\n");
     }
@@ -656,7 +658,7 @@ void SaveDataBeforeShutdown() {
         SqlLog(usageStatics);
 
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
     //StopDatabase();
     //delay(100);
@@ -1235,8 +1237,8 @@ static void BMAInterruptController(void *args) {
 
     lEvLog("NVS: Loading last session values...\n");
 
-    int32_t tempStepCount = NVS.getInt("stepCount");
-
+    int tempStepCount = NVS.getInt("stepCount");
+    //lLog("@TODO @DEBUG ===============================> LOAD STEPCOUNTER: %d\n",tempStepCount);
     int16_t tempAccXMax = NVS.getInt("accXMax");
     int16_t tempAccXMin = NVS.getInt("accXMin");
     int16_t tempAccYMax = NVS.getInt("accYMax");
