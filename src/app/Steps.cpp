@@ -96,6 +96,11 @@ void StepManagerCallback() {
             NVS.setInt("lstWeekStp",lastStepsDay,false);
             lEvLog("StepManagerCallback: Ends\n");
         }
+    } else {
+        // do a backup of stepcount
+        lEvLog("Backup stepcount '%u' to NVS\n",stepCount);
+        NVS.setInt("stepCount",(int)stepCount,false);
+
     }
 
 }
