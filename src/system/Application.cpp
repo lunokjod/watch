@@ -31,6 +31,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../app/Watchface2.hpp"
 #include "../app/WatchfaceSquare.hpp"
 #include "../app/WatchfaceAlwaysOn.hpp"
+#include "../app/WatchfaceDot.hpp"
 
 #include "SystemEvents.hpp"
 
@@ -50,7 +51,8 @@ extern bool UILongTapOverride;
 SemaphoreHandle_t lAppStack = xSemaphoreCreateMutex();
 // elegant https://stackoverflow.com/questions/10722858/how-to-create-an-array-of-classes-types
 // MakeWatch<WatchfaceAlwaysOn>,
-WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>,MakeWatch<WatchfaceSquare> };
+WatchfaceMaker* Watchfaces[] = { MakeWatch<Watchface2Application>,MakeWatch<WatchfaceSquare>,
+                                MakeWatch<WatchfaceDotApplication> };
 
 size_t WatchFacesAvailiable() { return sizeof(Watchfaces)/sizeof(WatchfaceMaker*); }
 
