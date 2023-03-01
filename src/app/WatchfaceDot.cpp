@@ -78,9 +78,10 @@ bool WatchfaceDotApplication::Tick() {
         touched=true;
         touchX=random(0,240);
         touchY=random(0,240);
-        nextDrop=millis()+3000;
+        nextDrop=millis()+1000;
     }
     if ( touched ) {
+        //nextDrop=millis()+10000;
         UILongTapOverride=true;
         bool foundSlot=false;
         for(int cc=0;cc<20;cc++) {
