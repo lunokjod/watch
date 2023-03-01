@@ -107,7 +107,7 @@ bool WatchfaceDotApplication::Tick() {
         if ( circleRadius[cc] > 0 ) {
             displayBuffer->canvas->drawCircle(circleX[cc]/5,circleY[cc]/5,circleRadius[cc],TFT_SKYBLUE);
             circleRadius[cc]++;
-            if ( circleRadius[cc] > 48 ) { circleRadius[cc] = 0; }
+            if ( circleRadius[cc] > 54 ) { circleRadius[cc] = 0; }
         }
     }
 
@@ -118,8 +118,8 @@ bool WatchfaceDotApplication::Tick() {
     tmpTime = localtime(&now);
     memcpy(&timeinfo,tmpTime, sizeof(struct tm));
     char buffer[8] = { 0 };
-    sprintf(buffer,"%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-
+    if ( millis() > nextBlink ) { drawDot=(!drawDot); nextBlink=millis()+1000; } 
+    sprintf(buffer,"%02d%c%02d", timeinfo.tm_hour,(drawDot?':':' '), timeinfo.tm_min);
     int16_t lenPxText = displayBuffer->canvas->textWidth(buffer);
     int16_t heightPxText = displayBuffer->canvas->fontHeight();
     locX=locX+(locXDir?+1:-1);
@@ -141,6 +141,8 @@ bool WatchfaceDotApplication::Tick() {
     }
     displayBuffer->canvas->setTextColor(TFT_BLACK);
     displayBuffer->canvas->drawString(buffer,locX-1,locY-1);
+    displayBuffer->canvas->drawString(buffer,locX+1,locY-1);
+    displayBuffer->canvas->drawString(buffer,locX-1,locY+1);
     displayBuffer->canvas->drawString(buffer,locX+1,locY+1);
     displayBuffer->canvas->setTextColor(TFT_WHITE);
     displayBuffer->canvas->drawString(buffer,locX,locY);

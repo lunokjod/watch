@@ -27,6 +27,8 @@ class WatchfaceDotApplication : public LunokIoTApplication {
     private:
         ActiveRect * bottomRightButton = nullptr;
         CanvasWidget * displayBuffer = nullptr;
+        bool drawDot=false;
+        unsigned long nextBlink=0;
         uint8_t dotSize=2;
         bool dotSizeUpDown=false;
         int16_t locX=0;
