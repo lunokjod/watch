@@ -85,11 +85,12 @@ typedef struct {
 
 class Engine3DApplication : public TemplateApplication {
     private:
-        const float MeshSize = 1.0;     // size of mesh
+        unsigned long nextRefreshRotation=0;
+        const float MeshSize = 40.0;     // size of mesh
         TFT_eSprite *buffer3d = nullptr; // where 3D are rendered
         TFT_eSprite *zbuffer = nullptr;  // the deep of pixels
         TFT_eSprite *alphaChannel = nullptr;  // have mesh on the area?
-        TFT_eSprite *light0 = nullptr;  // light calculation from  zbuffer
+        //TFT_eSprite *light0 = nullptr;  // light calculation from  zbuffer
         Light3D Light0Point;
         Light3D Light1Point;
         Light3D Light2Point;
@@ -114,8 +115,8 @@ for (int i = 0; i < dimension1_max; i++) {
         Angle3D rot;
         Angle3D LampRotation;
         Angle3D lastRot;
-        size_t AvailColorsoffset=0;
-        const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
+        //size_t AvailColorsoffset=0;
+        //const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
         const double sq2 = sqrt(2);
         const double sq6 = sqrt(6);
         const uint16_t centerX = canvas->width()/2;
@@ -148,7 +149,7 @@ for (int i = 0; i < dimension1_max; i++) {
 
         // render mesh parts
         void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR);
-        void RenderPoint(IN Point3D & point);
+        void RenderPoint(INOUT TFT_eSprite *buffer, IN Point3D & point);
         void RenderVector(IN Vector3D &vec);
 
         // manipulate vertex
