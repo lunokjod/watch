@@ -73,6 +73,13 @@ WatchfaceDotApplication::~WatchfaceDotApplication() {
 bool WatchfaceDotApplication::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY); // menu
     // create touch circles
+    if ( millis() > nextDrop ) {
+        // fake data
+        touched=true;
+        touchX=random(0,240);
+        touchY=random(0,240);
+        nextDrop=millis()+3000;
+    }
     if ( touched ) {
         UILongTapOverride=true;
         bool foundSlot=false;
