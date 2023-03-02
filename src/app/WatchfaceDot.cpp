@@ -94,7 +94,7 @@ bool WatchfaceDotApplication::Tick() {
             }
         }
     }
-    //if ( millis() > nextRefresh ) {
+    if ( millis() > nextRefresh ) {
         canvas->fillSprite(TFT_BLACK); // cleanup
         displayBuffer->canvas->fillSprite(TFT_BLACK);
 
@@ -181,8 +181,8 @@ bool WatchfaceDotApplication::Tick() {
                 canvas->fillCircle((x*5)+5,(y*5)+5,dotSize,color);
             }
         }
-    //    nextRefresh=millis()+(1000/8);
+        nextRefresh=millis()+(1000/12);
         return true;
-    //}
-    //return false;
+    }
+    return false;
 }
