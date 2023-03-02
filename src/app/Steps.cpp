@@ -23,15 +23,17 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_step_32.xbm"
 #include "../static/img_distance_32.xbm"
+#include "../static/img_milestone_32.xbm"
 #include "../static/img_setup_32.xbm"
 #include "Steps.hpp"
+#include "StepsSetup.hpp"
+#include "StepsMilestoneSetup.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 //#include "../system/Tasks.hpp"
 #include <ArduinoNvs.h>
 #include "LogView.hpp"
-#include "StepsSetup.hpp"
 #include "../system/SystemEvents.hpp"
 #include <Ticker.h>
 #include "../system/Datasources/database.hpp"
@@ -105,34 +107,19 @@ void StepManagerCallback() {
 
 }
 void InstallStepManager() {
-    StepTicker.attach(60*40,StepManagerCallback);
+    StepTicker.attach(60*20,StepManagerCallback);
 }
 
 StepsApplication::~StepsApplication() {
 
-    //if ( nullptr != btnBack ) { delete btnBack; }
+    if ( nullptr != btnMilestone ) { delete btnMilestone; }
     if ( nullptr != weekGraph ) { delete weekGraph; }
     if ( nullptr != btnSetup ) { delete btnSetup; }
     if ( nullptr != activityGraph ) { delete activityGraph; }
 
 }
 
-// callback from sqlite3 used to build the activity bar
-static int StepsAppInspectLogGraphGenerator(void *data, int argc, char **argv, char **azColName) {
-    GraphWidget * myGraph=(GraphWidget*)data;
-    int i;
-    //myGraph->markColor = TFT_GREEN;
-    for (i = 0; i<argc; i++){
-        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
-        if ( 0 != strcmp(azColName[i],"message")) { continue; }        
 
-        if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
-        else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
-        else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
-    }
-    myGraph->PushValue(1);
-    return 0;
-}
 extern SemaphoreHandle_t SqlLogSemaphore;
 
 void StepsApplication::CreateStats() {
@@ -180,12 +167,24 @@ void StepsApplication::CreateStats() {
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     
     const char sqlQuery[]="SELECT * FROM rawlog ORDER BY id DESC LIMIT %d";
-    char sqlQueryBuffer[400] = { 0 };
+    char sqlQueryBuffer[strlen(sqlQuery)+8] = { 0 };
     sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
 
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
+            GraphWidget * myGraph=(GraphWidget*)data;
+            int i;
+            for (i = 0; i<argc; i++){
+                //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+                if ( 0 != strcmp(azColName[i],"message")) { continue; }        
+                if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
+                else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
+                else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
+            }
+            myGraph->PushValue(1);
+            return 0;
+        }, (void*)activityGraph, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
 }
@@ -193,20 +192,24 @@ StepsApplication::StepsApplication() {
     btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](void *unused){
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(background_alt),ThCol(button),false);
-    
+
+    btnMilestone=new ButtonImageXBMWidget(TFT_WIDTH-80,TFT_HEIGHT-32,32,32,[&,this](void *unused){
+        LaunchApplication(new StepsMilestoneSetupApplication());
+    },img_milestone_32_bits,img_milestone_32_height,img_milestone_32_width,ThCol(background_alt),ThCol(button),false);
     CreateStats();
     Tick();
 }
 
 bool StepsApplication::Tick() {
     btnSetup->Interact(touched,touchX, touchY);
+    btnMilestone->Interact(touched,touchX, touchY);
     TemplateApplication::btnBack->Interact(touched,touchX, touchY);
     
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         TemplateApplication::Tick();
         btnSetup->DrawTo(canvas);
-
+        btnMilestone->DrawTo(canvas);
         int32_t x = 20;
         int32_t y = 20;
         int16_t border=4;

@@ -38,19 +38,10 @@ void Engine3DApplication::Render() {
 
     Point2D pixL0;
     GetProjection(Light0Point,pixL0);
-    // conver to screen 
-    pixL0.x=centerX+pixL0.x;
-    pixL0.y=centerY+pixL0.y;
     Point2D pixL1;
     GetProjection(Light1Point,pixL1);
-    // conver to screen 
-    pixL1.x=centerX+pixL1.x;
-    pixL1.y=centerY+pixL1.y;
     Point2D pixL2;
     GetProjection(Light2Point,pixL2);
-    // conver to screen 
-    pixL1.x=centerX+pixL2.x;
-    pixL1.y=centerY+pixL2.y;
 
     for(int y=ViewClipping.yMin;y<ViewClipping.yMax;y++) {
         for(int x=ViewClipping.xMin;x<ViewClipping.xMax;x++) {
@@ -89,8 +80,8 @@ void Engine3DApplication::Render() {
                 // under the influence of light!!!
 
                 // obtain vector from center
-                int16_t tdvX = pixL1.x-(x+Light1Point.radius);
-                int16_t tdvY = pixL1.y-(y+Light1Point.radius);
+                int16_t tdvX = x-(pixL1.x+Light1Point.radius);
+                int16_t tdvY = y-(pixL1.y+Light1Point.radius);
                 // obtain distance between two points (radial active area)
                 int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
 
@@ -117,9 +108,25 @@ void Engine3DApplication::Render() {
             buffer3d->drawPixel(x,y,pixelColor);
         }
     }
-    buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
-    buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
-    buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
+    
+    // conver to screen 
+    pixL0.x=centerX+pixL0.x;
+    pixL0.y=centerY+pixL0.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL1.x;
+    pixL1.y=centerY+pixL1.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL2.x;
+    pixL1.y=centerY+pixL2.y;
+    if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
+    }
+    if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
+    }
+    if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
+    }
     /*
     // draw wire over draw
     const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
@@ -219,9 +226,9 @@ void Engine3DApplication::BuildZBuffer() {
                 //RenderFace(zbuffer,myFaces[i],false,alpha);
                 //RenderFace(buffer3d,myFaces[i],false,TFT_WHITE);
                 RenderFace(alphaChannel,myFaces[i],false,1);
-                RenderPoint(zbuffer,*p0);
-                RenderPoint(zbuffer,*p1);
-                RenderPoint(zbuffer,*p2);
+                //RenderPoint(zbuffer,*p0);
+                //RenderPoint(zbuffer,*p1);
+                //RenderPoint(zbuffer,*p2);
 
             }
         }

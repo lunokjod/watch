@@ -17,28 +17,20 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__STEPSSETUP_APP__
-#define __LUNOKIOT__STEPSSETUP_APP__
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "../system/Application.hpp"
+#ifndef __LUNOKIOT__APPLICATION__BATTERYLOG__
+#define __LUNOKIOT__APPLICATION__BATTERYLOG__
 
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
+#include "../UI/AppTemplate.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
-#include "../UI/widgets/ValueSelector.hpp"
-#include "../UI/widgets/SwitchWidget.hpp"
 
-class StepsSetupApplication: public LunokIoTApplication {
+class BatteryLogApplication : public TemplateApplication {
     private:
-        unsigned long nextRedraw=0;
-        unsigned long nextSpinStep=0;
+        unsigned long nextRefresh=0;
+        GraphWidget * batteryGraph=nullptr;
     public:
-        const char *AppName() override { return "Step settings"; };
-        ButtonImageXBMWidget * btnBack = nullptr;
-        SwitchWidget * genderSelect = nullptr;
-        ValueSelector * tallValue = nullptr;
-        StepsSetupApplication();
-        ~StepsSetupApplication();
+        const char *AppName() override { return "Battery log"; };
+        BatteryLogApplication();
+        ~BatteryLogApplication();
         bool Tick();
 };
 
