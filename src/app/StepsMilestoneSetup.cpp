@@ -42,7 +42,7 @@ StepsMilestoneSetupApplication::~StepsMilestoneSetupApplication() {
 StepsMilestoneSetupApplication::StepsMilestoneSetupApplication() {
     // rewrite back button callback
     btnBack->tapActivityCallback = [&, this](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); };
-    desiredSteps = new ValueSelector(10,20,180,220,100,20000,ThCol(background),false,100);
+    desiredSteps = new ValueSelector(30,30,150,240-60,300,12500,ThCol(background),false,100);
     desiredSteps->selectedValue = NVS.getInt("smilestone");
     desiredSteps->InternalRedraw();
     Tick();
@@ -60,13 +60,21 @@ bool StepsMilestoneSetupApplication::Tick() {
         canvas->setTextColor(ThCol(text));
         canvas->drawString("Milestone Steps", canvas->width()/2,5);
         char buffer[30];
-        float distance = (desiredSteps->selectedValue*stepDistanceCm)/100;
+        float distance = (desiredSteps->selectedValue*stepDistanceCm)/100.0;
         if ( distance > 1000 ) {
-            sprintf(buffer,"about %.2f Km",distance/1000);
+            sprintf(buffer,"about %.2f Km.",distance/1000);
         } else {
-            sprintf(buffer,"about %.2f mts",distance);
+            sprintf(buffer,"about %.2f mts.",distance);
         }
-        canvas->drawString(buffer, canvas->width()/2,200);
+        canvas->drawString(buffer, canvas->width()/2,190);
+        float spendTimeMinutes = (distance/100);
+        if ( spendTimeMinutes > 60 ) {
+            sprintf(buffer,"%.1f Hrs.",spendTimeMinutes/60);
+        } else {
+            sprintf(buffer,"%.0f min.",abs(spendTimeMinutes));
+        }
+        canvas->drawString(buffer, canvas->width()/2,210);
+
 
         TemplateApplication::btnBack->DrawTo(canvas);
         desiredSteps->DrawTo(canvas);

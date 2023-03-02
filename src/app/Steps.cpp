@@ -37,7 +37,10 @@
 #include "../system/SystemEvents.hpp"
 #include <Ticker.h>
 #include "../system/Datasources/database.hpp"
+#include "../lunokIoT.hpp"
 #include <sqlite3.h>
+#include <sys/param.h>
+
 Ticker StepTicker;
 
 extern TTGOClass *ttgo; // ttgo lib
@@ -123,8 +126,6 @@ StepsApplication::~StepsApplication() {
 extern SemaphoreHandle_t SqlLogSemaphore;
 
 void StepsApplication::CreateStats() {
-    int32_t maxVal = 0;
-    int32_t minVal = 0;
     
     // load last values!
     for(int a=0;a<7;a++) {
@@ -132,21 +133,21 @@ void StepsApplication::CreateStats() {
         sprintf(keyName,"lWSteps_%d",a);
         weekSteps[a] = NVS.getInt(keyName);
     }
-
     /*
     lAppLog("@DEBUG Fill with fake data!!! <============================ DISABLE ME!!\n");
-    stepCount=random(0,8000);
+    stepCount=random(0,12500);
     for(int a=0;a<7;a++) {
-        weekSteps[a] = random(0,8000);
-    }
-    */
+        weekSteps[a] = random(0,12500);
+    }*/
 
     // get minMax for the graph
     for(int a=0;a<7;a++) {
-        if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
-        if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
+        maxVal = MAX(maxVal,weekSteps[a]);
+        minVal = MIN(minVal,weekSteps[a]);
+        //if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
+        //if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
     }
-
+    milestone = NVS.getInt("smilestone");
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }
     weekGraph = new GraphWidget(50,180,minVal,maxVal,TFT_GREEN, ThCol(background));
@@ -189,11 +190,11 @@ void StepsApplication::CreateStats() {
     }
 }
 StepsApplication::StepsApplication() {
-    btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](void *unused){
+    btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(background_alt),ThCol(button),false);
 
-    btnMilestone=new ButtonImageXBMWidget(TFT_WIDTH-80,TFT_HEIGHT-32,32,32,[&,this](void *unused){
+    btnMilestone=new ButtonImageXBMWidget(TFT_WIDTH-96,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){
         LaunchApplication(new StepsMilestoneSetupApplication());
     },img_milestone_32_bits,img_milestone_32_height,img_milestone_32_width,ThCol(background_alt),ThCol(button),false);
     CreateStats();
@@ -300,9 +301,6 @@ bool StepsApplication::Tick() {
             canvas->drawString("mts.", x+40,y+20);
         }
 
-
-
-
         uint32_t totalStepsValues = stepsBMAActivityStationary
                 +stepsBMAActivityWalking+stepsBMAActivityRunning
                 +stepsBMAActivityInvalid+stepsBMAActivityNone;
@@ -332,9 +330,15 @@ bool StepsApplication::Tick() {
             canvas->drawFastVLine(x+pcWalking,y+8,10,ThCol(text));
             canvas->drawFastVLine(x+pcWalking+pcRunning,y+8,10,ThCol(text));
         }
-
-
-
+        // draw milestone
+        float range=maxVal-minVal;
+        float correctedValue=milestone-minVal;
+        int32_t pcValue = 0;
+        if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
+        else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
+        else { pcValue = (correctedValue/range)*weekGraph->canvas->height(); }
+        canvas->drawFastHLine(20,(weekGraph->canvas->height()+45)-pcValue,200,ThCol(high));
+        
         nextRedraw=millis()+(1000/8);
         return true;
     }
