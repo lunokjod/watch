@@ -34,7 +34,7 @@ SemaphoreHandle_t Engine3DRenderChunk1Done =  xSemaphoreCreateMutex();
 void Engine3DApplication::Render() {
     if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
     uint16_t faceColor = buffer3d->color565(255,255,255);
-    const uint16_t shadowColor = buffer3d->color565(32,32,32);
+    const uint16_t shadowColor = 0; //buffer3d->color565(32,32,32);
 
     Point2D pixL0;
     GetProjection(Light0Point,pixL0);
@@ -42,6 +42,16 @@ void Engine3DApplication::Render() {
     GetProjection(Light1Point,pixL1);
     Point2D pixL2;
     GetProjection(Light2Point,pixL2);
+
+    // conver to screen 
+    pixL0.x=centerX+pixL0.x;
+    pixL0.y=centerY+pixL0.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL1.x;
+    pixL1.y=centerY+pixL1.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL2.x;
+    pixL1.y=centerY+pixL2.y;
 
     for(int y=ViewClipping.yMin;y<ViewClipping.yMax;y++) {
         for(int x=ViewClipping.xMin;x<ViewClipping.xMax;x++) {
@@ -58,9 +68,9 @@ void Engine3DApplication::Render() {
 
             // use deep to darken color
             uint16_t pixelColor=buffer3d->alphaBlend(zdeep,faceColor,shadowColor);
-
+        
             // check lights
-            bool light0Hit = ActiveRect::InRadius(x,y,pixL0.x,pixL0.y,Light0Point.radius);
+            bool light0Hit = ActiveRect::InRadius(pixL0.x,pixL0.y,x,y,Light0Point.radius);
             if ( light0Hit ) {
                 // under the influence of light!!!
                 
@@ -72,10 +82,11 @@ void Engine3DApplication::Render() {
 
                 // calculate the influence of light
                 uint8_t alpha = 128*(dist/float(Light0Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light0Point.color,pixelColor); 
+                pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light0Point.color); 
+                pixelColor=Light0Point.color;
             }
-
-            bool light1Hit = ActiveRect::InRadius(x,y,pixL1.x,pixL1.y,Light1Point.radius);
+            /*
+            bool light1Hit = ActiveRect::InRadius(pixL1.x,pixL1.y,x,y,Light1Point.radius);
             if ( light1Hit ) {
                 // under the influence of light!!!
 
@@ -87,10 +98,10 @@ void Engine3DApplication::Render() {
 
                 // calculate the influence of light
                 uint8_t alpha = 128*(dist/float(Light1Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light1Point.color,pixelColor);                    
+                pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light1Point.color);                    
             }
             //GetProjection(Light2Point,pixL2);
-            bool light2Hit = ActiveRect::InRadius(x,y,pixL2.x,pixL2.y,Light2Point.radius);
+            bool light2Hit = ActiveRect::InRadius(pixL2.x,pixL2.y,x,y,Light2Point.radius);
             if ( light2Hit ) {
                 // under the influence of light!!!
 
@@ -102,31 +113,24 @@ void Engine3DApplication::Render() {
                 float dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
                 // calculate the influence of light
                 uint8_t alpha = 128*(dist/float(Light2Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light2Point.color,pixelColor);
-            }
+                pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light2Point.color);
+            }*/
 
             buffer3d->drawPixel(x,y,pixelColor);
         }
     }
-    
-    // conver to screen 
-    pixL0.x=centerX+pixL0.x;
-    pixL0.y=centerY+pixL0.y;
-    // conver to screen 
-    pixL1.x=centerX+pixL1.x;
-    pixL1.y=centerY+pixL1.y;
-    // conver to screen 
-    pixL1.x=centerX+pixL2.x;
-    pixL1.y=centerY+pixL2.y;
-    if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
-    }
-    if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
-    }
-    if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
-    }
+    //if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(pixL0.x,pixL0.y,Light0Point.radius,Light0Point.color);
+    buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
+    //}
+    //if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(pixL1.x,pixL1.y,Light1Point.radius,Light1Point.color);
+    buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
+    //}
+    //if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(pixL2.x,pixL2.y,Light2Point.radius,Light2Point.color);
+    buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
+    //}
     /*
     // draw wire over draw
     const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
@@ -408,21 +412,21 @@ Engine3DApplication::Engine3DApplication() {
         }
         light0->fillSprite(0);
     }*/
-    Light0Point.x=60;
-    Light0Point.y=60;
-    Light0Point.z=60;
+    Light0Point.x=90;
+    Light0Point.y=90;
+    Light0Point.z=90;
     Light0Point.radius=120;
     Light0Point.color=TFT_RED;
 
-    Light1Point.x=-60;
-    Light1Point.y=60;
-    Light1Point.z=60;
+    Light1Point.x=-90;
+    Light1Point.y=90;
+    Light1Point.z=90;
     Light1Point.radius=120;
     Light1Point.color=TFT_GREEN;
 
-    Light2Point.x=60;
-    Light2Point.y=-60;
-    Light2Point.z=60;
+    Light2Point.x=90;
+    Light2Point.y=-90;
+    Light2Point.z=90;
     Light2Point.radius=120;
     Light2Point.color=TFT_BLUE;
 
@@ -496,9 +500,9 @@ myFacesNumber = 44;
         esp_task_wdt_reset();
     }
 
-    rot.x=1.0; 
-    rot.y=1.0;
-    rot.z=1.0;
+    rot.x=1.3; 
+    rot.y=1.3;
+    rot.z=1.3;
 
     LampRotation.x=2;
     LampRotation.y=2;

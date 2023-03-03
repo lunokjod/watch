@@ -295,13 +295,17 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
 
     if ( nullptr != instance ) {
         // get a little breath to the system before log (sql is a relative expensive operation) 
-        LogAppRun.once_ms(100,[]() {
-            if ( nullptr != currentApplication ) {
-                char logMsg[255] = { 0 }; 
-                sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
-                SqlLog(logMsg);
-            }
-        });
+        if ( nullptr != currentApplication ) {
+                if ( false == currentApplication->isWatchface() ) { // don't log watchfaces!
+                    LogAppRun.once_ms(100,[]() {
+                        if ( nullptr != currentApplication ) {
+                            char logMsg[255] = { 0 }; 
+                            sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
+                            SqlLog(logMsg);
+                        }
+                    });
+                }
+        }
     }
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();
     thisLaunch->instance = instance;
