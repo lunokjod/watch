@@ -28,77 +28,105 @@
 #include <esp_task_wdt.h>
 #include "../UI/base/Widget.hpp"
 
+SemaphoreHandle_t Engine3DRenderChunk0Done =  xSemaphoreCreateMutex();
+SemaphoreHandle_t Engine3DRenderChunk1Done =  xSemaphoreCreateMutex();
+
 void Engine3DApplication::Render() {
+    if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
     uint16_t faceColor = buffer3d->color565(255,255,255);
-    const uint16_t shadow = buffer3d->color565(32,32,32);
+    const uint16_t shadowColor = buffer3d->color565(32,32,32);
+
+    Point2D pixL0;
+    GetProjection(Light0Point,pixL0);
+    Point2D pixL1;
+    GetProjection(Light1Point,pixL1);
+    Point2D pixL2;
+    GetProjection(Light2Point,pixL2);
+
     for(int y=ViewClipping.yMin;y<ViewClipping.yMax;y++) {
         for(int x=ViewClipping.xMin;x<ViewClipping.xMax;x++) {
+            // discard if nothing to draw
             bool mustDraw = alphaChannel->readPixel(x,y);
-            if ( mustDraw ) {
-                uint16_t colorzdeep = zbuffer->readPixel(x,y);
-                double r = ((colorzdeep >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                double g = ((colorzdeep >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                double b = (colorzdeep & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                uint8_t zdeep = 255*((r+g+b)/3.0);
+            if ( false == mustDraw ) { continue; }
 
+            // get deep
+            uint16_t colorzdeep = zbuffer->readPixel(x,y);
+            double r = ((colorzdeep >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+            double g = ((colorzdeep >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+            double b = (colorzdeep & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+            uint8_t zdeep = 255*((r+g+b)/3.0);
 
-                uint16_t pixelColor=buffer3d->alphaBlend(zdeep,faceColor,shadow);
+            // use deep to darken color
+            uint16_t pixelColor=buffer3d->alphaBlend(zdeep,faceColor,shadowColor);
 
-                // check lights
-                Point2D pix;
-                GetProjection(Light0Point,pix);
-                bool light0Hit = ActiveRect::InRadius(x,y,pix.x,pix.y,Light0Point.radius);
-                if ( light0Hit ) {
-                    // under the influence of light!!!
-                    // obtain vector from center
-                    int16_t tdvX = pix.x-(x+(Light0Point.radius/2));
-                    int16_t tdvY = pix.y-(y+(Light0Point.radius/2));
-                    // obtain distance between two points (radial active area)
-                    int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-                    int8_t alpha = (Light0Point.radius/dist)*255;
-                    pixelColor=buffer3d->alphaBlend(alpha,Light0Point.color,pixelColor);                    
-                }
-                GetProjection(Light1Point,pix);
-                bool light1Hit = ActiveRect::InRadius(x,y,pix.x,pix.y,Light1Point.radius);
-                if ( light1Hit ) {
-                    // under the influence of light!!!
-                    // obtain vector from center
-                    int16_t tdvX = pix.x-(x+(Light1Point.radius/2));
-                    int16_t tdvY = pix.y-(y+(Light1Point.radius/2));
-                    // obtain distance between two points (radial active area)
-                    int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-                    int8_t alpha = (Light1Point.radius/dist)*255;
-                    pixelColor=buffer3d->alphaBlend(alpha,Light1Point.color,pixelColor);                    
-                }
-                GetProjection(Light2Point,pix);
-                bool light2Hit = ActiveRect::InRadius(x,y,pix.x,pix.y,Light2Point.radius);
-                if ( light2Hit ) {
-                    // under the influence of light!!!
-                    // obtain vector from center
-                    int16_t tdvX = pix.x-(x+(Light2Point.radius/2));
-                    int16_t tdvY = pix.y-(y+(Light2Point.radius/2));
-                    // obtain distance between two points (radial active area)
-                    int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-                    int8_t alpha = (Light2Point.radius/dist)*255;
-                    pixelColor=buffer3d->alphaBlend(alpha,Light2Point.color,pixelColor);                    
-                }
+            // check lights
+            bool light0Hit = ActiveRect::InRadius(x,y,pixL0.x,pixL0.y,Light0Point.radius);
+            if ( light0Hit ) {
+                // under the influence of light!!!
+                
+                // obtain vector from center
+                int16_t tdvX = x-(pixL0.x+Light0Point.radius);
+                int16_t tdvY = y-(pixL0.y+Light0Point.radius);
+                // obtain distance between two points (radial active area)
+                int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
 
-                buffer3d->drawPixel(x,y,pixelColor);
+                // calculate the influence of light
+                uint8_t alpha = 128*(dist/float(Light0Point.radius));
+                pixelColor=buffer3d->alphaBlend(alpha,Light0Point.color,pixelColor); 
             }
+
+            bool light1Hit = ActiveRect::InRadius(x,y,pixL1.x,pixL1.y,Light1Point.radius);
+            if ( light1Hit ) {
+                // under the influence of light!!!
+
+                // obtain vector from center
+                int16_t tdvX = x-(pixL1.x+Light1Point.radius);
+                int16_t tdvY = y-(pixL1.y+Light1Point.radius);
+                // obtain distance between two points (radial active area)
+                int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
+
+                // calculate the influence of light
+                uint8_t alpha = 128*(dist/float(Light1Point.radius));
+                pixelColor=buffer3d->alphaBlend(alpha,Light1Point.color,pixelColor);                    
+            }
+            //GetProjection(Light2Point,pixL2);
+            bool light2Hit = ActiveRect::InRadius(x,y,pixL2.x,pixL2.y,Light2Point.radius);
+            if ( light2Hit ) {
+                // under the influence of light!!!
+
+                // obtain vector from center
+                ///SWAAAAAAP!!!!!!! <==========================
+                int16_t tdvX = x-(pixL2.x+Light2Point.radius);
+                int16_t tdvY = y-(pixL2.y+Light2Point.radius);
+                // obtain distance between two points (radial active area)
+                float dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
+                // calculate the influence of light
+                uint8_t alpha = 128*(dist/float(Light2Point.radius));
+                pixelColor=buffer3d->alphaBlend(alpha,Light2Point.color,pixelColor);
+            }
+
+            buffer3d->drawPixel(x,y,pixelColor);
         }
     }
-    Point2D pix;
-    GetProjection(Light0Point,pix);
-    buffer3d->fillCircle(pix.x,pix.y,5,Light0Point.color);
-    buffer3d->drawCircle(pix.x,pix.y,Light0Point.radius,Light0Point.color);
-    GetProjection(Light1Point,pix);
-    buffer3d->fillCircle(pix.x,pix.y,5,Light1Point.color);
-    buffer3d->drawCircle(pix.x,pix.y,Light1Point.radius,Light1Point.color);
-    GetProjection(Light2Point,pix);
-    buffer3d->fillCircle(pix.x,pix.y,5,Light2Point.color);
-    buffer3d->drawCircle(pix.x,pix.y,Light2Point.radius,Light2Point.color);
-
-
+    
+    // conver to screen 
+    pixL0.x=centerX+pixL0.x;
+    pixL0.y=centerY+pixL0.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL1.x;
+    pixL1.y=centerY+pixL1.y;
+    // conver to screen 
+    pixL1.x=centerX+pixL2.x;
+    pixL1.y=centerY+pixL2.y;
+    if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
+    }
+    if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
+    }
+    if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+        buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
+    }
     /*
     // draw wire over draw
     const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
@@ -140,6 +168,7 @@ void Engine3DApplication::Render() {
                         centerX+pix2.x,centerY+pix2.y,TFT_WHITE);
     }
     */
+   xSemaphoreGive( Engine3DRenderChunk0Done );
 }
 
 int16_t Engine3DApplication::GetDeepForPoint(IN Point3D &point) {
@@ -197,13 +226,16 @@ void Engine3DApplication::BuildZBuffer() {
                 //RenderFace(zbuffer,myFaces[i],false,alpha);
                 //RenderFace(buffer3d,myFaces[i],false,TFT_WHITE);
                 RenderFace(alphaChannel,myFaces[i],false,1);
+                //RenderPoint(zbuffer,*p0);
+                //RenderPoint(zbuffer,*p1);
+                //RenderPoint(zbuffer,*p2);
+
             }
         }
         currentDepth++;
     }
     //lLog("MESH HEIGHT: MIN: %d MAX: %d\n", MeshDimensions.Min,MeshDimensions.Max);
 }
-
 extern bool UILongTapOverride; // don't allow long tap for task switcher
 bool Engine3DApplication::Tick() {
     UILongTapOverride=true; // remember every time
@@ -212,6 +244,13 @@ bool Engine3DApplication::Tick() {
     CleanBuffers();
     MeshDimensions.Max=0;
     MeshDimensions.Min=9000;
+    if ( millis() > nextRefreshRotation ) {
+        LampRotation.x=random(-2.0,2.0);
+        LampRotation.y=random(-2.0,2.0);
+        LampRotation.z=random(-2.0,2.0);
+        nextRefreshRotation = millis()+3000;
+    }
+
 
     // rotate animation!
     for(int i=0;i<myPointsNumber;i++) {
@@ -356,7 +395,7 @@ Engine3DApplication::Engine3DApplication() {
     }
     lAppLog("Alpha channel generated\n");
 
-
+    /*
     lAppLog("Allocating TFT_eSPI Sprite as lights...\n");
     light0 = new TFT_eSprite(ttgo->tft);
     if ( nullptr != light0 ) {
@@ -368,24 +407,24 @@ Engine3DApplication::Engine3DApplication() {
             return;
         }
         light0->fillSprite(0);
-    }
-    Light0Point.x=150;
-    Light0Point.y=150;
-    Light0Point.z=-150;
-    Light0Point.radius=50;
-    Light0Point.color=TFT_YELLOW;
+    }*/
+    Light0Point.x=60;
+    Light0Point.y=60;
+    Light0Point.z=60;
+    Light0Point.radius=120;
+    Light0Point.color=TFT_RED;
 
-    Light1Point.x=150;
-    Light1Point.y=150;
-    Light1Point.z=150;
-    Light1Point.radius=60;
+    Light1Point.x=-60;
+    Light1Point.y=60;
+    Light1Point.z=60;
+    Light1Point.radius=120;
     Light1Point.color=TFT_GREEN;
 
-    Light2Point.x=-150;
-    Light2Point.y=150;
-    Light2Point.z=-150;
-    Light2Point.radius=100;
-    Light2Point.color=TFT_PINK;
+    Light2Point.x=60;
+    Light2Point.y=-60;
+    Light2Point.z=60;
+    Light2Point.radius=120;
+    Light2Point.color=TFT_BLUE;
 
     lAppLog("lights generated\n");
 
@@ -399,8 +438,9 @@ Engine3DApplication::Engine3DApplication() {
 
 
     // from generated meshdata blender python script
-myPointsNumber = 188;
-myFacesNumber = 372;
+//@MESH
+myPointsNumber = 24;
+myFacesNumber = 44;
     myVectorsNumber=0;
 
     lAppLog("Trying to allocate: %u byte...\n",sizeof(Point3D)*myPointsNumber);
@@ -460,9 +500,9 @@ myFacesNumber = 372;
     rot.y=1.0;
     rot.z=1.0;
 
-    LampRotation.x=-2;
-    LampRotation.y=-1;
-    LampRotation.z=-3;
+    LampRotation.x=2;
+    LampRotation.y=2;
+    LampRotation.z=2;
 
     // custom splash
     canvas->fillSprite(TFT_BLACK);
@@ -482,10 +522,11 @@ Engine3DApplication::~Engine3DApplication() {
         alphaChannel->deleteSprite();
         delete alphaChannel;
     }
+    /*
     if ( nullptr != light0 ) {
         light0->deleteSprite();
         delete light0;
-    }
+    }*/
 
     if ( nullptr != buffer3d ) {
         buffer3d->deleteSprite();
@@ -558,35 +599,33 @@ void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face
 }
 
 float temp = 0; 
-void Engine3DApplication::RenderPoint(IN Point3D & point) {
+void Engine3DApplication::RenderPoint(INOUT TFT_eSprite *buffer,IN Point3D & point) {
     //if ( nullptr == point ) { return; }
     float x = point.x;
     float y = point.y;
     float z = point.z;
     // https://gamedev.stackexchange.com/questions/159434/how-to-convert-3d-coordinates-to-2d-isometric-coordinates
-    int16_t x2d = (x-z)/sq2;
-    int16_t y2d = (x +2*y + z)/sq6;
+    Point2D pix;
+    GetProjection(point,pix);
+    //int16_t x2d = (x-z)/sq2;
+    //int16_t y2d = (x +2*y + z)/sq6;
     // https://stackoverflow.com/questions/28607713/convert-3d-coordinates-to-2d-in-an-isometric-projection
     //*u=(x-z)/sqrt(2);
     //*v=(x+2*y+z)/sqrt(6);
 
     // ((x+z+y)/3)*-1; 
     //int16_t deep = (fabs(x)+fabs(y)+fabs(z))/3;
-    int16_t deep = (x+z)/2;
-    int32_t pointX=centerX+x2d;
-    int32_t pointY=centerY+y2d;
+    int16_t deep = GetDeepForPoint(point);
+    int32_t pointX=centerX+pix.x;
+    int32_t pointY=centerY+pix.y;
     // only draw inside screen view
     if ( ActiveRect::InRect(pointX,pointY,0,0,canvas->height(),canvas->width()) ) {
         uint16_t alpha = 128-(deep*2);
         //lLog("deep: %d\n", deep);
         //if ( alpha > 60 ) {
-            uint16_t mixColor = ttgo->tft->alphaBlend(alpha,point.color,TFT_BLACK);
-            buffer3d->drawPixel(pointX,pointY,mixColor);
-            UpdateClipWith(ViewClipping,centerX+x2d,centerY+y2d);
-            //if ( centerX+x2d < minLastX ) { minLastX = centerX+x2d; }
-            //if ( centerY+y2d < minLastY ) { minLastY = centerY+y2d; }
-            //if ( centerX+x2d > maxLastX ) { maxLastX = centerX+x2d; }
-            //if ( centerY+y2d > maxLastY ) { maxLastY = centerY+y2d; }
+        uint16_t mixColor = ttgo->tft->alphaBlend(alpha,point.color,TFT_BLACK);
+        buffer3d->drawPixel(pointX,pointY,mixColor);
+        //UpdateClipWith(ViewClipping,centerX+x2d,centerY+y2d);
     }
 
     // https://math.stackexchange.com/questions/118832/how-are-3d-coordinates-transformed-to-2d-coordinates-that-can-be-displayed-on-th

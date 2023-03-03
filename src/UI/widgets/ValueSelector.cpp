@@ -27,10 +27,10 @@ ValueSelector::~ValueSelector() {
     delete buffer;
 }
 
-ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor, bool showsign):
+ValueSelector::ValueSelector(int16_t x,int16_t y, int16_t h, int16_t w,int32_t valMin,int32_t valMax,uint32_t backgroundColor, bool showsign,uint32_t valStep):
             CanvasWidget(h,w),x(x),y(y),
             ActiveRect(x,y,h,w),
-            valMin(valMin),valMax(valMax),backgroundColor(backgroundColor),showsign(showsign) {
+            valMin(valMin),valMax(valMax),backgroundColor(backgroundColor),showsign(showsign),valStep(valStep) {
     buffer = new CanvasWidget(h,w);
     InternalRedraw();
 }
@@ -52,9 +52,9 @@ bool ValueSelector::Interact(bool touch, int16_t tx,int16_t ty) {
         if ( ActiveRect::InRect(tx,ty,x,y,h,w)) {
             // basic up/down button functionality
             if ( ActiveRect::InRect(tx,ty,x,y,h/2,w)) {
-                stepSize=-1;
+                stepSize=-valStep;
             } else {
-                stepSize=1;
+                stepSize=valStep;
             }
             // if user drags, use distance as stepSize
             if ( touchDragDistance > 0.0 ) {

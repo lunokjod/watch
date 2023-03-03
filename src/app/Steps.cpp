@@ -23,19 +23,24 @@
 #include "../static/img_back_32.xbm"
 #include "../static/img_step_32.xbm"
 #include "../static/img_distance_32.xbm"
+#include "../static/img_milestone_32.xbm"
 #include "../static/img_setup_32.xbm"
 #include "Steps.hpp"
+#include "StepsSetup.hpp"
+#include "StepsMilestoneSetup.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 //#include "../system/Tasks.hpp"
 #include <ArduinoNvs.h>
 #include "LogView.hpp"
-#include "StepsSetup.hpp"
 #include "../system/SystemEvents.hpp"
 #include <Ticker.h>
 #include "../system/Datasources/database.hpp"
+#include "../lunokIoT.hpp"
 #include <sqlite3.h>
+#include <sys/param.h>
+
 Ticker StepTicker;
 
 extern TTGOClass *ttgo; // ttgo lib
@@ -96,43 +101,31 @@ void StepManagerCallback() {
             NVS.setInt("lstWeekStp",lastStepsDay,false);
             lEvLog("StepManagerCallback: Ends\n");
         }
+    } else {
+        // do a backup of stepcount
+        lEvLog("Backup stepcount '%u' to NVS\n",stepCount);
+        NVS.setInt("stepCount",(int)stepCount,false);
+
     }
 
 }
 void InstallStepManager() {
-    StepTicker.attach(60*40,StepManagerCallback);
+    StepTicker.attach(60*20,StepManagerCallback);
 }
 
 StepsApplication::~StepsApplication() {
 
-    //if ( nullptr != btnBack ) { delete btnBack; }
+    if ( nullptr != btnMilestone ) { delete btnMilestone; }
     if ( nullptr != weekGraph ) { delete weekGraph; }
     if ( nullptr != btnSetup ) { delete btnSetup; }
     if ( nullptr != activityGraph ) { delete activityGraph; }
 
 }
 
-// callback from sqlite3 used to build the activity bar
-static int StepsAppInspectLogGraphGenerator(void *data, int argc, char **argv, char **azColName) {
-    GraphWidget * myGraph=(GraphWidget*)data;
-    int i;
-    //myGraph->markColor = TFT_GREEN;
-    for (i = 0; i<argc; i++){
-        //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
-        if ( 0 != strcmp(azColName[i],"message")) { continue; }        
 
-        if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
-        else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
-        else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
-    }
-    myGraph->PushValue(1);
-    return 0;
-}
 extern SemaphoreHandle_t SqlLogSemaphore;
 
 void StepsApplication::CreateStats() {
-    int32_t maxVal = 0;
-    int32_t minVal = 0;
     
     // load last values!
     for(int a=0;a<7;a++) {
@@ -140,21 +133,21 @@ void StepsApplication::CreateStats() {
         sprintf(keyName,"lWSteps_%d",a);
         weekSteps[a] = NVS.getInt(keyName);
     }
-
     /*
     lAppLog("@DEBUG Fill with fake data!!! <============================ DISABLE ME!!\n");
-    stepCount=random(0,8000);
+    stepCount=random(0,12500);
     for(int a=0;a<7;a++) {
-        weekSteps[a] = random(0,8000);
-    }
-    */
+        weekSteps[a] = random(0,12500);
+    }*/
 
     // get minMax for the graph
     for(int a=0;a<7;a++) {
-        if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
-        if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
+        maxVal = MAX(maxVal,weekSteps[a]);
+        minVal = MIN(minVal,weekSteps[a]);
+        //if ( maxVal < weekSteps[a] ) { maxVal = weekSteps[a]; }
+        //if ( minVal > weekSteps[a] ) { minVal = weekSteps[a]; }
     }
-
+    milestone = NVS.getInt("smilestone");
     // rebuild new graph with min/max of the week
     if ( nullptr != weekGraph ) { delete weekGraph; }
     weekGraph = new GraphWidget(50,180,minVal,maxVal,TFT_GREEN, ThCol(background));
@@ -175,33 +168,49 @@ void StepsApplication::CreateStats() {
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     
     const char sqlQuery[]="SELECT * FROM rawlog ORDER BY id DESC LIMIT %d";
-    char sqlQueryBuffer[400] = { 0 };
+    char sqlQueryBuffer[strlen(sqlQuery)+8] = { 0 };
     sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
 
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
+        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
+            GraphWidget * myGraph=(GraphWidget*)data;
+            int i;
+            for (i = 0; i<argc; i++){
+                //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+                if ( 0 != strcmp(azColName[i],"message")) { continue; }        
+                if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
+                else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
+                else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
+            }
+            myGraph->PushValue(1);
+            return 0;
+        }, (void*)activityGraph, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
 }
 StepsApplication::StepsApplication() {
-    btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](void *unused){
+    btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){
         LaunchApplication(new StepsSetupApplication());
     },img_setup_32_bits,img_setup_32_height,img_setup_32_width,ThCol(background_alt),ThCol(button),false);
-    
+
+    btnMilestone=new ButtonImageXBMWidget(TFT_WIDTH-96,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){
+        LaunchApplication(new StepsMilestoneSetupApplication());
+    },img_milestone_32_bits,img_milestone_32_height,img_milestone_32_width,ThCol(background_alt),ThCol(button),false);
     CreateStats();
     Tick();
 }
 
 bool StepsApplication::Tick() {
     btnSetup->Interact(touched,touchX, touchY);
+    btnMilestone->Interact(touched,touchX, touchY);
     TemplateApplication::btnBack->Interact(touched,touchX, touchY);
     
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         TemplateApplication::Tick();
         btnSetup->DrawTo(canvas);
-
+        btnMilestone->DrawTo(canvas);
         int32_t x = 20;
         int32_t y = 20;
         int16_t border=4;
@@ -292,9 +301,6 @@ bool StepsApplication::Tick() {
             canvas->drawString("mts.", x+40,y+20);
         }
 
-
-
-
         uint32_t totalStepsValues = stepsBMAActivityStationary
                 +stepsBMAActivityWalking+stepsBMAActivityRunning
                 +stepsBMAActivityInvalid+stepsBMAActivityNone;
@@ -324,9 +330,15 @@ bool StepsApplication::Tick() {
             canvas->drawFastVLine(x+pcWalking,y+8,10,ThCol(text));
             canvas->drawFastVLine(x+pcWalking+pcRunning,y+8,10,ThCol(text));
         }
-
-
-
+        // draw milestone
+        float range=maxVal-minVal;
+        float correctedValue=milestone-minVal;
+        int32_t pcValue = 0;
+        if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
+        else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
+        else { pcValue = (correctedValue/range)*weekGraph->canvas->height(); }
+        canvas->drawFastHLine(20,(weekGraph->canvas->height()+45)-pcValue,200,ThCol(high));
+        
         nextRedraw=millis()+(1000/8);
         return true;
     }
