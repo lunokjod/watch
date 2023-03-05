@@ -34,7 +34,7 @@ SemaphoreHandle_t Engine3DRenderChunk1Done =  xSemaphoreCreateMutex();
 void Engine3DApplication::Render() {
     if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
     uint16_t faceColor = buffer3d->color565(255,255,255);
-    const uint16_t shadowColor = buffer3d->color565(32,32,32);
+    const uint16_t shadowColor = buffer3d->color565(1,1,1);
 
     Point2D pixL0;
     GetProjection(Light0Point,pixL0);
@@ -58,75 +58,71 @@ void Engine3DApplication::Render() {
 
             // use deep to darken color
             uint16_t pixelColor=buffer3d->alphaBlend(zdeep,faceColor,shadowColor);
-
+        
             // check lights
-            bool light0Hit = ActiveRect::InRadius(x,y,pixL0.x,pixL0.y,Light0Point.radius);
+            bool light0Hit = ActiveRect::InRadius(x-centerX,y-centerY,pixL0.x,pixL0.y,Light0Point.radius);
             if ( light0Hit ) {
                 // under the influence of light!!!
                 
                 // obtain vector from center
-                int16_t tdvX = x-(pixL0.x+Light0Point.radius);
-                int16_t tdvY = y-(pixL0.y+Light0Point.radius);
+                //int16_t tdvX = x-(centerX+pixL0.x+Light0Point.radius);
+                //int16_t tdvY = y-(centerY+pixL0.y+Light0Point.radius);
                 // obtain distance between two points (radial active area)
-                int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
+                //int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
 
                 // calculate the influence of light
-                uint8_t alpha = 128*(dist/float(Light0Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light0Point.color,pixelColor); 
+                //uint8_t alpha = 128*(dist/float(Light0Point.radius));
+                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light0Point.color); 
+                pixelColor=Light0Point.color;
             }
-
-            bool light1Hit = ActiveRect::InRadius(x,y,pixL1.x,pixL1.y,Light1Point.radius);
+            bool light1Hit = ActiveRect::InRadius(pixL1.x,pixL1.y,x,y,Light1Point.radius);
             if ( light1Hit ) {
                 // under the influence of light!!!
 
                 // obtain vector from center
-                int16_t tdvX = x-(pixL1.x+Light1Point.radius);
-                int16_t tdvY = y-(pixL1.y+Light1Point.radius);
+                //int16_t tdvX = x-(pixL1.x+Light1Point.radius);
+                //int16_t tdvY = y-(pixL1.y+Light1Point.radius);
                 // obtain distance between two points (radial active area)
-                int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
+                //int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
 
                 // calculate the influence of light
-                uint8_t alpha = 128*(dist/float(Light1Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light1Point.color,pixelColor);                    
+                //uint8_t alpha = 128*(dist/float(Light1Point.radius));
+                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light1Point.color);
+                pixelColor=Light1Point.color;
+
             }
             //GetProjection(Light2Point,pixL2);
-            bool light2Hit = ActiveRect::InRadius(x,y,pixL2.x,pixL2.y,Light2Point.radius);
+            bool light2Hit = ActiveRect::InRadius(pixL2.x,pixL2.y,x,y,Light2Point.radius);
             if ( light2Hit ) {
                 // under the influence of light!!!
 
                 // obtain vector from center
                 ///SWAAAAAAP!!!!!!! <==========================
-                int16_t tdvX = x-(pixL2.x+Light2Point.radius);
-                int16_t tdvY = y-(pixL2.y+Light2Point.radius);
+                //int16_t tdvX = x-(pixL2.x+Light2Point.radius);
+                //int16_t tdvY = y-(pixL2.y+Light2Point.radius);
                 // obtain distance between two points (radial active area)
-                float dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
+                //float dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
                 // calculate the influence of light
-                uint8_t alpha = 128*(dist/float(Light2Point.radius));
-                pixelColor=buffer3d->alphaBlend(alpha,Light2Point.color,pixelColor);
+                //uint8_t alpha = 128*(dist/float(Light2Point.radius));
+                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light2Point.color);
+                pixelColor=Light2Point.color;
             }
 
             buffer3d->drawPixel(x,y,pixelColor);
         }
     }
-    
-    // conver to screen 
-    pixL0.x=centerX+pixL0.x;
-    pixL0.y=centerY+pixL0.y;
-    // conver to screen 
-    pixL1.x=centerX+pixL1.x;
-    pixL1.y=centerY+pixL1.y;
-    // conver to screen 
-    pixL1.x=centerX+pixL2.x;
-    pixL1.y=centerY+pixL2.y;
-    if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL0.x,pixL0.y,5,Light0Point.color);
-    }
-    if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL1.x,pixL1.y,5,Light1Point.color);
-    }
-    if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-        buffer3d->drawCircle(pixL2.x,pixL2.y,5,Light2Point.color);
-    }
+    //if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(centerX+pixL0.x,centerY+pixL0.y,Light0Point.radius*0.6,Light0Point.color);
+    buffer3d->drawCircle(centerX+pixL0.x,centerY+pixL0.y,5,Light0Point.color);
+    //}
+    //if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(centerX+pixL1.x,centerY+pixL1.y,Light1Point.radius*0.6,Light1Point.color);
+    buffer3d->drawCircle(centerX+pixL1.x,centerY+pixL1.y,5,Light1Point.color);
+    //}
+    //if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
+    buffer3d->drawCircle(centerX+pixL2.x,centerY+pixL2.y,Light2Point.radius*0.6,Light2Point.color);
+    buffer3d->drawCircle(centerX+pixL2.x,centerY+pixL2.y,5,Light2Point.color);
+    //}
     /*
     // draw wire over draw
     const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
@@ -196,6 +192,49 @@ uint8_t Engine3DApplication::GetZBufferDeepForPoint(IN Point3D &point) {
     */
 }
 
+bool Engine3DApplication::IsClockwise(IN Face3D &face) {
+    // quick and dirty x'D
+    Point3D * p0 = face.vertexData[0];
+    Point3D * p1 = face.vertexData[1];
+    Point3D * p2 = face.vertexData[2];
+    Point2D pix0;
+    Point2D pix1;
+    Point2D pix2;
+    GetProjection(*p0,pix0);
+    GetProjection(*p1,pix1);
+    GetProjection(*p2,pix2);
+    int val = (pix1.y - pix0.y) * (pix2.x - pix1.x)
+              - (pix1.x - pix0.x) * (pix2.y - pix1.y);
+    // pollazo al z-culling :D 
+    if (val == 0) { return false; } // collinear
+    return (val > 0) ? false : true; // clock or counterclock wise
+}
+
+void Engine3DApplication::DirectRender() {
+    if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
+    const int32_t MaxDeep= MeshDimensions.Max; //+abs(MeshDimensions.Min);
+    int32_t currentDepth=MeshDimensions.Min;
+    while ( currentDepth < MaxDeep ) {
+        for(int i=0;i<myFacesNumber;i++) {
+            esp_task_wdt_reset();
+            if ( false == IsClockwise(myFaces[i]) ) { continue; }
+            // get the 3 involved vertex
+            Point3D * p0 = myFaces[i].vertexData[0];
+            Point3D * p1 = myFaces[i].vertexData[1];
+            Point3D * p2 = myFaces[i].vertexData[2];
+            int16_t deep0 = GetDeepForPoint(*p0);
+            int16_t deep1 = GetDeepForPoint(*p1);
+            int16_t deep2 = GetDeepForPoint(*p2);
+            int32_t medianDeep = (deep0+deep1+deep2)/3;
+            if ( currentDepth != medianDeep ) { continue; }
+            int16_t alpha=(255.0*(float(medianDeep+abs(MeshDimensions.Min))/float(MaxDeep+abs(MeshDimensions.Min))));
+            RenderFace(buffer3d,myFaces[i],false,buffer3d->color565(alpha,alpha,alpha),true);
+        }
+        currentDepth++;
+    }
+    xSemaphoreGive( Engine3DRenderChunk0Done );
+}
+
 void Engine3DApplication::BuildZBuffer() {
     const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
     // iterate all faces to determine their deep
@@ -240,33 +279,55 @@ extern bool UILongTapOverride; // don't allow long tap for task switcher
 bool Engine3DApplication::Tick() {
     UILongTapOverride=true; // remember every time
     TemplateApplication::btnBack->Interact(touched,touchX,touchY); // backbutton on bottom-right
-    // clean last 3D buffer
-    CleanBuffers();
-    MeshDimensions.Max=0;
-    MeshDimensions.Min=9000;
+    /*
     if ( millis() > nextRefreshRotation ) {
         LampRotation.x=random(-2.0,2.0);
         LampRotation.y=random(-2.0,2.0);
         LampRotation.z=random(-2.0,2.0);
         nextRefreshRotation = millis()+3000;
-    }
+    }*/
+    /*
+    //Angle3D rot;
+    rot.x =degX-lastDegX;
+    rot.y =degY-lastDegY;
+    rot.z =degZ-lastDegZ;
+    lastDegX = degX;
+    lastDegY = degY;
+    lastDegZ = degZ;
+    if ( ( 0 == rot.x ) && ( 0 == rot.y ) && ( 0 == rot.y ) ) { return false; }
+    */
 
+    // clean last 3D buffer
+    CleanBuffers();
+
+    // clear the mesh size
+    MeshDimensions.Max=0;
+    MeshDimensions.Min=1;
+    // clear the clip dimension
+    ViewClipping.xMin = canvas->width();
+    ViewClipping.yMin = canvas->height();
+    ViewClipping.xMax = 0;
+    ViewClipping.yMax = 0;
 
     // rotate animation!
     for(int i=0;i<myPointsNumber;i++) {
         Rotate(myPoints[i], rot);
-        int16_t deep = GetDeepForPoint(myPoints[i]);
+        Point2D pix;
+        GetProjection(myPoints[i],pix);
+        UpdateClipWith(ViewClipping,pix);
+        int32_t deep = GetDeepForPoint(myPoints[i]);
         UpdateRange(MeshDimensions,deep);
         esp_task_wdt_reset();
     }
-    Rotate(Light0Point, LampRotation);
-    Rotate(Light1Point, LampRotation);
-    Rotate(Light2Point, LampRotation);
+    //Rotate(Light0Point, LampRotation);
+    //Rotate(Light1Point, LampRotation);
+    //Rotate(Light2Point, LampRotation);
 
     // get the pixel depth
-    BuildZBuffer();
+    //BuildZBuffer();
     // begin the rendering!!
-    Render();
+    //Render();
+    DirectRender();
     
     // draw faces
     //for(int i=0;i<myFacesNumber;i++) { RenderFace(buffer3d,myFaces[i],false,TFT_WHITE); esp_task_wdt_reset(); }
@@ -283,19 +344,30 @@ bool Engine3DApplication::Tick() {
     TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
     if ( nullptr != rectBuffer3d ) {
         rectBuffer3d->setColorDepth(16);
-        if ( NULL != rectBuffer3d->createSprite(ViewClipping.xMax-ViewClipping.xMin,
-                                                ViewClipping.yMax-ViewClipping.yMin) ) {
+        const uint8_t border=2;
+        if ( NULL != rectBuffer3d->createSprite(ViewClipping.xMax-ViewClipping.xMin+(border*2),
+                                                ViewClipping.yMax-ViewClipping.yMin+(border*2))) {
+            uint16_t offX=(centerX+ViewClipping.xMin)-border;
+            uint16_t offY=(centerY+ViewClipping.yMin)-border;
             for(int y=0;y<rectBuffer3d->height();y++) {
                 for(int x=0;x<rectBuffer3d->width();x++) {
-                    uint16_t color = buffer3d->readPixel(ViewClipping.xMin+x,ViewClipping.yMin+y);
+                    uint16_t color = buffer3d->readPixel(offX+x,offY+y);
                     //uint16_t deep = zbuffer->readPixel(ViewClipping.xMin+x,ViewClipping.yMin+y);
                     rectBuffer3d->drawPixel(x,y,color);
                 }
                 esp_task_wdt_reset();
             }
             // push to screen
-            rectBuffer3d->pushSprite(ViewClipping.xMin,ViewClipping.yMin);
+            rectBuffer3d->pushSprite(offX,offY);
             rectBuffer3d->deleteSprite();
+            /*
+            lLog("CLIP: X: %d Y: %d X2: %d Y2: %d RANGE %d/%d\n",ViewClipping.xMin,
+                                                                ViewClipping.yMin,
+                                                                ViewClipping.xMax,
+                                                                ViewClipping.yMax,
+                                                                MeshDimensions.Min,
+                                                                MeshDimensions.Max);
+            */
         }
         delete rectBuffer3d;
     }
@@ -306,7 +378,7 @@ void Engine3DApplication::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &poi
     UpdateClipWith(clip, point.x,point.y);
 }
 
-void Engine3DApplication::UpdateClipWith(INOUT Clipping2D &clip, IN uint16_t x,IN uint16_t y) {
+void Engine3DApplication::UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y) {
     clip.xMin=MIN(clip.xMin,x);
     clip.yMin=MIN(clip.yMin,y);
     clip.xMax=MAX(clip.xMax,x);
@@ -321,10 +393,10 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
 void Engine3DApplication::CleanBuffers() {
     if ( nullptr != buffer3d ) {
         // wipe only the necesary part
-        buffer3d->fillRect(ViewClipping.xMin-5,
-                           ViewClipping.yMin-5,
-                           (ViewClipping.xMax-ViewClipping.xMin)+10,
-                           (ViewClipping.yMax-ViewClipping.yMin)+10,TFT_BLACK); // cover old frame
+        buffer3d->fillRect(centerX+ViewClipping.xMin,
+                           centerY+ViewClipping.yMin,
+                           (centerX+ViewClipping.xMax-ViewClipping.xMin),
+                           (centerY+ViewClipping.yMax-ViewClipping.yMin),TFT_BLACK); // cover old frame
 
     }
     // destroy zbuffer data
@@ -365,7 +437,7 @@ Engine3DApplication::Engine3DApplication() {
         buffer3d->fillSprite(TFT_BLACK);
     }
     lAppLog("Buffer 3D generated\n");
-
+/*
     lAppLog("Allocating TFT_eSPI Sprite as ZBuffer...\n");
     zbuffer = new TFT_eSprite(ttgo->tft);
     if ( nullptr != zbuffer ) {
@@ -394,7 +466,7 @@ Engine3DApplication::Engine3DApplication() {
         alphaChannel->fillSprite(0);
     }
     lAppLog("Alpha channel generated\n");
-
+*/
     /*
     lAppLog("Allocating TFT_eSPI Sprite as lights...\n");
     light0 = new TFT_eSprite(ttgo->tft);
@@ -408,40 +480,37 @@ Engine3DApplication::Engine3DApplication() {
         }
         light0->fillSprite(0);
     }*/
-    Light0Point.x=60;
-    Light0Point.y=60;
-    Light0Point.z=60;
+    Light0Point.x=90;
+    Light0Point.y=90;
+    Light0Point.z=90;
     Light0Point.radius=120;
     Light0Point.color=TFT_RED;
 
-    Light1Point.x=-60;
-    Light1Point.y=60;
-    Light1Point.z=60;
+    Light1Point.x=-90;
+    Light1Point.y=90;
+    Light1Point.z=90;
     Light1Point.radius=120;
     Light1Point.color=TFT_GREEN;
 
-    Light2Point.x=60;
-    Light2Point.y=-60;
-    Light2Point.z=60;
+    Light2Point.x=90;
+    Light2Point.y=-90;
+    Light2Point.z=90;
     Light2Point.radius=120;
     Light2Point.color=TFT_BLUE;
 
     lAppLog("lights generated\n");
 
 
-    // set the default valid values for renderclip (contains the size of the current frame)
-    // calculated on the render step
-    ViewClipping.xMin = centerX-1;
-    ViewClipping.yMin = centerY-1;
-    ViewClipping.xMax = centerX+1;
-    ViewClipping.yMax = centerY+1;
 
 
     // from generated meshdata blender python script
 //@MESH
-myPointsNumber = 24;
-myFacesNumber = 44;
+myPointsNumber = 81;
+myFacesNumber = 128;
     myVectorsNumber=0;
+    rot.x=0.75; 
+    rot.y=1.5;
+    rot.z=3.0;
 
     lAppLog("Trying to allocate: %u byte...\n",sizeof(Point3D)*myPointsNumber);
     myPoints=(Point3D *)ps_calloc(myPointsNumber,sizeof(Point3D));
@@ -496,9 +565,6 @@ myFacesNumber = 44;
         esp_task_wdt_reset();
     }
 
-    rot.x=1.0; 
-    rot.y=1.0;
-    rot.z=1.0;
 
     LampRotation.x=2;
     LampRotation.y=2;
@@ -558,7 +624,7 @@ void Engine3DApplication::GetProjection(IN Point3D &vertex, OUT Point2D &pixel )
 
 //https://followtutorials.com/2012/03/3d-transformation-translation-rotation-and-scaling-in-c-c.html
 
-void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded,uint32_t overrideColor) {
+void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded,uint32_t overrideColor, bool borders) {
     if ( face.vertexNum != 3 ) { lLog("WARNING Mesh must be triangulated before use!\n"); return; }
     // get the 3 involved vertex
     Point3D * p0 = face.vertexData[0];
@@ -592,10 +658,15 @@ void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face
     buffer->fillTriangle(centerX+pix0.x,centerY+pix0.y,
                             centerX+pix1.x,centerY+pix1.y,
                         centerX+pix2.x,centerY+pix2.y,color);
+    if ( borders ) {
+        buffer->drawTriangle(centerX+pix0.x,centerY+pix0.y,
+                                centerX+pix1.x,centerY+pix1.y,
+                            centerX+pix2.x,centerY+pix2.y,TFT_BLACK);
+    }
     // update render clip
-    UpdateClipWith(ViewClipping,centerX+p0->x,centerY+p0->y);
-    UpdateClipWith(ViewClipping,centerX+p1->x,centerY+p1->y);
-    UpdateClipWith(ViewClipping,centerX+p2->x,centerY+p2->y);
+    //UpdateClipWith(ViewClipping,centerX+p0->x,centerY+p0->y);
+    //UpdateClipWith(ViewClipping,centerX+p1->x,centerY+p1->y);
+    //UpdateClipWith(ViewClipping,centerX+p2->x,centerY+p2->y);
 }
 
 float temp = 0; 
@@ -703,6 +774,6 @@ void Engine3DApplication::RenderVector(IN Vector3D &vec) {
     buffer3d->drawLine(centerX+x2d0,centerY+y2d0,centerX+x2d1,centerY+y2d1,vec.color);
     //lLog("Render Vector: (X: %f Y: %f Z: %f -> x: %d y: %d) --> (X: %f Y: %f Z: %f -> x: %d y: %d)\n", vec.from->x,vec.from->y,vec.from->z,centerX+x2d0,centerY+y2d0,vec.to->x,vec.to->y,vec.to->z,centerX+x2d1,centerY+y2d1);
     
-    UpdateClipWith(ViewClipping,centerX+x2d0,centerY+y2d0);
-    UpdateClipWith(ViewClipping,centerX+x2d1,centerY+y2d1);
+    //UpdateClipWith(ViewClipping,centerX+x2d0,centerY+y2d0);
+    //UpdateClipWith(ViewClipping,centerX+x2d1,centerY+y2d1);
 }

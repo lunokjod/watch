@@ -1308,9 +1308,9 @@ static void BMAInterruptController(void *args) {
             - BMA4_OUTPUT_DATA_RATE_800HZ
             - BMA4_OUTPUT_DATA_RATE_1600HZ
     */
-    // cfg.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
+    cfg.odr = BMA4_OUTPUT_DATA_RATE_100HZ;
     //cfg.odr = BMA4_OUTPUT_DATA_RATE_50HZ;
-    cfg.odr = BMA4_OUTPUT_DATA_RATE_25HZ;
+    //cfg.odr = BMA4_OUTPUT_DATA_RATE_25HZ;
     /*!
         G-range, Optional parameters:
             - BMA4_ACCEL_RANGE_2G

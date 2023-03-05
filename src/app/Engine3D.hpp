@@ -32,10 +32,10 @@ typedef struct {
 
 // define screen area
 typedef struct {
-    uint16_t xMin;
-    uint16_t yMin;
-    uint16_t xMax;
-    uint16_t yMax;
+    int16_t xMin;
+    int16_t yMin;
+    int16_t xMax;
+    int16_t yMax;
 } Clipping2D;
 
 typedef struct {
@@ -85,8 +85,11 @@ typedef struct {
 
 class Engine3DApplication : public TemplateApplication {
     private:
+        float lastDegX = 0.0; // degrees
+        float lastDegY = 0.0;
+        float lastDegZ = 0.0;
         unsigned long nextRefreshRotation=0;
-        const float MeshSize = 40.0;     // size of mesh
+        const float MeshSize = 1.0;     // scale of mesh
         TFT_eSprite *buffer3d = nullptr; // where 3D are rendered
         TFT_eSprite *zbuffer = nullptr;  // the deep of pixels
         TFT_eSprite *alphaChannel = nullptr;  // have mesh on the area?
@@ -106,9 +109,10 @@ for (int i = 0; i < dimension1_max; i++) {
         Range MeshDimensions;
         void BuildZBuffer();
         void Render();
+        void DirectRender();
         void CleanBuffers();
         Clipping2D ViewClipping;    // used to know the updated area on the current rendered frame
-        void UpdateClipWith(INOUT Clipping2D &clip, IN uint16_t x,IN uint16_t y);
+        void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
         void UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point);
         void UpdateRange(INOUT Range &range, IN int32_t value);
 
@@ -138,6 +142,7 @@ for (int i = 0; i < dimension1_max; i++) {
         ~Engine3DApplication();
         bool Tick();
 
+        bool IsClockwise(IN Face3D &face);
         // tools
         // convert 3D to 2D
         void GetProjection(IN Point3D &vertex, OUT Point2D &pixel);
@@ -148,7 +153,7 @@ for (int i = 0; i < dimension1_max; i++) {
         uint8_t GetZBufferDeepForPoint(IN Point3D &point);
 
         // render mesh parts
-        void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR);
+        void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR,bool borders=false);
         void RenderPoint(INOUT TFT_eSprite *buffer, IN Point3D & point);
         void RenderVector(IN Vector3D &vec);
 

@@ -29,7 +29,7 @@
 #include <Arduino.h>
 #include <SPIFFS.h>
 #include <ArduinoNvs.h>
-
+#include <WiFi.h>
 #include <cstdio>
 //#include <LilyGoWatch.h>
 
@@ -50,6 +50,7 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_console.h>
 extern SemaphoreHandle_t I2cMutex;
 
 TTGOClass *ttgo = TTGOClass::getWatch();
@@ -87,7 +88,6 @@ Do not use ESP_LOGI functions inside.
 
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
-#include <esp_console.h>
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
@@ -135,7 +135,7 @@ LunokIoT::LunokIoT() {
             SPIFFSReady=false;
         } else {
             SPIFFSReady = SPIFFS.begin(); // mount again
-            NVS.setInt("spiffsReady",true); // assume format reached and disable it in next boot
+            NVS.setInt("spiffsReady",true,false); // assume format reached and disable it in next boot
         }
     }
     // banner storages again
@@ -288,7 +288,7 @@ void shit() {
 */
 extern bool wifiOverride;
 bool LunokIoT::IsNetworkInUse() {
-    if ( ( wifiOverride ) || ( IsBLEInUse() )) { return true; }
+    if ( ( wifiOverride ) || ( IsBLEInUse() ) || ( (WL_NO_SHIELD != WiFi.status()) && (WL_IDLE_STATUS != WiFi.status())) ) { return true; }
     return false;
 }
 void LunokIoT::ListSPIFFS() {
