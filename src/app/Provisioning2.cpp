@@ -21,7 +21,7 @@
 #include <ArduinoNvs.h>
 
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <TFT_eSPI.h>
 #include "../system/Network/BLE.hpp"
 #include "Provisioning2.hpp"
 #include "../system/Application.hpp"

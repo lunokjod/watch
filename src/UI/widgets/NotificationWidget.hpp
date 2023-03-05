@@ -21,8 +21,7 @@
 #define __LUNOKIOT__UI__NOTIFICATION___
 #include <Arduino.h>
 #include <functional>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
-
+#include <TFT_eSPI.h>
 #include "lunokiot_config.hpp"
 
 #include "CanvasWidget.hpp"

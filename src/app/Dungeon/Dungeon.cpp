@@ -1,5 +1,5 @@
 #include "Dungeon.hpp"
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <TFT_eSPI.h>
 #include "../LogView.hpp"   // for lLog functions
 #include <WiFi.h>
 

@@ -24,7 +24,7 @@
 #include "../UI/UI.hpp"
 #include "../static/img_sample_400.c"
 
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <TFT_eSPI.h>
 
 PlaygroundApplication5::~PlaygroundApplication5() {
     directDraw=false;
