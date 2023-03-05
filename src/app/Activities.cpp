@@ -17,7 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <TFT_eSPI.h>
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>

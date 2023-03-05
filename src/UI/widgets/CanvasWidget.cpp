@@ -20,7 +20,7 @@
 //#include <Arduino.h>
 #include <LilyGoWatch.h>
 #include "CanvasWidget.hpp"
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <TFT_eSPI.h>
 #include "../../app/LogView.hpp"
 
 extern TTGOClass *ttgo; // ttgo lib
