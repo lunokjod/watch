@@ -83,22 +83,38 @@ typedef struct {
     Point3D *vertexData[3]= { nullptr }; // remember, the mesh must be triangulated!!
 } Face3D;
 
+typedef struct {
+    size_t vertexNum=0;
+    float vertexData[3]= { 0 };
+} Normal3D;
+
+typedef struct {
+    // 2d info about
+    float normalFacing=0;
+    uint32_t p0x=0;
+    uint32_t p1x=0;
+    uint32_t p2x=0;
+    uint32_t p0y=0;
+    uint32_t p1y=0;
+    uint32_t p2y=0;
+    size_t faceOffset=0;
+    uint16_t colorDeep=0;
+    int16_t alpha=0;
+//    int32_t deep=0;
+} OrderedFace3D;
+
 class Engine3DApplication : public TemplateApplication {
-    private:
-        float lastDegX = 0.0; // degrees
-        float lastDegY = 0.0;
-        float lastDegZ = 0.0;
-        unsigned long nextRefreshRotation=0;
-        const float MeshSize = 1.0;     // scale of mesh
-        TFT_eSprite *buffer3d = nullptr; // where 3D are rendered
-        TFT_eSprite *zbuffer = nullptr;  // the deep of pixels
-        TFT_eSprite *alphaChannel = nullptr;  // have mesh on the area?
+    public:
+
         //TFT_eSprite *light0 = nullptr;  // light calculation from  zbuffer
-        Light3D Light0Point;
-        Light3D Light1Point;
-        Light3D Light2Point;
-        const size_t ZBufferFaceSize = canvas->width()+canvas->height()/2;
-        size_t **zbufferFaceOrder = nullptr;
+        //Light3D Light0Point;
+        ///Light3D Light1Point;
+        //Light3D Light2Point;
+        void * core0Worker=nullptr;
+        void * core1Worker=nullptr;
+
+        //const size_t ZBufferFaceSize = canvas->width()+canvas->height()/2;
+        //size_t **zbufferFaceOrder = nullptr;
         /*
 int** x;
 x = malloc(dimension1_max * sizeof(*x));
@@ -106,25 +122,20 @@ for (int i = 0; i < dimension1_max; i++) {
   x[i] = malloc(dimension2_max * sizeof(x[0]));
 }
 */
-        Range MeshDimensions;
-        void BuildZBuffer();
-        void Render();
-        void DirectRender();
-        void CleanBuffers();
-        Clipping2D ViewClipping;    // used to know the updated area on the current rendered frame
+        //void BuildZBuffer();
+        void DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * buffer3d);
         void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
         void UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point);
         void UpdateRange(INOUT Range &range, IN int32_t value);
-
+        const uint8_t border=4;
+        uint8_t lastCoreUsed=0;
         Angle3D rot;
-        Angle3D LampRotation;
+        //Angle3D LampRotation;
         Angle3D lastRot;
         //size_t AvailColorsoffset=0;
         //const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
         const double sq2 = sqrt(2);
         const double sq6 = sqrt(6);
-        const uint16_t centerX = canvas->width()/2;
-        const uint16_t centerY = canvas->height()/2;
 
         size_t myPointsNumber=0;
         Point3D * myPoints=nullptr;
@@ -135,33 +146,65 @@ for (int i = 0; i < dimension1_max; i++) {
         size_t myFacesNumber=0;
         Face3D *myFaces = nullptr;
 
-    public:
+        size_t myNormalsNumber=0;
+        Normal3D *myNormals = nullptr;
+
+        OrderedFace3D * facesToRender = nullptr;
+        float lastDegX = 0.0; // degrees
+        float lastDegY = 0.0;
+        float lastDegZ = 0.0;
+        unsigned long nextRefreshRotation=0;
+        const float MeshSize = 0.6;     // scale of mesh
+        //const uint16_t centerX = canvas->width()/4;
+        //const uint16_t centerY = canvas->height()/4;
+        //const int16_t renderSizeH = canvas->height()/2;
+        //const int16_t renderSizeW = canvas->width()/2;
+        const uint16_t centerX = canvas->width()/2;
+        const uint16_t centerY = canvas->height()/2;
+        const int16_t renderSizeH = canvas->height();
+        const int16_t renderSizeW = canvas->width();
+        int32_t lastPx = 0;
+        int32_t lastPy = 0;
+
+        uint32_t selectedFace = 0;
         // lunokApp calls
         const char *AppName() override { return "Engine3D Test"; };
         Engine3DApplication();
         ~Engine3DApplication();
         bool Tick();
-
+        bool IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point2D &pix2);
         bool IsClockwise(IN Face3D &face);
         // tools
+        float NormalFacing(IN Normal3D &normal);
         // convert 3D to 2D
         void GetProjection(IN Point3D &vertex, OUT Point2D &pixel);
         void GetProjection(IN Light3D &vertex, OUT Point2D &pixel);
         // obtain the point depth
         int16_t GetDeepForPoint(IN Point3D &point);
         // get zbuffer height for corresponding point
-        uint8_t GetZBufferDeepForPoint(IN Point3D &point);
+        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN int32_t &x, IN int32_t &y);
+        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point2D &pix);
+        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point3D &point);
 
         // render mesh parts
+        void RenderFace(INOUT TFT_eSprite *buffer, bool shaded,uint32_t overrideColor, bool borders,IN Point2D &one,IN Point2D &two,IN Point2D &tree);
         void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR,bool borders=false);
-        void RenderPoint(INOUT TFT_eSprite *buffer, IN Point3D & point);
-        void RenderVector(IN Vector3D &vec);
+        //void RenderPoint(INOUT TFT_eSprite *buffer, IN Point3D & point);
+        //void RenderVector(IN Vector3D &vec);
 
         // manipulate vertex
         void Translate(INOUT Point3D & point, IN Point3D & translate);
+        void Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles);
         void Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles);
-        void Rotate(INOUT Light3D & light, IN Angle3D & rotationAngles);
+        //void Rotate(INOUT Light3D & light, IN Angle3D & rotationAngles);
         void Scale(INOUT Point3D & point, IN Point3D & axes);
 };
+
+typedef struct {
+    bool task=false;
+    uint8_t core=0;
+    Engine3DApplication * instance;
+    bool run=true;
+} RenderCore;
 
 #endif

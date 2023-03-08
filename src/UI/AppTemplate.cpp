@@ -19,11 +19,13 @@
 
 //#include <Arduino.h>
 #include "AppTemplate.hpp"
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../lunokiot_config.hpp"
 
 #include "../app/LogView.hpp"   // for lLog functions
-#include "../static/img_backscreen_24.xbm" // system back screen image
+#include "../../static/img_backscreen_24.xbm" // system back screen image
 //#include "../static/img_back_32.xbm"              // old back button
 #include "../UI/widgets/ButtonImageXBMWidget.hpp" // back button
 

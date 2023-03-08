@@ -27,171 +27,60 @@
 #include <cmath>
 #include <esp_task_wdt.h>
 #include "../UI/base/Widget.hpp"
+#include "../static/plane3DSample.c"
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 
-SemaphoreHandle_t Engine3DRenderChunk0Done =  xSemaphoreCreateMutex();
-SemaphoreHandle_t Engine3DRenderChunk1Done =  xSemaphoreCreateMutex();
-
-void Engine3DApplication::Render() {
-    if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
-    uint16_t faceColor = buffer3d->color565(255,255,255);
-    const uint16_t shadowColor = buffer3d->color565(1,1,1);
-
-    Point2D pixL0;
-    GetProjection(Light0Point,pixL0);
-    Point2D pixL1;
-    GetProjection(Light1Point,pixL1);
-    Point2D pixL2;
-    GetProjection(Light2Point,pixL2);
-
-    for(int y=ViewClipping.yMin;y<ViewClipping.yMax;y++) {
-        for(int x=ViewClipping.xMin;x<ViewClipping.xMax;x++) {
-            // discard if nothing to draw
-            bool mustDraw = alphaChannel->readPixel(x,y);
-            if ( false == mustDraw ) { continue; }
-
-            // get deep
-            uint16_t colorzdeep = zbuffer->readPixel(x,y);
-            double r = ((colorzdeep >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-            double g = ((colorzdeep >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-            double b = (colorzdeep & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-            uint8_t zdeep = 255*((r+g+b)/3.0);
-
-            // use deep to darken color
-            uint16_t pixelColor=buffer3d->alphaBlend(zdeep,faceColor,shadowColor);
-        
-            // check lights
-            bool light0Hit = ActiveRect::InRadius(x-centerX,y-centerY,pixL0.x,pixL0.y,Light0Point.radius);
-            if ( light0Hit ) {
-                // under the influence of light!!!
-                
-                // obtain vector from center
-                //int16_t tdvX = x-(centerX+pixL0.x+Light0Point.radius);
-                //int16_t tdvY = y-(centerY+pixL0.y+Light0Point.radius);
-                // obtain distance between two points (radial active area)
-                //int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-
-                // calculate the influence of light
-                //uint8_t alpha = 128*(dist/float(Light0Point.radius));
-                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light0Point.color); 
-                pixelColor=Light0Point.color;
-            }
-            bool light1Hit = ActiveRect::InRadius(pixL1.x,pixL1.y,x,y,Light1Point.radius);
-            if ( light1Hit ) {
-                // under the influence of light!!!
-
-                // obtain vector from center
-                //int16_t tdvX = x-(pixL1.x+Light1Point.radius);
-                //int16_t tdvY = y-(pixL1.y+Light1Point.radius);
-                // obtain distance between two points (radial active area)
-                //int16_t dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-
-                // calculate the influence of light
-                //uint8_t alpha = 128*(dist/float(Light1Point.radius));
-                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light1Point.color);
-                pixelColor=Light1Point.color;
-
-            }
-            //GetProjection(Light2Point,pixL2);
-            bool light2Hit = ActiveRect::InRadius(pixL2.x,pixL2.y,x,y,Light2Point.radius);
-            if ( light2Hit ) {
-                // under the influence of light!!!
-
-                // obtain vector from center
-                ///SWAAAAAAP!!!!!!! <==========================
-                //int16_t tdvX = x-(pixL2.x+Light2Point.radius);
-                //int16_t tdvY = y-(pixL2.y+Light2Point.radius);
-                // obtain distance between two points (radial active area)
-                //float dist = sqrt(pow(tdvX, 2) + pow(tdvY, 2) * 1.0);
-                // calculate the influence of light
-                //uint8_t alpha = 128*(dist/float(Light2Point.radius));
-                //pixelColor=buffer3d->alphaBlend(alpha,pixelColor,Light2Point.color);
-                pixelColor=Light2Point.color;
-            }
-
-            buffer3d->drawPixel(x,y,pixelColor);
-        }
-    }
-    //if ( ActiveRect::InRect(pixL0.x,pixL0.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-    buffer3d->drawCircle(centerX+pixL0.x,centerY+pixL0.y,Light0Point.radius*0.6,Light0Point.color);
-    buffer3d->drawCircle(centerX+pixL0.x,centerY+pixL0.y,5,Light0Point.color);
-    //}
-    //if ( ActiveRect::InRect(pixL1.x,pixL1.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-    buffer3d->drawCircle(centerX+pixL1.x,centerY+pixL1.y,Light1Point.radius*0.6,Light1Point.color);
-    buffer3d->drawCircle(centerX+pixL1.x,centerY+pixL1.y,5,Light1Point.color);
-    //}
-    //if ( ActiveRect::InRect(pixL2.x,pixL2.y,ViewClipping.xMin,ViewClipping.yMin, ViewClipping.xMax,ViewClipping.xMax) ) {
-    buffer3d->drawCircle(centerX+pixL2.x,centerY+pixL2.y,Light2Point.radius*0.6,Light2Point.color);
-    buffer3d->drawCircle(centerX+pixL2.x,centerY+pixL2.y,5,Light2Point.color);
-    //}
-    /*
-    // draw wire over draw
-    const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
-    Point3D scaleFactor;
-    scaleFactor.x=-3.0;
-    scaleFactor.y=-3.0;
-    scaleFactor.z=-3.0;
-    for(int i=0;i<myFacesNumber;i++) {
-        esp_task_wdt_reset();
-        // get the 3 involved vertex
-
-        Point3D * p0 = myFaces[i].vertexData[0];
-        uint8_t zbuffer=GetZBufferDeepForPoint(*p0);
-        int16_t deep0 = GetDeepForPoint(*p0);
-        int32_t alpha=((deep0+abs(MeshDimensions.Min))*MaxDeep)/255;
-        if ( zbuffer > alpha ) { continue; }
-
-        Point3D * p1 = myFaces[i].vertexData[1];
-        zbuffer=GetZBufferDeepForPoint(*p1);
-        int16_t deep1 = GetDeepForPoint(*p1);
-        alpha=((deep1+abs(MeshDimensions.Min))*MaxDeep)/255;
-        if ( zbuffer > alpha ) { continue; }
-
-        Point3D * p2 = myFaces[i].vertexData[2];
-        zbuffer=GetZBufferDeepForPoint(*p2);
-        int16_t deep2 = GetDeepForPoint(*p2);
-        alpha=((deep2+abs(MeshDimensions.Min))*MaxDeep)/255;
-        if ( zbuffer > alpha ) { continue; }
-        // get their 2d coordinates
-        Point2D pix0;
-        GetProjection(*p0,pix0);
-        Point2D pix1;
-        GetProjection(*p1,pix1);
-        Point2D pix2;
-        GetProjection(*p2,pix2);
-
-        buffer3d->drawTriangle(centerX+pix0.x,centerY+pix0.y,
-                            centerX+pix1.x,centerY+pix1.y,
-                        centerX+pix2.x,centerY+pix2.y,TFT_WHITE);
-    }
-    */
-   xSemaphoreGive( Engine3DRenderChunk0Done );
-}
+//volatile bool RenderDataInUse=false;
+SemaphoreHandle_t RenderDataSemaphore =  xSemaphoreCreateMutex();
+TaskHandle_t RenderTaskCore0 = NULL;
+TaskHandle_t RenderTaskCore1 = NULL;
+TFT_eSprite * RenderTask0Result = nullptr;
+TFT_eSprite * RenderTask1Result = nullptr;
+void RenderTask(void *data);
 
 int16_t Engine3DApplication::GetDeepForPoint(IN Point3D &point) {
-    int16_t deep = (point.x+point.z)/2;
+    //int16_t deep=3*point.x-3*point.y+3*point.z;
+    int16_t deep=2*point.x-2*point.y+2*point.z; // isometric deep :D
+    //int16_t deep = (point.x+point.z)/2;
     return deep;
 }
 
-uint8_t Engine3DApplication::GetZBufferDeepForPoint(IN Point3D &point) {
+
+uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point3D &point) {
     Point2D pix;
     GetProjection(point,pix);
-    uint16_t colorzdeep = zbuffer->readPixel(pix.x,pix.y);
-    double r = ((colorzdeep >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-    double g = ((colorzdeep >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-    double b = (colorzdeep & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+    return GetZBufferDeepForPoint(zbuffer,pix);
+}
+uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point2D &pix) {
+    return GetZBufferDeepForPoint(zbuffer,pix.x,pix.y);
+}
+
+uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer, IN int32_t &x, IN int32_t &y) {
+    uint16_t colorzDeep = zbuffer->readPixel(x,y);
+    double r = ((colorzDeep >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+    double g = ((colorzDeep >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+    double b = (colorzDeep & 0x1F) / 31.0;         // blue  0.0 .. 1.0
     uint8_t zdeep = 255*((r+g+b)/3.0);
     return zdeep;
-
-    /*
-    const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
-    Point2D pix;
-    GetProjection(point,pix);
-    uint16_t pixDeep = zbuffer->readPixel(pix.x,pix.y);
-    int32_t deep=(255*pixDeep)/MaxDeep;
-    return deep;
-    */
 }
 
+float Engine3DApplication::NormalFacing(IN Normal3D &normal) {
+    /*
+    float deep=nx[contn]-ny[contn]+nz[contn];  
+    if(deep<0){ saltar=true; }
+    */
+    float deep=normal.vertexData[0]-normal.vertexData[1]+normal.vertexData[2];  
+    //if(deep<0){ return true; }
+    return deep;
+} 
+bool Engine3DApplication::IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point2D &pix2) {
+    // backface-culling for dickheads like me! :D
+    int val = (pix1.y - pix0.y) * (pix2.x - pix1.x)
+              - (pix1.x - pix0.x) * (pix2.y - pix1.y);
+    if (val == 0) { return false; } // collinear
+    return (val > 0) ? false : true; // clock or counterclock wise
+}
 bool Engine3DApplication::IsClockwise(IN Face3D &face) {
     // quick and dirty x'D
     Point3D * p0 = face.vertexData[0];
@@ -203,175 +92,461 @@ bool Engine3DApplication::IsClockwise(IN Face3D &face) {
     GetProjection(*p0,pix0);
     GetProjection(*p1,pix1);
     GetProjection(*p2,pix2);
-    int val = (pix1.y - pix0.y) * (pix2.x - pix1.x)
-              - (pix1.x - pix0.x) * (pix2.y - pix1.y);
-    // pollazo al z-culling :D 
-    if (val == 0) { return false; } // collinear
-    return (val > 0) ? false : true; // clock or counterclock wise
+    return IsClockwise(pix0,pix1,pix2);
 }
 
-void Engine3DApplication::DirectRender() {
-    if( xSemaphoreTake( Engine3DRenderChunk0Done, portMAX_DELAY) != pdTRUE ) { return; }
+
+void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * buffer3d) {
+    // painter algorythm
     const int32_t MaxDeep= MeshDimensions.Max; //+abs(MeshDimensions.Min);
     int32_t currentDepth=MeshDimensions.Min;
+    size_t orderdFaces=0;
     while ( currentDepth < MaxDeep ) {
         for(int i=0;i<myFacesNumber;i++) {
-            esp_task_wdt_reset();
-            if ( false == IsClockwise(myFaces[i]) ) { continue; }
-            // get the 3 involved vertex
-            Point3D * p0 = myFaces[i].vertexData[0];
-            Point3D * p1 = myFaces[i].vertexData[1];
-            Point3D * p2 = myFaces[i].vertexData[2];
+            Face3D & face = myFaces[i]; 
+            Point3D * p0 = face.vertexData[0];
+            Point3D * p1 = face.vertexData[1];
+            Point3D * p2 = face.vertexData[2];
+
+            // get the 3 involved vertex deep to get planar deepth
             int16_t deep0 = GetDeepForPoint(*p0);
             int16_t deep1 = GetDeepForPoint(*p1);
             int16_t deep2 = GetDeepForPoint(*p2);
             int32_t medianDeep = (deep0+deep1+deep2)/3;
-            if ( currentDepth != medianDeep ) { continue; }
-            int16_t alpha=(255.0*(float(medianDeep+abs(MeshDimensions.Min))/float(MaxDeep+abs(MeshDimensions.Min))));
-            RenderFace(buffer3d,myFaces[i],false,buffer3d->color565(alpha,alpha,alpha),true);
-        }
-        currentDepth++;
-    }
-    xSemaphoreGive( Engine3DRenderChunk0Done );
-}
+            if ( currentDepth != medianDeep ) { continue; } // is face in this deep? (painter algorythm, back to forth)
 
-void Engine3DApplication::BuildZBuffer() {
-    const int16_t MaxDeep= MeshDimensions.Max+abs(MeshDimensions.Min);
-    // iterate all faces to determine their deep
-    int16_t currentDepth=0;
-    while ( currentDepth < 255 ) {
-        for(int i=0;i<myFacesNumber;i++) {
-            esp_task_wdt_reset();
-            // get the 3 involved vertex
-            Point3D * p0 = myFaces[i].vertexData[0];
-            Point3D * p1 = myFaces[i].vertexData[1];
-            Point3D * p2 = myFaces[i].vertexData[2];
-            int16_t deep0 = GetDeepForPoint(*p0);
-            int16_t deep1 = GetDeepForPoint(*p1);
-            int16_t deep2 = GetDeepForPoint(*p2);
-            int32_t medianDeep = (deep0+deep1+deep2)/3;
-            int32_t alpha=((medianDeep+abs(MeshDimensions.Min))*MaxDeep)/255;
-            if ( alpha < 0 ) { alpha = 0; }
-            else if ( alpha > 255 ) { alpha = 255; }
-            /*
-            if (( alpha < 0 )||( alpha > 255 )) {
-                lLog("WARNING! D0: %d D1: %d D2: %d med: %d res: %d\n", deep0, deep1,deep2,medianDeep,alpha);
-                continue;
-            }*/
-            // only this line
-            if ( currentDepth == alpha ) {
-                //lLog("CUR: %d ALP: %d\n",currentDepth,alpha);
-                RenderFace(zbuffer,myFaces[i],false,zbuffer->color565(alpha,alpha,alpha));
-                //RenderFace(zbuffer,myFaces[i],false,alpha);
-                //RenderFace(buffer3d,myFaces[i],false,TFT_WHITE);
-                RenderFace(alphaChannel,myFaces[i],false,1);
-                //RenderPoint(zbuffer,*p0);
-                //RenderPoint(zbuffer,*p1);
-                //RenderPoint(zbuffer,*p2);
+            // backface culling
+            Point2D pix0;
+            Point2D pix1;
+            Point2D pix2;
+            GetProjection(*p0,pix0);
+            GetProjection(*p1,pix1);
+            GetProjection(*p2,pix2);
+            float distNormal = NormalFacing(myNormals[i]);
+            if ( distNormal<0 ) { continue; }
+            //if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
 
+            uint32_t tp0x = centerX+pix0.x;
+            uint32_t tp0y = centerY+pix0.y;
+            uint32_t tp1x = centerX+pix1.x;
+            uint32_t tp1y = centerY+pix1.y;
+            uint32_t tp2x = centerX+pix2.x;
+            uint32_t tp2y = centerY+pix2.y;
+
+            int16_t alpha=(255*(float(medianDeep+abs(MeshDimensions.Min))/float(MaxDeep+abs(MeshDimensions.Min))));
+            //lLog("MD: %d ", medianDeep);
+            // draw if not black
+            if ( alpha > 0 ) {
+                const uint16_t zcolor = zbuffer->color565(alpha,alpha,alpha);
+                // fill the cache
+                facesToRender[orderdFaces].normalFacing = distNormal;
+                facesToRender[orderdFaces].faceOffset = i;
+                facesToRender[orderdFaces].p0x=tp0x;
+                facesToRender[orderdFaces].p0y=tp0y;
+                facesToRender[orderdFaces].p1x=tp1x;
+                facesToRender[orderdFaces].p1y=tp1y;
+                facesToRender[orderdFaces].p2x=tp2x;
+                facesToRender[orderdFaces].p2y=tp2y;
+                facesToRender[orderdFaces].colorDeep=zcolor;
+                facesToRender[orderdFaces].alpha=alpha;
+                orderdFaces++;
             }
         }
         currentDepth++;
     }
-    //lLog("MESH HEIGHT: MIN: %d MAX: %d\n", MeshDimensions.Min,MeshDimensions.Max);
+    // here the faces are ordered
+
+    // final rendering
+    //currentDepth=MeshDimensions.Min;
+    size_t renderedFaces=0;
+    for(int i=0;i<orderdFaces;i++) {
+        int32_t tp0x = facesToRender[i].p0x;
+        int32_t tp0y = facesToRender[i].p0y;
+        int32_t tp1x = facesToRender[i].p1x;
+        int32_t tp1y = facesToRender[i].p1y;
+        int32_t tp2x = facesToRender[i].p2x;
+        int32_t tp2y = facesToRender[i].p2y;
+
+        //@FACE
+        // fill the alpha channel
+        alphaChannel->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,1);
+
+        // fill the zbuffer
+        const uint16_t zcolor = facesToRender[i].colorDeep;
+        //zbuffer->color565(facesToRender[i].alpha,facesToRender[i].alpha,facesToRender[i].alpha);
+        zbuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,zcolor);
+
+        // fill the normals
+        //Normal3D & normal = myNormals[facesToRender[i].faceOffset];
+        float dist = facesToRender[i].normalFacing; // NormalFacing(normal); //fabs(NormalFacing(normal));
+        uint16_t nColor = TFT_WHITE;
+        if ( dist>0 ) {
+            //lLog("D: %f ",dist);
+            uint8_t baseCol=(128*dist);
+            nColor = normalBuffer->color565(baseCol,baseCol,baseCol);
+        }
+        normalBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,nColor);
+
+        // fill the face
+        buffer3d->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,myFaces[facesToRender[i].faceOffset].color);
+        //buffer3d->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_RED);
+
+        renderedFaces++;
+    }
+//    lLog("Faces: %u Rendered: %u\n", myFacesNumber,renderedFaces);
 }
+
 extern bool UILongTapOverride; // don't allow long tap for task switcher
 bool Engine3DApplication::Tick() {
     UILongTapOverride=true; // remember every time
     TemplateApplication::btnBack->Interact(touched,touchX,touchY); // backbutton on bottom-right
-    /*
-    if ( millis() > nextRefreshRotation ) {
-        LampRotation.x=random(-2.0,2.0);
-        LampRotation.y=random(-2.0,2.0);
-        LampRotation.z=random(-2.0,2.0);
-        nextRefreshRotation = millis()+3000;
-    }*/
-    /*
-    //Angle3D rot;
-    rot.x =degX-lastDegX;
-    rot.y =degY-lastDegY;
-    rot.z =degZ-lastDegZ;
-    lastDegX = degX;
-    lastDegY = degY;
-    lastDegZ = degZ;
-    if ( ( 0 == rot.x ) && ( 0 == rot.y ) && ( 0 == rot.y ) ) { return false; }
-    */
 
-    // clean last 3D buffer
-    CleanBuffers();
-
-    // clear the mesh size
-    MeshDimensions.Max=0;
-    MeshDimensions.Min=1;
-    // clear the clip dimension
-    ViewClipping.xMin = canvas->width();
-    ViewClipping.yMin = canvas->height();
-    ViewClipping.xMax = 0;
-    ViewClipping.yMax = 0;
-
-    // rotate animation!
-    for(int i=0;i<myPointsNumber;i++) {
-        Rotate(myPoints[i], rot);
-        Point2D pix;
-        GetProjection(myPoints[i],pix);
-        UpdateClipWith(ViewClipping,pix);
-        int32_t deep = GetDeepForPoint(myPoints[i]);
-        UpdateRange(MeshDimensions,deep);
-        esp_task_wdt_reset();
-    }
-    //Rotate(Light0Point, LampRotation);
-    //Rotate(Light1Point, LampRotation);
-    //Rotate(Light2Point, LampRotation);
-
-    // get the pixel depth
-    //BuildZBuffer();
-    // begin the rendering!!
-    //Render();
-    DirectRender();
-    
-    // draw faces
-    //for(int i=0;i<myFacesNumber;i++) { RenderFace(buffer3d,myFaces[i],false,TFT_WHITE); esp_task_wdt_reset(); }
-    //,false,TFT_PINK); esp_task_wdt_reset(); }
-
-    // draw vectors (unused!)
-    //for(int i=0;i<myVectorsNumber;i++) { RenderVector(myVectors[i]); }
-
-    // draw vertex
-    //for(int i=0;i<myPointsNumber;i++) { RenderPoint(myPoints[i]); }
-
-
-    // use clip to know the need to render part
-    TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
-    if ( nullptr != rectBuffer3d ) {
-        rectBuffer3d->setColorDepth(16);
-        const uint8_t border=2;
-        if ( NULL != rectBuffer3d->createSprite(ViewClipping.xMax-ViewClipping.xMin+(border*2),
-                                                ViewClipping.yMax-ViewClipping.yMin+(border*2))) {
-            uint16_t offX=(centerX+ViewClipping.xMin)-border;
-            uint16_t offY=(centerY+ViewClipping.yMin)-border;
-            for(int y=0;y<rectBuffer3d->height();y++) {
-                for(int x=0;x<rectBuffer3d->width();x++) {
-                    uint16_t color = buffer3d->readPixel(offX+x,offY+y);
-                    //uint16_t deep = zbuffer->readPixel(ViewClipping.xMin+x,ViewClipping.yMin+y);
-                    rectBuffer3d->drawPixel(x,y,color);
-                }
-                esp_task_wdt_reset();
-            }
-            // push to screen
-            rectBuffer3d->pushSprite(offX,offY);
-            rectBuffer3d->deleteSprite();
-            /*
-            lLog("CLIP: X: %d Y: %d X2: %d Y2: %d RANGE %d/%d\n",ViewClipping.xMin,
-                                                                ViewClipping.yMin,
-                                                                ViewClipping.xMax,
-                                                                ViewClipping.yMax,
-                                                                MeshDimensions.Min,
-                                                                MeshDimensions.Max);
-            */
+    if ( 0 != lastCoreUsed ) {
+        if ( nullptr != RenderTask0Result ) {
+            TFT_eSprite * current = RenderTask0Result;
+            RenderTask0Result = nullptr;
+            lastPx = (renderSizeW-current->width())/2;
+            lastPy = (renderSizeH-current->height())/2;
+            current->pushSprite(lastPx,lastPy);
+            current->deleteSprite();
+            delete current;
+            lastCoreUsed=0;
+            return false;
         }
-        delete rectBuffer3d;
+    }
+    if ( 1 != lastCoreUsed ) {
+        if ( nullptr != RenderTask1Result ) {
+            TFT_eSprite * current = RenderTask1Result;
+            RenderTask1Result = nullptr;
+            const int32_t px = (renderSizeW-current->width())/2;
+            const int32_t py = (renderSizeH-current->height())/2;
+            current->pushSprite(px,py);
+            current->deleteSprite();
+            delete current;
+            lastCoreUsed=1;
+            return false;
+        }
     }
     return false;
+}
+
+volatile uint8_t showStats=0;
+void RenderTask(void *data) {
+    RenderCore * where=(RenderCore *)data;
+    Engine3DApplication * app = where->instance;
+    TFT_eSprite *alphaChannel=nullptr;
+    TFT_eSprite *zbuffer=nullptr;
+    TFT_eSprite *normalsBuffer=nullptr;
+    TFT_eSprite *buffer3d=nullptr;
+    Range MeshDimensions;
+    Clipping2D ViewClipping;    // used to know the updated area on the current rendered frame
+    // default first clip dimension
+    ViewClipping.xMin = 0;
+    ViewClipping.yMin = 0;
+    ViewClipping.xMax = app->canvas->width();
+    ViewClipping.yMax = app->canvas->height();
+    const uint8_t border4=app->border*4;
+    const uint8_t border2=app->border*2;
+    while(where->run) {
+        //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        //xTaskDelayUntil( &nextCheck, (5 / portTICK_PERIOD_MS) ); // wait a ittle bit
+
+        int64_t bTask = esp_timer_get_time();
+        esp_task_wdt_reset();
+
+        int64_t bClean;
+        int64_t eClean;
+        int64_t bAnimation;
+        int64_t eAnimation;
+        int64_t bRender;
+        int64_t eRender;
+        int64_t bCompsite;
+        int64_t eCompsite;
+        int64_t bWait;
+        int64_t eWait;
+    //    int64_t bPush;
+    //    int64_t ePush;
+        if ( false == where->run ) { break; }
+        bClean = esp_timer_get_time();
+
+        const int16_t clipWidth  = (ViewClipping.xMax-ViewClipping.xMin)+border4;
+        const int16_t clipHeight = (ViewClipping.yMax-ViewClipping.yMin)+border4;
+        const int32_t px = app->lastPx-border2;
+        const int32_t py = app->lastPy-border2;
+
+        if ( nullptr == alphaChannel ) {
+            alphaChannel = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
+            alphaChannel->setColorDepth(1);
+            alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
+        } else {
+            //alphaChannel->fillSprite(TFT_BLACK);
+            alphaChannel->fillRect(px,py,clipWidth,clipHeight,TFT_BLACK);
+        }
+
+        if ( nullptr == zbuffer ) {
+            zbuffer = new TFT_eSprite(ttgo->tft);  // the deep of pixels
+            zbuffer->setColorDepth(16);
+            zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
+        } else {
+            //zbuffer->fillSprite(TFT_BLACK);
+        }
+
+        if ( nullptr == normalsBuffer ) {
+            normalsBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+            normalsBuffer->setColorDepth(16);
+            normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+        } else {
+            //normalsBuffer->fillSprite(TFT_BLACK);
+        }
+
+        if ( nullptr == buffer3d ) {
+            buffer3d = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+            buffer3d->setColorDepth(16);
+            buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
+        } else {
+            //buffer3d->fillSprite(TFT_BLACK);
+            buffer3d->fillRect(px,py,clipWidth,clipHeight,TFT_BLACK);
+        }
+        // clear the mesh size
+        MeshDimensions.Max=0;
+        MeshDimensions.Min=1;
+        // clear the clip dimension
+        ViewClipping.xMin = app->canvas->width();
+        ViewClipping.yMin = app->canvas->height();
+        ViewClipping.xMax = 0;
+        ViewClipping.yMax = 0;
+        eClean = esp_timer_get_time();
+
+        /*
+        int64_t beginWait= esp_timer_get_time()+1000000; // 1 second wait
+        bool timeout=false;
+        while(RenderDataInUse) {
+            if ( esp_timer_get_time() > beginWait ) {
+                timeout=true;
+                break;
+            }
+            //esp_task_wdt_reset();
+            TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            xTaskDelayUntil( &nextCheck, (5 / portTICK_PERIOD_MS) ); // wait a ittle bit            
+        }
+        if ( timeout ) {
+
+        }
+        RenderDataInUse=true;
+        */
+        int16_t bx=0;
+        int16_t by=0;
+        int16_t fx=0;
+        int16_t fy=0;
+        bAnimation = esp_timer_get_time();
+        
+        if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
+            // cannot get lock! discard this iteration
+            if ( nullptr != alphaChannel ) {
+                alphaChannel->deleteSprite();
+                //alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
+                delete alphaChannel;
+                /*
+                const int32_t px = (app->renderSizeW-alphaChannel->width())/2;
+                const int32_t py = (app->renderSizeH-alphaChannel->height())/2;
+                const int32_t pw = (app->clipWidth+(app->border*2));
+                const int32_t ph = (app->clipHeight+(app->border*2));
+                alphaChannel->fillRect(px,py,pw,ph,0);
+                */
+            }
+            if ( nullptr != zbuffer ) {
+                zbuffer->deleteSprite();
+                //zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
+                delete zbuffer;
+            }
+            if ( nullptr != buffer3d ) {
+                buffer3d->deleteSprite();
+                //buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
+                delete buffer3d;
+            }            
+            if ( nullptr != normalsBuffer ) {
+                normalsBuffer->deleteSprite();
+                //normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+                delete normalsBuffer;
+            }
+            lLog("Cpu: %u render timeout, retry\n",where->core);
+            continue; 
+        }
+
+        // rotate vertex!
+        for(int i=0;i<app->myPointsNumber;i++) {
+            app->Rotate(app->myPoints[i], app->rot);
+            Point2D pix;
+            app->GetProjection(app->myPoints[i],pix);
+            app->UpdateClipWith(ViewClipping,pix);
+            int32_t deep = app->GetDeepForPoint(app->myPoints[i]);
+            app->UpdateRange(MeshDimensions,deep);
+            //esp_task_wdt_reset();
+        }
+        // rotate normals
+        for(int i=0;i<app->myNormalsNumber;i++) {
+            app->Rotate(app->myNormals[i],app->rot);
+        }
+        eAnimation = esp_timer_get_time();
+
+        // render the layers
+        bRender = esp_timer_get_time();
+        app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,buffer3d);
+        eRender = esp_timer_get_time();
+        //DEBUG LAYERS
+        //buffer3d->pushSprite(0,0);
+        //zbuffer->pushSprite(0,0);
+        //alphaChannel->pushSprite(0,0);
+        //normalBuffer->pushSprite(alphaChannel->width(),buffer3d->height());
+        //return false;
+
+
+        // defined clip on screen
+        bx = app->centerX+ViewClipping.xMin; 
+        by = app->centerY+ViewClipping.yMin; 
+        fx = app->centerX+ViewClipping.xMax; 
+        fy = app->centerY+ViewClipping.yMax; 
+        //RenderDataInUse=false;
+        xSemaphoreGive( RenderDataSemaphore );
+
+        bCompsite = esp_timer_get_time();
+
+        // work only with the relevant data
+        TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
+        if ( nullptr != rectBuffer3d ) {
+            rectBuffer3d->setColorDepth(16);
+            const int16_t clipWidth =  ViewClipping.xMax-ViewClipping.xMin;
+            const int16_t clipHeight = ViewClipping.yMax-ViewClipping.yMin;
+            // composite the image    
+            if ( NULL != rectBuffer3d->createSprite((clipWidth+(app->border*2)),(clipHeight+(app->border*2)))) {
+                for(int y=by;y<fy;y++) {
+                    for(int x=bx;x<fx;x++) {
+                        //@COMPOSITION
+                        bool alpha = alphaChannel->readPixel(x,y);
+                        if ( false == alpha ) { continue; } // don't work out of mesh
+                        
+                        uint16_t plainColor = buffer3d->readPixel(x,y);
+                        uint16_t colorZ = zbuffer->readPixel(x,y); // deep
+                        uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
+
+                        uint16_t shadowColor = buffer3d->alphaBlend(128,normalColor,colorZ);
+                        uint16_t finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
+
+                        const int32_t px = (x-bx)+app->border;
+                        const int32_t py = (y-by)+app->border;
+                        rectBuffer3d->drawPixel(px, py,finalColor);
+                    }
+                    //esp_task_wdt_reset();
+                }
+                eCompsite = esp_timer_get_time();
+            }
+            /*
+            if ( nullptr != alphaChannel ) {
+                alphaChannel->deleteSprite();
+                delete alphaChannel;
+                alphaChannel=nullptr;
+            }
+            if ( nullptr != zbuffer ) {
+                zbuffer->deleteSprite();
+                delete zbuffer;
+                zbuffer=nullptr;
+            }
+            if ( nullptr != buffer3d ) {
+                buffer3d->deleteSprite();
+                delete buffer3d;
+                buffer3d=nullptr;
+            }
+            if ( nullptr != normalsBuffer ) {
+                normalsBuffer->deleteSprite();
+                delete normalsBuffer;
+                normalsBuffer=nullptr;
+            }*/
+        }
+
+        showStats++;
+        if ( 0 == (showStats % 25 )) {
+
+            int64_t eTask = esp_timer_get_time();
+            int32_t cleanT = eClean-bClean;
+            int32_t animT = eAnimation-bAnimation;
+            int32_t renderT = eRender-bRender;
+            int32_t compT = eCompsite-bCompsite;
+            int32_t waitT = eWait-bWait;
+            //int32_t pushT = ePush-bPush;
+
+            int32_t taskT = eTask-bTask;
+            int32_t fps = 1000000/(eTask-bTask);
+            uint8_t pcClean = (float(cleanT)/float(taskT))*100;
+            uint8_t pcAnim = (float(animT)/float(taskT))*100;
+            uint8_t pcRender = (float(renderT)/float(taskT))*100;
+            uint8_t pcComp = (float(compT)/float(taskT))*100;
+            //uint8_t pcPush = (float(pushT)/float(taskT))*100;
+            lLog("Core %u: Clean: %d (%u%%%%) Anim: %d (%u%%%%) Render: %d (%u%%%%) Composite: %d (%u%%%%) Totals: %d MS FPS: %d\n",
+                                where->core,
+                                cleanT,pcClean,
+                                animT,pcAnim,
+                                renderT,pcRender,
+                                compT,pcComp,
+                                taskT/1000,
+                                fps);
+            //FreeSpace();
+        }
+
+        if (where->task) {
+            if ( 0 == where->core) {
+                if (nullptr != RenderTask0Result) {
+                    // Dropped frame!!
+                    TFT_eSprite * oldframe = RenderTask0Result;
+                    RenderTask0Result = nullptr;
+                    oldframe->deleteSprite();
+                    delete oldframe;
+                    lLog("DROPPED FRAME on core0\n");
+                }
+                RenderTask0Result = rectBuffer3d;
+            } else if ( 1 == where->core) {
+                if (nullptr != RenderTask1Result) {
+                    // Dropped frame!!
+                    TFT_eSprite * oldframe = RenderTask1Result;
+                    RenderTask1Result = nullptr;
+                    oldframe->deleteSprite();
+                    delete oldframe;
+                    lLog("DROPPED FRAME on core1\n");
+                }
+                RenderTask1Result = rectBuffer3d;
+            }
+            continue;
+        } else {
+            RenderTask0Result = rectBuffer3d;
+            break;
+        }
+    }
+    // end the task!
+    bool isTask=where->task;
+    free(data);
+    if ( nullptr != alphaChannel ) {
+        alphaChannel->deleteSprite();
+        delete alphaChannel;
+        alphaChannel=nullptr;
+    }
+    if ( nullptr != zbuffer ) {
+        zbuffer->deleteSprite();
+        delete zbuffer;
+        zbuffer=nullptr;
+    }
+    if ( nullptr != buffer3d ) {
+        buffer3d->deleteSprite();
+        delete buffer3d;
+        buffer3d=nullptr;
+    }
+    if ( nullptr != normalsBuffer ) {
+        normalsBuffer->deleteSprite();
+        delete normalsBuffer;
+        normalsBuffer=nullptr;
+    }
+
+    if (isTask) {
+        vTaskDelete(NULL);
+    }
 }
 
 void Engine3DApplication::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point) {
@@ -390,134 +565,33 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
     range.Max=MAX(range.Max,value);
 }
 
-void Engine3DApplication::CleanBuffers() {
-    if ( nullptr != buffer3d ) {
-        // wipe only the necesary part
-        buffer3d->fillRect(centerX+ViewClipping.xMin,
-                           centerY+ViewClipping.yMin,
-                           (centerX+ViewClipping.xMax-ViewClipping.xMin),
-                           (centerY+ViewClipping.yMax-ViewClipping.yMin),TFT_BLACK); // cover old frame
 
-    }
-    // destroy zbuffer data
-    if ( nullptr != zbuffer ) {
-        zbuffer->fillRect(ViewClipping.xMin-5,
-                           ViewClipping.yMin-5,
-                           (ViewClipping.xMax-ViewClipping.xMin)+10,
-                           (ViewClipping.yMax-ViewClipping.yMin)+10,TFT_BLACK); // cover old frame
-    }
-    if ( nullptr != alphaChannel ) {
-        alphaChannel->fillRect(ViewClipping.xMin-5,
-                           ViewClipping.yMin-5,
-                           (ViewClipping.xMax-ViewClipping.xMin)+10,
-                           (ViewClipping.yMax-ViewClipping.yMin)+10,TFT_BLACK); // cover old frame
-    }
-    if ( nullptr != zbufferFaceOrder ) {
-        for (int i = 0; i < ZBufferFaceSize; i++) {
-            free(zbufferFaceOrder[i]);
-            zbufferFaceOrder[i]=nullptr;
-        }
-        free(zbufferFaceOrder);
-        zbufferFaceOrder=nullptr;
-    }
-}
 // demo app entrypoint
 Engine3DApplication::Engine3DApplication() {
-    // lets to initialize the image buffer (screen size) for draw with enough space
-    lAppLog("Allocating TFT_eSPI Sprite as 3D buffer...\n");
-    buffer3d = new TFT_eSprite(ttgo->tft);
-    if ( nullptr != buffer3d ) {
-        buffer3d->setColorDepth(16);
-        if ( NULL == buffer3d->createSprite(canvas->width(), canvas->height()) ) {
-            lAppLog("ERROR: unable to create buffer3d sprite! (app abort)\n");
-            delete buffer3d;
-            buffer3d=nullptr;
-            return;
-        }
-        buffer3d->fillSprite(TFT_BLACK);
-    }
-    lAppLog("Buffer 3D generated\n");
-/*
-    lAppLog("Allocating TFT_eSPI Sprite as ZBuffer...\n");
-    zbuffer = new TFT_eSprite(ttgo->tft);
-    if ( nullptr != zbuffer ) {
-        zbuffer->setColorDepth(16);
-        if ( NULL == zbuffer->createSprite(canvas->width(), canvas->height()) ) {
-            lAppLog("ERROR: unable to create ZBuffer sprite! (app abort)\n");
-            delete zbuffer;
-            zbuffer=nullptr;
-            return;
-        }
-        zbuffer->fillSprite(TFT_BLACK);
-    }
-    lAppLog("ZBuffer generated\n");
-
-
-    lAppLog("Allocating TFT_eSPI Sprite as Alpha channel...\n");
-    alphaChannel = new TFT_eSprite(ttgo->tft);
-    if ( nullptr != alphaChannel ) {
-        alphaChannel->setColorDepth(1);
-        if ( NULL == alphaChannel->createSprite(canvas->width(), canvas->height()) ) {
-            lAppLog("ERROR: unable to create Alpha channel sprite! (app abort)\n");
-            delete alphaChannel;
-            alphaChannel=nullptr;
-            return;
-        }
-        alphaChannel->fillSprite(0);
-    }
-    lAppLog("Alpha channel generated\n");
-*/
-    /*
-    lAppLog("Allocating TFT_eSPI Sprite as lights...\n");
-    light0 = new TFT_eSprite(ttgo->tft);
-    if ( nullptr != light0 ) {
-        light0->setColorDepth(1);
-        if ( NULL == light0->createSprite(canvas->width(), canvas->height()) ) {
-            lAppLog("ERROR: unable to create lights sprite! (app abort)\n");
-            delete light0;
-            light0=nullptr;
-            return;
-        }
-        light0->fillSprite(0);
-    }*/
-    Light0Point.x=90;
-    Light0Point.y=90;
-    Light0Point.z=90;
-    Light0Point.radius=120;
-    Light0Point.color=TFT_RED;
-
-    Light1Point.x=-90;
-    Light1Point.y=90;
-    Light1Point.z=90;
-    Light1Point.radius=120;
-    Light1Point.color=TFT_GREEN;
-
-    Light2Point.x=90;
-    Light2Point.y=-90;
-    Light2Point.z=90;
-    Light2Point.radius=120;
-    Light2Point.color=TFT_BLUE;
-
-    lAppLog("lights generated\n");
-
-
-
 
     // from generated meshdata blender python script
 //@MESH
-myPointsNumber = 81;
-myFacesNumber = 128;
-    myVectorsNumber=0;
-    rot.x=0.75; 
-    rot.y=1.5;
-    rot.z=3.0;
+myPointsNumber = 97;
+myFacesNumber = 190;
+myNormalsNumber = 190;
 
+    myVectorsNumber=0;
+    rot.x=0.0; 
+    rot.y=2.9;//1.5;
+    rot.z=0.0;
+    /*
+    rot.x=1.2;//0.75; 
+    rot.y=2.9;//1.5;
+    rot.z=4;//3.0;
+    */
     lAppLog("Trying to allocate: %u byte...\n",sizeof(Point3D)*myPointsNumber);
-    myPoints=(Point3D *)ps_calloc(myPointsNumber,sizeof(Point3D));
+//    myPoints=(Point3D *)ps_calloc(myPointsNumber,sizeof(Point3D));
+    myPoints=(Point3D *)calloc(myPointsNumber,sizeof(Point3D));
     if ( nullptr == myPoints ) {
         lAppLog("Unable to allocate vertex data\n");
         return;
     }
+    /*
     if ( myVectorsNumber > 0 ) {
         lAppLog("Trying to allocate: %u byte...\n",sizeof(Vector3D)*myVectorsNumber);
         myVectors=(Vector3D *)ps_calloc(myVectorsNumber,sizeof(Vector3D));
@@ -525,16 +599,31 @@ myFacesNumber = 128;
             lAppLog("Unable to allocate vector data\n");
             return;
         }
-    }
-    lAppLog("Trying to allocate: %u byte...\n",sizeof(unsigned int*)*myFacesNumber);
-    myFaces=(Face3D *)ps_calloc(myFacesNumber,sizeof(Face3D));
+    }*/
+    lAppLog("Trying to allocate: %u byte...\n",sizeof(Face3D)*myFacesNumber);
+    //myFaces=(Face3D *)ps_calloc(myFacesNumber,sizeof(Face3D));
+    myFaces=(Face3D *)calloc(myFacesNumber,sizeof(Face3D));
     if ( nullptr == myFaces ) {
         lAppLog("Unable to allocate faces data\n");
         return;
     }
 
+    lAppLog("Trying to allocate: %u byte...\n",sizeof(Normal3D)*myNormalsNumber);
+    //myNormals=(Normal3D *)ps_calloc(myNormalsNumber,sizeof(Normal3D));
+    myNormals=(Normal3D *)calloc(myNormalsNumber,sizeof(Normal3D));
+    if ( nullptr == myFaces ) {
+        lAppLog("Unable to allocate face normals data\n");
+        return;
+    }
+
+
     lAppLog("Loading mesh...\n");
     #include "../static/meshData.c"
+
+    //facesToRender=(OrderedFace3D*)ps_calloc(myFacesNumber,sizeof(OrderedFace3D));
+    facesToRender=(OrderedFace3D*)calloc(myFacesNumber,sizeof(OrderedFace3D));
+
+
 
     Point3D scaleVal;
     scaleVal.x=MeshSize;
@@ -545,65 +634,86 @@ myFacesNumber = 128;
     displace.y=0.0;
     displace.z=0.0;
     Angle3D rotation;
-    rotation.x = random(0.0,360.0);
-    rotation.y = random(0.0,360.0);
-    rotation.z = random(0.0,360.0);
+    rotation.x = 90; //random(0.0,360.0);
+    rotation.y = 90; //random(0.0,360.0);
+    rotation.z = 0; //random(0.0,360.0);
 
     lAppLog("Vertex re-process...\n");
     for(int i=0;i<myPointsNumber;i++) {
         Scale(myPoints[i],scaleVal); // do more big the blender output
         Translate(myPoints[i],displace);
         Rotate(myPoints[i],rotation);
-        myPoints[i].color=TFT_WHITE;
-        int16_t deep = GetDeepForPoint(myPoints[i]);
-        UpdateRange(MeshDimensions,deep);        
-        esp_task_wdt_reset();
+        //myPoints[i].color=TFT_RED;
+        //int16_t deep = GetDeepForPoint(myPoints[i]);
+        //UpdateRange(MeshDimensions,deep);
     }
+    /*
+    TFT_eSprite * imgVertex = new TFT_eSprite(ttgo->tft);
+    imgVertex->setColorDepth(16);
+    imgVertex->createSprite(plane3DSample.width,plane3DSample.height);
+    //imgVertex->setSwapBytes(true);
+    imgVertex->pushImage(0,0,plane3DSample.width,plane3DSample.height,(uint16_t *)plane3DSample.pixel_data);
+    */
     lAppLog("Face re-process...\n");
-    for(int i=0;i<myFacesNumber;i++) { 
-        myFaces[i].color=TFT_LIGHTGREY;
-        esp_task_wdt_reset();
+    int x=0;
+    int y=0;
+    for(int i=0;i<myFacesNumber;i++) {
+        Rotate(myNormals[i],rotation);
     }
-
-
-    LampRotation.x=2;
-    LampRotation.y=2;
-    LampRotation.z=2;
+    /*
+    imgVertex->deleteSprite();
+    delete imgVertex;
+    */
 
     // custom splash
     canvas->fillSprite(TFT_BLACK);
     TemplateApplication::btnBack->DrawTo(canvas);
     lAppLog("Mesh ready!\n");
+
+    //core0Worker =(void *)ps_malloc(sizeof(RenderCore));
+    core0Worker =(void *)malloc(sizeof(RenderCore));
+    RenderCore * tmpCore0=(RenderCore *)core0Worker;
+    tmpCore0->instance=this;
+    tmpCore0->task=true;
+    tmpCore0->run=true;
+    tmpCore0->core=0;
+    xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_QUERY_STACK_SIZE, tmpCore0, tskIDLE_PRIORITY+2,&RenderTaskCore0,0);
+
+
+    //core1Worker =(void *)ps_malloc(sizeof(RenderCore));
+    core1Worker =(void *)malloc(sizeof(RenderCore));
+    RenderCore * tmpCore1=(RenderCore *)core1Worker;
+    tmpCore1->instance=this;
+    tmpCore1->task=true;
+    tmpCore1->run=true;
+    tmpCore1->core=1;
+    xTaskCreatePinnedToCore(RenderTask, "rendr1", LUNOKIOT_QUERY_STACK_SIZE, tmpCore1, tskIDLE_PRIORITY+2,&RenderTaskCore1,1);
 }
 
 Engine3DApplication::~Engine3DApplication() {
+    if ( nullptr != myNormals ) { free(myNormals); }
     if ( nullptr != myFaces ) { free(myFaces); }
     if ( nullptr != myPoints ) { free(myPoints); }
     if ( nullptr != myVectors ) { free(myVectors); }
-    if ( nullptr != zbuffer ) {
-        zbuffer->deleteSprite();
-        delete zbuffer;
-    }
-    if ( nullptr != alphaChannel ) {
-        alphaChannel->deleteSprite();
-        delete alphaChannel;
-    }
-    /*
-    if ( nullptr != light0 ) {
-        light0->deleteSprite();
-        delete light0;
-    }*/
 
-    if ( nullptr != buffer3d ) {
-        buffer3d->deleteSprite();
-        delete buffer3d;
+    if ( nullptr != core0Worker ) {
+        ((RenderCore*)core0Worker)->run=false;
     }
-    if ( nullptr != zbufferFaceOrder ) {
-        for (int i = 0; i < ZBufferFaceSize; i++) {
-            free(zbufferFaceOrder[i]);
-        }
-        free(zbufferFaceOrder);
+    if ( nullptr != core1Worker ) {
+        ((RenderCore*)core1Worker)->run=false;
     }
+
+    if ( nullptr != RenderTask0Result ) {
+        RenderTask0Result->deleteSprite();
+        delete RenderTask0Result;
+        RenderTask0Result=nullptr;
+    }
+    if ( nullptr != RenderTask1Result ) {
+        RenderTask1Result->deleteSprite();
+        delete RenderTask1Result;
+        RenderTask1Result=nullptr;
+    }
+    if ( nullptr != facesToRender ) { free(facesToRender); }
 }
 
 void Engine3DApplication::GetProjection(IN Light3D &vertex, OUT Point2D &pixel ) {
@@ -623,6 +733,30 @@ void Engine3DApplication::GetProjection(IN Point3D &vertex, OUT Point2D &pixel )
 
 
 //https://followtutorials.com/2012/03/3d-transformation-translation-rotation-and-scaling-in-c-c.html
+void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, bool shaded,uint32_t overrideColor, bool borders,IN Point2D &one,IN Point2D &two,IN Point2D &tree) {
+    /*
+    if ( shaded ) {
+        // this code must dissapear from here, shadows must be get from zbuffer
+        int16_t deep0 = (p0->x+p0->z)/2;
+        int16_t deep1 = (p1->x+p1->z)/2;
+        int16_t deep2 = (p2->x+p2->z)/2;
+        int medianDeep = (deep0+deep1+deep2)/3;
+        uint8_t alpha=128+medianDeep;
+        color = ttgo->tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
+    } else {
+        */
+    uint32_t color=TFT_WHITE;
+    if ( overrideColor != Drawable::MASK_COLOR) { color = overrideColor; }
+    //}
+    buffer->fillTriangle(centerX+one.x,centerY+one.y,
+                            centerX+two.x,centerY+two.y,
+                        centerX+tree.x,centerY+tree.y,color);
+    if ( borders ) {
+        buffer->drawTriangle(centerX+one.x,centerY+one.y,
+                                centerX+two.x,centerY+two.y,
+                            centerX+tree.x,centerY+tree.y,TFT_BLACK);
+    }
+}
 
 void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded,uint32_t overrideColor, bool borders) {
     if ( face.vertexNum != 3 ) { lLog("WARNING Mesh must be triangulated before use!\n"); return; }
@@ -637,38 +771,11 @@ void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face
     GetProjection(*p1,pix1);
     Point2D pix2;
     GetProjection(*p2,pix2);
-    /*
-    uint32_t maskColor=AvailColors[AvailColorsoffset];
-    AvailColorsoffset++;
-    if ( AvailColorsoffset > (sizeof(AvailColors)/sizeof(uint32_t)-1) ){
-        AvailColorsoffset=0;
-    }*/
     uint32_t color=face.color; // default face color (flat)
-    if ( shaded ) {
-        // this code must dissapear from here, shadows must be get from zbuffer
-        int16_t deep0 = (p0->x+p0->z)/2;
-        int16_t deep1 = (p1->x+p1->z)/2;
-        int16_t deep2 = (p2->x+p2->z)/2;
-        int medianDeep = (deep0+deep1+deep2)/3;
-        uint8_t alpha=128+medianDeep;
-        color = ttgo->tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
-    } else {
-        if ( overrideColor != Drawable::MASK_COLOR) { color = overrideColor; }
-    }
-    buffer->fillTriangle(centerX+pix0.x,centerY+pix0.y,
-                            centerX+pix1.x,centerY+pix1.y,
-                        centerX+pix2.x,centerY+pix2.y,color);
-    if ( borders ) {
-        buffer->drawTriangle(centerX+pix0.x,centerY+pix0.y,
-                                centerX+pix1.x,centerY+pix1.y,
-                            centerX+pix2.x,centerY+pix2.y,TFT_BLACK);
-    }
-    // update render clip
-    //UpdateClipWith(ViewClipping,centerX+p0->x,centerY+p0->y);
-    //UpdateClipWith(ViewClipping,centerX+p1->x,centerY+p1->y);
-    //UpdateClipWith(ViewClipping,centerX+p2->x,centerY+p2->y);
+    if ( overrideColor != Drawable::MASK_COLOR) { color = overrideColor; }
+    RenderFace(buffer,shaded,color,borders,pix0,pix1,pix2);
 }
-
+/*
 float temp = 0; 
 void Engine3DApplication::RenderPoint(INOUT TFT_eSprite *buffer,IN Point3D & point) {
     //if ( nullptr == point ) { return; }
@@ -707,13 +814,13 @@ void Engine3DApplication::RenderPoint(INOUT TFT_eSprite *buffer,IN Point3D & poi
     //lLog("Render Vertex: X: %f Y: %f Z: %f -> x: %d y: %d\n", x,y,z,x2d,y2d);
 
 }
-
+*/
 void Engine3DApplication::Translate(INOUT Point3D & point, IN Point3D & translate) { //, float tx, float ty, float tz){
     point.x += translate.x;
     point.y += translate.y;
     point.z += translate.z;
 }
-
+/*
 void Engine3DApplication::Rotate(INOUT Light3D & light, IN Angle3D & rotationAngles) {
     Point3D tmpPoint;
     tmpPoint.x=light.x;
@@ -723,11 +830,25 @@ void Engine3DApplication::Rotate(INOUT Light3D & light, IN Angle3D & rotationAng
     light.x=tmpPoint.x;
     light.y=tmpPoint.y;
     light.z=tmpPoint.z;
-}
+}*/
+void Engine3DApplication::Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles) {
+    float anglex = rotationAngles.x * M_PI / 180.0;
+    float angley = (rotationAngles.y * M_PI) / 180.0;
+    float anglez = rotationAngles.z * M_PI / 180.0;
 
+    float tempN = normal.vertexData[1];
+    normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
+    normal.vertexData[2] = tempN * sin(anglex) + normal.vertexData[2] * cos(anglex);
+    tempN = normal.vertexData[2];
+    normal.vertexData[2] = normal.vertexData[2] * cos(angley) - normal.vertexData[0] * sin(angley);
+    normal.vertexData[0] = tempN * sin(angley) + normal.vertexData[0] * cos(angley);
+    tempN = normal.vertexData[0];
+    normal.vertexData[0] = normal.vertexData[0] * cos(anglez) - normal.vertexData[1] * sin(anglez);
+    normal.vertexData[1] = tempN * sin(anglez) + normal.vertexData[1] *cos(anglez);
+}
 void Engine3DApplication::Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles) {
     float anglex = rotationAngles.x * M_PI / 180.0;
-    temp = point.y;
+    float temp = point.y;
     point.y = point.y * cos(anglex) - point.z * sin(anglex);
     point.z = temp * sin(anglex) + point.z * cos(anglex);
 
@@ -741,6 +862,26 @@ void Engine3DApplication::Rotate(INOUT Point3D & point, IN Angle3D & rotationAng
     point.x = point.x * cos(anglez) - point.y * sin(anglez);
     point.y = temp * sin(anglez) + point.y *cos(anglez);
 
+
+    /*
+    //https://stackoverflow.com/questions/2096474/given-a-surface-normal-find-rotation-for-3d-plane
+    int imin = 0;
+    for(int i=0; i<3; ++i) {
+        if(abs(normal.vertexData[i]) < abs(normal.vertexData[imin])) {
+            imin = i;
+        }
+    }
+
+    float v2[3] = {0,0,0};
+    float dt    = normal.vertexData[imin];
+
+    v2[imin] = 1;
+    for(int i=0;i<3;i++) {
+        v2[i] -= dt*normal.vertexData[i];
+    }
+    for(int i=0;i<3;i++) {
+        normal.vertexData[i]=v2[i];
+    }*/
 }
 
 void Engine3DApplication::Scale(INOUT Point3D & point, IN Point3D & axes) {
@@ -754,7 +895,7 @@ void Engine3DApplication::Scale(INOUT Point3D & point, IN Point3D & axes) {
     */
 } 
 
-
+/*
 void Engine3DApplication::RenderVector(IN Vector3D &vec) {
     float x0 = vec.from->x;
     float y0 = vec.from->y;
@@ -777,3 +918,4 @@ void Engine3DApplication::RenderVector(IN Vector3D &vec) {
     //UpdateClipWith(ViewClipping,centerX+x2d0,centerY+y2d0);
     //UpdateClipWith(ViewClipping,centerX+x2d1,centerY+y2d1);
 }
+*/

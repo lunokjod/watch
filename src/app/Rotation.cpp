@@ -20,9 +20,10 @@
 #include "Rotation.hpp"
 
 #include "../UI/UI.hpp"
-#include "../static/img_happy_48.xbm" // center smiley to see the orientation
+#include "../../static/img_happy_48.xbm" // center smiley to see the orientation
 #include <ArduinoNvs.h> // persistent values
 #include "../system/SystemEvents.hpp"
+
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 // better save only on exit to save flash writes

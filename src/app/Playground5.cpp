@@ -22,7 +22,7 @@
 #include "Playground5.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 #include "../UI/UI.hpp"
-#include "../static/img_sample_400.c"
+#include "../../static/img_sample_400.c"
 
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 

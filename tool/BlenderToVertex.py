@@ -28,9 +28,13 @@ if __name__ == '__main__':
     obj = bpy.data.objects["Sphere"]  # particular object by name
     #obj = bpy.context.scene.objects.active
     mesh = obj.data
+    #mesh.location #Object position rotation, scale
+    #mesh.rotation
+    #mesh.scale
     with open('/home/sharek/Documents/PlatformIO/Projects/LWatch2/static/meshData.c', 'w') as f:
         f.write("myPointsNumber = %d;\n" % len(mesh.vertices))
         f.write("myFacesNumber = %d;\n" % len(mesh.polygons))
+        f.write("myNormalsNumber = %d;\n" % len(mesh.polygons))
         #f.write("myVectorsNumber=%d;\n" % len(mesh.polygons))
         counter=0
         for vert in mesh.vertices:
@@ -41,9 +45,25 @@ if __name__ == '__main__':
         faceCount=0
         for face in mesh.polygons:
             f.write("myFaces[%d].vertexNum = %d;\n" % (faceCount,len(face.vertices)))
+            #face.material_index
+            slot = obj.material_slots[face.material_index]
+            mat = slot.material
+            if mat is not None:
+                rc=255*mat.diffuse_color[0]
+                gc=255*mat.diffuse_color[1]
+                bc=255*mat.diffuse_color[2]
+                f.write("myFaces[%d].color = ttgo->tft->color565(%d,%d,%d);\n" % (faceCount,rc,gc,bc))
+
+            #f.write("myFaces[%d].color = %d;\n" % face.color)
             vertCount=0
             for vert in face.vertices:
                 f.write("myFaces[%d].vertexData[%d] = " % (faceCount,vertCount))
                 f.write("&myPoints[%d];\n" % vert)
                 vertCount+=1
+            normalCount=0
+            for vert in face.normal:
+                f.write("myNormals[%d].vertexData[%d] = " % (faceCount,normalCount))
+                #obj.data.polygons[0].normal[0]
+                f.write("%f;\n" % vert)
+                normalCount+=1
             faceCount+=1

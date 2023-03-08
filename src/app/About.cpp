@@ -19,10 +19,11 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
 
 #include "Settings.hpp"
-#include "../static/img_back_32.xbm"
+#include "../../static/img_back_32.xbm"
 #include "../lunokiot_config.hpp"
 #include "About.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

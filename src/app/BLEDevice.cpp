@@ -77,7 +77,7 @@ BLEDeviceMonitorApplication::BLEDeviceMonitorApplication(uint16_t baseColor,char
             txPower = BTDeviceSelected->txPower;
             distance = BTDeviceSelected->distance;
         }
-        xSemaphoreGive( BLEKnowDevicesSemaphore );
+        xSemaphoreGive(BLEKnowDevicesSemaphore);
     }
     pairBtn = new ButtonTextWidget(60,TFT_HEIGHT-52,42,160,[](void* payload){
         lLog("@TODO PAIR WITH DEVICE\n");

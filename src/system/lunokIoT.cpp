@@ -31,6 +31,8 @@
 #include <ArduinoNvs.h>
 #include <WiFi.h>
 #include <cstdio>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
 //#include <LilyGoWatch.h>
 
 //#include <SPI.h>
@@ -56,6 +58,7 @@ extern SemaphoreHandle_t I2cMutex;
 TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
 //TFT_eSPI * tft = new TFT_eSPI();
+TFT_eSPI * tft = new TFT_eSPI();
 
 extern bool ntpSyncDone;
 extern const char *ntpServer;
@@ -100,10 +103,9 @@ LunokIoT::LunokIoT() {
     // report memory
     FreeSpace();
     
+    //ttgo->setTftExternal(*tft);
     // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
-
-    //ttgo->setTftExternal(*tft); // @TODO dream on!
     
     // storage init
     SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs

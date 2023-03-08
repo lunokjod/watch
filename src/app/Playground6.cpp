@@ -23,7 +23,6 @@
 #include "../UI/UI.hpp"
 #include <list>
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
-
 extern std::list<TFT_eSprite *>ScreenShots;
 
 PlaygroundApplication6::~PlaygroundApplication6() {

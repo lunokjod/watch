@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoNvs.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 #include <LilyGoWatch.h>
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
@@ -28,11 +29,11 @@
 
 #include "Shutdown.hpp"
 
-#include "../static/img_back_32.xbm"
-#include "../static/img_provisioning_48.xbm"
-#include "../static/img_trash_48.xbm"
-#include "../static/img_bluetooth_32.xbm"
-#include "../static/img_wifi_32.xbm"
+#include "../../static/img_back_32.xbm"
+#include "../../static/img_provisioning_48.xbm"
+#include "../../static/img_trash_48.xbm"
+#include "../../static/img_bluetooth_32.xbm"
+#include "../../static/img_wifi_32.xbm"
 
 #include "WiFiProv.h"
 #include "WiFi.h"

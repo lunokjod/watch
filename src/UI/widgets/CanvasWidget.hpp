@@ -21,6 +21,8 @@
 #define __LUNOKIOT__CANVAS__WIDGET___HEADER__
 //#include <Arduino.h>
 //#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../base/Widget.hpp"
 

@@ -17,6 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
+
 #include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -470,7 +471,6 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
         UINextTimeout = millis()+UITimeout;
         return;
     }
-    
     // if vbus get energy don't sleep
     if ( vbusPresent ) {
         UINextTimeout = millis()+UITimeout;
@@ -553,6 +553,7 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
  * UIStart begin the UI loop, to handle UI events
  */
 void UIStart() {
+
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
