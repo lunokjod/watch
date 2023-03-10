@@ -19,7 +19,6 @@
 
 #include <Arduino.h>
 
-extern TTGOClass *ttgo; // ttgo lib
 #include "LogView.hpp" // log capabilities
 
 #include "Lamp.hpp"

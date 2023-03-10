@@ -29,7 +29,6 @@
 #include "LogView.hpp"
 
 
-extern TTGOClass *ttgo; // ttgo lib
 
 BrightnessApplication::~BrightnessApplication() {
     uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);

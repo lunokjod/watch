@@ -27,7 +27,6 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include <ArduinoNvs.h>
 
-extern TTGOClass *ttgo;
 #include "../static/img_trash_32.xbm"
 extern bool UILongTapOverride;
 

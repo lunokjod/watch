@@ -146,7 +146,7 @@ void SplashFormatSPIFFSAnnounce() { // announce the SPIFFS format to user
 void SplashAnnounce() {
     bootLoop=true;
     
-    ttgo->setBrightness(0); // low brightness
+    bl->adjust(0); // low brightness
     tft->fillScreen(ThCol(boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
     tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));

@@ -71,7 +71,7 @@ AXP20X_Class power;
 bool pmu_irq = false;
 
 // TFT
-BackLight *bl;
+extern BackLight *bl;
 //TFT_eSprite img = TFT_eSprite(&tft);  // Create Sprite object "img" with pointer to "tft" object
 typedef FocalTech_Class CapacitiveTouch;
 CapacitiveTouch touch;

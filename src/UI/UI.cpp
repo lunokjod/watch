@@ -47,6 +47,7 @@
 
 extern SoftwareKeyboard *keyboardInstance;
 
+extern TFT_eSPI * tft;
 bool UIlongTap=false; // used to trigger only once the long tap event
 bool UILongTapOverride=false; // disable long tap to task switcher feature
 extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");

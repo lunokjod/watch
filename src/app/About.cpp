@@ -27,7 +27,6 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 
-extern TTGOClass *ttgo; // ttgo lib
 const unsigned long AboutBoxTextScrollDelay = 1000/12;
 const unsigned long AboutBoxTextScrollDelayScroll = 1000/24;
 //const unsigned long 
