@@ -22,8 +22,6 @@
 #include <TFT_eSPI.h>
 #include "../../app/LogView.hpp"
 
-extern TTGOClass *ttgo; // ttgo lib
-
 CanvasWidget::CanvasWidget(int16_t h, int16_t w,int8_t colorDepth) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
     RebuildCanvas(h,w,colorDepth);

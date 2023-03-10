@@ -16,6 +16,13 @@
 // You should have received a copy of the GNU General Public License along with 
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
+#include <Wire.h>
+#include <SPI.h>
+#include <axp20x.h>
+#include <tft_setup.h>
+#include <TFT_eSPI.h>
+#include <focaltech.h>
+#include "bl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +63,24 @@ extern SemaphoreHandle_t I2cMutex;
 // TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
 extern TFT_eSPI * tft = new TFT_eSPI();
+// AXP202
+const uint8_t pmu_sda = 21;
+const uint8_t pmu_scl = 22;
+const uint8_t pmu_irq_pin = 35;  // Button
+AXP20X_Class power;
+bool pmu_irq = false;
+
+// TFT
+BackLight *bl;
+//TFT_eSprite img = TFT_eSprite(&tft);  // Create Sprite object "img" with pointer to "tft" object
+typedef FocalTech_Class CapacitiveTouch;
+CapacitiveTouch touch;
+const uint8_t touch_sda = TOUCH_SDA;
+const uint8_t touch_scl = TOUCH_SCL;
+EventGroupHandle_t touch_event = nullptr;
+#define TOUCH_IRQ_BIT           (_BV(1))
+
+
 
 extern bool ntpSyncDone;
 extern const char *ntpServer;
