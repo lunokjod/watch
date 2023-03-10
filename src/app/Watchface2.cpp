@@ -21,7 +21,7 @@
 #include "../lunokIoT.hpp"
 #include <Arduino.h>
  // thanks for the warnings :/
-extern TTGOClass *ttgo;
+
 #include <WiFi.h>
 
 #include "../app/LogView.hpp" // for lLog functions

@@ -26,7 +26,7 @@
 #include "ApplicationBase.hpp"
 #include "../UI/widgets/EntryTextWidget.hpp"
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
+ // ttgo library shit ;)
 PlaygroundApplication10::~PlaygroundApplication10() {
     delete testEntryText;
     delete testEntryText2;

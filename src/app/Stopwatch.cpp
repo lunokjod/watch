@@ -26,7 +26,7 @@
 #include "../static/img_pause_48.xbm"
 
 
-extern TTGOClass *ttgo; // ttgo lib
+ // ttgo lib
 
 unsigned long StopwatchApplication::pauseTime=0;
 unsigned long StopwatchApplication::starTime=0;

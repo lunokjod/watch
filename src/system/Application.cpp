@@ -21,7 +21,7 @@
 #include <ArduinoNvs.h>
 
 #include "../lunokIoT.hpp"
-extern TTGOClass *ttgo; // access to ttgo specific libs
+ // access to ttgo specific libs
 
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
@@ -44,7 +44,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../static/img_check_32.xbm"
 
 #include "../system/Datasources/perceptron.hpp"
-extern TTGOClass *ttgo;
+
 extern bool UILongTapOverride;
 
 

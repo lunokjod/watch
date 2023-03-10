@@ -24,7 +24,7 @@
 #include "TaskSwitcher.hpp"
 
 
-extern TTGOClass *ttgo; // access to ttgo specific libs
+ // access to ttgo specific libs
 extern size_t lastAppsOffset;
 extern const char  * lastAppsName[LUNOKIOT_MAX_LAST_APPS]; 
 extern TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS];

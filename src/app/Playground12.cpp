@@ -26,7 +26,6 @@
 #include "ApplicationBase.hpp"
 #include "../UI/widgets/EntryTextWidget.hpp"
 #include "../lunokiot_config.hpp"
-extern TTGOClass *ttgo; // ttgo lib
 
 extern void TakeBMPSample();
 

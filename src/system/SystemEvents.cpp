@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 
-extern TTGOClass *ttgo; // ttgo library
+ // ttgo library
 #include <ArduinoNvs.h>
 #include "../lunokIoT.hpp"
 #include "SystemEvents.hpp"

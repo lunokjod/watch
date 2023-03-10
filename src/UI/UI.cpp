@@ -211,7 +211,7 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
-    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    TFT_eSprite * canvas = new TFT_eSprite(tft); // build new sprite
     if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());
     if ( nullptr == canvas->createSprite(nw, nh) ) {

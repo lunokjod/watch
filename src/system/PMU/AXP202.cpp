@@ -29,7 +29,7 @@ extern SemaphoreHandle_t I2cMutex;
 
 bool PMUCounterEnabled=false;
 Ticker PMUCounter;
-extern TTGOClass *ttgo;
+
 float PMUBattDischarge=0;
 float batteryRemainingTimeHours=0.0;
 float batteryTotalTimeHours = 0.0;

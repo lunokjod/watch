@@ -21,7 +21,7 @@
 #include "SetTime.hpp"
 #include "SetDate.hpp"
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
+ // ttgo library shit ;)
 #include "../static/img_calendar_32.xbm"
 #include "../static/img_back_32.xbm"
 #include "../static/img_settime_32.xbm"

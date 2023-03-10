@@ -46,9 +46,6 @@
 #include "../static/img_wifi_24.xbm"
 
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
-
-
 esp_https_ota_handle_t https_ota_handle = NULL;
 
 char * latestBuildFoundString = nullptr;

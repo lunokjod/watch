@@ -22,7 +22,7 @@
 #include "Playground7.hpp"
 #include "../UI/UI.hpp"
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
+ // ttgo library shit ;)
 
 PlaygroundApplication7::~PlaygroundApplication7() {
     ttgo->setBrightness(128);    

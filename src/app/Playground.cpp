@@ -24,8 +24,6 @@
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
-
 PlaygroundApplication::~PlaygroundApplication() {
     directDraw = false;
 

@@ -72,7 +72,7 @@ const int16_t QRSize = 240;
 
 extern bool wifiOverride;
 bool provisioned=false;
-extern TTGOClass *ttgo;
+
 
 Provisioning2Application *lastProvisioning2Instance = nullptr;
 

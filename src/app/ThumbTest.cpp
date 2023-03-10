@@ -23,7 +23,7 @@
 #include "ThumbTest.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 #include "../system/Datasources/perceptron.hpp"
-extern TTGOClass *ttgo;
+
 
 const double TRAINING_RATE = 0.2;
 const int TRAINING_ITERATIONS = 16;

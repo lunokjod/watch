@@ -26,8 +26,6 @@
 #include "../UI/widgets/GraphWidget.hpp"
 
 
-extern TTGOClass *ttgo; // ttgo lib
-
 extern float PMUBattDischarge;
 extern float batteryRemainingTimeHours;
 extern float batteryTotalTimeHours;

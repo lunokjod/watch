@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
+ // ttgo library shit ;)
 
 #include "../lunokiot_config.hpp"
 

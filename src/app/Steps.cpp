@@ -43,7 +43,7 @@
 
 Ticker StepTicker;
 
-extern TTGOClass *ttgo; // ttgo lib
+ // ttgo lib
 uint8_t userTall = 197;
 uint32_t weekSteps[7] = { 0 }; // 0~6
 bool userMaleFemale = false;
