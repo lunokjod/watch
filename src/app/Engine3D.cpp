@@ -27,16 +27,24 @@
 #include <cmath>
 #include <esp_task_wdt.h>
 #include "../UI/base/Widget.hpp"
-#include "../static/plane3DSample.c"
+//#include "../static/plane3DSample.c"
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+
+
+//float *ccosCache = nullptr;
+//float *csinCache = nullptr;
 
 //volatile bool RenderDataInUse=false;
 SemaphoreHandle_t RenderDataSemaphore =  xSemaphoreCreateMutex();
 TaskHandle_t RenderTaskCore0 = NULL;
 TaskHandle_t RenderTaskCore1 = NULL;
 TFT_eSprite * RenderTask0Result = nullptr;
+Clipping2D RenderTask0ResultViewClipping;
 TFT_eSprite * RenderTask1Result = nullptr;
+Clipping2D RenderTask1ResultViewClipping;
+
+// https://github.com/vindar/tgx
 void RenderTask(void *data);
 
 int16_t Engine3DApplication::GetDeepForPoint(IN Point3D &point) {
@@ -96,7 +104,13 @@ bool Engine3DApplication::IsClockwise(IN Face3D &face) {
 }
 
 
-void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * buffer3d) {
+void Engine3DApplication::DirectRender(IN Range MeshDimensions,
+                                INOUT TFT_eSprite * alphaChannel,
+                                INOUT TFT_eSprite * zbuffer,
+                                INOUT TFT_eSprite * normalBuffer,
+                                INOUT TFT_eSprite * polyBuffer,
+                                INOUT TFT_eSprite * smoothBuffer,
+                                INOUT TFT_eSprite * buffer3d) {
     // painter algorythm
     const int32_t MaxDeep= MeshDimensions.Max; //+abs(MeshDimensions.Min);
     int32_t currentDepth=MeshDimensions.Min;
@@ -123,8 +137,8 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite
             GetProjection(*p1,pix1);
             GetProjection(*p2,pix2);
             float distNormal = NormalFacing(myNormals[i]);
-            if ( distNormal<0 ) { continue; }
-            //if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
+            //if ( distNormal<0 ) { continue; }
+            if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
 
             uint32_t tp0x = centerX+pix0.x;
             uint32_t tp0y = centerY+pix0.y;
@@ -158,7 +172,11 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite
 
     // final rendering
     //currentDepth=MeshDimensions.Min;
-    size_t renderedFaces=0;
+    //static int i=0;
+    //i++;
+    //if ( i > orderdFaces ) { i = 0; }
+    //size_t renderedFaces=0;
+    int16_t polyCount=0;
     for(int i=0;i<orderdFaces;i++) {
         int32_t tp0x = facesToRender[i].p0x;
         int32_t tp0y = facesToRender[i].p0y;
@@ -169,7 +187,7 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite
 
         //@FACE
         // fill the alpha channel
-        alphaChannel->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,1);
+        alphaChannel->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_WHITE);
 
         // fill the zbuffer
         const uint16_t zcolor = facesToRender[i].colorDeep;
@@ -177,21 +195,30 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite
         zbuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,zcolor);
 
         // fill the normals
-        //Normal3D & normal = myNormals[facesToRender[i].faceOffset];
         float dist = facesToRender[i].normalFacing; // NormalFacing(normal); //fabs(NormalFacing(normal));
-        uint16_t nColor = TFT_WHITE;
         if ( dist>0 ) {
-            //lLog("D: %f ",dist);
             uint8_t baseCol=(128*dist);
-            nColor = normalBuffer->color565(baseCol,baseCol,baseCol);
+            uint16_t nColor = normalBuffer->color565(baseCol,baseCol,baseCol);
+            normalBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,nColor);
+        
+            // fill the poly map
+            polyCount++;
+            if ( polyCount > 9 ) { polyCount=0; }
+            uint16_t polyColor = AvailColors[polyCount];
+            polyBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,polyColor);
+
+            // fill the smooth buffer
+            uint16_t smoothColor = TFT_BLACK;
+            if ( myFaces[facesToRender[i].faceOffset].smooth ) {
+                smoothColor=TFT_WHITE;
+            }
+            smoothBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,smoothColor);
+
+            // fill the face
+            buffer3d->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,myFaces[facesToRender[i].faceOffset].color);
+
+            //renderedFaces++;
         }
-        normalBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,nColor);
-
-        // fill the face
-        buffer3d->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,myFaces[facesToRender[i].faceOffset].color);
-        //buffer3d->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_RED);
-
-        renderedFaces++;
     }
 //    lLog("Faces: %u Rendered: %u\n", myFacesNumber,renderedFaces);
 }
@@ -204,10 +231,13 @@ bool Engine3DApplication::Tick() {
     if ( 0 != lastCoreUsed ) {
         if ( nullptr != RenderTask0Result ) {
             TFT_eSprite * current = RenderTask0Result;
+            //Clipping2D RenderTask0ResultViewClipping;
+            int32_t x = centerX+RenderTask0ResultViewClipping.xMin;
+            int32_t y = centerY+RenderTask0ResultViewClipping.yMin;
+            //lLog("PUSH0: %d %d\n",x,y);
+            current->pushSprite(x,y);
+            //current->pushImageDMA()
             RenderTask0Result = nullptr;
-            lastPx = (renderSizeW-current->width())/2;
-            lastPy = (renderSizeH-current->height())/2;
-            current->pushSprite(lastPx,lastPy);
             current->deleteSprite();
             delete current;
             lastCoreUsed=0;
@@ -217,10 +247,13 @@ bool Engine3DApplication::Tick() {
     if ( 1 != lastCoreUsed ) {
         if ( nullptr != RenderTask1Result ) {
             TFT_eSprite * current = RenderTask1Result;
+            int32_t x = centerX+RenderTask1ResultViewClipping.xMin;
+            int32_t y = centerY+RenderTask1ResultViewClipping.yMin;
+            //lLog("PUSH1: %d %d\n",x,y);
+            current->pushSprite(x,y);
+            lastPx = (renderSizeW-current->width())/2;
+            lastPy = (renderSizeH-current->height())/2;
             RenderTask1Result = nullptr;
-            const int32_t px = (renderSizeW-current->width())/2;
-            const int32_t py = (renderSizeH-current->height())/2;
-            current->pushSprite(px,py);
             current->deleteSprite();
             delete current;
             lastCoreUsed=1;
@@ -234,141 +267,100 @@ volatile uint8_t showStats=0;
 void RenderTask(void *data) {
     RenderCore * where=(RenderCore *)data;
     Engine3DApplication * app = where->instance;
-    TFT_eSprite *alphaChannel=nullptr;
-    TFT_eSprite *zbuffer=nullptr;
-    TFT_eSprite *normalsBuffer=nullptr;
-    TFT_eSprite *buffer3d=nullptr;
+
+    TFT_eSprite *alphaChannel = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
+    alphaChannel->setColorDepth(1);
+    alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
+
+    TFT_eSprite *zbuffer = new TFT_eSprite(ttgo->tft);  // the deep of pixels
+    zbuffer->setColorDepth(16);
+    zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
+
+    TFT_eSprite *normalsBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    normalsBuffer->setColorDepth(16);
+    normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+
+    TFT_eSprite *polyBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    polyBuffer->setColorDepth(16);
+    polyBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+
+    TFT_eSprite *buffer3d=new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    buffer3d->setColorDepth(16);
+    buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
     Range MeshDimensions;
     Clipping2D ViewClipping;    // used to know the updated area on the current rendered frame
+
+    TFT_eSprite *smoothBuffer = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
+    smoothBuffer->setColorDepth(1);
+    smoothBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+
     // default first clip dimension
-    ViewClipping.xMin = 0;
-    ViewClipping.yMin = 0;
-    ViewClipping.xMax = app->canvas->width();
-    ViewClipping.yMax = app->canvas->height();
-    const uint8_t border4=app->border*4;
+    ViewClipping.xMin = app->centerX-1;
+    ViewClipping.yMin = app->centerY-1;
+    ViewClipping.xMax = app->centerX+1;
+    ViewClipping.yMax = app->centerY+1;
+    //const uint8_t border4=app->border*4;
     const uint8_t border2=app->border*2;
+    unsigned long bClean;
+    unsigned long eClean;
+    unsigned long bAnimation;
+    unsigned long eAnimation;
+    unsigned long bRender;
+    unsigned long eRender;
+    unsigned long bCompsite;
+    unsigned long eCompsite;
+    unsigned long bWait;
+    unsigned long eWait;
+//    int64_t bPush;
+//    int64_t ePush;
     while(where->run) {
-        //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        //xTaskDelayUntil( &nextCheck, (5 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        xTaskDelayUntil( &nextCheck, (1 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
 
-        int64_t bTask = esp_timer_get_time();
-        esp_task_wdt_reset();
+        int64_t bTask = millis();
+        //esp_task_wdt_reset();
 
-        int64_t bClean;
-        int64_t eClean;
-        int64_t bAnimation;
-        int64_t eAnimation;
-        int64_t bRender;
-        int64_t eRender;
-        int64_t bCompsite;
-        int64_t eCompsite;
-        int64_t bWait;
-        int64_t eWait;
-    //    int64_t bPush;
-    //    int64_t ePush;
         if ( false == where->run ) { break; }
-        bClean = esp_timer_get_time();
+        bClean = millis();
 
-        const int16_t clipWidth  = (ViewClipping.xMax-ViewClipping.xMin)+border4;
-        const int16_t clipHeight = (ViewClipping.yMax-ViewClipping.yMin)+border4;
-        const int32_t px = app->lastPx-border2;
-        const int32_t py = app->lastPy-border2;
+        // update fp
+        int32_t fpx = app->centerX+ViewClipping.xMin;
+        int32_t fpy = app->centerY+ViewClipping.yMin;
+        int32_t fpw = app->centerX+ViewClipping.xMax;
+        int32_t fph = app->centerY+ViewClipping.yMax;
 
-        if ( nullptr == alphaChannel ) {
-            alphaChannel = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
-            alphaChannel->setColorDepth(1);
-            alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
-        } else {
-            //alphaChannel->fillSprite(TFT_BLACK);
-            alphaChannel->fillRect(px,py,clipWidth,clipHeight,TFT_BLACK);
-        }
+        // new clip
+        int16_t clipWidth  = fpw-fpx;
+        int16_t clipHeight  = fph-fpy;
 
-        if ( nullptr == zbuffer ) {
-            zbuffer = new TFT_eSprite(ttgo->tft);  // the deep of pixels
-            zbuffer->setColorDepth(16);
-            zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
-        } else {
-            //zbuffer->fillSprite(TFT_BLACK);
-        }
 
-        if ( nullptr == normalsBuffer ) {
-            normalsBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
-            normalsBuffer->setColorDepth(16);
-            normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
-        } else {
-            //normalsBuffer->fillSprite(TFT_BLACK);
-        }
+        //lLog("X: %d Y: %d Clip: %d %d %d %d\n",px,py,ViewClipping.xMin,ViewClipping.yMin,
+        //                ViewClipping.xMax,ViewClipping.yMax);
+        //lLog("CRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
 
-        if ( nullptr == buffer3d ) {
-            buffer3d = new TFT_eSprite(ttgo->tft); // where 3D are rendered
-            buffer3d->setColorDepth(16);
-            buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
-        } else {
-            //buffer3d->fillSprite(TFT_BLACK);
-            buffer3d->fillRect(px,py,clipWidth,clipHeight,TFT_BLACK);
-        }
+        // clean alpha channel
+        //alphaChannel->fillSprite(TFT_BLACK);
+        alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
+
+        //zbuffer->fillSprite(TFT_BLACK);
+        //normalsBuffer->fillSprite(TFT_BLACK);
+        //buffer3d->fillSprite(TFT_BLUE);
+        buffer3d->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
+
         // clear the mesh size
         MeshDimensions.Max=0;
         MeshDimensions.Min=1;
         // clear the clip dimension
-        ViewClipping.xMin = app->canvas->width();
-        ViewClipping.yMin = app->canvas->height();
-        ViewClipping.xMax = 0;
-        ViewClipping.yMax = 0;
-        eClean = esp_timer_get_time();
+        ViewClipping.xMin = app->centerX-1;
+        ViewClipping.yMin = app->centerY-1;
+        ViewClipping.xMax = 1;
+        ViewClipping.yMax = 1;
+        eClean = millis();
 
-        /*
-        int64_t beginWait= esp_timer_get_time()+1000000; // 1 second wait
-        bool timeout=false;
-        while(RenderDataInUse) {
-            if ( esp_timer_get_time() > beginWait ) {
-                timeout=true;
-                break;
-            }
-            //esp_task_wdt_reset();
-            TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-            xTaskDelayUntil( &nextCheck, (5 / portTICK_PERIOD_MS) ); // wait a ittle bit            
-        }
-        if ( timeout ) {
-
-        }
-        RenderDataInUse=true;
-        */
-        int16_t bx=0;
-        int16_t by=0;
-        int16_t fx=0;
-        int16_t fy=0;
-        bAnimation = esp_timer_get_time();
+        bAnimation = millis();
         
         if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
             // cannot get lock! discard this iteration
-            if ( nullptr != alphaChannel ) {
-                alphaChannel->deleteSprite();
-                //alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
-                delete alphaChannel;
-                /*
-                const int32_t px = (app->renderSizeW-alphaChannel->width())/2;
-                const int32_t py = (app->renderSizeH-alphaChannel->height())/2;
-                const int32_t pw = (app->clipWidth+(app->border*2));
-                const int32_t ph = (app->clipHeight+(app->border*2));
-                alphaChannel->fillRect(px,py,pw,ph,0);
-                */
-            }
-            if ( nullptr != zbuffer ) {
-                zbuffer->deleteSprite();
-                //zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
-                delete zbuffer;
-            }
-            if ( nullptr != buffer3d ) {
-                buffer3d->deleteSprite();
-                //buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
-                delete buffer3d;
-            }            
-            if ( nullptr != normalsBuffer ) {
-                normalsBuffer->deleteSprite();
-                //normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
-                delete normalsBuffer;
-            }
             lLog("Cpu: %u render timeout, retry\n",where->core);
             continue; 
         }
@@ -381,92 +373,356 @@ void RenderTask(void *data) {
             app->UpdateClipWith(ViewClipping,pix);
             int32_t deep = app->GetDeepForPoint(app->myPoints[i]);
             app->UpdateRange(MeshDimensions,deep);
-            //esp_task_wdt_reset();
+            esp_task_wdt_reset();
         }
+        // defined clip on screen
+        //const int16_t bx = app->centerX+ViewClipping.xMin; 
+        //const int16_t by = app->centerY+ViewClipping.yMin; 
+        //const int16_t fx = app->centerX+ViewClipping.xMax; 
+        //const int16_t fy = app->centerY+ViewClipping.yMax; 
+        // new clip
+        fpx = app->centerX+ViewClipping.xMin;
+        fpy = app->centerY+ViewClipping.yMin;
+        fpw = app->centerX+ViewClipping.xMax;
+        fph = app->centerY+ViewClipping.yMax;
+        clipWidth  = fpw-fpx;
+        clipHeight  = fph-fpy;
+
+        //lLog("NRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
+
         // rotate normals
         for(int i=0;i<app->myNormalsNumber;i++) {
             app->Rotate(app->myNormals[i],app->rot);
+            esp_task_wdt_reset();
         }
-        eAnimation = esp_timer_get_time();
+        eAnimation = millis();
 
         // render the layers
-        bRender = esp_timer_get_time();
-        app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,buffer3d);
-        eRender = esp_timer_get_time();
+        bRender = millis();
+        app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,polyBuffer,smoothBuffer,buffer3d);
+        eRender = millis();
         //DEBUG LAYERS
-        //buffer3d->pushSprite(0,0);
-        //zbuffer->pushSprite(0,0);
         //alphaChannel->pushSprite(0,0);
-        //normalBuffer->pushSprite(alphaChannel->width(),buffer3d->height());
+        //zbuffer->pushSprite(0,0);
+        //normalsBuffer->pushSprite(0,0);
+        //buffer3d->pushSprite(0,0);
         //return false;
 
 
-        // defined clip on screen
-        bx = app->centerX+ViewClipping.xMin; 
-        by = app->centerY+ViewClipping.yMin; 
-        fx = app->centerX+ViewClipping.xMax; 
-        fy = app->centerY+ViewClipping.yMax; 
-        //RenderDataInUse=false;
         xSemaphoreGive( RenderDataSemaphore );
 
-        bCompsite = esp_timer_get_time();
+        bCompsite = millis();
+        const int16_t rectWidth = clipWidth+border2;
+        const int16_t rectHeight = clipHeight+border2;
+
+        //const int colorDivider=10;
+        uint16_t lastPolyColor=TFT_BLACK;
+        for(int y=fpy;y<fph-1;y++) {
+            for(int x=fpx;x<fpw-1;x++) {
+                // related with https://en.wikipedia.org/wiki/Shading#Flat_shading
+                bool alpha = alphaChannel->readPixel(x,y);
+                if ( false == alpha ) { continue; } // don't work out of mesh
+                bool mustbeSmooth = smoothBuffer->readPixel(x,y);
+                if ( false == mustbeSmooth ) { continue; } // only on smooth face
+                const int32_t px = (x+app->border)-fpx;
+                const int32_t py = (y+app->border)-fpy;
+
+                //PIXEL @SHADER (over all availiable layers)
+
+                { // smooth material
+
+                    { // convert normals
+                        uint16_t zc0 = normalsBuffer->readPixel(x,y);
+                        uint16_t finalColor=zc0;
+                        {
+                            double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                            double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                            double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                            double med = (r+g+b)/3;
+                            if ( med > 0.5 ) {
+                                finalColor=TFT_WHITE;
+                                //finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor);
+                            }
+                            else {
+                                finalColor=TFT_BLACK;
+                                //finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor);
+                            }
+                        }
+                        normalsBuffer->drawPixel(x, y,finalColor);
+                    }
+
+                    { // convert zbuffer
+                        uint16_t zc0 = zbuffer->readPixel(x,y);
+                        uint16_t finalColor=zc0;
+                        {
+                            double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                            double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                            double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                            double med = (r+g+b)/3;
+                            if ( med > 0.5 ) {
+                                finalColor=TFT_WHITE;
+                                //finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor);
+                            }
+                            else {
+                                finalColor=TFT_BLACK;
+                                //finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor);
+                            }
+                        }
+                        zbuffer->drawPixel(x, y,finalColor);
+                    }
+
+                    //uint16_t polyColor = polyBuffer->readPixel(x,y);
+                    //if ( polyColor == lastPolyColor ) { continue; }
+                }
+
+                /*
+                { // smooth triangles <======================= SHADER ZBUFFER/NORMALS
+                    uint16_t polyColor = polyBuffer->readPixel(x,y);
+                    if ( polyColor != lastPolyColor ) {
+                        { // smooth normals
+                            uint16_t zc0 = normalsBuffer->readPixel(x,y);
+                            uint16_t finalColor=zc0;
+                            uint16_t zc01 = normalsBuffer->readPixel(x+1,y);
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc01);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            normalsBuffer->drawPixel(x+1, y,finalColor);
+                            uint16_t zc10 = normalsBuffer->readPixel(x,y+1);
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc10);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            normalsBuffer->drawPixel(x, y+1,finalColor);
+                            uint16_t zc11 = normalsBuffer->readPixel(x+1,y+1);
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc11);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            normalsBuffer->drawPixel(x+1, y+1,finalColor);
+                        }
+                        { // smooth zbuffer
+                            uint16_t zc0 = zbuffer->readPixel(x,y);
+                            uint16_t finalColor=zc0;
+                            uint16_t zc01 = zbuffer->readPixel(x+1,y);
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc01);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            zbuffer->drawPixel(x+1, y,finalColor);
+                            uint16_t zc10 = zbuffer->readPixel(x,y+1);
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc10);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            zbuffer->drawPixel(x, y+1,finalColor);
+                            uint16_t zc11 = zbuffer->readPixel(x+1,y+1);
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc11);
+                            {
+                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                double med = (r+g+b)/3;
+                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
+                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
+                            }
+                            zbuffer->drawPixel(x+1, y+1,finalColor);
+                        }
+                        lastPolyColor = polyColor;
+                    }
+                }
+                */
+
+                /*
+                { // smooth deep on zbuffer <======================= SHADER ZBUFFER
+                    uint16_t zc0 = zbuffer->readPixel(x,y);
+                    uint16_t finalColor=zc0;
+                    uint16_t zc01 = zbuffer->readPixel(x+1,y);
+                    if ( zc0 != zc01 ) {
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc01);
+                            zbuffer->drawPixel(x+1, y,finalColor);
+                    }
+                    uint16_t zc10 = zbuffer->readPixel(x,y+1);
+                    if ( zc0 != zc10 ) {
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc10);
+                            zbuffer->drawPixel(x, y+1,finalColor);
+                    }
+                    uint16_t zc11 = zbuffer->readPixel(x+1,y+1);
+                    if ( zc0 != zc11 ) {
+                            finalColor = zbuffer->alphaBlend(128,zc0,zc11);
+                            zbuffer->drawPixel(x+1, y+1,finalColor);
+                    }
+                }
+                */
+                
+                /*
+                { // smooth deep on normals <======================= SHADER NORMALS
+                    uint16_t zc0 = normalsBuffer->readPixel(x,y);
+                    uint16_t finalColor=zc0;
+                    uint16_t zc01 = normalsBuffer->readPixel(x+1,y);
+                    if ( zc0 != zc01 ) {
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc01);
+                            normalsBuffer->drawPixel(x+1, y,finalColor);
+                    }
+                    uint16_t zc10 = normalsBuffer->readPixel(x,y+1);
+                    if ( zc0 != zc10 ) {
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc10);
+                            normalsBuffer->drawPixel(x, y+1,finalColor);
+                    }
+                    uint16_t zc11 = normalsBuffer->readPixel(x+1,y+1);
+                    if ( zc0 != zc11 ) {
+                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc11);
+                            normalsBuffer->drawPixel(x+1, y+1,finalColor);
+                    }
+                }
+                */
+
+                //@TODO PIXELSHADER WITH CALLBACK
+            }
+            esp_task_wdt_reset();
+        }
 
         // work only with the relevant data
         TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
         if ( nullptr != rectBuffer3d ) {
             rectBuffer3d->setColorDepth(16);
-            const int16_t clipWidth =  ViewClipping.xMax-ViewClipping.xMin;
-            const int16_t clipHeight = ViewClipping.yMax-ViewClipping.yMin;
-            // composite the image    
-            if ( NULL != rectBuffer3d->createSprite((clipWidth+(app->border*2)),(clipHeight+(app->border*2)))) {
-                for(int y=by;y<fy;y++) {
-                    for(int x=bx;x<fx;x++) {
+            if ( NULL != rectBuffer3d->createSprite(rectWidth,rectHeight)) {
+                // composite the image
+                for(int y=fpy;y<fph;y++) {
+                    for(int x=fpx;x<fpw;x++) {
                         //@COMPOSITION
                         bool alpha = alphaChannel->readPixel(x,y);
                         if ( false == alpha ) { continue; } // don't work out of mesh
-                        
+
+                        const int32_t px = (x+app->border)-fpx;
+                        const int32_t py = (y+app->border)-fpy;
+
+                        // default composer
                         uint16_t plainColor = buffer3d->readPixel(x,y);
+                        uint16_t finalColor = plainColor;
                         uint16_t colorZ = zbuffer->readPixel(x,y); // deep
                         uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
-
                         uint16_t shadowColor = buffer3d->alphaBlend(128,normalColor,colorZ);
-                        uint16_t finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
+                        /*
+                        bool mustbeSmooth = smoothBuffer->readPixel(x,y);
+                        if ( mustbeSmooth ) {
+                            finalColor = plainColor;
+                            //buffer3d->alphaBlend(64,colorZ,plainColor);
+                        } else {
+                            finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
+                        }
+                        */
+                        finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
 
-                        const int32_t px = (x-bx)+app->border;
-                        const int32_t py = (y-by)+app->border;
+                        //uint16_t polyColor = polyBuffer->readPixel(x,y);
+
+                        
                         rectBuffer3d->drawPixel(px, py,finalColor);
+    
+                        esp_task_wdt_reset();
                     }
-                    //esp_task_wdt_reset();
                 }
-                eCompsite = esp_timer_get_time();
-            }
-            /*
-            if ( nullptr != alphaChannel ) {
-                alphaChannel->deleteSprite();
-                delete alphaChannel;
-                alphaChannel=nullptr;
-            }
-            if ( nullptr != zbuffer ) {
-                zbuffer->deleteSprite();
-                delete zbuffer;
-                zbuffer=nullptr;
-            }
-            if ( nullptr != buffer3d ) {
-                buffer3d->deleteSprite();
-                delete buffer3d;
-                buffer3d=nullptr;
-            }
-            if ( nullptr != normalsBuffer ) {
-                normalsBuffer->deleteSprite();
-                delete normalsBuffer;
-                normalsBuffer=nullptr;
-            }*/
-        }
+                // @POST PROCESSING (direct on final sprite)
+                /*
+                // antialias
+                for(int y=0;y<rectHeight;y++) {
+                    for(int x=0;x<rectWidth-1;x++) {
+                        uint16_t px = fpx+x;
+                        uint16_t py = fpy+y;
+                        bool alpha = alphaChannel->readPixel(px,py);
+                        if ( false == alpha ) { continue; } // don't work out of mesh
+                        uint16_t col0 = rectBuffer3d->readPixel(x,y);
+                        uint16_t col1 = rectBuffer3d->readPixel(x+1,y);
+                        uint16_t colMix = rectBuffer3d->alphaBlend(128,col0,col1);
+                        rectBuffer3d->drawPixel(x,y,colMix);
+                    }
+                    esp_task_wdt_reset();
+                }*/
 
+                /*
+                // borders
+                for(int y=0;y<rectHeight;y++) {
+                    for(int x=0;x<rectWidth-1;x++) {
+                        uint16_t px = fpx+x;
+                        uint16_t py = fpy+y;
+                        bool alpha = alphaChannel->readPixel(px,py);
+                        if ( false == alpha ) {
+                            bool alpha2 = alphaChannel->readPixel(px+1,py);
+                            if ( true == alpha2 ) {
+                                rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
+                            }
+                        } else {
+                            bool alpha2 = alphaChannel->readPixel(px+1,py);
+                            if ( false == alpha2 ) {
+                                rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
+                            }
+                        }
+                        esp_task_wdt_reset();
+                    }
+                }*/
+
+                /*
+                // tint back
+                for(int y=0;y<rectHeight;y++) {
+                    for(int x=0;x<rectWidth-1;x++) {
+                        uint16_t px = fpx+x;
+                        uint16_t py = fpy+y;
+                        bool alpha = alphaChannel->readPixel(px,py);
+                        if ( true == alpha ) { continue; } // don't work out of mesh
+                        rectBuffer3d->drawPixel(x,y,TFT_GREEN); // DEBUG PIXEL
+                        esp_task_wdt_reset();
+                    }
+                }*/
+
+                /*
+                // Antialias test DEBUG
+                for(int y=0;y<rectHeight;y++) {
+                    for(int x=0;x<rectWidth-1;x++) {
+                        uint16_t px = fpx+x;
+                        uint16_t py = fpy+y;
+                        bool alpha = alphaChannel->readPixel(px,py);
+                        if ( false == alpha ) { continue; } // don't work out of mesh
+                        uint16_t c0 = normalsBuffer->readPixel(px,py);
+                        uint16_t c1 = normalsBuffer->readPixel(px+1,py);
+                        if ( c0 != c1 ) {
+                            rectBuffer3d->drawPixel(x+1,y,TFT_GREEN); // DEBUG PIXEL
+                        }
+                        esp_task_wdt_reset();
+                    }
+                }*/
+                eCompsite = millis();
+            }
+        }
+        //FreeSpace();
         showStats++;
         if ( 0 == (showStats % 25 )) {
 
-            int64_t eTask = esp_timer_get_time();
+            int64_t eTask = millis();
             int32_t cleanT = eClean-bClean;
             int32_t animT = eAnimation-bAnimation;
             int32_t renderT = eRender-bRender;
@@ -475,7 +731,7 @@ void RenderTask(void *data) {
             //int32_t pushT = ePush-bPush;
 
             int32_t taskT = eTask-bTask;
-            int32_t fps = 1000000/(eTask-bTask);
+            int32_t fps = 1000/(eTask-bTask);
             uint8_t pcClean = (float(cleanT)/float(taskT))*100;
             uint8_t pcAnim = (float(animT)/float(taskT))*100;
             uint8_t pcRender = (float(renderT)/float(taskT))*100;
@@ -487,10 +743,11 @@ void RenderTask(void *data) {
                                 animT,pcAnim,
                                 renderT,pcRender,
                                 compT,pcComp,
-                                taskT/1000,
+                                taskT,
                                 fps);
             //FreeSpace();
         }
+        esp_task_wdt_reset();
 
         if (where->task) {
             if ( 0 == where->core) {
@@ -503,6 +760,7 @@ void RenderTask(void *data) {
                     lLog("DROPPED FRAME on core0\n");
                 }
                 RenderTask0Result = rectBuffer3d;
+                RenderTask0ResultViewClipping = ViewClipping;
             } else if ( 1 == where->core) {
                 if (nullptr != RenderTask1Result) {
                     // Dropped frame!!
@@ -513,10 +771,12 @@ void RenderTask(void *data) {
                     lLog("DROPPED FRAME on core1\n");
                 }
                 RenderTask1Result = rectBuffer3d;
+                RenderTask1ResultViewClipping = ViewClipping;
             }
             continue;
         } else {
             RenderTask0Result = rectBuffer3d;
+            RenderTask0ResultViewClipping = ViewClipping;
             break;
         }
     }
@@ -543,6 +803,16 @@ void RenderTask(void *data) {
         delete normalsBuffer;
         normalsBuffer=nullptr;
     }
+    if ( nullptr != polyBuffer ) {
+        polyBuffer->deleteSprite();
+        delete polyBuffer;
+        polyBuffer=nullptr;
+    }
+    if ( nullptr != smoothBuffer ) {
+        smoothBuffer->deleteSprite();
+        delete smoothBuffer;
+        smoothBuffer=nullptr;
+    }
 
     if (isTask) {
         vTaskDelete(NULL);
@@ -568,16 +838,26 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
 
 // demo app entrypoint
 Engine3DApplication::Engine3DApplication() {
+    /*
+    // precalculate angles
+    ccosCache =(float*)calloc(3600,sizeof(float));
+    csinCache =(float*)calloc(3600,sizeof(float));
 
+    for(int i=0;i<3600;i++){ 
+        float iii=i*0.01745;
+        ccosCache[i]= cos(iii);
+        csinCache[i]= sin(iii);
+    }
+    */
     // from generated meshdata blender python script
 //@MESH
-myPointsNumber = 97;
-myFacesNumber = 190;
-myNormalsNumber = 190;
+myPointsNumber = 114;
+myFacesNumber = 224;
+myNormalsNumber = 224;
 
     myVectorsNumber=0;
     rot.x=0.0; 
-    rot.y=2.9;//1.5;
+    rot.y=5.0;//1.5;
     rot.z=0.0;
     /*
     rot.x=1.2;//0.75; 
@@ -677,7 +957,7 @@ myNormalsNumber = 190;
     tmpCore0->task=true;
     tmpCore0->run=true;
     tmpCore0->core=0;
-    xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_QUERY_STACK_SIZE, tmpCore0, tskIDLE_PRIORITY+2,&RenderTaskCore0,0);
+    xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_TASK_STACK_SIZE, tmpCore0, ENGINE_TASK_PRIORITY,&RenderTaskCore0,0);
 
 
     //core1Worker =(void *)ps_malloc(sizeof(RenderCore));
@@ -687,7 +967,7 @@ myNormalsNumber = 190;
     tmpCore1->task=true;
     tmpCore1->run=true;
     tmpCore1->core=1;
-    xTaskCreatePinnedToCore(RenderTask, "rendr1", LUNOKIOT_QUERY_STACK_SIZE, tmpCore1, tskIDLE_PRIORITY+2,&RenderTaskCore1,1);
+    xTaskCreatePinnedToCore(RenderTask, "rendr1", LUNOKIOT_TASK_STACK_SIZE, tmpCore1, ENGINE_TASK_PRIORITY,&RenderTaskCore1,1);
 }
 
 Engine3DApplication::~Engine3DApplication() {
@@ -714,6 +994,9 @@ Engine3DApplication::~Engine3DApplication() {
         RenderTask1Result=nullptr;
     }
     if ( nullptr != facesToRender ) { free(facesToRender); }
+    //if ( nullptr != ccosCache) { free(ccosCache); ccosCache=nullptr; }
+    //if ( nullptr != csinCache) { free(csinCache); csinCache=nullptr; }
+
 }
 
 void Engine3DApplication::GetProjection(IN Light3D &vertex, OUT Point2D &pixel ) {
@@ -832,35 +1115,64 @@ void Engine3DApplication::Rotate(INOUT Light3D & light, IN Angle3D & rotationAng
     light.z=tmpPoint.z;
 }*/
 void Engine3DApplication::Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles) {
-    float anglex = rotationAngles.x * M_PI / 180.0;
-    float angley = (rotationAngles.y * M_PI) / 180.0;
-    float anglez = rotationAngles.z * M_PI / 180.0;
+    float tempN;
+    if ( 0 != rotationAngles.x ) {
+        float anglex = (rotationAngles.x * M_PI) / 180.0;
+        tempN = normal.vertexData[1];
+        normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
+        normal.vertexData[2] = tempN * sin(anglex) + normal.vertexData[2] * cos(anglex);
+    }
 
-    float tempN = normal.vertexData[1];
-    normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
-    normal.vertexData[2] = tempN * sin(anglex) + normal.vertexData[2] * cos(anglex);
-    tempN = normal.vertexData[2];
-    normal.vertexData[2] = normal.vertexData[2] * cos(angley) - normal.vertexData[0] * sin(angley);
-    normal.vertexData[0] = tempN * sin(angley) + normal.vertexData[0] * cos(angley);
-    tempN = normal.vertexData[0];
-    normal.vertexData[0] = normal.vertexData[0] * cos(anglez) - normal.vertexData[1] * sin(anglez);
-    normal.vertexData[1] = tempN * sin(anglez) + normal.vertexData[1] *cos(anglez);
+    if ( 0 != rotationAngles.y ) {
+        float angley = (rotationAngles.y * M_PI) / 180.0;
+        tempN = normal.vertexData[2];
+        normal.vertexData[2] = normal.vertexData[2] * cos(angley) - normal.vertexData[0] * sin(angley);
+        normal.vertexData[0] = tempN * sin(angley) + normal.vertexData[0] * cos(angley);
+    }
+
+    if ( 0 != rotationAngles.y ) {
+        float anglez = (rotationAngles.z * M_PI) / 180.0;
+        tempN = normal.vertexData[0];
+        normal.vertexData[0] = normal.vertexData[0] * cos(anglez) - normal.vertexData[1] * sin(anglez);
+        normal.vertexData[1] = tempN * sin(anglez) + normal.vertexData[1] *cos(anglez);
+    }
 }
 void Engine3DApplication::Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles) {
-    float anglex = rotationAngles.x * M_PI / 180.0;
-    float temp = point.y;
-    point.y = point.y * cos(anglex) - point.z * sin(anglex);
-    point.z = temp * sin(anglex) + point.z * cos(anglex);
+    float temp;
+    if ( 0 != rotationAngles.x ) {
+        float anglex = (rotationAngles.x * M_PI) / 180.0;
+        temp = point.y;
+        //point.y = point.y * coscX - point.z * sincX;
+        //point.z = temp * sincX + point.z * coscX;
+        point.y = point.y * cos(anglex) - point.z * sin(anglex);
+        point.z = temp * sin(anglex) + point.z * cos(anglex);
+    }
+    if ( 0 != rotationAngles.y ) {
+        float angley = (rotationAngles.y * M_PI) / 180.0;
+        temp = point.z;
+        //point.z = point.z * coscY - point.x * sincY;
+        //point.x = temp * sincY + point.x * coscY;
+        point.z = point.z * cos(angley) - point.x * sin(angley);
+        point.x = temp * sin(angley) + point.x * cos(angley);
+    }
+    if ( 0 != rotationAngles.z ) {
+        float anglez = (rotationAngles.z * M_PI) / 180.0;
+        temp = point.x;
+        //point.x = point.x * coscZ - point.y * sincZ;
+        //point.y = temp * sincZ + point.y *coscZ;
+        point.x = point.x * cos(anglez) - point.y * sin(anglez);
+        point.y = temp * sin(anglez) + point.y *cos(anglez);
+    }    
+    /*
+    float sincX=csinCache[int(anglex*10)];
+    float coscX=ccosCache[int(anglex*10)];
+    float sincY=csinCache[int(angley*10)];
+    float coscY=ccosCache[int(angley*10)];
+    float sincZ=csinCache[int(anglez*10)];
+    float coscZ=ccosCache[int(anglez*10)];
+    */
 
-    float angley = (rotationAngles.y * M_PI) / 180.0;
-    temp = point.z;
-    point.z = point.z * cos(angley) - point.x * sin(angley);
-    point.x = temp * sin(angley) + point.x * cos(angley);
 
-    float anglez = rotationAngles.z * M_PI / 180.0;
-    temp = point.x;
-    point.x = point.x * cos(anglez) - point.y * sin(anglez);
-    point.y = temp * sin(anglez) + point.y *cos(anglez);
 
 
     /*

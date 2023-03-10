@@ -25,6 +25,7 @@
 //#include <cmath> 
 #include "../lunokIoT.hpp"
 
+#define ENGINE_TASK_PRIORITY tskIDLE_PRIORITY+4
 typedef struct {
     int32_t Min;
     int32_t Max;
@@ -81,6 +82,7 @@ typedef struct {
     size_t vertexNum=0;
     uint16_t color=TFT_DARKGREY;
     Point3D *vertexData[3]= { nullptr }; // remember, the mesh must be triangulated!!
+    bool smooth=false;
 } Face3D;
 
 typedef struct {
@@ -123,7 +125,7 @@ for (int i = 0; i < dimension1_max; i++) {
 }
 */
         //void BuildZBuffer();
-        void DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * buffer3d);
+        void DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * polyBuffer,INOUT TFT_eSprite * smoothBuffer,INOUT TFT_eSprite * buffer3d);
         void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
         void UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point);
         void UpdateRange(INOUT Range &range, IN int32_t value);
@@ -132,8 +134,7 @@ for (int i = 0; i < dimension1_max; i++) {
         Angle3D rot;
         //Angle3D LampRotation;
         Angle3D lastRot;
-        //size_t AvailColorsoffset=0;
-        //const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
+        const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
         const double sq2 = sqrt(2);
         const double sq6 = sqrt(6);
 
@@ -154,7 +155,7 @@ for (int i = 0; i < dimension1_max; i++) {
         float lastDegY = 0.0;
         float lastDegZ = 0.0;
         unsigned long nextRefreshRotation=0;
-        const float MeshSize = 0.6;     // scale of mesh
+        const float MeshSize = 1.2;     // scale of mesh
         //const uint16_t centerX = canvas->width()/4;
         //const uint16_t centerY = canvas->height()/4;
         //const int16_t renderSizeH = canvas->height()/2;

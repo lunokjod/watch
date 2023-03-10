@@ -25,7 +25,7 @@ def dump(obj, level=0):
 
 #entrypoint
 if __name__ == '__main__':
-    obj = bpy.data.objects["Sphere"]  # particular object by name
+    obj = bpy.data.objects["head"]  # particular object by name
     #obj = bpy.context.scene.objects.active
     mesh = obj.data
     #mesh.location #Object position rotation, scale
@@ -53,7 +53,10 @@ if __name__ == '__main__':
                 gc=255*mat.diffuse_color[1]
                 bc=255*mat.diffuse_color[2]
                 f.write("myFaces[%d].color = ttgo->tft->color565(%d,%d,%d);\n" % (faceCount,rc,gc,bc))
-
+            if (face.use_smooth):
+                f.write("myFaces[%d].smooth = true;\n" % faceCount)
+            else:
+                f.write("myFaces[%d].smooth = false;\n" % faceCount)
             #f.write("myFaces[%d].color = %d;\n" % face.color)
             vertCount=0
             for vert in face.vertices:
