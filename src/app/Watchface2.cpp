@@ -20,7 +20,7 @@
 #include "Watchface2.hpp"
 #include "../lunokIoT.hpp"
 #include <Arduino.h>
-#include <LilyGoWatch.h> // thanks for the warnings :/
+ // thanks for the warnings :/
 extern TTGOClass *ttgo;
 #include <WiFi.h>
 
@@ -116,14 +116,14 @@ Watchface2Application::Watchface2Application() {
     minuteHandCanvas->canvas->setPivot(12, 107);
 
     // Buttons
-    outherSphere->canvas->fillRect(0, 0, middleX, middleY, ttgo->tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(middleX, 0, middleX, middleY, ttgo->tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(0, middleY, middleX, middleY, ttgo->tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(middleX, middleY, middleX, middleY, ttgo->tft->color24to16(0x102048));
+    outherSphere->canvas->fillRect(0, 0, middleX, middleY, tft->color24to16(0x000408));
+    outherSphere->canvas->fillRect(middleX, 0, middleX, middleY, tft->color24to16(0x000408));
+    outherSphere->canvas->fillRect(0, middleY, middleX, middleY, tft->color24to16(0x000408));
+    outherSphere->canvas->fillRect(middleX, middleY, middleX, middleY, tft->color24to16(0x102048));
     outherSphere->canvas->fillCircle(middleX, middleY, radius + (margin * 2), TFT_BLACK);
 
     // outher circle
-    outherSphere->canvas->fillCircle(middleX, middleY, radius - margin, ttgo->tft->color24to16(0x384058));
+    outherSphere->canvas->fillCircle(middleX, middleY, radius - margin, tft->color24to16(0x384058));
     outherSphere->canvas->fillCircle(middleX, middleY, radius - (margin * 2), TFT_BLACK);
 
     DescribeCircle(middleX, middleY, radius - (margin * 2.5),
@@ -138,7 +138,7 @@ Watchface2Application::Watchface2Application() {
         [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
             if (0 == (angle % 30))
             { // blue 5mins bumps
-                outherSphere->canvas->fillCircle(x, y, 5, ttgo->tft->color24to16(0x384058));
+                outherSphere->canvas->fillCircle(x, y, 5, tft->color24to16(0x384058));
             }
             return true;
         });
@@ -149,7 +149,7 @@ Watchface2Application::Watchface2Application() {
     // inner quarter
     innerSphere = new CanvasZWidget(canvas->width() / 2, canvas->height() / 2, 1.0, 8);
     innerSphere->canvas->fillSprite(TFT_BLACK);
-    innerSphere->canvas->fillCircle(0, 0, 95, ttgo->tft->color24to16(0x182858));
+    innerSphere->canvas->fillCircle(0, 0, 95, tft->color24to16(0x182858));
     innerSphere->canvas->fillCircle(0, 0, 45, TFT_BLACK);
     innerSphere->DrawTo(colorBuffer->canvas, middleX, middleY, 1.0, false, TFT_BLACK);
 
@@ -173,7 +173,7 @@ bool Watchface2Application::Tick() {
                            int angleDisplaced = (markAngle + 90) % 360;
                            if ((angle > markAngle) && (angle < angleDisplaced))
                            {
-                               canvas->fillCircle(x, y, 1, ttgo->tft->color24to16(0x5890e8));
+                               canvas->fillCircle(x, y, 1, tft->color24to16(0x5890e8));
                            }
                            return true;
                        });
@@ -318,7 +318,7 @@ bool Watchface2Application::Tick() {
                                canvas->fillCircle(x, y, 9, TFT_BLACK);
                                canvas->drawLine(x, y, cx, cy, ThCol(highlight));
                                canvas->fillCircle(x, y, 8, ThCol(highlight));
-                               // canvas->drawLine(x,y,cx,cy,ttgo->tft->color24to16(0xa0a8c0));
+                               // canvas->drawLine(x,y,cx,cy,tft->color24to16(0xa0a8c0));
                                // canvas->fillCircle(x,y,8,tft->color24to16(0xa0a8c0));
                                return false;
                            }
@@ -333,15 +333,15 @@ bool Watchface2Application::Tick() {
                            if (int(correctedMinuteAngle) == angle)
                            {
                                canvas->fillCircle(x, y, 7, TFT_BLACK);
-                               canvas->drawLine(x, y, cx, cy, ttgo->tft->color24to16(0x787ca0));
-                               canvas->fillCircle(x, y, 6, ttgo->tft->color24to16(0x787ca0));
+                               canvas->drawLine(x, y, cx, cy, tft->color24to16(0x787ca0));
+                               canvas->fillCircle(x, y, 6, tft->color24to16(0x787ca0));
                                return false;
                            }
                            return true;
                        });
         canvas->fillCircle(middleX, middleY, 10, ThCol(clock_hands_second)); // second cap
         canvas->fillCircle(middleX, middleY, 9, TFT_BLACK);
-        canvas->fillCircle(middleX, middleY, 8, ttgo->tft->color24to16(0x787ca0)); // minute cap
+        canvas->fillCircle(middleX, middleY, 8, tft->color24to16(0x787ca0)); // minute cap
         canvas->fillCircle(middleX, middleY, 4, TFT_BLACK);
         canvas->fillCircle(middleX, middleY, 3, ThCol(highlight)); // hour cap
 

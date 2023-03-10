@@ -28,7 +28,7 @@
 #include "FreehandKeyboardTraining.hpp"
 #include "FreehandKeyboardQuery.hpp"
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Datasources/perceptron.hpp"
 
 #include "../../static/freeHandKeyboardPreTrained.h"

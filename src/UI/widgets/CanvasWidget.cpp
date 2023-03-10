@@ -18,7 +18,6 @@
 //
 
 //#include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "CanvasWidget.hpp"
 #include <TFT_eSPI.h>
 #include "../../app/LogView.hpp"
@@ -37,7 +36,7 @@ bool CanvasWidget::RebuildCanvas(int16_t h, int16_t w, int8_t colorDepth) {
         delete canvas;
         canvas=nullptr;
     }
-    canvas = new TFT_eSprite(ttgo->tft);
+    canvas = new TFT_eSprite(tft);
     if ( nullptr == canvas ) { return false; }
     canvas->setColorDepth(colorDepth);
     this->colorDepth = colorDepth;

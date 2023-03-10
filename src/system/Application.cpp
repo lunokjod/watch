@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
+
 #include "../lunokIoT.hpp"
 extern TTGOClass *ttgo; // access to ttgo specific libs
 
@@ -81,7 +81,7 @@ TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canva
 LunokIoTApplication::LunokIoTApplication() {
     directDraw=false;
     UILongTapOverride=false;
-    canvas = new TFT_eSprite(ttgo->tft);
+    canvas = new TFT_eSprite(tft);
     if ( nullptr == canvas ) { 
         lUILog("LunokIoTApplication: %p ERROR: unable to create their own canvas!!!\n", this);
         //LaunchWatchface(false);
@@ -149,7 +149,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
             lUILog("Application: None\n");
             currentApplication = nullptr;     // no one driving now x'D
-            ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is in a dead-end in a "null application"
+            tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is in a dead-end in a "null application"
             // UI is dead beyond here, no app on foreground, only external events or timed triggers can solve this point :)
         } else {
            lUILog("Application: %p '%s' goes to front\n", instance,instance->AppName());
@@ -687,7 +687,7 @@ bool SoftwareFreehandKeyboard::Tick() {
     if ( touched ) {
         // draw on freehand canvas
         freeHandCanvas->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // to the buffer (ram operation is fast)
-        ttgo->tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
+        tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
         const float ratioFromScreen = canvas->width()/PerceptronMatrixSize; 
         perceptronCanvas->drawPixel(touchX/ratioFromScreen,touchY/ratioFromScreen,1);
         if ( touchX < boxX ) { boxX = touchX; }

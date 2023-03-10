@@ -17,7 +17,6 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_event.h>
@@ -48,8 +47,6 @@
 
 extern SoftwareKeyboard *keyboardInstance;
 
-extern TTGOClass *ttgo; // ttgo library shit ;)
-extern TFT_eSPI * tft;
 bool UIlongTap=false; // used to trigger only once the long tap event
 bool UILongTapOverride=false; // disable long tap to task switcher feature
 extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
@@ -243,7 +240,7 @@ TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
-    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    TFT_eSprite * canvas = new TFT_eSprite(tft); // build new sprite
     canvas->setColorDepth(view->getColorDepth());
     canvas->createSprite(nw, nh);
     canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
@@ -296,7 +293,7 @@ TFT_eSprite *TakeScreenShoot() {
 }
 */
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
-    screenShootCanvas = new TFT_eSprite(ttgo->tft);
+    screenShootCanvas = new TFT_eSprite(tft);
     if ( nullptr == screenShootCanvas ) { return nullptr; }
     screenShootCanvas->setColorDepth(view->getColorDepth());
     screenShootCanvas->createSprite(view->width(),view->height());

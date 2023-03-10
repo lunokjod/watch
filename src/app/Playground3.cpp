@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground3.hpp"
 #include "../system/SystemEvents.hpp"
 PlaygroundApplication3::~PlaygroundApplication3() {

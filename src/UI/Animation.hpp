@@ -27,7 +27,6 @@
  * https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/?ref=lbp
  */ 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 
 #include "lunokiot_config.hpp"
 

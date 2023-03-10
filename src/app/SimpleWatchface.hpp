@@ -20,7 +20,7 @@
 #ifndef __LUNOKIOT__SIMPLEWATCHFACE_APP__
 #define __LUNOKIOT__SIMPLEWATCHFACE_APP__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "lunokiot_config.hpp"
 #include "../system/Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"

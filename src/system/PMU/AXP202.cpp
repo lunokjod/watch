@@ -19,7 +19,7 @@
 
 #include "lunokiot_config.hpp"
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include <Ticker.h>
 #include "AXP202.hpp"
 #include "../SystemEvents.hpp"

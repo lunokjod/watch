@@ -24,7 +24,7 @@
  */
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../UI/AppTemplate.hpp"
 
 #include "../system/Datasources/kvo.hpp"

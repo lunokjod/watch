@@ -18,9 +18,8 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#include <TFT_eSPI.h>
 #include <functional>
 #include "../base/Widget.hpp"
 //#include "lunokiot_config.hpp"

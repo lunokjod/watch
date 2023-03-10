@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <sqlite3.h>
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include <SPI.h>
 #include <FS.h>
 #include <SPIFFS.h>

@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h> // thanks for the warnings :/
+ // thanks for the warnings :/
 #include <Arduino_JSON.h>
 #include <HTTPClient.h>
 

@@ -23,7 +23,7 @@
 #include "../static/img_sample2_120.c"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo library shit ;)
 
 PlaygroundApplication::~PlaygroundApplication() {
@@ -80,10 +80,10 @@ bool GyroTest(int x,int y, int cx, int cy, int angle, int step, void* payload) {
         int32_t canw = obj->imageTest->canvas->width();
         if ( directDraw ) {
             obj->imageTest->canvas->pushSprite(canx, cany);
-            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
-            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
         } else {
             obj->imageTest->DrawTo(obj->buffer->canvas,canx,cany);
         }
@@ -95,10 +95,10 @@ bool GyroTest(int x,int y, int cx, int cy, int angle, int step, void* payload) {
         int32_t canw = obj->imageTest2->canvas->width();
         if ( directDraw ) {
             obj->imageTest2->canvas->pushSprite(canx, cany);
-            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
-            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
 
         } else {
             obj->imageTest2->DrawTo(obj->buffer->canvas,canx,cany);
@@ -112,10 +112,10 @@ bool GyroTest(int x,int y, int cx, int cy, int angle, int step, void* payload) {
         if ( directDraw ) {
             obj->imageTest3->canvas->pushSprite(canx, cany);
 
-            ttgo->tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
-            ttgo->tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
-            ttgo->tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx-border,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany-border,canw+(border*2),border,TFT_BLACK);
+            tft->fillRect(canx+canw,cany,border,canh,TFT_BLACK);
+            tft->fillRect(canx-border,cany+canh,canw+(border*2),border,TFT_BLACK);
         } else {
             obj->imageTest3->DrawTo(obj->buffer->canvas,canx,cany);
         }

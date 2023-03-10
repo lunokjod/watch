@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
+
 #include "BLEMonitor.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_bluetooth_32.xbm"

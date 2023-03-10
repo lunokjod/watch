@@ -18,8 +18,6 @@
 //
 
 #include "Animation.hpp"
-#include <LilyGoWatch.h>
-extern TTGOClass *ttgo;
 
 AnimationDescriptor::AnimationDescriptor(int32_t fromX,int32_t fromY,int32_t toX, int32_t toY, int32_t stepSize)
                             : fromX(fromX), fromY(fromY),toX(toX),toY(toY),stepSize(stepSize)  {
@@ -53,5 +51,5 @@ void AnimationDescriptor::Step() {
 }
 
 void AnimationDescriptor::Draw() {
-    ttgo->tft->fillRoundRect(currentX,currentY,35,35,5,0x5DFC);
+    tft->fillRoundRect(currentX,currentY,35,35,5,0x5DFC);
 }

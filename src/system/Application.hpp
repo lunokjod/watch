@@ -22,8 +22,7 @@
 
 //#include <Arduino.h>
 //#include <TTGO.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
-#include <LilyGoWatch.h>
+#include <TFT_eSPI.h>
 #include <functional>
 #include "../system/Datasources/perceptron.hpp"
 

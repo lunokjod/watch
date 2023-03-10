@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Settings.hpp"
 #include "../static/img_back_32.xbm"
 #include <ArduinoNvs.h>

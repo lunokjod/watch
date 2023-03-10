@@ -25,7 +25,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo lib
 
 extern float PMUBattDischarge;

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "LogView.hpp" // log capabilities
 #include "WatchfaceAlwaysOn.hpp"
 

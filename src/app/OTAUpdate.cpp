@@ -45,7 +45,7 @@
 
 #include "../static/img_wifi_24.xbm"
 
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo library shit ;)
 
 

@@ -64,12 +64,12 @@ bool PlaygroundApplication4::Tick() {
         canvas->pushSprite(x,y);
       
                           if ( touched ) {
-                        ttgo->tft->fillScreen(TFT_GREEN);
-                        ttgo->tft->setWindow(x,y,x+w,y+h);
+                        tft->fillScreen(TFT_GREEN);
+                        tft->setWindow(x,y,x+w,y+h);
                         directDraw=true;
                     }
                     else {
-                        ttgo->tft->setWindow(0,0,TFT_WIDTH,TFT_HEIGHT);
+                        tft->setWindow(0,0,TFT_WIDTH,TFT_HEIGHT);
                         directDraw=false;
                     }
 
@@ -80,7 +80,7 @@ bool PlaygroundApplication4::Tick() {
 
 /*
     if ( directDraw ) {
-        //ttgo->tft->setWindow(test->x,test->y,test->h,test->w);
+        //tft->setWindow(test->x,test->y,test->h,test->w);
         canvas->fillSprite(canvas->color24to16(0x212121));
         //test->DrawTo(this->canvas);
         //canvas->pushSprite(test->x,test->y);

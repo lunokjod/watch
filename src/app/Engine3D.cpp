@@ -341,7 +341,7 @@ bool Engine3DApplication::Tick() {
 
 
     // use clip to know the need to render part
-    TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
+    TFT_eSprite * rectBuffer3d = new TFT_eSprite(tft);
     if ( nullptr != rectBuffer3d ) {
         rectBuffer3d->setColorDepth(16);
         const uint8_t border=2;
@@ -425,7 +425,7 @@ void Engine3DApplication::CleanBuffers() {
 Engine3DApplication::Engine3DApplication() {
     // lets to initialize the image buffer (screen size) for draw with enough space
     lAppLog("Allocating TFT_eSPI Sprite as 3D buffer...\n");
-    buffer3d = new TFT_eSprite(ttgo->tft);
+    buffer3d = new TFT_eSprite(tft);
     if ( nullptr != buffer3d ) {
         buffer3d->setColorDepth(16);
         if ( NULL == buffer3d->createSprite(canvas->width(), canvas->height()) ) {
@@ -439,7 +439,7 @@ Engine3DApplication::Engine3DApplication() {
     lAppLog("Buffer 3D generated\n");
 /*
     lAppLog("Allocating TFT_eSPI Sprite as ZBuffer...\n");
-    zbuffer = new TFT_eSprite(ttgo->tft);
+    zbuffer = new TFT_eSprite(tft);
     if ( nullptr != zbuffer ) {
         zbuffer->setColorDepth(16);
         if ( NULL == zbuffer->createSprite(canvas->width(), canvas->height()) ) {
@@ -454,7 +454,7 @@ Engine3DApplication::Engine3DApplication() {
 
 
     lAppLog("Allocating TFT_eSPI Sprite as Alpha channel...\n");
-    alphaChannel = new TFT_eSprite(ttgo->tft);
+    alphaChannel = new TFT_eSprite(tft);
     if ( nullptr != alphaChannel ) {
         alphaChannel->setColorDepth(1);
         if ( NULL == alphaChannel->createSprite(canvas->width(), canvas->height()) ) {
@@ -469,7 +469,7 @@ Engine3DApplication::Engine3DApplication() {
 */
     /*
     lAppLog("Allocating TFT_eSPI Sprite as lights...\n");
-    light0 = new TFT_eSprite(ttgo->tft);
+    light0 = new TFT_eSprite(tft);
     if ( nullptr != light0 ) {
         light0->setColorDepth(1);
         if ( NULL == light0->createSprite(canvas->width(), canvas->height()) ) {
@@ -651,7 +651,7 @@ void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face
         int16_t deep2 = (p2->x+p2->z)/2;
         int medianDeep = (deep0+deep1+deep2)/3;
         uint8_t alpha=128+medianDeep;
-        color = ttgo->tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
+        color = tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
     } else {
         if ( overrideColor != Drawable::MASK_COLOR) { color = overrideColor; }
     }
@@ -694,7 +694,7 @@ void Engine3DApplication::RenderPoint(INOUT TFT_eSprite *buffer,IN Point3D & poi
         uint16_t alpha = 128-(deep*2);
         //lLog("deep: %d\n", deep);
         //if ( alpha > 60 ) {
-        uint16_t mixColor = ttgo->tft->alphaBlend(alpha,point.color,TFT_BLACK);
+        uint16_t mixColor = tft->alphaBlend(alpha,point.color,TFT_BLACK);
         buffer3d->drawPixel(pointX,pointY,mixColor);
         //UpdateClipWith(ViewClipping,centerX+x2d,centerY+y2d);
     }

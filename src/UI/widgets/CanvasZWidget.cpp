@@ -18,7 +18,6 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "CanvasZWidget.hpp"
 #include "../UI.hpp"
 #include "../../app/LogView.hpp"

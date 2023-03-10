@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include <ArduinoNvs.h>
 
 #include "Brightness.hpp"
@@ -28,7 +28,7 @@
 
 #include "LogView.hpp"
 
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo lib
 
 BrightnessApplication::~BrightnessApplication() {

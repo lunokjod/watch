@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "SettingsMenu.hpp"
 #include "../lunokiot_config.hpp"
 

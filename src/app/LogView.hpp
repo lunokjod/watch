@@ -23,9 +23,6 @@
 #include <esp_timer.h>
 #include <esp_log.h>
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
-#include <LilyGoWatch.h>
-
 #include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

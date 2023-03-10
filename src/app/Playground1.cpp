@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground1.hpp"
 #include "../UI/widgets/NotificationWidget.hpp"
 #include "../UI/UI.hpp"

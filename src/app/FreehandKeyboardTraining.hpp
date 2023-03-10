@@ -20,7 +20,7 @@
 #ifndef __LUNOKIOT__APPLICATION__FreehandKeyboardTRAINING__
 #define __LUNOKIOT__APPLICATION__FreehandKeyboardTRAINING__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../UI/AppTemplate.hpp"
 #include "../system/Datasources/perceptron.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

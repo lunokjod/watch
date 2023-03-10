@@ -21,10 +21,9 @@
 #define __LUNOKIOT__UI__DEFINE__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include <esp_event_base.h>
 #include <functional>
-extern TTGOClass *ttgo; // ttgo lib
+#include <TFT_eSPI.h>
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
 typedef std::function<void (void* payload)> UICallback;
@@ -67,8 +66,7 @@ extern const TemplateColorPalette * currentColorPalette;
 extern const TemplateThemeScheme * currentThemeScheme;
 
 extern TFT_eSPI * tft;
-#define ThCol(WHAT) ttgo->tft->color24to16(currentThemeScheme->WHAT)
-
+#define ThCol(WHAT) tft->color24to16(currentThemeScheme->WHAT)
 
 extern uint8_t pendingNotifications;
 /*

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo lib
 #include "LogView.hpp" // log capabilities
 

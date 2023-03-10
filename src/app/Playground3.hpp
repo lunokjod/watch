@@ -21,7 +21,7 @@
 #define __LUNOKIOT__PLAYGROUND3_APP__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Application.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

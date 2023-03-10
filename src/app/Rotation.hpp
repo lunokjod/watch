@@ -21,7 +21,7 @@
 #define __LUNOKIOT__ROTATION_APP__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/widgets/ButtonWidget.hpp"

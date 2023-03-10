@@ -25,7 +25,7 @@
 #include "../static/img_reload_48.xbm"
 #include "../static/img_pause_48.xbm"
 
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo lib
 
 unsigned long StopwatchApplication::pauseTime=0;

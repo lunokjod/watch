@@ -20,7 +20,6 @@
 #ifndef __LUNOKIOT__WIDGET__BASE__
 #define __LUNOKIOT__WIDGET__BASE__
 
-#include <LilyGoWatch.h>
 
 // https://github.com/Bodmer/TFT_eSPI/blob/master/examples/Sprite/Orrery/Orrery.ino
 class Drawable {

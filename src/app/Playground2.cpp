@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground2.hpp"
 #include "../static/img_game_spaceship1.c"
 #include "lunokiot_config.hpp"
@@ -87,7 +87,7 @@ bool PlaygroundApplication2::Tick() {
                 //canvas->drawPixel(x+shipX,y+shipY,canvas->alphaBlend(alpha,myColor16,originalColor16));
                 // RGB
                 // GBR
-                //if ( myColor16 != ttgo->tft->color565(0x01,0x20,0x00) ) {
+                //if ( myColor16 != tft->color565(0x01,0x20,0x00) ) {
                 if ( myColor16 != CanvasWidget::MASK_COLOR ) {
                     //Serial.printf("COLOR: %u\n", myColor16);
                     canvas->drawPixel(x+shipX,y+shipY,myColor16);
@@ -99,7 +99,7 @@ bool PlaygroundApplication2::Tick() {
             }
         }
         bullets->DrawTo(canvas);
-        //spaceShip->DrawTo(canvas,shipX,shipY,ttgo->tft->color565(0x01,0x00,0x20));
+        //spaceShip->DrawTo(canvas,shipX,shipY,tft->color565(0x01,0x00,0x20));
         nextRedraw=millis()+(1000/8);
         return true;
     }

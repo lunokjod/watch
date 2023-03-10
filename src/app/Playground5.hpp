@@ -21,7 +21,7 @@
 #define __LUNOKIOT__PLAYGROUND5_APP__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Application.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 

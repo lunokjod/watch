@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground11.hpp"
 #include "../UI/UI.hpp"
 #include "LogView.hpp" // log capabilities

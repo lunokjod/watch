@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Playground0.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"

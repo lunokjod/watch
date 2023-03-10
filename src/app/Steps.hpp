@@ -20,7 +20,7 @@
 #ifndef __LUNOKIOT__STEPS_APP__
 #define __LUNOKIOT__STEPS_APP__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../UI/AppTemplate.hpp"
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../lunokiot_config.hpp"
 
 #include "../UI/widgets/CanvasWidget.hpp" // for color mask

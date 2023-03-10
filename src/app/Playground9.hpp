@@ -21,7 +21,7 @@
 #define __LUNOKIOT__PLAYGROUND9_APP__
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Application.hpp"
 
 class PlaygroundApplication9: public LunokIoTApplication {

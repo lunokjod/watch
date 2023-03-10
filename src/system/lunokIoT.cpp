@@ -31,7 +31,7 @@
 #include <ArduinoNvs.h>
 #include <WiFi.h>
 #include <cstdio>
-//#include <LilyGoWatch.h>
+//
 
 //#include <SPI.h>
 //#include <FS.h>
@@ -53,9 +53,9 @@
 #include <esp_console.h>
 extern SemaphoreHandle_t I2cMutex;
 
-TTGOClass *ttgo = TTGOClass::getWatch();
+// TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
-//TFT_eSPI * tft = new TFT_eSPI();
+extern TFT_eSPI * tft = new TFT_eSPI();
 
 extern bool ntpSyncDone;
 extern const char *ntpServer;
@@ -112,7 +112,7 @@ LunokIoT::LunokIoT() {
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
     //lUILog("User screen rotation: %d\n", rotation);
-    ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
+    tft->setRotation(rotation); // user selected rotation (0 by default)
 
     size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include <Arduino_JSON.h>
 
 #include "Notifications.hpp"

@@ -22,7 +22,7 @@
 #include "../UI/AppTemplate.hpp"
 #include "../system/Application.hpp"
 #include "TaskSwitcher.hpp"
-#include <LilyGoWatch.h>
+
 
 extern TTGOClass *ttgo; // access to ttgo specific libs
 extern size_t lastAppsOffset;
@@ -82,7 +82,7 @@ bool TaskSwitcher::Tick() {
 
         uint8_t shadow=0;
         for(int y=0;y<canvas->height();y+=3) {
-            uint32_t color= ttgo->tft->color565(shadow,shadow,shadow);
+            uint32_t color= tft->color565(shadow,shadow,shadow);
             canvas->drawFastHLine(0,y,canvas->width(),color);
             shadow+=2;
         }

@@ -20,7 +20,7 @@
 #ifndef __LUNOKIOT__MAINMENU_APP__
 #define __LUNOKIOT__MAINMENU_APP__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "../system/Application.hpp"
 
 class MainMenuApplication: public LunokIoTApplication {

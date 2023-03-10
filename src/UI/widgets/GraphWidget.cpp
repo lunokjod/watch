@@ -18,7 +18,6 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "GraphWidget.hpp"
 #include "../../app/LogView.hpp"
 

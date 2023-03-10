@@ -18,7 +18,6 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 #include "ScrollViewWidget.hpp"
 

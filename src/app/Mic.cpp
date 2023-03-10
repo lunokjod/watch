@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include "lunokiot_config.hpp"
-#include <LilyGoWatch.h>
+
 #include <driver/i2s.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"

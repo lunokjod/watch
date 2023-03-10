@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "LockPicking.hpp"
 #include "../UI/UI.hpp"
 #include "LogView.hpp" // log capabilities
@@ -26,7 +26,6 @@
 #include "ApplicationBase.hpp"
 #include "../UI/widgets/EntryTextWidget.hpp"
 #include "../lunokiot_config.hpp"
-extern TTGOClass *ttgo; // ttgo lib
 
 extern void TakeBMPSample();
 
@@ -51,7 +50,7 @@ bool LockPickingGameApplication::Tick() {
         lAppLog("levelCorrectAngle: %d wristGauge: %d\n",levelCorrectAngle,wristGauge->selectedAngle);
         if ( (levelCorrectAngle-levelDriftAngle <=  wristGauge->selectedAngle ) 
                 && (levelCorrectAngle+levelDriftAngle >=  wristGauge->selectedAngle ) ) {
-            ttgo->tft->fillScreen(TFT_GREEN);
+            tft->fillScreen(TFT_GREEN);
             ttgo->motor->onec();
             currentLevel++;
             levelCorrectAngle=random(aMIN,aMAX);

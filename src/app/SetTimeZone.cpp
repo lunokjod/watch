@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "SetTimeZone.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_timezone_32.xbm"

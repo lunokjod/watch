@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 #include "Bluetooth.hpp"
 #include <NimBLEDevice.h>
 #include "../static/img_back_32.xbm"

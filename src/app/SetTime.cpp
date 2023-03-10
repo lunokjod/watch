@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+
 extern TTGOClass *ttgo; // ttgo library shit ;)
 
 
