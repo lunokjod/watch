@@ -125,7 +125,13 @@ for (int i = 0; i < dimension1_max; i++) {
 }
 */
         //void BuildZBuffer();
-        void DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,INOUT TFT_eSprite * zbuffer,INOUT TFT_eSprite * normalBuffer,INOUT TFT_eSprite * polyBuffer,INOUT TFT_eSprite * smoothBuffer,INOUT TFT_eSprite * buffer3d);
+        void DirectRender(IN Range MeshDimensions,INOUT TFT_eSprite * alphaChannel,
+                                                  INOUT TFT_eSprite * zbuffer,
+                                                  INOUT TFT_eSprite * normalBuffer,
+                                                  INOUT TFT_eSprite * polyBuffer,
+                                                  INOUT TFT_eSprite * smoothBuffer,
+                                                  INOUT TFT_eSprite * lightBuffer,
+                                                  INOUT TFT_eSprite * buffer3d);
         void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
         void UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point);
         void UpdateRange(INOUT Range &range, IN int32_t value);
@@ -155,7 +161,7 @@ for (int i = 0; i < dimension1_max; i++) {
         float lastDegY = 0.0;
         float lastDegZ = 0.0;
         unsigned long nextRefreshRotation=0;
-        const float MeshSize = 1.2;     // scale of mesh
+        const float MeshSize = 0.75;     // scale of mesh
         //const uint16_t centerX = canvas->width()/4;
         //const uint16_t centerY = canvas->height()/4;
         //const int16_t renderSizeH = canvas->height()/2;

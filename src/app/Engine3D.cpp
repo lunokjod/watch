@@ -110,6 +110,7 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
                                 INOUT TFT_eSprite * normalBuffer,
                                 INOUT TFT_eSprite * polyBuffer,
                                 INOUT TFT_eSprite * smoothBuffer,
+                                INOUT TFT_eSprite * lightBuffer,
                                 INOUT TFT_eSprite * buffer3d) {
     // painter algorythm
     const int32_t MaxDeep= MeshDimensions.Max; //+abs(MeshDimensions.Min);
@@ -170,6 +171,17 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
     }
     // here the faces are ordered
 
+    // do the default light @LIGHT
+    //lightBuffer->fillCircle(centerX-40,centerY-40,20,TFT_WHITE);
+    uint8_t r=20;
+    uint8_t c=1;
+    uint8_t colorStep=255/r;
+    for(;r>3;r--) {
+        uint16_t color = lightBuffer->color565(c,c,c);
+        lightBuffer->fillCircle(centerX-10,centerY-10,r,color);
+        c+=colorStep;
+        if ( c > 200 ) { c=255; }
+    }
     // final rendering
     //currentDepth=MeshDimensions.Min;
     //static int i=0;
@@ -294,6 +306,10 @@ void RenderTask(void *data) {
     smoothBuffer->setColorDepth(1);
     smoothBuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
+    TFT_eSprite *lightBuffer = new TFT_eSprite(ttgo->tft);  // lights
+    lightBuffer->setColorDepth(16);
+    lightBuffer->createSprite(app->renderSizeW,app->renderSizeH);
+
     // default first clip dimension
     ViewClipping.xMin = app->centerX-1;
     ViewClipping.yMin = app->centerY-1;
@@ -341,6 +357,9 @@ void RenderTask(void *data) {
         // clean alpha channel
         //alphaChannel->fillSprite(TFT_BLACK);
         alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
+ 
+        // clean lights
+        lightBuffer->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
 
         //zbuffer->fillSprite(TFT_BLACK);
         //normalsBuffer->fillSprite(TFT_BLACK);
@@ -399,7 +418,7 @@ void RenderTask(void *data) {
 
         // render the layers
         bRender = millis();
-        app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,polyBuffer,smoothBuffer,buffer3d);
+        app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,polyBuffer,smoothBuffer,lightBuffer,buffer3d);
         eRender = millis();
         //DEBUG LAYERS
         //alphaChannel->pushSprite(0,0);
@@ -415,198 +434,55 @@ void RenderTask(void *data) {
         const int16_t rectWidth = clipWidth+border2;
         const int16_t rectHeight = clipHeight+border2;
 
-        //const int colorDivider=10;
+
+        /*
         uint16_t lastPolyColor=TFT_BLACK;
-        for(int y=fpy;y<fph-1;y++) {
-            for(int x=fpx;x<fpw-1;x++) {
-                // related with https://en.wikipedia.org/wiki/Shading#Flat_shading
+        //PIXEL @SHADER ONE SHOOT ONLY
+        for(int y=fpy;y<fph;y++) {
+            for(int x=fpx;x<fpw;x++) {
                 bool alpha = alphaChannel->readPixel(x,y);
                 if ( false == alpha ) { continue; } // don't work out of mesh
                 bool mustbeSmooth = smoothBuffer->readPixel(x,y);
-                if ( false == mustbeSmooth ) { continue; } // only on smooth face
-                const int32_t px = (x+app->border)-fpx;
-                const int32_t py = (y+app->border)-fpy;
-
-                //PIXEL @SHADER (over all availiable layers)
-
-                { // smooth material
-
-                    { // convert normals
-                        uint16_t zc0 = normalsBuffer->readPixel(x,y);
-                        uint16_t finalColor=zc0;
-                        {
-                            double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                            double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                            double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                            double med = (r+g+b)/3;
-                            if ( med > 0.5 ) {
-                                finalColor=TFT_WHITE;
-                                //finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor);
-                            }
-                            else {
-                                finalColor=TFT_BLACK;
-                                //finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor);
-                            }
-                        }
-                        normalsBuffer->drawPixel(x, y,finalColor);
+                if ( false == mustbeSmooth ) { continue; } // only on smooth need shader
+                { // convert zbuffer to PLAIN @TODO @DEBUG
+                    uint16_t zc0 = zbuffer->readPixel(x,y);
+                    uint16_t finalColor=zc0;
+                    finalColor=TFT_WHITE; // @DEBUG disable channel
+                    
+                    //{
+                    //    double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                    //    double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                    //    double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                    //    double med = (r+g+b)/3;
+                    //    if ( med > 0.5 ) {
+                    //        finalColor=TFT_WHITE;
+                            //finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor);
+                    //    }
+                    //    else {
+                     //       finalColor=TFT_WHITE;
+                            //finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor);
+                    //    }
                     }
-
-                    { // convert zbuffer
-                        uint16_t zc0 = zbuffer->readPixel(x,y);
-                        uint16_t finalColor=zc0;
-                        {
-                            double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                            double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                            double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                            double med = (r+g+b)/3;
-                            if ( med > 0.5 ) {
-                                finalColor=TFT_WHITE;
-                                //finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor);
-                            }
-                            else {
-                                finalColor=TFT_BLACK;
-                                //finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor);
-                            }
-                        }
-                        zbuffer->drawPixel(x, y,finalColor);
-                    }
-
-                    //uint16_t polyColor = polyBuffer->readPixel(x,y);
-                    //if ( polyColor == lastPolyColor ) { continue; }
+                    zbuffer->drawPixel(x, y,finalColor);
                 }
-
-                /*
-                { // smooth triangles <======================= SHADER ZBUFFER/NORMALS
+                { // modify normalbuffer to trigger bright ramp on iterative phase
                     uint16_t polyColor = polyBuffer->readPixel(x,y);
                     if ( polyColor != lastPolyColor ) {
-                        { // smooth normals
-                            uint16_t zc0 = normalsBuffer->readPixel(x,y);
-                            uint16_t finalColor=zc0;
-                            uint16_t zc01 = normalsBuffer->readPixel(x+1,y);
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc01);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
+                        uint16_t nc0 = normalsBuffer->readPixel(x,y);
+                        uint16_t nc1 = normalsBuffer->readPixel(x+1,y);
+                        //if (nc0 != nc1) {
+                            uint16_t finalColor = normalsBuffer->alphaBlend(128,nc1,nc0);
                             normalsBuffer->drawPixel(x+1, y,finalColor);
-                            uint16_t zc10 = normalsBuffer->readPixel(x,y+1);
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc10);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
-                            normalsBuffer->drawPixel(x, y+1,finalColor);
-                            uint16_t zc11 = normalsBuffer->readPixel(x+1,y+1);
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc11);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = normalsBuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = normalsBuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
-                            normalsBuffer->drawPixel(x+1, y+1,finalColor);
-                        }
-                        { // smooth zbuffer
-                            uint16_t zc0 = zbuffer->readPixel(x,y);
-                            uint16_t finalColor=zc0;
-                            uint16_t zc01 = zbuffer->readPixel(x+1,y);
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc01);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
-                            zbuffer->drawPixel(x+1, y,finalColor);
-                            uint16_t zc10 = zbuffer->readPixel(x,y+1);
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc10);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
-                            zbuffer->drawPixel(x, y+1,finalColor);
-                            uint16_t zc11 = zbuffer->readPixel(x+1,y+1);
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc11);
-                            {
-                                double r = ((finalColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((finalColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (finalColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                double med = (r+g+b)/3;
-                                if ( med > 0.5 ) { finalColor = zbuffer->alphaBlend(128,TFT_WHITE,finalColor); }
-                                else { finalColor = zbuffer->alphaBlend(128,TFT_BLACK,finalColor); }
-                            }
-                            zbuffer->drawPixel(x+1, y+1,finalColor);
-                        }
+                            //buffer3d->drawPixel(x, y,TFT_GREEN);
+                        //}
                         lastPolyColor = polyColor;
                     }
                 }
-                */
-
-                /*
-                { // smooth deep on zbuffer <======================= SHADER ZBUFFER
-                    uint16_t zc0 = zbuffer->readPixel(x,y);
-                    uint16_t finalColor=zc0;
-                    uint16_t zc01 = zbuffer->readPixel(x+1,y);
-                    if ( zc0 != zc01 ) {
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc01);
-                            zbuffer->drawPixel(x+1, y,finalColor);
-                    }
-                    uint16_t zc10 = zbuffer->readPixel(x,y+1);
-                    if ( zc0 != zc10 ) {
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc10);
-                            zbuffer->drawPixel(x, y+1,finalColor);
-                    }
-                    uint16_t zc11 = zbuffer->readPixel(x+1,y+1);
-                    if ( zc0 != zc11 ) {
-                            finalColor = zbuffer->alphaBlend(128,zc0,zc11);
-                            zbuffer->drawPixel(x+1, y+1,finalColor);
-                    }
-                }
-                */
-                
-                /*
-                { // smooth deep on normals <======================= SHADER NORMALS
-                    uint16_t zc0 = normalsBuffer->readPixel(x,y);
-                    uint16_t finalColor=zc0;
-                    uint16_t zc01 = normalsBuffer->readPixel(x+1,y);
-                    if ( zc0 != zc01 ) {
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc01);
-                            normalsBuffer->drawPixel(x+1, y,finalColor);
-                    }
-                    uint16_t zc10 = normalsBuffer->readPixel(x,y+1);
-                    if ( zc0 != zc10 ) {
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc10);
-                            normalsBuffer->drawPixel(x, y+1,finalColor);
-                    }
-                    uint16_t zc11 = normalsBuffer->readPixel(x+1,y+1);
-                    if ( zc0 != zc11 ) {
-                            finalColor = normalsBuffer->alphaBlend(128,zc0,zc11);
-                            normalsBuffer->drawPixel(x+1, y+1,finalColor);
-                    }
-                }
-                */
-
-                //@TODO PIXELSHADER WITH CALLBACK
             }
-            esp_task_wdt_reset();
-        }
+        }*/
 
+                    //@TODO PIXELSHADER WITH CALLBACK
+ 
         // work only with the relevant data
         TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
         if ( nullptr != rectBuffer3d ) {
@@ -619,30 +495,32 @@ void RenderTask(void *data) {
                         bool alpha = alphaChannel->readPixel(x,y);
                         if ( false == alpha ) { continue; } // don't work out of mesh
 
-                        const int32_t px = (x+app->border)-fpx;
-                        const int32_t py = (y+app->border)-fpy;
 
                         // default composer
                         uint16_t plainColor = buffer3d->readPixel(x,y);
-                        uint16_t finalColor = plainColor;
-                        uint16_t colorZ = zbuffer->readPixel(x,y); // deep
-                        uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
-                        uint16_t shadowColor = buffer3d->alphaBlend(128,normalColor,colorZ);
-                        /*
-                        bool mustbeSmooth = smoothBuffer->readPixel(x,y);
-                        if ( mustbeSmooth ) {
-                            finalColor = plainColor;
-                            //buffer3d->alphaBlend(64,colorZ,plainColor);
-                        } else {
-                            finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
+                        const int32_t px = (x+app->border)-fpx;
+                        const int32_t py = (y+app->border)-fpy;
+                        bool smoothMaterial = smoothBuffer->readPixel(x,y);
+                        if ( smoothMaterial ) {
+                            // smooth shader
+                            uint16_t lightColor = lightBuffer->readPixel(x,y); // deep
+                            if ( TFT_BLACK != lightColor ) {
+                                double r = ((lightColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                double g = ((lightColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                double b = (lightColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                                uint8_t lintensity = 255*((r+g+b)/3.0);
+                                uint16_t finalColor = rectBuffer3d->alphaBlend(lintensity,TFT_WHITE,plainColor);
+                                rectBuffer3d->drawPixel(px, py,finalColor);
+                            } else {
+                                rectBuffer3d->drawPixel(px, py,plainColor);
+                            }
+                        } else { // flat shader
+                            uint16_t colorZ = zbuffer->readPixel(x,y); // deep
+                            uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
+                            uint16_t shadowColor = rectBuffer3d->alphaBlend(128,normalColor,colorZ);
+                            uint16_t finalColor = rectBuffer3d->alphaBlend(128,shadowColor,plainColor);
+                            rectBuffer3d->drawPixel(px, py,finalColor);
                         }
-                        */
-                        finalColor = buffer3d->alphaBlend(128,shadowColor,plainColor);
-
-                        //uint16_t polyColor = polyBuffer->readPixel(x,y);
-
-                        
-                        rectBuffer3d->drawPixel(px, py,finalColor);
     
                         esp_task_wdt_reset();
                     }
@@ -813,7 +691,11 @@ void RenderTask(void *data) {
         delete smoothBuffer;
         smoothBuffer=nullptr;
     }
-
+    if ( nullptr != lightBuffer ) {
+        lightBuffer->deleteSprite();
+        delete lightBuffer;
+        lightBuffer=nullptr;
+    }
     if (isTask) {
         vTaskDelete(NULL);
     }
@@ -856,9 +738,9 @@ myFacesNumber = 224;
 myNormalsNumber = 224;
 
     myVectorsNumber=0;
-    rot.x=0.0; 
+    rot.x=3.0; 
     rot.y=5.0;//1.5;
-    rot.z=0.0;
+    rot.z=-2.0;
     /*
     rot.x=1.2;//0.75; 
     rot.y=2.9;//1.5;
