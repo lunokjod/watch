@@ -25,6 +25,7 @@
 //#include <cmath> 
 #include "../lunokIoT.hpp"
 
+#define ENGINE_INVALID_VALUE -666
 #define ENGINE_TASK_PRIORITY tskIDLE_PRIORITY+4
 typedef struct {
     int32_t Min;
@@ -56,6 +57,9 @@ typedef struct {
     float y;
     float z;
     uint16_t color=TFT_WHITE;
+    int16_t _deepCache=ENGINE_INVALID_VALUE;
+    uint32_t _xCache=ENGINE_INVALID_VALUE;
+    uint32_t _yCache=ENGINE_INVALID_VALUE;
 } Point3D;
 
 typedef struct {
@@ -83,11 +87,14 @@ typedef struct {
     uint16_t color=TFT_DARKGREY;
     Point3D *vertexData[3]= { nullptr }; // remember, the mesh must be triangulated!!
     bool smooth=false;
+    bool _clockWiseCache=false;
+    bool _clockWiseCacheValue=false;
 } Face3D;
 
 typedef struct {
     size_t vertexNum=0;
     float vertexData[3]= { 0 };
+    float _deepCache=ENGINE_INVALID_VALUE;
 } Normal3D;
 
 typedef struct {
@@ -161,11 +168,7 @@ for (int i = 0; i < dimension1_max; i++) {
         float lastDegY = 0.0;
         float lastDegZ = 0.0;
         unsigned long nextRefreshRotation=0;
-        const float MeshSize = 0.75;     // scale of mesh
-        //const uint16_t centerX = canvas->width()/4;
-        //const uint16_t centerY = canvas->height()/4;
-        //const int16_t renderSizeH = canvas->height()/2;
-        //const int16_t renderSizeW = canvas->width()/2;
+        const float MeshSize = 0.8;     // scale of mesh
         const uint16_t centerX = canvas->width()/2;
         const uint16_t centerY = canvas->height()/2;
         const int16_t renderSizeH = canvas->height();
@@ -179,30 +182,30 @@ for (int i = 0; i < dimension1_max; i++) {
         Engine3DApplication();
         ~Engine3DApplication();
         bool Tick();
-        bool IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point2D &pix2);
-        bool IsClockwise(IN Face3D &face);
+        //bool IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point2D &pix2);
+        inline bool IsClockwise(INOUT Face3D &face);
         // tools
-        float NormalFacing(IN Normal3D &normal);
+        inline float NormalFacing(INOUT Normal3D &normal);
         // convert 3D to 2D
-        void GetProjection(IN Point3D &vertex, OUT Point2D &pixel);
-        void GetProjection(IN Light3D &vertex, OUT Point2D &pixel);
+        inline void GetProjection(INOUT Point3D &vertex, OUT Point2D &pixel);
+        //void GetProjection(IN Light3D &vertex, OUT Point2D &pixel);
         // obtain the point depth
-        int16_t GetDeepForPoint(IN Point3D &point);
+        inline int16_t GetDeepForPoint(INOUT Point3D &point);
         // get zbuffer height for corresponding point
-        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN int32_t &x, IN int32_t &y);
-        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point2D &pix);
-        uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point3D &point);
+        //uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN int32_t &x, IN int32_t &y);
+        //uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,INOUT Point2D &pix);
+        //uint8_t GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,INOUT Point3D &point);
 
         // render mesh parts
-        void RenderFace(INOUT TFT_eSprite *buffer, bool shaded,uint32_t overrideColor, bool borders,IN Point2D &one,IN Point2D &two,IN Point2D &tree);
-        void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR,bool borders=false);
+        inline void RenderFace(INOUT TFT_eSprite *buffer, bool shaded,uint32_t overrideColor, bool borders,IN Point2D &one,IN Point2D &two,IN Point2D &tree);
+        inline void RenderFace(INOUT TFT_eSprite *buffer, IN Face3D & face,bool shaded=true,uint32_t overrideColor=Drawable::MASK_COLOR,bool borders=false);
         //void RenderPoint(INOUT TFT_eSprite *buffer, IN Point3D & point);
         //void RenderVector(IN Vector3D &vec);
 
         // manipulate vertex
         void Translate(INOUT Point3D & point, IN Point3D & translate);
-        void Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles);
-        void Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles);
+        inline void Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles);
+        inline void Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles);
         //void Rotate(INOUT Light3D & light, IN Angle3D & rotationAngles);
         void Scale(INOUT Point3D & point, IN Point3D & axes);
 };

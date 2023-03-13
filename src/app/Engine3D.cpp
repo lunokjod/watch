@@ -31,36 +31,37 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 
+float angleSinCache[360] = { 0.0 };
+float angleCosCache[360] = { 0.0 };
+float angleCache[360] = { 0.0 };
 
-//float *ccosCache = nullptr;
-//float *csinCache = nullptr;
-
-//volatile bool RenderDataInUse=false;
 SemaphoreHandle_t RenderDataSemaphore =  xSemaphoreCreateMutex();
 TaskHandle_t RenderTaskCore0 = NULL;
 TaskHandle_t RenderTaskCore1 = NULL;
-TFT_eSprite * RenderTask0Result = nullptr;
-Clipping2D RenderTask0ResultViewClipping;
-TFT_eSprite * RenderTask1Result = nullptr;
-Clipping2D RenderTask1ResultViewClipping;
+//TFT_eSprite * RenderTask0Result = nullptr;
+//Clipping2D RenderTask0ResultViewClipping;
+//TFT_eSprite * RenderTask1Result = nullptr;
+//Clipping2D RenderTask1ResultViewClipping;
 
 // https://github.com/vindar/tgx
 void RenderTask(void *data);
 
-int16_t Engine3DApplication::GetDeepForPoint(IN Point3D &point) {
+int16_t Engine3DApplication::GetDeepForPoint(INOUT Point3D &point) {
+    if (point._deepCache != ENGINE_INVALID_VALUE ) { return point._deepCache; }
     //int16_t deep=3*point.x-3*point.y+3*point.z;
     int16_t deep=2*point.x-2*point.y+2*point.z; // isometric deep :D
+    point._deepCache=deep;
     //int16_t deep = (point.x+point.z)/2;
     return deep;
 }
 
-
-uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point3D &point) {
+/*
+uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,INOUT Point3D &point) {
     Point2D pix;
     GetProjection(point,pix);
     return GetZBufferDeepForPoint(zbuffer,pix);
 }
-uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,IN Point2D &pix) {
+uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer,INOUT Point2D &pix) {
     return GetZBufferDeepForPoint(zbuffer,pix.x,pix.y);
 }
 
@@ -72,16 +73,15 @@ uint8_t Engine3DApplication::GetZBufferDeepForPoint(INOUT TFT_eSprite *zbuffer, 
     uint8_t zdeep = 255*((r+g+b)/3.0);
     return zdeep;
 }
+*/
 
-float Engine3DApplication::NormalFacing(IN Normal3D &normal) {
-    /*
-    float deep=nx[contn]-ny[contn]+nz[contn];  
-    if(deep<0){ saltar=true; }
-    */
-    float deep=normal.vertexData[0]-normal.vertexData[1]+normal.vertexData[2];  
+float Engine3DApplication::NormalFacing(INOUT Normal3D &normal) {
+    if ( ENGINE_INVALID_VALUE != normal._deepCache ) { return normal._deepCache; }
+    normal._deepCache=normal.vertexData[0]-normal.vertexData[1]+normal.vertexData[2];  
     //if(deep<0){ return true; }
-    return deep;
+    return normal._deepCache;
 } 
+/*
 bool Engine3DApplication::IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point2D &pix2) {
     // backface-culling for dickheads like me! :D
     int val = (pix1.y - pix0.y) * (pix2.x - pix1.x)
@@ -89,8 +89,11 @@ bool Engine3DApplication::IsClockwise(IN Point2D &pix0,IN Point2D &pix1,IN Point
     if (val == 0) { return false; } // collinear
     return (val > 0) ? false : true; // clock or counterclock wise
 }
-bool Engine3DApplication::IsClockwise(IN Face3D &face) {
-    // quick and dirty x'D
+*/
+bool Engine3DApplication::IsClockwise(INOUT Face3D &face) {
+    if ( face._clockWiseCache ) {
+        return face._clockWiseCacheValue;
+    }
     Point3D * p0 = face.vertexData[0];
     Point3D * p1 = face.vertexData[1];
     Point3D * p2 = face.vertexData[2];
@@ -100,7 +103,17 @@ bool Engine3DApplication::IsClockwise(IN Face3D &face) {
     GetProjection(*p0,pix0);
     GetProjection(*p1,pix1);
     GetProjection(*p2,pix2);
-    return IsClockwise(pix0,pix1,pix2);
+
+    int val = (pix1.y - pix0.y) * (pix2.x - pix1.x)
+              - (pix1.x - pix0.x) * (pix2.y - pix1.y);
+    //if (val == 0) { face._clockWiseCacheValue=false; } // collinear
+    if (val > 0) {
+        face._clockWiseCacheValue=false;
+    } else { 
+        face._clockWiseCacheValue=true;
+    }
+    face._clockWiseCache=true;
+    return face._clockWiseCacheValue;
 }
 
 
@@ -113,7 +126,7 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
                                 INOUT TFT_eSprite * lightBuffer,
                                 INOUT TFT_eSprite * buffer3d) {
     // painter algorythm
-    const int32_t MaxDeep= MeshDimensions.Max; //+abs(MeshDimensions.Min);
+    const int32_t MaxDeep=MeshDimensions.Max; //+abs(MeshDimensions.Min);
     int32_t currentDepth=MeshDimensions.Min;
     size_t orderdFaces=0;
     while ( currentDepth < MaxDeep ) {
@@ -131,15 +144,14 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
             if ( currentDepth != medianDeep ) { continue; } // is face in this deep? (painter algorythm, back to forth)
 
             // backface culling
+            //if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
+            if ( false == IsClockwise(face) ) { continue; } // backface-culing
             Point2D pix0;
             Point2D pix1;
             Point2D pix2;
             GetProjection(*p0,pix0);
             GetProjection(*p1,pix1);
             GetProjection(*p2,pix2);
-            float distNormal = NormalFacing(myNormals[i]);
-            //if ( distNormal<0 ) { continue; }
-            if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
 
             uint32_t tp0x = centerX+pix0.x;
             uint32_t tp0y = centerY+pix0.y;
@@ -154,6 +166,7 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
             if ( alpha > 0 ) {
                 const uint16_t zcolor = zbuffer->color565(alpha,alpha,alpha);
                 // fill the cache
+                float distNormal = NormalFacing(myNormals[i]);
                 facesToRender[orderdFaces].normalFacing = distNormal;
                 facesToRender[orderdFaces].faceOffset = i;
                 facesToRender[orderdFaces].p0x=tp0x;
@@ -172,12 +185,11 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
     // here the faces are ordered
 
     // do the default light @LIGHT
-    //lightBuffer->fillCircle(centerX-40,centerY-40,20,TFT_WHITE);
     uint8_t r=20;
     uint8_t c=1;
     uint8_t colorStep=255/r;
     for(;r>3;r--) {
-        uint16_t color = lightBuffer->color565(c,c,c);
+        uint16_t color = lightBuffer->color565(c,0,0);
         lightBuffer->fillCircle(centerX-10,centerY-10,r,color);
         c+=colorStep;
         if ( c > 200 ) { c=255; }
@@ -213,11 +225,13 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
             uint16_t nColor = normalBuffer->color565(baseCol,baseCol,baseCol);
             normalBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,nColor);
         
+            /*
             // fill the poly map
             polyCount++;
             if ( polyCount > 9 ) { polyCount=0; }
             uint16_t polyColor = AvailColors[polyCount];
             polyBuffer->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,polyColor);
+            */
 
             // fill the smooth buffer
             uint16_t smoothColor = TFT_BLACK;
@@ -239,39 +253,39 @@ extern bool UILongTapOverride; // don't allow long tap for task switcher
 bool Engine3DApplication::Tick() {
     UILongTapOverride=true; // remember every time
     TemplateApplication::btnBack->Interact(touched,touchX,touchY); // backbutton on bottom-right
-
+    /*
     if ( 0 != lastCoreUsed ) {
         if ( nullptr != RenderTask0Result ) {
             TFT_eSprite * current = RenderTask0Result;
+            RenderTask0Result = nullptr;
             //Clipping2D RenderTask0ResultViewClipping;
             int32_t x = centerX+RenderTask0ResultViewClipping.xMin;
             int32_t y = centerY+RenderTask0ResultViewClipping.yMin;
             //lLog("PUSH0: %d %d\n",x,y);
             current->pushSprite(x,y);
             //current->pushImageDMA()
-            RenderTask0Result = nullptr;
             current->deleteSprite();
             delete current;
             lastCoreUsed=0;
-            return false;
+            //return false;
         }
     }
     if ( 1 != lastCoreUsed ) {
         if ( nullptr != RenderTask1Result ) {
             TFT_eSprite * current = RenderTask1Result;
+            RenderTask1Result = nullptr;
             int32_t x = centerX+RenderTask1ResultViewClipping.xMin;
             int32_t y = centerY+RenderTask1ResultViewClipping.yMin;
             //lLog("PUSH1: %d %d\n",x,y);
             current->pushSprite(x,y);
             lastPx = (renderSizeW-current->width())/2;
             lastPy = (renderSizeH-current->height())/2;
-            RenderTask1Result = nullptr;
             current->deleteSprite();
             delete current;
             lastCoreUsed=1;
-            return false;
+            //return false;
         }
-    }
+    }*/
     return false;
 }
 
@@ -327,18 +341,18 @@ void RenderTask(void *data) {
     unsigned long eCompsite;
     unsigned long bWait;
     unsigned long eWait;
-//    int64_t bPush;
-//    int64_t ePush;
+    unsigned long bPush;
+    unsigned long ePush;
     while(where->run) {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         xTaskDelayUntil( &nextCheck, (1 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
 
+        esp_task_wdt_reset();
         int64_t bTask = millis();
-        //esp_task_wdt_reset();
 
         if ( false == where->run ) { break; }
         bClean = millis();
-
+        //@CLEANUP
         // update fp
         int32_t fpx = app->centerX+ViewClipping.xMin;
         int32_t fpy = app->centerY+ViewClipping.yMin;
@@ -348,42 +362,57 @@ void RenderTask(void *data) {
         // new clip
         int16_t clipWidth  = fpw-fpx;
         int16_t clipHeight  = fph-fpy;
+        {
+            int16_t clipFullW = clipWidth+border2;
+            int16_t clipFullH = clipHeight+border2;
+            
+            //lLog("X: %d Y: %d Clip: %d %d %d %d\n",px,py,ViewClipping.xMin,ViewClipping.yMin,
+            //                ViewClipping.xMax,ViewClipping.yMax);
+            //lLog("CRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
 
+            // clean alpha channel
+            alphaChannel->fillSprite(TFT_BLACK);
+            //alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
+    
+            // clean lights
+            lightBuffer->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
 
-        //lLog("X: %d Y: %d Clip: %d %d %d %d\n",px,py,ViewClipping.xMin,ViewClipping.yMin,
-        //                ViewClipping.xMax,ViewClipping.yMax);
-        //lLog("CRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
+            //zbuffer->fillSprite(TFT_BLACK);
+            //normalsBuffer->fillSprite(TFT_BLACK);
 
-        // clean alpha channel
-        //alphaChannel->fillSprite(TFT_BLACK);
-        alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
- 
-        // clean lights
-        lightBuffer->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
+            //buffer3d->fillSprite(TFT_BLUE);
+            //buffer3d->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
 
-        //zbuffer->fillSprite(TFT_BLACK);
-        //normalsBuffer->fillSprite(TFT_BLACK);
-        //buffer3d->fillSprite(TFT_BLUE);
-        buffer3d->fillRect(fpx-app->border,fpy-app->border,clipWidth+border2,clipHeight+border2,TFT_BLACK);
-
-        // clear the mesh size
-        MeshDimensions.Max=0;
-        MeshDimensions.Min=1;
-        // clear the clip dimension
-        ViewClipping.xMin = app->centerX-1;
-        ViewClipping.yMin = app->centerY-1;
-        ViewClipping.xMax = 1;
-        ViewClipping.yMax = 1;
-        eClean = millis();
-
-        bAnimation = millis();
-        
-        if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
-            // cannot get lock! discard this iteration
-            lLog("Cpu: %u render timeout, retry\n",where->core);
-            continue; 
+            // destroy caches
+            for(int i=0;i<app->myPointsNumber;i++) {
+                app->myPoints[i]._xCache = ENGINE_INVALID_VALUE;
+                app->myPoints[i]._yCache = ENGINE_INVALID_VALUE;
+                app->myPoints[i]._deepCache = ENGINE_INVALID_VALUE;
+            }
+            for(int i=0;i<app->myFacesNumber;i++) {
+                app->myFaces[i]._clockWiseCache=false;
+            }
+            for(int i=0;i<app->myNormalsNumber;i++) {
+                app->myNormals[i]._deepCache=ENGINE_INVALID_VALUE;
+            }
+            // clear the mesh size
+            MeshDimensions.Max=0;
+            MeshDimensions.Min=1;
+            // clear the clip dimension
+            ViewClipping.xMin = app->centerX-1;
+            ViewClipping.yMin = app->centerY-1;
+            ViewClipping.xMax = 1;
+            ViewClipping.yMax = 1;
+            eClean = millis();
         }
 
+        // obtain mesh lock
+        if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
+            // cannot get lock! discard this iteration
+            lLog("Cpu: %u render waiting...\n",where->core);
+            continue; 
+        }
+        bAnimation = millis();
         // rotate vertex!
         for(int i=0;i<app->myPointsNumber;i++) {
             app->Rotate(app->myPoints[i], app->rot);
@@ -433,7 +462,7 @@ void RenderTask(void *data) {
         bCompsite = millis();
         const int16_t rectWidth = clipWidth+border2;
         const int16_t rectHeight = clipHeight+border2;
-
+        //lLog("W: %d H: %d\n",rectWidth,rectHeight);
 
         /*
         uint16_t lastPolyColor=TFT_BLACK;
@@ -484,10 +513,11 @@ void RenderTask(void *data) {
                     //@TODO PIXELSHADER WITH CALLBACK
  
         // work only with the relevant data
-        TFT_eSprite * rectBuffer3d = new TFT_eSprite(ttgo->tft);
-        if ( nullptr != rectBuffer3d ) {
-            rectBuffer3d->setColorDepth(16);
-            if ( NULL != rectBuffer3d->createSprite(rectWidth,rectHeight)) {
+        TFT_eSprite rectBuffer3d = TFT_eSprite(ttgo->tft);
+        //if ( nullptr != rectBuffer3d ) {
+            rectBuffer3d.setColorDepth(16);
+            if ( NULL != rectBuffer3d.createSprite(rectWidth,rectHeight)) {
+                //rectBuffer3d->fillSprite(random(0,65535));
                 // composite the image
                 for(int y=fpy;y<fph;y++) {
                     for(int x=fpx;x<fpw;x++) {
@@ -498,6 +528,9 @@ void RenderTask(void *data) {
 
                         // default composer
                         uint16_t plainColor = buffer3d->readPixel(x,y);
+                        uint16_t colorZ = zbuffer->readPixel(x,y); // deep
+                        uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
+                        uint16_t shadowColor = rectBuffer3d.alphaBlend(128,normalColor,colorZ);
                         const int32_t px = (x+app->border)-fpx;
                         const int32_t py = (y+app->border)-fpy;
                         bool smoothMaterial = smoothBuffer->readPixel(x,y);
@@ -505,21 +538,21 @@ void RenderTask(void *data) {
                             // smooth shader
                             uint16_t lightColor = lightBuffer->readPixel(x,y); // deep
                             if ( TFT_BLACK != lightColor ) {
-                                double r = ((lightColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                double g = ((lightColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                double b = (lightColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                                uint8_t lintensity = 255*((r+g+b)/3.0);
-                                uint16_t finalColor = rectBuffer3d->alphaBlend(lintensity,TFT_WHITE,plainColor);
-                                rectBuffer3d->drawPixel(px, py,finalColor);
+                                double rSmoothChannel = ((lightColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                                if ( 0 != rSmoothChannel ) {
+                                    uint8_t matBright = 255*rSmoothChannel;
+                                    uint16_t brightColor = rectBuffer3d.alphaBlend(128,TFT_WHITE,shadowColor);
+                                    uint16_t finalColor = rectBuffer3d.alphaBlend(matBright,brightColor,plainColor);
+                                    rectBuffer3d.drawPixel(px, py,finalColor);
+                                }
+                                //double g = ((lightColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                                //double b = (lightColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
                             } else {
-                                rectBuffer3d->drawPixel(px, py,plainColor);
+                                rectBuffer3d.drawPixel(px, py,plainColor);
                             }
                         } else { // flat shader
-                            uint16_t colorZ = zbuffer->readPixel(x,y); // deep
-                            uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
-                            uint16_t shadowColor = rectBuffer3d->alphaBlend(128,normalColor,colorZ);
-                            uint16_t finalColor = rectBuffer3d->alphaBlend(128,shadowColor,plainColor);
-                            rectBuffer3d->drawPixel(px, py,finalColor);
+                            uint16_t finalColor = rectBuffer3d.alphaBlend(128,shadowColor,plainColor);
+                            rectBuffer3d.drawPixel(px, py,finalColor);
                         }
     
                         esp_task_wdt_reset();
@@ -595,7 +628,18 @@ void RenderTask(void *data) {
                 }*/
                 eCompsite = millis();
             }
+        //}
+        bPush=millis();
+        int32_t x = app->centerX+ViewClipping.xMin;
+        int32_t y = app->centerY+ViewClipping.yMin;
+        if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_TIME_TICKS) == pdTRUE )  {
+            rectBuffer3d.pushSprite(x,y);
+            xSemaphoreGive( RenderDataSemaphore );
         }
+        rectBuffer3d.deleteSprite();
+        ePush=millis();
+
+
         //FreeSpace();
         showStats++;
         if ( 0 == (showStats % 25 )) {
@@ -606,7 +650,7 @@ void RenderTask(void *data) {
             int32_t renderT = eRender-bRender;
             int32_t compT = eCompsite-bCompsite;
             int32_t waitT = eWait-bWait;
-            //int32_t pushT = ePush-bPush;
+            int32_t pushT = ePush-bPush;
 
             int32_t taskT = eTask-bTask;
             int32_t fps = 1000/(eTask-bTask);
@@ -614,19 +658,29 @@ void RenderTask(void *data) {
             uint8_t pcAnim = (float(animT)/float(taskT))*100;
             uint8_t pcRender = (float(renderT)/float(taskT))*100;
             uint8_t pcComp = (float(compT)/float(taskT))*100;
-            //uint8_t pcPush = (float(pushT)/float(taskT))*100;
-            lLog("Core %u: Clean: %d (%u%%%%) Anim: %d (%u%%%%) Render: %d (%u%%%%) Composite: %d (%u%%%%) Totals: %d MS FPS: %d\n",
+            uint8_t pcPush = (float(pushT)/float(taskT))*100;
+            lLog("Core %u: Clean: %d (%u%%%%) Anim: %d (%u%%%%) Render: %d (%u%%%%) Composite: %d (%u%%%%) Push: %d (%u%%%%) Totals: %d MS FPS: %d\n",
                                 where->core,
                                 cleanT,pcClean,
                                 animT,pcAnim,
                                 renderT,pcRender,
                                 compT,pcComp,
+                                pushT,pcPush,
                                 taskT,
                                 fps);
             //FreeSpace();
         }
         esp_task_wdt_reset();
-
+        /*
+        int32_t x = app->centerX+ViewClipping.xMin;
+        int32_t y = app->centerY+ViewClipping.yMin;
+        //lLog("PUSH0: %d %d\n",x,y);
+        rectBuffer3d->pushSprite(x,y);
+        //current->pushImageDMA()
+        rectBuffer3d->deleteSprite();
+        delete rectBuffer3d;
+        */
+        /*
         if (where->task) {
             if ( 0 == where->core) {
                 if (nullptr != RenderTask0Result) {
@@ -657,6 +711,19 @@ void RenderTask(void *data) {
             RenderTask0ResultViewClipping = ViewClipping;
             break;
         }
+        */
+
+        /*
+        RenderTask0Result = nullptr;
+        //Clipping2D RenderTask0ResultViewClipping;
+        int32_t x = centerX+RenderTask0ResultViewClipping.xMin;
+        int32_t y = centerY+RenderTask0ResultViewClipping.yMin;
+        //lLog("PUSH0: %d %d\n",x,y);
+        current->pushSprite(x,y);
+        //current->pushImageDMA()
+        current->deleteSprite();
+        delete current;
+        */
     }
     // end the task!
     bool isTask=where->task;
@@ -720,27 +787,45 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
 
 // demo app entrypoint
 Engine3DApplication::Engine3DApplication() {
-    /*
-    // precalculate angles
-    ccosCache =(float*)calloc(3600,sizeof(float));
-    csinCache =(float*)calloc(3600,sizeof(float));
+#ifdef ESP32_DMA
+    lAppLog("DMA enabled\n");
+    #else
+    lAppLog("DMA not enabled\n");
+#endif    // precalculate angles
+//float angleSinCache[360] = { 0.0 };
+//float angleCosCache[360] = { 0.0 };
+//float angleCache[360] = { 0.0 };
 
-    for(int i=0;i<3600;i++){ 
+/*
+BEFORE:
+Core 0: Clean: 12 (5%) Anim: 58 (26%) Render: 106 (47%) Composite: 46 (20%) Totals: 222 MS FPS: 4
+Core 1: Clean: 11 (4%) Anim: 66 (29%) Render: 101 (45%) Composite: 44 (19%) Totals: 222 MS FPS: 4
+
+Core 0: Clean: 12 (5%) Anim: 56 (24%) Render: 106 (46%) Composite: 52 (23%) Totals: 226 MS FPS: 4
+Core 1: Clean: 19 (8%) Anim: 52 (23%) Render: 102 (46%) Composite: 48 (21%) Totals: 221 MS FPS: 4
+*/
+    for(int i=0;i<360;i++){ 
         float iii=i*0.01745;
-        ccosCache[i]= cos(iii);
-        csinCache[i]= sin(iii);
+        angleCosCache[i]= cos(iii);
+        angleSinCache[i]= sin(iii);
+        angleCache[i]=(iii*M_PI)/180;
+
+        //float anglex = (rotationAngles.x * M_PI) / 180.0;
+        //tempN = normal.vertexData[1];
+        //normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
+        //normal.vertexData[2] = tempN * sin(anglex) + normal.vertexData[2] * cos(anglex);
     }
-    */
+
     // from generated meshdata blender python script
 //@MESH
-myPointsNumber = 114;
-myFacesNumber = 224;
-myNormalsNumber = 224;
+myPointsNumber = 97;
+myFacesNumber = 190;
+myNormalsNumber = 190;
 
     myVectorsNumber=0;
     rot.x=3.0; 
     rot.y=5.0;//1.5;
-    rot.z=-2.0;
+    rot.z=2.0;
     /*
     rot.x=1.2;//0.75; 
     rot.y=2.9;//1.5;
@@ -802,6 +887,9 @@ myNormalsNumber = 224;
 
     lAppLog("Vertex re-process...\n");
     for(int i=0;i<myPointsNumber;i++) {
+        myPoints[i]._xCache == ENGINE_INVALID_VALUE;
+        myPoints[i]._yCache == ENGINE_INVALID_VALUE;
+        myPoints[i]._deepCache=ENGINE_INVALID_VALUE;
         Scale(myPoints[i],scaleVal); // do more big the blender output
         Translate(myPoints[i],displace);
         Rotate(myPoints[i],rotation);
@@ -841,7 +929,7 @@ myNormalsNumber = 224;
     tmpCore0->core=0;
     xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_TASK_STACK_SIZE, tmpCore0, ENGINE_TASK_PRIORITY,&RenderTaskCore0,0);
 
-
+    //delay(100);
     //core1Worker =(void *)ps_malloc(sizeof(RenderCore));
     core1Worker =(void *)malloc(sizeof(RenderCore));
     RenderCore * tmpCore1=(RenderCore *)core1Worker;
@@ -853,18 +941,19 @@ myNormalsNumber = 224;
 }
 
 Engine3DApplication::~Engine3DApplication() {
-    if ( nullptr != myNormals ) { free(myNormals); }
-    if ( nullptr != myFaces ) { free(myFaces); }
-    if ( nullptr != myPoints ) { free(myPoints); }
-    if ( nullptr != myVectors ) { free(myVectors); }
-
     if ( nullptr != core0Worker ) {
         ((RenderCore*)core0Worker)->run=false;
     }
     if ( nullptr != core1Worker ) {
         ((RenderCore*)core1Worker)->run=false;
     }
+    delay(100);
+    if ( nullptr != myNormals ) { free(myNormals); }
+    if ( nullptr != myFaces ) { free(myFaces); }
+    if ( nullptr != myPoints ) { free(myPoints); }
+    if ( nullptr != myVectors ) { free(myVectors); }
 
+    /*
     if ( nullptr != RenderTask0Result ) {
         RenderTask0Result->deleteSprite();
         delete RenderTask0Result;
@@ -874,26 +963,32 @@ Engine3DApplication::~Engine3DApplication() {
         RenderTask1Result->deleteSprite();
         delete RenderTask1Result;
         RenderTask1Result=nullptr;
-    }
+    }*/
     if ( nullptr != facesToRender ) { free(facesToRender); }
     //if ( nullptr != ccosCache) { free(ccosCache); ccosCache=nullptr; }
     //if ( nullptr != csinCache) { free(csinCache); csinCache=nullptr; }
 
 }
-
+/*
 void Engine3DApplication::GetProjection(IN Light3D &vertex, OUT Point2D &pixel ) {
     pixel.x = (vertex.x-vertex.z)/sq2;
     pixel.y = (vertex.x+2*vertex.y+vertex.z)/sq6;
 }
-
-void Engine3DApplication::GetProjection(IN Point3D &vertex, OUT Point2D &pixel ) {
+*/
+void Engine3DApplication::GetProjection(INOUT Point3D &vertex, OUT Point2D &pixel ) {
     // https://stackoverflow.com/questions/28607713/convert-3d-coordinates-to-2d-in-an-isometric-projection
     //*u=(x-z)/sqrt(2);
     //*v=(x+2*y+z)/sqrt(6);
     // u = x*cos(α) + y*cos(α+120°) + z*cos(α-120°)
     // v = x*sin(α) + y*sin(α+120°) + z*sin(α-120°)
-    pixel.x = (vertex.x-vertex.z)/sq2;
-    pixel.y = (vertex.x+2*vertex.y+vertex.z)/sq6;
+    if ( vertex._xCache == ENGINE_INVALID_VALUE ) {
+        vertex._xCache=(vertex.x-vertex.z)/sq2;
+    }
+    if ( vertex._yCache == ENGINE_INVALID_VALUE ) {
+        vertex._yCache = (vertex.x+2*vertex.y+vertex.z)/sq6;
+    }
+    pixel.x=vertex._xCache;
+    pixel.y=vertex._yCache;
 }
 
 
@@ -996,9 +1091,50 @@ void Engine3DApplication::Rotate(INOUT Light3D & light, IN Angle3D & rotationAng
     light.y=tmpPoint.y;
     light.z=tmpPoint.z;
 }*/
+
 void Engine3DApplication::Rotate(INOUT Normal3D & normal, IN Angle3D & rotationAngles) {
     float tempN;
-    if ( 0 != rotationAngles.x ) {
+    if ( 0.0 != rotationAngles.x ) {
+        int angleOffset=(int)rotationAngles.x;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float anglex=angleCache[angleOffset];
+        //float anglex = (rotationAngles.x * M_PI) / 180.0;
+        tempN = normal.vertexData[1];
+        //point.y = point.y * cos(anglex) - point.z * sin(anglex);
+        //point.z = temp * sin(anglex) + point.z * cos(anglex);
+        normal.vertexData[1] = normal.vertexData[1] * angleCosCache[angleOffset] - normal.vertexData[2] * angleSinCache[angleOffset];
+        normal.vertexData[2] = tempN * angleSinCache[angleOffset] + normal.vertexData[2] * angleCosCache[angleOffset];
+    }
+    if ( 0.0 != rotationAngles.y ) {
+        int angleOffset=(int)rotationAngles.y;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float angley=angleCache[angleOffset];
+        //float angley = (rotationAngles.y * M_PI) / 180.0;
+        tempN = normal.vertexData[2];
+        
+        normal.vertexData[2] = normal.vertexData[2] * angleCosCache[angleOffset] - normal.vertexData[0] * angleSinCache[angleOffset];
+        normal.vertexData[0] = tempN * angleSinCache[angleOffset] + normal.vertexData[0] * angleCosCache[angleOffset];
+        //point.z = point.z * coscY - point.x * sincY;
+        //point.x = temp * sincY + point.x * coscY;
+    }
+    if ( 0.0 != rotationAngles.z ) {
+        int angleOffset=(int)rotationAngles.z;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float anglez=angleCache[angleOffset];
+        //float anglez = (rotationAngles.z * M_PI) / 180.0;
+        tempN = normal.vertexData[0];
+        //point.x = point.x * cos(anglez) - point.y * sin(anglez);
+        //point.y = temp * sin(anglez) + point.y *cos(anglez);
+        normal.vertexData[0] = normal.vertexData[0] * angleCosCache[angleOffset] - normal.vertexData[1] * angleSinCache[angleOffset];
+        normal.vertexData[1] = tempN * angleSinCache[angleOffset] + normal.vertexData[1] *angleCosCache[angleOffset];
+    }
+
+
+/*
+
+
+    float tempN;
+    if ( 0.0 != rotationAngles.x ) {
         float anglex = (rotationAngles.x * M_PI) / 180.0;
         tempN = normal.vertexData[1];
         normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
@@ -1017,44 +1153,44 @@ void Engine3DApplication::Rotate(INOUT Normal3D & normal, IN Angle3D & rotationA
         tempN = normal.vertexData[0];
         normal.vertexData[0] = normal.vertexData[0] * cos(anglez) - normal.vertexData[1] * sin(anglez);
         normal.vertexData[1] = tempN * sin(anglez) + normal.vertexData[1] *cos(anglez);
-    }
+    }*/
 }
 void Engine3DApplication::Rotate(INOUT Point3D & point, IN Angle3D & rotationAngles) {
     float temp;
-    if ( 0 != rotationAngles.x ) {
-        float anglex = (rotationAngles.x * M_PI) / 180.0;
+    if ( 0.0 != rotationAngles.x ) {
+        int angleOffset=(int)rotationAngles.x;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float anglex=angleCache[angleOffset];
+        //float anglex = (rotationAngles.x * M_PI) / 180.0;
         temp = point.y;
-        //point.y = point.y * coscX - point.z * sincX;
-        //point.z = temp * sincX + point.z * coscX;
-        point.y = point.y * cos(anglex) - point.z * sin(anglex);
-        point.z = temp * sin(anglex) + point.z * cos(anglex);
+        //point.y = point.y * cos(anglex) - point.z * sin(anglex);
+        //point.z = temp * sin(anglex) + point.z * cos(anglex);
+        point.y = point.y * angleCosCache[angleOffset] - point.z * angleSinCache[angleOffset];
+        point.z = temp * angleSinCache[angleOffset] + point.z * angleCosCache[angleOffset];
     }
-    if ( 0 != rotationAngles.y ) {
-        float angley = (rotationAngles.y * M_PI) / 180.0;
+    if ( 0.0 != rotationAngles.y ) {
+        int angleOffset=(int)rotationAngles.y;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float angley=angleCache[angleOffset];
+        //float angley = (rotationAngles.y * M_PI) / 180.0;
         temp = point.z;
+        
+        point.z = point.z * angleCosCache[angleOffset] - point.x * angleSinCache[angleOffset];
+        point.x = temp * angleSinCache[angleOffset] + point.x * angleCosCache[angleOffset];
         //point.z = point.z * coscY - point.x * sincY;
         //point.x = temp * sincY + point.x * coscY;
-        point.z = point.z * cos(angley) - point.x * sin(angley);
-        point.x = temp * sin(angley) + point.x * cos(angley);
     }
-    if ( 0 != rotationAngles.z ) {
-        float anglez = (rotationAngles.z * M_PI) / 180.0;
+    if ( 0.0 != rotationAngles.z ) {
+        int angleOffset=(int)rotationAngles.z;
+        if ( angleOffset < 0 ) { angleOffset+=360; }
+        float anglez=angleCache[angleOffset];
+        //float anglez = (rotationAngles.z * M_PI) / 180.0;
         temp = point.x;
-        //point.x = point.x * coscZ - point.y * sincZ;
-        //point.y = temp * sincZ + point.y *coscZ;
-        point.x = point.x * cos(anglez) - point.y * sin(anglez);
-        point.y = temp * sin(anglez) + point.y *cos(anglez);
-    }    
-    /*
-    float sincX=csinCache[int(anglex*10)];
-    float coscX=ccosCache[int(anglex*10)];
-    float sincY=csinCache[int(angley*10)];
-    float coscY=ccosCache[int(angley*10)];
-    float sincZ=csinCache[int(anglez*10)];
-    float coscZ=ccosCache[int(anglez*10)];
-    */
-
-
+        //point.x = point.x * cos(anglez) - point.y * sin(anglez);
+        //point.y = temp * sin(anglez) + point.y *cos(anglez);
+        point.x = point.x * angleCosCache[angleOffset] - point.y * angleSinCache[angleOffset];
+        point.y = temp * angleSinCache[angleOffset] + point.y *angleCosCache[angleOffset];
+    }
 
 
     /*
