@@ -194,6 +194,7 @@ void Engine3DApplication::DirectRender(IN Range MeshDimensions,
         c+=colorStep;
         if ( c > 200 ) { c=255; }
     }
+
     // final rendering
     //currentDepth=MeshDimensions.Min;
     //static int i=0;
@@ -365,23 +366,13 @@ void RenderTask(void *data) {
         {
             int16_t clipFullW = clipWidth+border2;
             int16_t clipFullH = clipHeight+border2;
-            
-            //lLog("X: %d Y: %d Clip: %d %d %d %d\n",px,py,ViewClipping.xMin,ViewClipping.yMin,
-            //                ViewClipping.xMax,ViewClipping.yMax);
-            //lLog("CRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
 
+            // only need to regenerate alpha and lights, the other layers are ovewrited due alpha
             // clean alpha channel
-            alphaChannel->fillSprite(TFT_BLACK);
-            //alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
+            alphaChannel->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
     
             // clean lights
             lightBuffer->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
-
-            //zbuffer->fillSprite(TFT_BLACK);
-            //normalsBuffer->fillSprite(TFT_BLACK);
-
-            //buffer3d->fillSprite(TFT_BLUE);
-            //buffer3d->fillRect(fpx-app->border,fpy-app->border,clipFullW,clipFullH,TFT_BLACK);
 
             // destroy caches
             for(int i=0;i<app->myPointsNumber;i++) {
@@ -413,6 +404,7 @@ void RenderTask(void *data) {
             continue; 
         }
         bAnimation = millis();
+
         // rotate vertex!
         for(int i=0;i<app->myPointsNumber;i++) {
             app->Rotate(app->myPoints[i], app->rot);
@@ -423,20 +415,17 @@ void RenderTask(void *data) {
             app->UpdateRange(MeshDimensions,deep);
             esp_task_wdt_reset();
         }
-        // defined clip on screen
-        //const int16_t bx = app->centerX+ViewClipping.xMin; 
-        //const int16_t by = app->centerY+ViewClipping.yMin; 
-        //const int16_t fx = app->centerX+ViewClipping.xMax; 
-        //const int16_t fy = app->centerY+ViewClipping.yMax; 
         // new clip
         fpx = app->centerX+ViewClipping.xMin;
         fpy = app->centerY+ViewClipping.yMin;
         fpw = app->centerX+ViewClipping.xMax;
         fph = app->centerY+ViewClipping.yMax;
+        if ( fpy < 0 ) { fpy = 0; }
+        if ( fpx < 0 ) { fpx = 0; }
+        if ( fph > app->renderSizeH ) { fph = app->renderSizeH; }
+        if ( fpw > app->renderSizeW ) { fpw = app->renderSizeW; }
         clipWidth  = fpw-fpx;
         clipHeight  = fph-fpy;
-
-        //lLog("NRECT: %d %d %d %d CLIP: %d %d\n",fpx,fpy,fpw,fph,clipWidth,clipHeight);
 
         // rotate normals
         for(int i=0;i<app->myNormalsNumber;i++) {
@@ -449,20 +438,12 @@ void RenderTask(void *data) {
         bRender = millis();
         app->DirectRender(MeshDimensions,alphaChannel,zbuffer,normalsBuffer,polyBuffer,smoothBuffer,lightBuffer,buffer3d);
         eRender = millis();
-        //DEBUG LAYERS
-        //alphaChannel->pushSprite(0,0);
-        //zbuffer->pushSprite(0,0);
-        //normalsBuffer->pushSprite(0,0);
-        //buffer3d->pushSprite(0,0);
-        //return false;
-
 
         xSemaphoreGive( RenderDataSemaphore );
 
         bCompsite = millis();
         const int16_t rectWidth = clipWidth+border2;
         const int16_t rectHeight = clipHeight+border2;
-        //lLog("W: %d H: %d\n",rectWidth,rectHeight);
 
         /*
         uint16_t lastPolyColor=TFT_BLACK;
@@ -510,128 +491,144 @@ void RenderTask(void *data) {
             }
         }*/
 
-                    //@TODO PIXELSHADER WITH CALLBACK
+        //@TODO PIXELSHADER WITH CALLBACK
  
-        // work only with the relevant data
+        // final imageclip composing ready for send to TFT
         TFT_eSprite rectBuffer3d = TFT_eSprite(ttgo->tft);
-        //if ( nullptr != rectBuffer3d ) {
-            rectBuffer3d.setColorDepth(16);
-            if ( NULL != rectBuffer3d.createSprite(rectWidth,rectHeight)) {
-                //rectBuffer3d->fillSprite(random(0,65535));
-                // composite the image
-                for(int y=fpy;y<fph;y++) {
-                    for(int x=fpx;x<fpw;x++) {
-                        //@COMPOSITION
-                        bool alpha = alphaChannel->readPixel(x,y);
-                        if ( false == alpha ) { continue; } // don't work out of mesh
+        rectBuffer3d.setColorDepth(16);
+        if ( NULL != rectBuffer3d.createSprite(rectWidth,rectHeight)) {
 
+            //@LIGHT
+            //Point2D lightPix;
+            //app->GetProjection(app->Light0Point,lightPix);
+            //lightBuffer->fillCircle(lightPix.x,lightPix.y,10,app->Light0Point.color);
 
-                        // default composer
-                        uint16_t plainColor = buffer3d->readPixel(x,y);
-                        uint16_t colorZ = zbuffer->readPixel(x,y); // deep
-                        uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
-                        uint16_t shadowColor = rectBuffer3d.alphaBlend(128,normalColor,colorZ);
-                        const int32_t px = (x+app->border)-fpx;
-                        const int32_t py = (y+app->border)-fpy;
-                        bool smoothMaterial = smoothBuffer->readPixel(x,y);
-                        if ( smoothMaterial ) {
-                            // smooth shader
-                            uint16_t lightColor = lightBuffer->readPixel(x,y); // deep
-                            if ( TFT_BLACK != lightColor ) {
-                                double rSmoothChannel = ((lightColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-                                if ( 0 != rSmoothChannel ) {
-                                    uint8_t matBright = 255*rSmoothChannel;
-                                    uint16_t brightColor = rectBuffer3d.alphaBlend(128,TFT_WHITE,shadowColor);
-                                    uint16_t finalColor = rectBuffer3d.alphaBlend(matBright,brightColor,plainColor);
-                                    rectBuffer3d.drawPixel(px, py,finalColor);
-                                }
-                                //double g = ((lightColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-                                //double b = (lightColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-                            } else {
-                                rectBuffer3d.drawPixel(px, py,plainColor);
+            //rectBuffer3d->fillSprite(random(0,65535));
+            // composite the image
+            for(int y=fpy;y<fph;y++) {
+                for(int x=fpx;x<fpw;x++) {
+                    //@COMPOSITION
+                    bool alpha = alphaChannel->readPixel(x,y);
+                    if ( false == alpha ) { continue; } // don't work out of mesh
+
+                    // default composer
+                    uint16_t plainColor = buffer3d->readPixel(x,y);
+                    uint16_t colorZ = zbuffer->readPixel(x,y); // deep
+                    uint16_t normalColor = normalsBuffer->readPixel(x,y); // volume
+
+                    
+                    //AAAAAAAAAAAAAAAAAAAAa MUST MODIFY THE NORMAL COLOR
+                    //Light0Point                    
+                    //float rnx = nx[zpos] - normalluzx; rnx = rnx * rnx;
+                    //float rny = ny[zpos] - normalluzy; rny = rny * rny;
+                    //float rnz = nz[zpos] - normalluzz; rnz = rnz * rnz;
+                    //float sumrn = rnx + rny + rnz;
+                    //float dist = sqrt(sumrn); dist = dist * 1000;
+                    ///AAAAAAAAAAAAAAAAAAAAAAAAA
+
+                    uint16_t shadowColor = rectBuffer3d.alphaBlend(128,normalColor,colorZ);
+                    const int32_t px = (x+app->border)-fpx;
+                    const int32_t py = (y+app->border)-fpy;
+                    bool smoothMaterial = smoothBuffer->readPixel(x,y);
+                    if ( smoothMaterial ) {
+                        // smooth shader
+                        uint16_t lightColor = lightBuffer->readPixel(x,y); // deep
+                        if ( TFT_BLACK != lightColor ) {
+                            double rSmoothChannel = ((lightColor >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+                            if ( 0 != rSmoothChannel ) {
+                                uint8_t matBright = 255*rSmoothChannel;
+                                uint16_t brightColor = rectBuffer3d.alphaBlend(128,TFT_WHITE,shadowColor);
+                                uint16_t finalColor = rectBuffer3d.alphaBlend(matBright,brightColor,plainColor);
+                                rectBuffer3d.drawPixel(px, py,finalColor);
                             }
-                        } else { // flat shader
-                            uint16_t finalColor = rectBuffer3d.alphaBlend(128,shadowColor,plainColor);
-                            rectBuffer3d.drawPixel(px, py,finalColor);
+                            // @TODO use other channels
+                            //double g = ((lightColor >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+                            //double b = (lightColor & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+                        } else {
+                            rectBuffer3d.drawPixel(px, py,plainColor);
                         }
-    
-                        esp_task_wdt_reset();
+                    } else { // flat shader
+                        uint16_t finalColor = rectBuffer3d.alphaBlend(128,shadowColor,plainColor);
+                        rectBuffer3d.drawPixel(px, py,finalColor);
                     }
+
+                    esp_task_wdt_reset();
                 }
-                // @POST PROCESSING (direct on final sprite)
-                /*
-                // antialias
-                for(int y=0;y<rectHeight;y++) {
-                    for(int x=0;x<rectWidth-1;x++) {
-                        uint16_t px = fpx+x;
-                        uint16_t py = fpy+y;
-                        bool alpha = alphaChannel->readPixel(px,py);
-                        if ( false == alpha ) { continue; } // don't work out of mesh
-                        uint16_t col0 = rectBuffer3d->readPixel(x,y);
-                        uint16_t col1 = rectBuffer3d->readPixel(x+1,y);
-                        uint16_t colMix = rectBuffer3d->alphaBlend(128,col0,col1);
-                        rectBuffer3d->drawPixel(x,y,colMix);
+            }
+            // @POST PROCESSING (direct on final sprite)
+            /*
+            // antialias
+            for(int y=0;y<rectHeight;y++) {
+                for(int x=0;x<rectWidth-1;x++) {
+                    uint16_t px = fpx+x;
+                    uint16_t py = fpy+y;
+                    bool alpha = alphaChannel->readPixel(px,py);
+                    if ( false == alpha ) { continue; } // don't work out of mesh
+                    uint16_t col0 = rectBuffer3d->readPixel(x,y);
+                    uint16_t col1 = rectBuffer3d->readPixel(x+1,y);
+                    uint16_t colMix = rectBuffer3d->alphaBlend(128,col0,col1);
+                    rectBuffer3d->drawPixel(x,y,colMix);
+                }
+                esp_task_wdt_reset();
+            }*/
+
+            /*
+            // borders
+            for(int y=0;y<rectHeight;y++) {
+                for(int x=0;x<rectWidth-1;x++) {
+                    uint16_t px = fpx+x;
+                    uint16_t py = fpy+y;
+                    bool alpha = alphaChannel->readPixel(px,py);
+                    if ( false == alpha ) {
+                        bool alpha2 = alphaChannel->readPixel(px+1,py);
+                        if ( true == alpha2 ) {
+                            rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
+                        }
+                    } else {
+                        bool alpha2 = alphaChannel->readPixel(px+1,py);
+                        if ( false == alpha2 ) {
+                            rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
+                        }
                     }
                     esp_task_wdt_reset();
-                }*/
+                }
+            }*/
 
-                /*
-                // borders
-                for(int y=0;y<rectHeight;y++) {
-                    for(int x=0;x<rectWidth-1;x++) {
-                        uint16_t px = fpx+x;
-                        uint16_t py = fpy+y;
-                        bool alpha = alphaChannel->readPixel(px,py);
-                        if ( false == alpha ) {
-                            bool alpha2 = alphaChannel->readPixel(px+1,py);
-                            if ( true == alpha2 ) {
-                                rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
-                            }
-                        } else {
-                            bool alpha2 = alphaChannel->readPixel(px+1,py);
-                            if ( false == alpha2 ) {
-                                rectBuffer3d->drawPixel(x+app->border,y+app->border,TFT_GREEN); // DEBUG PIXEL
-                            }
-                        }
-                        esp_task_wdt_reset();
-                    }
-                }*/
+            /*
+            // tint back
+            for(int y=0;y<rectHeight;y++) {
+                for(int x=0;x<rectWidth-1;x++) {
+                    uint16_t px = fpx+x;
+                    uint16_t py = fpy+y;
+                    bool alpha = alphaChannel->readPixel(px,py);
+                    if ( true == alpha ) { continue; } // don't work out of mesh
+                    rectBuffer3d->drawPixel(x,y,TFT_GREEN); // DEBUG PIXEL
+                    esp_task_wdt_reset();
+                }
+            }*/
 
-                /*
-                // tint back
-                for(int y=0;y<rectHeight;y++) {
-                    for(int x=0;x<rectWidth-1;x++) {
-                        uint16_t px = fpx+x;
-                        uint16_t py = fpy+y;
-                        bool alpha = alphaChannel->readPixel(px,py);
-                        if ( true == alpha ) { continue; } // don't work out of mesh
-                        rectBuffer3d->drawPixel(x,y,TFT_GREEN); // DEBUG PIXEL
-                        esp_task_wdt_reset();
+            /*
+            // Antialias test DEBUG
+            for(int y=0;y<rectHeight;y++) {
+                for(int x=0;x<rectWidth-1;x++) {
+                    uint16_t px = fpx+x;
+                    uint16_t py = fpy+y;
+                    bool alpha = alphaChannel->readPixel(px,py);
+                    if ( false == alpha ) { continue; } // don't work out of mesh
+                    uint16_t c0 = normalsBuffer->readPixel(px,py);
+                    uint16_t c1 = normalsBuffer->readPixel(px+1,py);
+                    if ( c0 != c1 ) {
+                        rectBuffer3d->drawPixel(x+1,y,TFT_GREEN); // DEBUG PIXEL
                     }
-                }*/
-
-                /*
-                // Antialias test DEBUG
-                for(int y=0;y<rectHeight;y++) {
-                    for(int x=0;x<rectWidth-1;x++) {
-                        uint16_t px = fpx+x;
-                        uint16_t py = fpy+y;
-                        bool alpha = alphaChannel->readPixel(px,py);
-                        if ( false == alpha ) { continue; } // don't work out of mesh
-                        uint16_t c0 = normalsBuffer->readPixel(px,py);
-                        uint16_t c1 = normalsBuffer->readPixel(px+1,py);
-                        if ( c0 != c1 ) {
-                            rectBuffer3d->drawPixel(x+1,y,TFT_GREEN); // DEBUG PIXEL
-                        }
-                        esp_task_wdt_reset();
-                    }
-                }*/
-                eCompsite = millis();
-            }
-        //}
+                    esp_task_wdt_reset();
+                }
+            }*/
+            eCompsite = millis();
+        }
         bPush=millis();
-        int32_t x = app->centerX+ViewClipping.xMin;
-        int32_t y = app->centerY+ViewClipping.yMin;
+        //(x+app->border)-fpx;
+        int32_t x = fpx-app->border; //ViewClipping.xMin+app->centerX;
+        int32_t y = fpy-app->border; //ViewClipping.yMin+app->centerY;
         if( xSemaphoreTake( RenderDataSemaphore, LUNOKIOT_EVENT_TIME_TICKS) == pdTRUE )  {
             rectBuffer3d.pushSprite(x,y);
             xSemaphoreGive( RenderDataSemaphore );
@@ -787,50 +784,31 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
 
 // demo app entrypoint
 Engine3DApplication::Engine3DApplication() {
-#ifdef ESP32_DMA
-    lAppLog("DMA enabled\n");
+    #ifdef ESP32_DMA
+        lAppLog("DMA enabled\n");
     #else
-    lAppLog("DMA not enabled\n");
-#endif    // precalculate angles
-//float angleSinCache[360] = { 0.0 };
-//float angleCosCache[360] = { 0.0 };
-//float angleCache[360] = { 0.0 };
+        lAppLog("DMA not enabled\n");
+    #endif
 
-/*
-BEFORE:
-Core 0: Clean: 12 (5%) Anim: 58 (26%) Render: 106 (47%) Composite: 46 (20%) Totals: 222 MS FPS: 4
-Core 1: Clean: 11 (4%) Anim: 66 (29%) Render: 101 (45%) Composite: 44 (19%) Totals: 222 MS FPS: 4
-
-Core 0: Clean: 12 (5%) Anim: 56 (24%) Render: 106 (46%) Composite: 52 (23%) Totals: 226 MS FPS: 4
-Core 1: Clean: 19 (8%) Anim: 52 (23%) Render: 102 (46%) Composite: 48 (21%) Totals: 221 MS FPS: 4
-*/
+    // precalculate angles
     for(int i=0;i<360;i++){ 
         float iii=i*0.01745;
         angleCosCache[i]= cos(iii);
         angleSinCache[i]= sin(iii);
         angleCache[i]=(iii*M_PI)/180;
-
-        //float anglex = (rotationAngles.x * M_PI) / 180.0;
-        //tempN = normal.vertexData[1];
-        //normal.vertexData[1] = normal.vertexData[1] * cos(anglex) - normal.vertexData[2] * sin(anglex);
-        //normal.vertexData[2] = tempN * sin(anglex) + normal.vertexData[2] * cos(anglex);
     }
 
     // from generated meshdata blender python script
-//@MESH
+    //@MESH
 myPointsNumber = 97;
 myFacesNumber = 190;
 myNormalsNumber = 190;
 
     myVectorsNumber=0;
-    rot.x=3.0; 
+    rot.x=0.0; 
     rot.y=5.0;//1.5;
-    rot.z=2.0;
-    /*
-    rot.x=1.2;//0.75; 
-    rot.y=2.9;//1.5;
-    rot.z=4;//3.0;
-    */
+    rot.z=0.0;
+
     lAppLog("Trying to allocate: %u byte...\n",sizeof(Point3D)*myPointsNumber);
 //    myPoints=(Point3D *)ps_calloc(myPointsNumber,sizeof(Point3D));
     myPoints=(Point3D *)calloc(myPointsNumber,sizeof(Point3D));
@@ -893,51 +871,48 @@ myNormalsNumber = 190;
         Scale(myPoints[i],scaleVal); // do more big the blender output
         Translate(myPoints[i],displace);
         Rotate(myPoints[i],rotation);
-        //myPoints[i].color=TFT_RED;
-        //int16_t deep = GetDeepForPoint(myPoints[i]);
-        //UpdateRange(MeshDimensions,deep);
     }
-    /*
-    TFT_eSprite * imgVertex = new TFT_eSprite(ttgo->tft);
-    imgVertex->setColorDepth(16);
-    imgVertex->createSprite(plane3DSample.width,plane3DSample.height);
-    //imgVertex->setSwapBytes(true);
-    imgVertex->pushImage(0,0,plane3DSample.width,plane3DSample.height,(uint16_t *)plane3DSample.pixel_data);
-    */
+
     lAppLog("Face re-process...\n");
     int x=0;
     int y=0;
     for(int i=0;i<myFacesNumber;i++) {
         Rotate(myNormals[i],rotation);
     }
-    /*
-    imgVertex->deleteSprite();
-    delete imgVertex;
-    */
 
-    // custom splash
-    canvas->fillSprite(TFT_BLACK);
-    TemplateApplication::btnBack->DrawTo(canvas);
+    Light0Point.x=100;
+    Light0Point.y=0;
+    Light0Point.z=0;
+    Light0Point.color=TFT_RED;
+
     lAppLog("Mesh ready!\n");
 
-    //core0Worker =(void *)ps_malloc(sizeof(RenderCore));
+    // UI show (unique system push, beyond this point all is done with "directDraw")
+    canvas->fillSprite(TFT_BLACK);
+    TemplateApplication::btnBack->DrawTo(canvas);
+
+    // launch two task (one per CPU) to render and push the next frame
+
+    // task 0
     core0Worker =(void *)malloc(sizeof(RenderCore));
+    //core0Worker =(void *)ps_malloc(sizeof(RenderCore));
     RenderCore * tmpCore0=(RenderCore *)core0Worker;
     tmpCore0->instance=this;
     tmpCore0->task=true;
     tmpCore0->run=true;
     tmpCore0->core=0;
-    xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_TASK_STACK_SIZE, tmpCore0, ENGINE_TASK_PRIORITY,&RenderTaskCore0,0);
+    xTaskCreatePinnedToCore(RenderTask, "rendr0", LUNOKIOT_TASK_STACK_SIZE, tmpCore0, ENGINE_TASK_PRIORITY,&RenderTaskCore0,tmpCore0->core);
 
-    //delay(100);
-    //core1Worker =(void *)ps_malloc(sizeof(RenderCore));
+    // task 1
     core1Worker =(void *)malloc(sizeof(RenderCore));
+    //core1Worker =(void *)ps_malloc(sizeof(RenderCore));
     RenderCore * tmpCore1=(RenderCore *)core1Worker;
     tmpCore1->instance=this;
     tmpCore1->task=true;
     tmpCore1->run=true;
     tmpCore1->core=1;
-    xTaskCreatePinnedToCore(RenderTask, "rendr1", LUNOKIOT_TASK_STACK_SIZE, tmpCore1, ENGINE_TASK_PRIORITY,&RenderTaskCore1,1);
+    xTaskCreatePinnedToCore(RenderTask, "rendr1", LUNOKIOT_TASK_STACK_SIZE, tmpCore1, ENGINE_TASK_PRIORITY,&RenderTaskCore1,tmpCore1->core);
+
 }
 
 Engine3DApplication::~Engine3DApplication() {
@@ -989,6 +964,16 @@ void Engine3DApplication::GetProjection(INOUT Point3D &vertex, OUT Point2D &pixe
     }
     pixel.x=vertex._xCache;
     pixel.y=vertex._yCache;
+}
+
+void Engine3DApplication::GetProjection(IN Light3D &vertex, OUT Point2D &pixel ) {
+    // https://stackoverflow.com/questions/28607713/convert-3d-coordinates-to-2d-in-an-isometric-projection
+    //*u=(x-z)/sqrt(2);
+    //*v=(x+2*y+z)/sqrt(6);
+    // u = x*cos(α) + y*cos(α+120°) + z*cos(α-120°)
+    // v = x*sin(α) + y*sin(α+120°) + z*sin(α-120°)
+    pixel.x=(vertex.x-vertex.z)/sq2;
+    pixel.y=(vertex.x+2*vertex.y+vertex.z)/sq6;
 }
 
 

@@ -26,7 +26,7 @@
 #include "../lunokIoT.hpp"
 
 #define ENGINE_INVALID_VALUE -666
-#define ENGINE_TASK_PRIORITY tskIDLE_PRIORITY+4
+#define ENGINE_TASK_PRIORITY tskIDLE_PRIORITY+2
 typedef struct {
     int32_t Min;
     int32_t Max;
@@ -116,7 +116,7 @@ class Engine3DApplication : public TemplateApplication {
     public:
 
         //TFT_eSprite *light0 = nullptr;  // light calculation from  zbuffer
-        //Light3D Light0Point;
+        Light3D Light0Point;
         ///Light3D Light1Point;
         //Light3D Light2Point;
         void * core0Worker=nullptr;
@@ -142,7 +142,7 @@ for (int i = 0; i < dimension1_max; i++) {
         void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
         void UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point);
         void UpdateRange(INOUT Range &range, IN int32_t value);
-        const uint8_t border=4;
+        const uint8_t border=16;
         uint8_t lastCoreUsed=0;
         Angle3D rot;
         //Angle3D LampRotation;
@@ -188,7 +188,7 @@ for (int i = 0; i < dimension1_max; i++) {
         inline float NormalFacing(INOUT Normal3D &normal);
         // convert 3D to 2D
         inline void GetProjection(INOUT Point3D &vertex, OUT Point2D &pixel);
-        //void GetProjection(IN Light3D &vertex, OUT Point2D &pixel);
+        void GetProjection(IN Light3D &vertex, OUT Point2D &pixel ); 
         // obtain the point depth
         inline int16_t GetDeepForPoint(INOUT Point3D &point);
         // get zbuffer height for corresponding point

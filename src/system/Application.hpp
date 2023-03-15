@@ -22,7 +22,6 @@
 
 //#include <Arduino.h>
 //#include <TTGO.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <LilyGoWatch.h>
