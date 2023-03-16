@@ -23,10 +23,8 @@
 
 
 #include "Settings.hpp"
-#include "../../static/img_back_32.xbm"
 #include "../lunokiot_config.hpp"
 #include "About.hpp"
-#include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 
 extern TTGOClass *ttgo; // ttgo lib

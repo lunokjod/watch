@@ -240,6 +240,13 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     return canvas;
 }
 
+uint16_t ColorSwap(uint16_t colorToSwap) {
+    uint8_t wf = (colorToSwap % 256);
+    uint8_t wb = ((colorToSwap / 256) % 256);
+    uint16_t fcolor = (wf*256)+wb;
+    return fcolor;
+}
+
 TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int16_t maxH) {
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
@@ -446,9 +453,9 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
 
         if ( changes ) {
             if ( nullptr != keyboardInstance ) {
-                    keyboardInstance->canvas->pushSprite(0,0);
+                keyboardInstance->canvas->pushSprite(0,0);
             } else {
-                    appView->pushSprite(0,0); // push appView to tft
+                appView->pushSprite(0,0); // push appView to tft
             }
         }
         xSemaphoreGive( UISemaphore );

@@ -23,11 +23,12 @@
 #include <Arduino.h>
 #include <LilyGoWatch.h>
 #include <esp_event_base.h>
-#include <functional>
+#include <functional> // callbacks 
+typedef std::function<void (void* payload)> UICallback; // repeated declaration
+
 extern TTGOClass *ttgo; // ttgo lib
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
-typedef std::function<void (void* payload)> UICallback;
 
 /*
  * Use template to get the theme colors
@@ -67,6 +68,7 @@ extern const TemplateColorPalette * currentColorPalette;
 extern const TemplateThemeScheme * currentThemeScheme;
 
 extern TFT_eSPI * tft;
+uint16_t ColorSwap(uint16_t colorToSwap);
 #define ThCol(WHAT) ttgo->tft->color24to16(currentThemeScheme->WHAT)
 
 

@@ -29,6 +29,7 @@ class NuControlsApplication : public TemplateApplication {
         LuI::Container * child=nullptr;
         unsigned long nextRefresh=0;
         void AddChild(INOUT LuI::Container *control );
+        void EventHandler();
     public:
         const char *AppName() override { return "NuControls test"; };
         NuControlsApplication();

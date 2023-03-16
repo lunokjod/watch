@@ -3,6 +3,7 @@
 
 #include "../../../lunokIoT.hpp"
 #include <LilyGoWatch.h>
+#include "../../UI.hpp"
 
 namespace LuI {
 
@@ -11,9 +12,17 @@ namespace LuI {
         protected:
             TFT_eSprite *canvas=nullptr;
             Control *parent=nullptr;
+            bool lastTouched=false;
+        public:
+            bool dirty=true;
+            bool touchEnabled=false;
+            UICallback callback=nullptr;
+            void * callbackParam=nullptr;
             uint32_t height=0;
             uint32_t width=0;
-        public:
+            uint32_t clipX=0;
+            uint32_t clipY=0;
+            virtual void EventHandler();
             TFT_eSprite * GetCanvas();
             bool Attach(INOUT Control *control);
             virtual ~Control();
@@ -21,7 +30,7 @@ namespace LuI {
             void SetSize(uint32_t w, uint32_t h);
             void SetWidth(uint32_t w);
             void SetHeight(uint32_t h);
-            virtual void Refresh();
+            virtual void Refresh(bool swap=false);
     };
 };
 

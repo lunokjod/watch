@@ -26,9 +26,7 @@
  * Note: can be used as circular point using InRadius
  * 
  */
-//#include "../../UI/UI.hpp"
-#include <functional> // callbacks 
-typedef std::function<void (void* payload)> UICallback; // repeated declaration
+#include "../UI.hpp"
 
 class ActiveRect {
     protected:

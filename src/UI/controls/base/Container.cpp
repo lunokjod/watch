@@ -13,11 +13,11 @@ bool Container::AddChild(INOUT Control *control, IN float quota) {
         return false;
     }
     if ( nullptr == children ) {
-        lLog("Container out of memory\n");
+        lLog("Child empty?\n");
         return false;
     }
     if ( control->Attach(this) ) {
-        lLog("Container %p add child %p\n",this,control);
+        //lLog("Container %p add child %p\n",this,control);
         children[currentChildSlot] = control;
         quotaValues[currentChildSlot] = quota;
         currentChildSlot++;
@@ -29,7 +29,7 @@ bool Container::AddChild(INOUT Control *control, IN float quota) {
 Container::Container(LuI_Layout layout, size_t childs): layout(layout),childNumber(childs) {
     children=(Control**)ps_calloc(sizeof(Control *),childNumber);
     quotaValues=(float*)ps_calloc(sizeof(float),childNumber);
-    lLog("Container created on %p\n",this);
+    //lLog("Container created on %p\n",this);
 }
 
 Container::~Container() {
@@ -47,38 +47,56 @@ Container::~Container() {
         }
         free(children);
     }
-    lLog("Container destroyed on %p\n",this);
+    //lLog("Container destroyed on %p\n",this);
 }
 
-void Container::Refresh() {
-    Control::Refresh();
-    lLog("Container refresh on %p\n",this);
-    
-    uint32_t displacement=0;
-    uint32_t sizeWidth=(width/childNumber);
-    uint32_t sizeHeight=(height/childNumber);
-
+void Container::Refresh(bool swap) {
+    if ( nullptr == canvas  ) { Control::Refresh(swap); }
+    //lLog("Container refresh on %p <================\n",this);
+    uint32_t displacement=border;
+    uint32_t sizeWidth=((width-((border*2)+(border*childNumber)))/childNumber);
+    uint32_t sizeHeight=((height-((border*2)+(border*childNumber)))/childNumber);
     for(size_t current=0;current<currentChildSlot;current++) {
         if ( nullptr == children[current] ) { continue; }
         // re-set children size
         if ( LuI_Vertical_Layout == layout ) {
-            children[current]->SetSize(sizeWidth*quotaValues[current],height);
+            children[current]->SetSize(sizeWidth*quotaValues[current],height-(border*2));
         } else {
-            children[current]->SetSize(width,sizeHeight*quotaValues[current]);
+            children[current]->SetSize(width-(border*2),sizeHeight*quotaValues[current]);
         }
-        // refresh children appearance
-        children[current]->Refresh();
-        TFT_eSprite * childImg = children[current]->GetCanvas();
 
         // push children on the parent view
-        childImg->setPivot(0,0);
-        if ( LuI_Vertical_Layout == layout ) {
-            canvas->setPivot(displacement,0);
-            displacement+=childImg->width();
+        if ( LuI_Vertical_Layout == layout ) { // @TODO do this better x'D
+            canvas->setPivot(displacement,border);
+            displacement+=children[current]->width+border;
         } else {
-            canvas->setPivot(0,displacement);
-            displacement+=childImg->height();
+            canvas->setPivot(border,displacement);
+            displacement+=children[current]->height+border;
         }
-        childImg->pushRotated(canvas,0);
+        // update children clip
+        children[current]->clipX = this->clipX+canvas->getPivotX();
+        children[current]->clipY = this->clipY+canvas->getPivotY();
+        // refresh children appearance
+        children[current]->Refresh((!swap));
+        TFT_eSprite * childImg = children[current]->GetCanvas();
+        childImg->setPivot(0,0);
+        childImg->pushRotated(canvas,0,Drawable::MASK_COLOR);
+    }
+}
+
+void Container::EventHandler() {
+    //lLog("Container %p X: %u Y: %u W: %u H: %u\n",this, clipX, clipY, width, height);
+    //ttgo->tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
+    for(size_t current=0;current<currentChildSlot;current++) {
+        if ( nullptr == children[current] ) { continue; }
+        children[current]->EventHandler();
+        if ( children[current]->dirty ) {
+            children[current]->Refresh(true);
+            TFT_eSprite * what = children[current]->GetCanvas();
+            ttgo->tft->setSwapBytes(true);
+            what->pushSprite(children[current]->clipX,children[current]->clipY);
+            //ttgo->tft->setSwapBytes(false);
+            children[current]->dirty=false;
+        }
     }
 }
