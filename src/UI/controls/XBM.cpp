@@ -25,7 +25,7 @@ XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap
 }
 
 void XBM::Refresh(bool swap) {
-    lLog("XBM %p refresh\n",this);
+    //lLog("XBM %p refresh\n",this);
     if ( nullptr == canvas ) { Control::Refresh(swap); }
     //centered
     canvas->setPivot(canvas->width()/2,canvas->height()/2);

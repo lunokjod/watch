@@ -12,8 +12,9 @@ Image::~Image() {
     }
 }
 
-Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap) :
-                            imageWidth(width),imageHeight(height),imageData(data) {
+Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data,
+                                bool swap, LuI_Layout layout, size_t childs)
+                    : imageWidth(width),imageHeight(height),imageData(data),Container(layout,childs) {
     lLog("Image %p created!\n",this);
     imageCanvas=new TFT_eSprite(ttgo->tft);
     imageCanvas->setColorDepth(16);
@@ -31,4 +32,5 @@ void Image::Refresh(bool swap) {
     //canvas->setSwapBytes(swap);
     imageCanvas->pushRotated(canvas,0);
     //canvas->setSwapBytes((!swap));
+    Container::Refresh(swap);
 }

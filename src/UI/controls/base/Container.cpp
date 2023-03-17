@@ -12,10 +12,14 @@ bool Container::AddChild(INOUT Control *control, IN float quota) {
         lLog("Container full!\n");
         return false;
     }
-    if ( nullptr == children ) {
-        lLog("Child empty?\n");
-        return false;
+    if ( nullptr == control ) { // empty hole
+        lLog("Child empty added\n");
+        children[currentChildSlot] = nullptr;
+        quotaValues[currentChildSlot] = quota;
+        currentChildSlot++;
+        return true;
     }
+
     if ( control->Attach(this) ) {
         //lLog("Container %p add child %p\n",this,control);
         children[currentChildSlot] = control;
@@ -54,24 +58,33 @@ void Container::Refresh(bool swap) {
     if ( nullptr == canvas  ) { Control::Refresh(swap); }
     //lLog("Container refresh on %p <================\n",this);
     uint32_t displacement=border;
-    uint32_t sizeWidth=((width-((border*2)+(border*childNumber)))/childNumber);
-    uint32_t sizeHeight=((height-((border*2)+(border*childNumber)))/childNumber);
+    //uint32_t sizeWidth=((width-((border*2)+(border*childNumber)))/childNumber);
+    //uint32_t sizeHeight=((height-((border*2)+(border*childNumber)))/childNumber);
     for(size_t current=0;current<currentChildSlot;current++) {
-        if ( nullptr == children[current] ) { continue; }
-        // re-set children size
-        if ( LuI_Vertical_Layout == layout ) {
-            children[current]->SetSize(sizeWidth*quotaValues[current],height-(border*2));
-        } else {
-            children[current]->SetSize(width-(border*2),sizeHeight*quotaValues[current]);
+        uint32_t sizeWidth=(width-border)/childNumber; // raw size
+        uint32_t sizeHeight=(height-border)/childNumber;
+        sizeWidth*=quotaValues[current]; // percentual size
+        sizeHeight*=quotaValues[current];
+        sizeWidth-=border;
+        sizeHeight-=border;
+        if ( nullptr == children[current] ) { // empty slot
+            // count space, but no draw
+            if ( LuI_Vertical_Layout == layout ) {
+                displacement+=(sizeWidth)+border;
+            } else {
+                displacement+=(sizeHeight)+border;
+            }
+            continue;
         }
-
-        // push children on the parent view
+        // re-set children size
         if ( LuI_Vertical_Layout == layout ) { // @TODO do this better x'D
+            children[current]->SetSize(sizeWidth,height-(border*2));
             canvas->setPivot(displacement,border);
-            displacement+=children[current]->width+border;
+            displacement+=(children[current]->width)+border;
         } else {
+            children[current]->SetSize(width-(border*2),sizeHeight);
             canvas->setPivot(border,displacement);
-            displacement+=children[current]->height+border;
+            displacement+=(children[current]->height)+border;
         }
         // update children clip
         children[current]->clipX = this->clipX+canvas->getPivotX();
@@ -79,6 +92,7 @@ void Container::Refresh(bool swap) {
         // refresh children appearance
         children[current]->Refresh((!swap));
         TFT_eSprite * childImg = children[current]->GetCanvas();
+        // push children on the parent view
         childImg->setPivot(0,0);
         childImg->pushRotated(canvas,0,Drawable::MASK_COLOR);
     }
@@ -86,7 +100,7 @@ void Container::Refresh(bool swap) {
 
 void Container::EventHandler() {
     //lLog("Container %p X: %u Y: %u W: %u H: %u\n",this, clipX, clipY, width, height);
-    //ttgo->tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
+    ttgo->tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
     for(size_t current=0;current<currentChildSlot;current++) {
         if ( nullptr == children[current] ) { continue; }
         children[current]->EventHandler();

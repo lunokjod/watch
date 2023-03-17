@@ -4,11 +4,12 @@
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
 #include <LilyGoWatch.h>
+#include "base/Container.hpp"
 
 namespace LuI {
 
     // defines root of any screen element
-    class Image: public Control {
+    class Image: public Container {
         protected:
             const uint32_t imageWidth=0;
             const uint32_t imageHeight=0;
@@ -16,7 +17,7 @@ namespace LuI {
             TFT_eSprite * imageCanvas=nullptr;
         public:
             ~Image();
-            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false);
+            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
             void Refresh(bool swap=false);
     };
 };

@@ -20,11 +20,11 @@
 #ifndef __LUNOKIOT__APPLICATION__NEW_CONTROLS_TEST__
 #define __LUNOKIOT__APPLICATION__NEW_CONTROLS_TEST__
 
-#include "../UI/AppTemplate.hpp"
+#include "../system/Application.hpp"
 #include "../UI/controls/base/Control.hpp"
 #include "../UI/controls/base/Container.hpp"
 
-class NuControlsApplication : public TemplateApplication {
+class NuControlsApplication : public LunokIoTApplication {
     private:
         LuI::Container * child=nullptr;
         unsigned long nextRefresh=0;

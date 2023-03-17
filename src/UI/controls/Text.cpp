@@ -13,7 +13,7 @@ Text::~Text() {
     }
 }
 
-Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN GFXfont *font) : text(what),color(color),swapColor(swap),font(font) {
+Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : text(what),color(color),swapColor(swap),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
     imageTextCanvas=new TFT_eSprite(ttgo->tft);
     imageTextCanvas->setColorDepth(16);
@@ -26,10 +26,10 @@ Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN GFXfont *font) : t
         fcolor = canvas->color565(255*b,255*r,255*g);
     }
     imageTextCanvas->setTextColor(fcolor);
-    imageTextCanvas->setTextSize(1);
+    imageTextCanvas->setTextSize(tsize);
     imageTextCanvas->setTextDatum(TL_DATUM);
     int16_t width = imageTextCanvas->textWidth(text);
-    int16_t height = imageTextCanvas->fontHeight();
+    int16_t height = imageTextCanvas->fontHeight()*tsize;
     imageTextCanvas->createSprite(width,height);
     //if ( swapColor ) {
     //    imageTextCanvas->fillSprite(TFT_TRANSPARENT);
@@ -40,7 +40,7 @@ Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN GFXfont *font) : t
 }
 
 void Text::Refresh(bool swap) {
-    lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
+    //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
     if ( nullptr == canvas ) { Control::Refresh(swap); }
     //centered
     canvas->setPivot(canvas->width()/2,canvas->height()/2);

@@ -3,8 +3,8 @@
 #include "../../../lunokIoT.hpp"
 #include "Control.hpp"
 #define LuI_Layout bool
-#define LuI_Vertical_Layout true
-#define LuI_Horizonal_Layout false
+#define LuI_Horizonal_Layout true
+#define LuI_Vertical_Layout false
 
 namespace LuI {
     // defines a container
@@ -15,9 +15,9 @@ namespace LuI {
             size_t childNumber=1;
             Control ** children;
             float *quotaValues=nullptr;
-            uint8_t border=0;
             //bool parentRefresh=true;
         public:
+            uint8_t border=0;
             bool AddChild(INOUT Control *control,IN float quota=1.0);
             Container(LuI_Layout layout=LuI_Vertical_Layout, size_t childs=1);
             ~Container();

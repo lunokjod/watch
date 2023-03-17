@@ -38,11 +38,12 @@ void Control::SetHeight(uint32_t h) {
 }
 
 void Control::EventHandler() {
+    ttgo->tft->drawRect(clipX+1,clipY+1,width-2,height-2,TFT_RED); //@DEBUG
     if ( false == touchEnabled ) { return; }
     if ( touched ) {
         if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
-            && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
-            //lLog("%p RECT: X: %d Y: %d W: %d H: %d\n",this,nCX,nCY,width,height);
+                && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
+            //  lLog("%p RECT: X: %d Y: %d W: %d H: %d\n",this,nCX,nCY,width,height);
             if ( false == lastTouched ) { // yeah! IN!!!
                 lastTouched=true;
                 dirty=true;
