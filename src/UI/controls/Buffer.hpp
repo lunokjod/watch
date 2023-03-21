@@ -17,29 +17,33 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_IMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_IMAGE_CLASS__
+#ifndef __LUNOKIOT__CONTROL_BUFFER_CLASS__
+#define __LUNOKIOT__CONTROL_BUFFER_CLASS__
 
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
 #include <LilyGoWatch.h>
+#include "base/Control.hpp"
 #include "base/Container.hpp"
 
 namespace LuI {
 
     // defines root of any screen element
-    class Image: public Container {
+    class Buffer: public Control {
         protected:
             const uint32_t imageWidth=0;
             const uint32_t imageHeight=0;
-            const unsigned char *imageData=nullptr;
             TFT_eSprite * imageCanvas=nullptr;
         public:
-            uint32_t offsetX=0;
-            uint32_t offsetY=0;
-            ~Image();
-            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
+            //int16_t lastDragX=0;
+            //int16_t lastDragY=0;
+            int32_t offsetX=0;
+            int32_t offsetY=0;
+            ~Buffer();
+            TFT_eSprite * GetBuffer() { return imageCanvas; }
+            Buffer(IN uint32_t width, IN uint32_t height, bool swap=false); //, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
             void Refresh(bool swap=false) override;
+            void EventHandler() override;
     };
 };
 

@@ -1,3 +1,22 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
+
 #ifndef __LUNOKIOT__CONTROL_BASE_CLASS__
 #define __LUNOKIOT__CONTROL_BASE_CLASS__
 
@@ -14,10 +33,17 @@ namespace LuI {
             Control *parent=nullptr;
             bool lastTouched=false;
         public:
-            bool dirty=true;
-            bool touchEnabled=false;
-            UICallback callback=nullptr;
-            void * callbackParam=nullptr;
+            bool dirty=true; // forces redraw
+
+            // events
+            bool touchEnabled=false; // can receive tap events?
+            UICallback tapCallback=nullptr; // where call when tap
+            void * tapCallbackParam=nullptr; // what pass to callbac
+            
+            bool dragEnable=false;  // can receive drag events?
+            UICallback dragCallback=nullptr; // where call when drag
+            void * dragCallbackParam=nullptr; // what pass to callbac
+
             uint32_t height=0;
             uint32_t width=0;
             uint32_t clipX=0;

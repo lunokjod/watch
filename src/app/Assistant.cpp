@@ -20,7 +20,7 @@
 #include <Arduino.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
-#include "NuControls.hpp"
+#include "Assistant.hpp"
 #include "../UI/UI.hpp"
 #include "../UI/controls/base/Control.hpp"
 #include "../UI/controls/base/Container.hpp"
@@ -31,24 +31,30 @@
 
 #include "../../static/img_next_32.xbm"
 #include "../../static/img_last_32.xbm"
-#include "../static/img_sputnik_64.xbm" // sputnik image
+//#include "../static/img_sputnik_64.xbm" // sputnik image
 #include "../static/img_background_firstrun.c"
+#include "AssistantPage0.hpp"
 
 extern bool UILongTapOverride;
 
-NuControlsApplication::NuControlsApplication() {
+AssistantApplication::AssistantApplication() {
     UILongTapOverride=true;
+    directDraw=false;
 
-    LuI::Container * screen = new LuI::Container(LuI_Horizonal_Layout,3);
-    LuI::Container * header = new LuI::Container(LuI_Vertical_Layout,2);
-    LuI::Image * body = new LuI::Image(img_background_firstrun.width,img_background_firstrun.height,img_background_firstrun.pixel_data,false, LuI_Horizonal_Layout,2);
+    LuI::Image * screen = new LuI::Image(img_background_firstrun.width,img_background_firstrun.height,img_background_firstrun.pixel_data,true, LuI_Horizonal_Layout,3);
+    //LuI::Container * screen = new LuI::Container(LuI_Horizonal_Layout,2);
+    //LuI::Container * header = new LuI::Container(LuI_Vertical_Layout,3);
+    //header->border=5;
+    LuI::Container * body = new LuI::Container(LuI_Horizonal_Layout,2);
+    //LuI::Image * body = new LuI::Image(img_background_firstrun.width,img_background_firstrun.height,img_background_firstrun.pixel_data,false, LuI_Horizonal_Layout,2);
     LuI::Container * foot = new LuI::Container(LuI_Vertical_Layout,5);
-    foot->border=2;
+    foot->border=5;
     // build the screen
-    screen->AddChild(header,0.7);
-    screen->AddChild(body,1.6);
-    screen->AddChild(foot,0.7);
-
+    //screen->AddChild(header,0.8);
+    screen->AddChild(body,2.0);
+    screen->AddChild(foot,0.8);
+    screen->AddChild(nullptr,0.2);
+    /*
     // header
     LuI::XBM * sputnikImg = new LuI::XBM(img_sputnik_64_width,img_sputnik_64_height,img_sputnik_64_bits);
     LuI::Container * headerTextContainer = new LuI::Container(LuI_Horizonal_Layout,3);
@@ -64,7 +70,7 @@ NuControlsApplication::NuControlsApplication() {
     headerTextContainer->AddChild(headerSubText1,0.75);
     // text right
     header->AddChild(headerTextContainer,1.4);
-
+    */
     // fill body
     LuI::Container * bodyDiv = new LuI::Container(LuI_Vertical_Layout,4);
     bodyDiv->border=2;
@@ -79,30 +85,37 @@ NuControlsApplication::NuControlsApplication() {
     letDiv->AddChild(myTextLet);
     bodyDiv->AddChild(letDiv,1.5);
 
-    bodyDiv->AddChild(new LuI::Text("know",ThCol(text),true,1,&FreeMonoBold18pt7b),1.5);
+    LuI::Container * warf = new LuI::Container(LuI_Horizonal_Layout,2);
+    bodyDiv->AddChild(warf,1.5);
+    warf->AddChild(nullptr);
+    warf->AddChild(new LuI::Text("know",ThCol(text),true,1,&FreeMonoBold18pt7b));
     bodyDiv->AddChild(nullptr,0.5);
 
-    bodyDiv2->AddChild(nullptr,0.5);
-    bodyDiv2->AddChild(new LuI::Text("about",ThCol(text),true,1,&FreeMonoBold18pt7b),2.0);
+    bodyDiv2->AddChild(nullptr,0.7);
 
+    LuI::Container * boutDiv = new LuI::Container(LuI_Horizonal_Layout,2);
+    boutDiv->AddChild(new LuI::Text("about",ThCol(text),true,1,&FreeMonoBold18pt7b));
+    boutDiv->AddChild(nullptr);
+    bodyDiv2->AddChild(boutDiv,2.0);
+    
     LuI::Container * youDiv = new LuI::Container(LuI_Horizonal_Layout,2);
     LuI::Text *myText = new LuI::Text("you",ThCol(text),true,1,&FreeMonoBold9pt7b);
     youDiv->AddChild(myText);
     youDiv->AddChild(nullptr);
 
-    bodyDiv2->AddChild(youDiv);
+    bodyDiv2->AddChild(youDiv,0.8);
 
-    body->AddChild(bodyDiv);
-    body->AddChild(bodyDiv2);
+    body->AddChild(bodyDiv,1.2);
+    body->AddChild(bodyDiv2,0.8);
 
     // back button
     LuI::Button * backButton = new LuI::Button(LuI_Vertical_Layout,1);
     LuI::XBM * backButtonImage = new LuI::XBM(img_last_32_width,img_last_32_height,img_last_32_bits);
     //LuI::Text * backButtonText = new LuI::Text("Back",ThCol(text),true);
     //backButton->AddChild(backButtonText);
-    backButton->callbackParam=this;
-    backButton->callback = [](void * obj){
-        NuControlsApplication * self = (NuControlsApplication *)obj;
+    backButton->tapCallbackParam=this;
+    backButton->tapCallback = [](void * obj){
+        AssistantApplication * self = (AssistantApplication *)obj;
         lLog("Button 'back' pushed on %p \n",self);
         LaunchWatchface();
     };
@@ -112,37 +125,47 @@ NuControlsApplication::NuControlsApplication() {
     LuI::Button * nextButton = new LuI::Button(LuI_Vertical_Layout,2);
     LuI::XBM * nextButtonImage = new LuI::XBM(img_next_32_width,img_next_32_height,img_next_32_bits);
     LuI::Text * nextButtonText = new LuI::Text("Next",ThCol(text),true);
-    nextButton->callbackParam=this;
-    nextButton->callback = [](void * obj){
-        NuControlsApplication * self = (NuControlsApplication *)obj;
-        lLog("lol from %p\n",self);
+    nextButton->tapCallbackParam=this;
+    nextButton->tapCallback = [](void * obj){
+        AssistantApplication * self = (AssistantApplication *)obj;
+        LaunchApplication(new AssistantPage0Application());
+        //lLog("lol from %p\n",self);
     };
     nextButton->AddChild(nextButtonText);
     nextButton->AddChild(nextButtonImage);
 
-    foot->AddChild(nullptr,0.2);
-    foot->AddChild(backButton,1.0);
-    foot->AddChild(nullptr,0.4);
-    foot->AddChild(nextButton,3.4);
-    foot->AddChild(nullptr,0.2);
+    foot->AddChild(nullptr,0.1);
+    foot->AddChild(backButton,1.2);
+    foot->AddChild(nullptr,1.3);
+    foot->AddChild(nextButton,2.3);
+    foot->AddChild(nullptr,0.1);
 
 
     AddChild(screen);
     Tick();
+    canvas->fillSprite(ThCol(background)); // use theme colors
+    if (nullptr != child ) {
+        TFT_eSprite * content = child->GetCanvas();
+        content->setPivot(0,0);
+        canvas->setPivot(0,0);
+        content->pushRotated(canvas,0,Drawable::MASK_COLOR);
+    }
+    directDraw=true; // push to TFT beyond this point
 }
 
-NuControlsApplication::~NuControlsApplication() {
+AssistantApplication::~AssistantApplication() {
     if (nullptr != child ) { delete child; child=nullptr; }
 }
 
-void NuControlsApplication::EventHandler() {
+void AssistantApplication::EventHandler() {
     if (nullptr == child ) { return; }
     //lAppLog("Begin Event handler\n");
     child->EventHandler();
 }
 
-bool NuControlsApplication::Tick() {
+bool AssistantApplication::Tick() {
     EventHandler();
+    /*
     if ( millis() > nextRefresh ) { // redraw full canvas
         canvas->fillSprite(ThCol(background)); // use theme colors
         if (nullptr != child ) {
@@ -153,12 +176,12 @@ bool NuControlsApplication::Tick() {
         }
         nextRefresh=millis()+(1000/4);
         return true;
-    }
+    }*/
     return false;
 }
 
-void NuControlsApplication::AddChild(INOUT LuI::Container *control ) {
+void AssistantApplication::AddChild(INOUT LuI::Container *control ) {
     child=control;
     child->SetSize(canvas->width(),canvas->height());
-    child->Refresh();
+    child->Refresh(true);
 }

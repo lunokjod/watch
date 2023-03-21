@@ -241,6 +241,20 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
 }
 
 uint16_t ColorSwap(uint16_t colorToSwap) {
+    // twist color from RGB to BRG for draw on canvas under certain circumstances
+    double r = ((colorToSwap >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+    double g = ((colorToSwap >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+    double b = (colorToSwap & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+    uint8_t rC=255*r;
+    uint8_t gC=255*g;
+    uint8_t bC=255*b;
+    //RGB <- me
+    //BRG <- canvas rotate to
+    //NOPE GBR <- swap inverse corrected on push
+    return ttgo->tft->color565(rC,gC,bC);
+}
+
+uint16_t ByteSwap(uint16_t colorToSwap) {
     uint8_t wf = (colorToSwap % 256);
     uint8_t wb = ((colorToSwap / 256) % 256);
     uint16_t fcolor = (wf*256)+wb;

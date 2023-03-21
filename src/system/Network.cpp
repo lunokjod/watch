@@ -335,21 +335,21 @@ void NetworkTaskRun(void *data) {
 void NetworkTasksCheck() {
     if ( systemSleep ) { return; }
     if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
-    SqlJSONLog("check",""); // notify to the log the intention to gather data
+    //SqlJSONLog("check",""); // notify to the log the intention to gather data
     if ( false == NVS.getInt("WifiEnabled") ) {
         liLog("WiFI: Refusing to start (disabled by user)\n");
-        SqlJSONLog("disabled",""); // notify to the log the user disable
+        //SqlJSONLog("disabled",""); // notify to the log the user disable
         StartBLE(); // restore BLE
         return;
     }
 
     if ( false == provisioned ) {
         liLog("WiFi: WARNING: Not provisioned\n");
-        SqlJSONLog("noprovisioned","");
+        //SqlJSONLog("noprovisioned","");
         return;
     }
     if ( false == NetworkTaskIsPending() ) {
-        SqlJSONLog("nopendingtask","");
+        //SqlJSONLog("nopendingtask","");
         lNetLog("Network: No pending Timed Tasks\n");
         return;
     }

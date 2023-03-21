@@ -69,6 +69,8 @@ extern const TemplateThemeScheme * currentThemeScheme;
 
 extern TFT_eSPI * tft;
 uint16_t ColorSwap(uint16_t colorToSwap);
+uint16_t ByteSwap(uint16_t colorToSwap);
+
 #define ThCol(WHAT) ttgo->tft->color24to16(currentThemeScheme->WHAT)
 
 

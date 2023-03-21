@@ -17,31 +17,15 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_IMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_IMAGE_CLASS__
+#ifndef __LUNOKIOT__APPLICATION__LUI_DEBUG__
+#define __LUNOKIOT__APPLICATION__LUI_DEBUG__
 
-#include "../../lunokIoT.hpp"
-#include "base/Control.hpp"
-#include <LilyGoWatch.h>
-#include "base/Container.hpp"
+#include "../UI/AppLuITemplate.hpp"
 
-namespace LuI {
-
-    // defines root of any screen element
-    class Image: public Container {
-        protected:
-            const uint32_t imageWidth=0;
-            const uint32_t imageHeight=0;
-            const unsigned char *imageData=nullptr;
-            TFT_eSprite * imageCanvas=nullptr;
-        public:
-            uint32_t offsetX=0;
-            uint32_t offsetY=0;
-            ~Image();
-            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
-            void Refresh(bool swap=false) override;
-    };
+class DebugLuIApplication : public TemplateLuIApplication {
+    public:
+        DebugLuIApplication();
+        const char *AppName() override { return "Playground LuI"; };
 };
-
 
 #endif

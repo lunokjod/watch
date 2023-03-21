@@ -17,24 +17,33 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__APPLICATION__NEW_CONTROLS_TEST__
-#define __LUNOKIOT__APPLICATION__NEW_CONTROLS_TEST__
+#ifndef __LUNOKIOT__CONTROL_CHECK_CLASS__
+#define __LUNOKIOT__CONTROL_CHECK_CLASS__
 
-#include "../system/Application.hpp"
-#include "../UI/controls/base/Control.hpp"
-#include "../UI/controls/base/Container.hpp"
+#include "../../lunokIoT.hpp"
+#include "base/Control.hpp"
+#include <LilyGoWatch.h>
 
-class NuControlsApplication : public LunokIoTApplication {
-    private:
-        LuI::Container * child=nullptr;
-        unsigned long nextRefresh=0;
-        void AddChild(INOUT LuI::Container *control );
-        void EventHandler();
-    public:
-        const char *AppName() override { return "NuControls test"; };
-        NuControlsApplication();
-        ~NuControlsApplication();
-        bool Tick();
+namespace LuI {
+    class Check: public Control {
+        protected:
+            bool checked=false;
+        public:
+            void SetCheck(bool check=true) {
+                // force parent refresh and get fresh background (ugly but works)
+                if ( checked != check ) {
+                    checked=check;
+                    //dirty=true;
+                }
+            }
+            bool GetCheck() { return checked; }
+            void Switch() { SetCheck((!checked)); }
+            ~Check();
+            Check(bool swap=false);
+            void Refresh(bool swap=false) override;
+            //void EventHandler() override;
+    };
 };
+
 
 #endif
