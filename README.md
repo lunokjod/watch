@@ -6,8 +6,12 @@
 
 [Buy me a coffe!](https://www.buymeacoffee.com/lunokjod)
 
+
 **Last videos from development**
 
+"CAN *YOUR* SMARTWATCH RICKROLL?" * Shinoa Fores
+
+https://user-images.githubusercontent.com/797792/226633963-94d641ff-2577-46a7-9468-94a119a0317d.mp4
 
 https://user-images.githubusercontent.com/797792/226532967-686af0ff-84cb-4a25-bf9b-5d7fcb401423.mp4
 
