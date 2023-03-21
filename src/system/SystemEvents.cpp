@@ -84,6 +84,8 @@ uint32_t deviceSleepMSecs = 0; // time wasted in lightSleep waiting user interac
 unsigned long deviceUsageMSecs=0; // time interacted with the user
 float deviceUsageRatio=100.0;   // device usage percentage ratio
 
+Ticker TimedDoSleep;
+
 extern bool UIRunning;
 bool systemSleep = false;
 // Event loops
@@ -405,19 +407,28 @@ static void DoSleepTask(void *args) {
 }
 
 void DoSleep() {
-    if (false == systemSleep) {
-        systemSleep = true;
-        BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY-3, NULL,1);
-        if ( pdPASS != intTaskOk ) {
-            lSysLog("ERROR: cannot launch DoSleep\n");
-            systemSleep = false;
-            if (false == ttgo->bl->isOn()) {                
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                FreeSpace();
-                ScreenWake();
-            }
+    if (systemSleep) { return; }
+    systemSleep = true;
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY-3, NULL,1);
+    if ( pdPASS == intTaskOk ) { return; }
+    systemSleep = false;
+    lSysLog("ERROR: cannot launch DoSleep!!!\n");
+    // launch timed DoSleep
+    TimedDoSleep.once(3,[]() { // get sleep in some seconds if no screen is on
+        if (false == ttgo->bl->isOn()) {
+            lEvLog("DoSleep Retry...\n");
+            DoSleep();
         }
-    }
+    });
+    /*
+    systemSleep = false;
+    if (false == ttgo->bl->isOn()) {                
+
+
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        FreeSpace();
+        ScreenWake(); <=== HERE IS THE FAULT!!!!!! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    }*/
 }
 
 const char *BMAMessages[] = {
@@ -528,8 +539,6 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
     }
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
-
-Ticker TimedDoSleep;
 
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("ESP Wakeup timer triggered\n");
@@ -843,6 +852,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
         //lSysLog("System event: Application memory constrained\n");
     }
     xSemaphoreGive( UISemaphore ); // free
+
 }
 void SystemBMARestitution() {
     const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
