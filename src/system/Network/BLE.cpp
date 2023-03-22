@@ -31,6 +31,8 @@
 #include "../Datasources/database.hpp"
 #include "Gagetbridge.hpp"
 #include <cstring>
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo;
 
 const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE

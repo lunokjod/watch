@@ -21,9 +21,10 @@
 #define __LUNOKIOT__CONTROL_BASE_CLASS__
 
 #include "../../../lunokIoT.hpp"
-#include <LilyGoWatch.h>
+#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <LilyGoWatch.h>
 #include "../../UI.hpp"
-
+extern TFT_eSPI * tft;
 namespace LuI {
 
     // defines root of any screen element

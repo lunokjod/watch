@@ -25,6 +25,8 @@
 #include "../lunokIoT.hpp"
 #include <freertos/task.h>
 
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo;
 extern SemaphoreHandle_t I2cMutex;
 
 GestureSettings::GestureSettings() {

@@ -50,14 +50,14 @@ void Check::Refresh(bool swap) {
     const int32_t radius = 16;
     
     uint16_t baseColor = ThCol(button);
-    uint16_t brightColor = ttgo->tft->alphaBlend(128,TFT_WHITE,baseColor);
-    uint16_t brightLightColor = ttgo->tft->alphaBlend(128,TFT_WHITE,baseColor);
-    uint16_t darkColor = ttgo->tft->alphaBlend(64,TFT_BLACK,baseColor);
-    uint16_t backColor = ttgo->tft->alphaBlend(64,TFT_BLACK,baseColor);
+    uint16_t brightColor = tft->alphaBlend(128,TFT_WHITE,baseColor);
+    uint16_t brightLightColor = tft->alphaBlend(128,TFT_WHITE,baseColor);
+    uint16_t darkColor = tft->alphaBlend(64,TFT_BLACK,baseColor);
+    uint16_t backColor = tft->alphaBlend(64,TFT_BLACK,baseColor);
     uint16_t shadowColor = ThCol(shadow);
     uint16_t highlightColor = ThCol(highlight);
-    uint16_t highlightBrightColor = ttgo->tft->alphaBlend(128,TFT_WHITE,highlightColor);
-    uint16_t highlightShadowColor = ttgo->tft->alphaBlend(128,TFT_BLACK,highlightColor);
+    uint16_t highlightBrightColor = tft->alphaBlend(128,TFT_WHITE,highlightColor);
+    uint16_t highlightShadowColor = tft->alphaBlend(128,TFT_BLACK,highlightColor);
     uint16_t markColor = ThCol(mark);
     if (( false == directDraw ) && ( true == swap )) {
         baseColor = ByteSwap(baseColor);

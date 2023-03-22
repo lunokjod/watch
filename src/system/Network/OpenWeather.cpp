@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h> // thanks for the warnings :/
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo;
 #include <Arduino_JSON.h>
 #include <HTTPClient.h>
 

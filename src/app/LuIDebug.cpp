@@ -29,6 +29,7 @@
 
 
 DebugLuIApplication::DebugLuIApplication() {
+    directDraw=false; // buffer start
     LuI::Container *screen = new LuI::Container(LuI_Horizonal_Layout,2);
     screen->border=5;
     LuI::Container * body = new LuI::Container(LuI_Horizonal_Layout,1);
@@ -36,7 +37,7 @@ DebugLuIApplication::DebugLuIApplication() {
     screen->AddChild(body,1.6);
     screen->AddChild(foot,0.4);
 
-    LuI::Image * testImg = new LuI::Image(200,200);
+    LuI::Image * testImg = new LuI::Image(120,120);
     TFT_eSprite * buffer = testImg->GetBuffer();
     buffer->fillSprite(ThCol(background));
 

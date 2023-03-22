@@ -60,7 +60,7 @@ void Control::SetHeight(uint32_t h) {
 
 void Control::EventHandler() {
 
-    //ttgo->tft->drawRect(clipX+3,clipY+3,width-6,height-6,TFT_RED); //@DEBUG
+    //tft->drawRect(clipX+3,clipY+3,width-6,height-6,TFT_RED); //@DEBUG
 
     if ( dragEnable ) {
         if ( touched ) {
@@ -110,7 +110,7 @@ void Control::Refresh(bool swap) {
         delete canvas;
         canvas=nullptr;
     }
-    canvas = new TFT_eSprite(ttgo->tft);
+    canvas = new TFT_eSprite(tft);
     canvas->setColorDepth(16);
     canvas->createSprite(width,height);
     canvas->setSwapBytes(swap);

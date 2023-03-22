@@ -132,7 +132,7 @@ void Container::EventHandler() {
             children[current]->Refresh(true);
             TFT_eSprite * what = children[current]->GetCanvas();
             if ( directDraw ) {
-                ttgo->tft->setSwapBytes(true);
+                tft->setSwapBytes(true);
                 what->pushSprite(children[current]->clipX,children[current]->clipY,Drawable::MASK_COLOR);
             }
         }

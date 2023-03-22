@@ -19,9 +19,9 @@
 
 #include <Arduino.h>
 #include <LilyGoWatch.h>
+extern TTGOClass *ttgo;
 #include "LogView.hpp" // log capabilities
 #include "WatchfaceAlwaysOn.hpp"
-
 #define MINIMUM_BACKLIGHT 5
 
 WatchfaceAlwaysOn::WatchfaceAlwaysOn() {

@@ -52,7 +52,7 @@ if __name__ == '__main__':
                 rc=255*mat.diffuse_color[0]
                 gc=255*mat.diffuse_color[1]
                 bc=255*mat.diffuse_color[2]
-                f.write("myFaces[%d].color = ttgo->tft->color565(%d,%d,%d);\n" % (faceCount,rc,gc,bc))
+                f.write("myFaces[%d].color = tft->color565(%d,%d,%d);\n" % (faceCount,rc,gc,bc))
             if (face.use_smooth):
                 f.write("myFaces[%d].smooth = true;\n" % faceCount)
             else:

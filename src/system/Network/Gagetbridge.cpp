@@ -29,6 +29,8 @@
 #include "../../app/BLEPlayer.hpp"
 #include "../Datasources/database.hpp"
 #include "../SystemEvents.hpp"
+#include <LilyGoWatch.h>
+extern TTGOClass *ttgo;
 
 extern SemaphoreHandle_t I2cMutex;
 

@@ -295,33 +295,33 @@ void RenderTask(void *data) {
     RenderCore * where=(RenderCore *)data;
     Engine3DApplication * app = where->instance;
 
-    TFT_eSprite *alphaChannel = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
+    TFT_eSprite *alphaChannel = new TFT_eSprite(tft);  // have mesh on the area?
     alphaChannel->setColorDepth(1);
     alphaChannel->createSprite(app->renderSizeW,app->renderSizeH);
 
-    TFT_eSprite *zbuffer = new TFT_eSprite(ttgo->tft);  // the deep of pixels
+    TFT_eSprite *zbuffer = new TFT_eSprite(tft);  // the deep of pixels
     zbuffer->setColorDepth(16);
     zbuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
-    TFT_eSprite *normalsBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    TFT_eSprite *normalsBuffer = new TFT_eSprite(tft); // where 3D are rendered
     normalsBuffer->setColorDepth(16);
     normalsBuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
-    TFT_eSprite *polyBuffer = new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    TFT_eSprite *polyBuffer = new TFT_eSprite(tft); // where 3D are rendered
     polyBuffer->setColorDepth(16);
     polyBuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
-    TFT_eSprite *buffer3d=new TFT_eSprite(ttgo->tft); // where 3D are rendered
+    TFT_eSprite *buffer3d=new TFT_eSprite(tft); // where 3D are rendered
     buffer3d->setColorDepth(16);
     buffer3d->createSprite(app->renderSizeW,app->renderSizeH);
     Range MeshDimensions;
     Clipping2D ViewClipping;    // used to know the updated area on the current rendered frame
 
-    TFT_eSprite *smoothBuffer = new TFT_eSprite(ttgo->tft);  // have mesh on the area?
+    TFT_eSprite *smoothBuffer = new TFT_eSprite(tft);  // have mesh on the area?
     smoothBuffer->setColorDepth(1);
     smoothBuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
-    TFT_eSprite *lightBuffer = new TFT_eSprite(ttgo->tft);  // lights
+    TFT_eSprite *lightBuffer = new TFT_eSprite(tft);  // lights
     lightBuffer->setColorDepth(16);
     lightBuffer->createSprite(app->renderSizeW,app->renderSizeH);
 
@@ -498,7 +498,7 @@ void RenderTask(void *data) {
         //@TODO PIXELSHADER WITH CALLBACK
  
         // final imageclip composing ready for send to TFT
-        TFT_eSprite rectBuffer3d = TFT_eSprite(ttgo->tft);
+        TFT_eSprite rectBuffer3d = TFT_eSprite(tft);
         rectBuffer3d.setColorDepth(16);
         if ( NULL != rectBuffer3d.createSprite(rectWidth,rectHeight)) {
 
@@ -991,7 +991,7 @@ void Engine3DApplication::RenderFace(INOUT TFT_eSprite *buffer, bool shaded,uint
         int16_t deep2 = (p2->x+p2->z)/2;
         int medianDeep = (deep0+deep1+deep2)/3;
         uint8_t alpha=128+medianDeep;
-        color = ttgo->tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
+        color = tft->alphaBlend(alpha,face.color,TFT_BLACK); // color with shade
     } else {
         */
     uint32_t color=TFT_WHITE;
@@ -1050,7 +1050,7 @@ void Engine3DApplication::RenderPoint(INOUT TFT_eSprite *buffer,IN Point3D & poi
         uint16_t alpha = 128-(deep*2);
         //lLog("deep: %d\n", deep);
         //if ( alpha > 60 ) {
-        uint16_t mixColor = ttgo->tft->alphaBlend(alpha,point.color,TFT_BLACK);
+        uint16_t mixColor = tft->alphaBlend(alpha,point.color,TFT_BLACK);
         buffer3d->drawPixel(pointX,pointY,mixColor);
         //UpdateClipWith(ViewClipping,centerX+x2d,centerY+y2d);
     }

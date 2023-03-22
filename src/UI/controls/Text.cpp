@@ -34,7 +34,7 @@ Text::~Text() {
 
 Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : text(what),color(color),swapColor(swap),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
-    imageTextCanvas=new TFT_eSprite(ttgo->tft);
+    imageTextCanvas=new TFT_eSprite(tft);
     imageTextCanvas->setColorDepth(16);
     imageTextCanvas->setFreeFont(font);
     uint16_t fcolor = color;

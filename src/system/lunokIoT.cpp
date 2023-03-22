@@ -58,7 +58,7 @@ extern SemaphoreHandle_t I2cMutex;
 TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
 //TFT_eSPI * tft = new TFT_eSPI();
-TFT_eSPI * tft = new TFT_eSPI();
+TFT_eSPI * tft = nullptr;
 
 extern bool ntpSyncDone;
 extern const char *ntpServer;
@@ -106,7 +106,7 @@ LunokIoT::LunokIoT() {
     //ttgo->setTftExternal(*tft);
     // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
-    
+    tft = ttgo->tft;
     // storage init
     SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings

@@ -34,7 +34,7 @@ XBM::~XBM() {
 XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap) :
                             imageWidth(width),imageHeight(height),imageData(data) {
     lLog("XBM %p created!\n",this);
-    imageCanvas=new TFT_eSprite(ttgo->tft);
+    imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(1);
     imageCanvas->createSprite(width,height);
     imageCanvas->fillSprite(TFT_BLACK);

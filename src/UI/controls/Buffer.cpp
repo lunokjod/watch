@@ -33,7 +33,7 @@ Buffer::~Buffer() {
 Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout layout, size_t childs)
                                 : imageWidth(width),imageHeight(height) {//,Container(layout,childs) {
     lLog("Buffer %p created!\n",this);
-    imageCanvas=new TFT_eSprite(ttgo->tft);
+    imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
     dragEnable=true;

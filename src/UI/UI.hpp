@@ -26,7 +26,8 @@
 #include <functional> // callbacks 
 typedef std::function<void (void* payload)> UICallback; // repeated declaration
 
-extern TTGOClass *ttgo; // ttgo lib
+extern TFT_eSPI * tft;
+//extern TTGOClass *ttgo; // ttgo lib
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
 
@@ -67,11 +68,10 @@ struct TemplateThemeScheme {
 extern const TemplateColorPalette * currentColorPalette;
 extern const TemplateThemeScheme * currentThemeScheme;
 
-extern TFT_eSPI * tft;
 uint16_t ColorSwap(uint16_t colorToSwap);
 uint16_t ByteSwap(uint16_t colorToSwap);
 
-#define ThCol(WHAT) ttgo->tft->color24to16(currentThemeScheme->WHAT)
+#define ThCol(WHAT) tft->color24to16(currentThemeScheme->WHAT)
 
 
 extern uint8_t pendingNotifications;
