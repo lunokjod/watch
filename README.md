@@ -7,15 +7,22 @@
 [Buy me a coffe!](https://www.buymeacoffee.com/lunokjod)
 
 
-**Last videos from development**
+## **Last videos from development**
 
+### Video test:
 "CAN *YOUR* SMARTWATCH RICKROLL?" * Shinoa Fores
 
-https://user-images.githubusercontent.com/797792/226633963-94d641ff-2577-46a7-9468-94a119a0317d.mp4
+![rickrollingvideotest](https://user-images.githubusercontent.com/797792/226875530-702eca6a-fce0-4bfd-9e6e-a5e2530539c7.gif)
 
-https://user-images.githubusercontent.com/797792/226532967-686af0ff-84cb-4a25-bf9b-5d7fcb401423.mp4
+### 3D engine:
 
-https://user-images.githubusercontent.com/797792/214883668-8e1d013e-e431-4c76-b9a0-77f161d2d659.mp4
+![3dtest](https://user-images.githubusercontent.com/797792/226875587-b5f43ebf-3f6a-46b7-bd3b-ca25422d1814.gif)
+
+
+### IA driven freehand character recognition (can learn your own patterns):
+
+![handwritingtest](https://user-images.githubusercontent.com/797792/226876527-02cf53b8-fc78-427f-b90a-07f441372a68.gif)
+
 
 <img src="./doc/watchface0.png" width="120" /> <img src="./doc/playground0.png" width="120" /> <img src="./doc/playground3.png" width="120" /> <img src="./doc/settime.png" width="120" /> <img src="./doc/battery.png" width="120" /> <img src="./doc/ble_upload.png" width="120" /> <img src="./doc/mainmenu_provisioning.png" width="120" /> <img src="./doc/provisioning.png" width="120" />
 
