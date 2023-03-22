@@ -21,10 +21,19 @@
 #define __LUNOKIOT__APPLICATION__LUI_DEBUG__
 
 #include "../UI/AppLuITemplate.hpp"
-#include "../UI/controls/Buffer.hpp"
+#include "../UI/controls/View3D.hpp"
 
 class DebugLuIApplication : public TemplateLuIApplication {
+    private:
+        unsigned long nextTime=0;
     public:
+        LuI::View3D * view3DTest0;
+        LuI::View3D * view3DTest1;
+        LuI::View3D * view3DTest2;
+        LuI::View3D * view3DTest3;
+        LuI::View3D * view3DTest4;
+        LuI::View3D * view3DTest5;
+        bool Tick();
         DebugLuIApplication();
         const char *AppName() override { return "Playground LuI"; };
 };

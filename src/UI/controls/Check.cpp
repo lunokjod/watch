@@ -30,7 +30,7 @@ Check::~Check() {
 Check::Check(bool swap) {
     lLog("Created Check on %p swap: %s\n",this,(swap?"true":"false"));
     tapCallbackParam=this; // what pass to callback
-    tapCallback = [](void * obj){; // where call when tap
+    tapCallback = [](void * obj){ // where call when tap
         Check * self=(Check*)obj;
         self->Switch();
     };

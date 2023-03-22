@@ -104,7 +104,7 @@ void Control::EventHandler() {
 }
 
 void Control::Refresh(bool swap) {
-    lLog("%p Control::Refresh(%s)\n",this,(swap?"true":"false"));
+    //lLog("%p Control::Refresh(%s)\n",this,(swap?"true":"false"));
     if ( nullptr != canvas ) {
         canvas->deleteSprite();
         delete canvas;
