@@ -122,7 +122,6 @@ void ScreenWake() {
         ttgo->bl->on();
         ttgo->tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
         FPS = MAXFPS;
-        UINextTimeout = millis()+UITimeout;
     }
     xSemaphoreGive(ScreenSemaphore);
 }
@@ -332,22 +331,9 @@ extern SemaphoreHandle_t I2cMutex;
 SemaphoreHandle_t UIDrawProcess = xSemaphoreCreateMutex();
 
 /*
-void UIEventScreenRefreshTask(void *data) {
-    vTaskDelete(NULL);
-}
-*/
+ * Update touch and screen 
+ */
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    /*
-    lSysLog("REFRESh\n");
-    // remains locked until next
-    if( xSemaphoreTake( UIDrawProcess, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
-        BaseType_t intTaskOk = xTaskCreatePinnedToCore(UIEventScreenRefreshTask, "", LUNOKIOT_APP_STACK_SIZE, nullptr, tskIDLE_PRIORITY, NULL,1);
-        if ( pdPASS != intTaskOk ) {
-            lSysLog("ERROR: Unable to create UI Refresh Task!\n");
-        }
-    }
-    */
-
     // touch data handling
     static bool oldTouchState = false;
 
@@ -372,7 +358,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         touchDragVectorX = (newTouchX-downTouchX);
         touchDragVectorY = (newTouchY-downTouchY);
         // obtain distance between two points
-        touchDragDistance = sqrt(pow(newTouchX - downTouchX, 2) + pow(newTouchY - downTouchY, 2) * 1.0);
+        touchDragDistance = sqrt(pow(touchDragVectorX, 2) + pow(touchDragVectorY, 2) * 1.0);
         // Obtain the angle from vector in degrees
         double radAngle = atan2(touchDragVectorY, touchDragVectorX);
         touchDragAngle = radAngle * (180/3.14);
@@ -400,11 +386,12 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     bool changes = false;
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
         if ( nullptr == currentApplication ) {
+            // no app, nothing to do
             xSemaphoreGive( UISemaphore );
             xSemaphoreGive( UIDrawProcess );
             return;
         }
-
+        // get the current app view
         TFT_eSprite *appView = currentApplication->canvas;
         if ( nullptr == appView ) {
             lUILog("Unable to get app canvas!\n");

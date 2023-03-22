@@ -30,8 +30,8 @@ namespace LuI {
     class Control {
         protected:
             TFT_eSprite *canvas=nullptr;
-            Control *parent=nullptr;
             bool lastTouched=false;
+            Control *parent=nullptr;
         public:
             bool dirty=true; // forces redraw
 

@@ -25,6 +25,7 @@
 #define MINIMUM_BACKLIGHT 5
 
 WatchfaceAlwaysOn::WatchfaceAlwaysOn() {
+    UINextTimeout = millis()+UITimeout; // auto-sleep
     Tick();
 }
 

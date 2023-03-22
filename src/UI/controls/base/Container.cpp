@@ -121,7 +121,7 @@ void Container::Refresh(bool swap) {
 
 void Container::EventHandler() {
 
-    ttgo->tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
+    //ttgo->tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
     
     if ( dirty ) { Refresh(); }
     Control::EventHandler();

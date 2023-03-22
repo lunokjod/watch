@@ -61,6 +61,7 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
     }*/
     Tick();
     UILongTapOverride=true;
+    UINextTimeout = millis()+UITimeout; // auto-sleep
 }
 
 WatchfaceDotApplication::~WatchfaceDotApplication() {
@@ -72,15 +73,16 @@ WatchfaceDotApplication::~WatchfaceDotApplication() {
 
 bool WatchfaceDotApplication::Tick() {
     bottomRightButton->Interact(touched, touchX, touchY); // menu
+    bool launchDrop = touched;
     // create touch circles
     if ( millis() > nextDrop ) {
         // fake data
-        touched=true;
         touchX=random(0,240);
         touchY=random(0,240);
         nextDrop=millis()+1000;
+        launchDrop=true;
     }
-    if ( touched ) {
+    if ( launchDrop ) {
         //nextDrop=millis()+10000;
         UILongTapOverride=true;
         bool foundSlot=false;

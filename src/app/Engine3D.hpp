@@ -145,7 +145,7 @@ for (int i = 0; i < dimension1_max; i++) {
         const uint8_t border=16;
         uint8_t lastCoreUsed=0;
         Angle3D rot;
-        //Angle3D LampRotation;
+        Angle3D LampRotation;
         Angle3D lastRot;
         const uint32_t AvailColors[9] = {TFT_RED,TFT_GREEN,TFT_BLUE,TFT_PURPLE,TFT_CYAN,TFT_MAGENTA,TFT_ORANGE,TFT_PINK,TFT_SKYBLUE};
         const double sq2 = sqrt(2);

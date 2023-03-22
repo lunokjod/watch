@@ -21,6 +21,7 @@
 #define __LUNOKIOT__APPLICATION__LUI_DEBUG__
 
 #include "../UI/AppLuITemplate.hpp"
+#include "../UI/controls/Buffer.hpp"
 
 class DebugLuIApplication : public TemplateLuIApplication {
     public:

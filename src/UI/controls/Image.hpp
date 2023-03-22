@@ -38,8 +38,9 @@ namespace LuI {
             uint32_t offsetX=0;
             uint32_t offsetY=0;
             ~Image();
-            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
+            Image(IN uint32_t width, IN uint32_t height, IN unsigned char *data=nullptr,bool swap=false, LuI_Layout layout=LuI_Vertical_Layout, size_t childs=0);
             void Refresh(bool swap=false) override;
+            TFT_eSprite * GetBuffer() { return imageCanvas; }
     };
 };
 

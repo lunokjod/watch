@@ -39,7 +39,9 @@ Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data,
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
     imageCanvas->setSwapBytes(swap);
-    imageCanvas->pushImage(0,0,width,height, (uint16_t *)data);
+    if ( nullptr != data ) {
+        imageCanvas->pushImage(0,0,width,height, (uint16_t *)data);
+    }
 }
 
 void Image::Refresh(bool swap) {

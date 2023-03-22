@@ -25,33 +25,34 @@
 #include "../UI/controls/Button.hpp"
 #include "../UI/controls/Buffer.hpp"
 #include "../UI/controls/Check.hpp"
-#include "../static/fakepdf.c"
+#include "../UI/controls/Image.hpp"
 
 
 DebugLuIApplication::DebugLuIApplication() {
     LuI::Container *screen = new LuI::Container(LuI_Horizonal_Layout,2);
-
-    // draw here!
     screen->border=5;
     LuI::Container * body = new LuI::Container(LuI_Horizonal_Layout,1);
     LuI::Container * foot = new LuI::Container(LuI_Vertical_Layout,1);
     screen->AddChild(body,1.6);
     screen->AddChild(foot,0.4);
-    LuI::Buffer * testBuffer = new LuI::Buffer(fakepdf.width,fakepdf.height); //,true,LuI_Vertical_Layout,2);
-    TFT_eSprite * buffImg = testBuffer->GetBuffer();
-    buffImg->pushImage(0,0,fakepdf.width,fakepdf.height,(uint16_t *)fakepdf.pixel_data);
-    //testBuffer->AddChild(new LuI::Check());
-    //testBuffer->AddChild(nullptr);
 
-    body->AddChild(testBuffer);
+    LuI::Image * testImg = new LuI::Image(200,200);
+    TFT_eSprite * buffer = testImg->GetBuffer();
+    buffer->fillSprite(ThCol(background));
+
+    body->AddChild(testImg);
+
     LuI::Container * footContainer = new LuI::Container(LuI_Vertical_Layout,3);
     foot->AddChild(footContainer);
-
     LuI::Button * backButton = new LuI::Button(LuI_Vertical_Layout,1);
     backButton->AddChild(new LuI::Text("Back"));
     backButton->tapCallback = [](void * obj){ LaunchWatchface(); };
     footContainer->AddChild(backButton);
-    
+
+    footContainer->AddChild(nullptr);
+    footContainer->AddChild(nullptr);
+
+
     // init
     AddChild(screen);
     Tick();

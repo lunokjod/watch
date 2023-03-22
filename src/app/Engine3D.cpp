@@ -429,9 +429,13 @@ void RenderTask(void *data) {
 
         // rotate normals
         for(int i=0;i<app->myNormalsNumber;i++) {
+            // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
+            //app->Rotate(app->myNormals[i],app->LampRotation);
             app->Rotate(app->myNormals[i],app->rot);
-            esp_task_wdt_reset();
         }
+        //app->LampRotation.x+=1;
+        //if ( app->LampRotation.x>359 ) { app->LampRotation.x=359-app->LampRotation.x; }
+        esp_task_wdt_reset();
         eAnimation = millis();
 
         // render the layers
@@ -486,7 +490,7 @@ void RenderTask(void *data) {
                             //buffer3d->drawPixel(x, y,TFT_GREEN);
                         //}
                         lastPolyColor = polyColor;
-                    }
+                    }<
                 }
             }
         }*/

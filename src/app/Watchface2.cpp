@@ -76,6 +76,8 @@ Watchface2Application::~Watchface2Application() {
 
 Watchface2Application::Watchface2Application() {
     directDraw=false;
+    UINextTimeout = millis()+UITimeout; // auto-sleep
+
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
@@ -374,14 +376,11 @@ bool Watchface2Application::Tick() {
         bool doingSomething = false;
         int16_t posX = 40;
         int16_t posY = 74;
-        if (vbusPresent)
-        {
+        if (vbusPresent) {
             activityColor = TFT_DARKGREY;
         }
-        else if (nullptr != currentActivity)
-        {
-            if (0 == strcmp("BMA423_USER_WALKING", currentActivity))
-            {
+        else if (nullptr != currentActivity) {
+            if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
                 activityColor = TFT_GREEN;
                 doingSomething = true;
             }

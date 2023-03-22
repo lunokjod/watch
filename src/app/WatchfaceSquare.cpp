@@ -37,7 +37,6 @@ extern double weatherWindSpeed;
 
 WatchfaceSquare::WatchfaceSquare() {
     lAppLog("WatchfaceSquare On\n");
-    directDraw=false;
 
     topRightButton = new ActiveRect(160, 0, 80, 80, [](void *unused) {
         LaunchApplication(new BatteryApplication());
