@@ -847,7 +847,7 @@ myNormalsNumber = 190;
 
 
     lAppLog("Loading mesh...\n");
-    #include "../static/meshData.c"
+    //#include "../static/meshData.c"
 
     //facesToRender=(OrderedFace3D*)ps_calloc(myFacesNumber,sizeof(OrderedFace3D));
     facesToRender=(OrderedFace3D*)calloc(myFacesNumber,sizeof(OrderedFace3D));

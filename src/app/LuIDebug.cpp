@@ -30,7 +30,10 @@
 
 #include "../../tool/head.c"
 #include "../../tool/Cube.c"
-//#include "../../tool/robot001.c"
+#include "../../tool/glass.c"
+#include "../../tool/Sphere.c"
+#include "../../tool/robot001.c"
+#include "../../tool/bowser001.c"
 
 DebugLuIApplication::DebugLuIApplication() {
     directDraw=false; // buffer start
@@ -43,7 +46,7 @@ DebugLuIApplication::DebugLuIApplication() {
 
     view3DTest0 = new LuI::View3D();
     view3DTest0->ScaleMesh = { 0.6,0.6,0.6 };
-    view3DTest0->AddModel(&headMesh);
+    view3DTest0->AddModel(&SphereMesh);
     view3DTest0->RotateMesh = { 0,5,0};
     body->AddChild(view3DTest0);
     view3DTest0->tapCallbackParam=view3DTest0;
@@ -68,7 +71,7 @@ DebugLuIApplication::DebugLuIApplication() {
     view3DTest1->touchEnabled=true;
 
     view3DTest2 = new LuI::View3D();
-    view3DTest2->ScaleMesh = { 0.15,0.7,0.15 };
+    view3DTest2->ScaleMesh = { 0.3,0.3,0.3 };
     view3DTest2->AddModel(&headMesh);
     view3DTest2->RotateMesh = { 0,0,5};
     shit->AddChild(view3DTest2);
@@ -81,7 +84,7 @@ DebugLuIApplication::DebugLuIApplication() {
 
     view3DTest3 = new LuI::View3D();
     view3DTest3->ScaleMesh = { 1,1,1 };
-    view3DTest3->AddModel(&headMesh);
+    view3DTest3->AddModel(&robot001Mesh);
     view3DTest3->RotateMesh = { 0,-5,5};
     view3DTest3->tapCallbackParam=view3DTest3;
     view3DTest3->tapCallback=[](void * obj){
@@ -95,7 +98,7 @@ DebugLuIApplication::DebugLuIApplication() {
 
     view3DTest4 = new LuI::View3D();
     //view3DTest0->ScaleMesh = { 0.1,0.1,0.1 };
-    view3DTest4->AddModel(&headMesh);
+    view3DTest4->AddModel(&bowser001Mesh);
     view3DTest4->RotateMesh = { -5,-5,0};
     view3DTest4->tapCallbackParam=view3DTest4;
     view3DTest4->tapCallback=[](void * obj){

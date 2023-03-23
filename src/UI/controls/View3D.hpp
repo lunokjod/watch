@@ -25,8 +25,8 @@
 
 namespace LuI {
     #define ENGINE_INVALID_VALUE -666
-    #define CLOCKWISE 0
-    #define COUNTER_CLOCKWISE 1
+    #define CLOCKWISE 1
+    #define COUNTER_CLOCKWISE 0
 
     typedef struct __attribute__((__packed__)) {
         const float x;

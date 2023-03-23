@@ -278,11 +278,11 @@ bool View3D::IsClockwise(INOUT Face3D &face) {
               - (pix1.x - pix0.x) * (pix2.y - pix1.y);
     //if (val == 0) { face._clockWiseCacheValue=false; } // collinear
     if (val > 0) {
-        face._clockWiseCache=0;
+        face._clockWiseCache=CLOCKWISE;
     } else { 
-        face._clockWiseCache=1;
+        face._clockWiseCache=COUNTER_CLOCKWISE;
     }
-    return (face._clockWiseCache?true:false);
+    return (face._clockWiseCache?CLOCKWISE:COUNTER_CLOCKWISE);
 }
 
 float View3D::NormalFacing(INOUT Normal3D &normal) {
@@ -359,7 +359,7 @@ void View3D::Render() {
 
             // backface culling
             //if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
-            if ( false == IsClockwise(face) ) { continue; } // backface-culing
+            if ( CLOCKWISE != IsClockwise(face) ) { continue; } // backface-culing
             Point2D pix0;
             Point2D pix1;
             Point2D pix2;
@@ -374,7 +374,7 @@ void View3D::Render() {
             uint32_t tp2x = centerX+pix2.x;
             uint32_t tp2y = centerY+pix2.y;
             int16_t alpha=(255*(float(medianDeep+abs(MeshDimensions.Min))/float(MaxDeep+abs(MeshDimensions.Min))));
-            if ( alpha > -0.1 ) {
+            if ( alpha > 0 ) {
                 const uint16_t zcolor = tft->color565(alpha,alpha,alpha);
                 // fill the cache
                 float distNormal = NormalFacing(meshNormalsData[i]);
