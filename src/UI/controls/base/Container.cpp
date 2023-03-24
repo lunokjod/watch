@@ -113,9 +113,11 @@ void Container::Refresh(bool swap) {
         // refresh children appearance
         children[current]->Refresh((!swap)); // invert children
         TFT_eSprite * childImg = children[current]->GetCanvas();
-        // push children on the parent view
-        childImg->setPivot(0,0);
-        childImg->pushRotated(canvas,0,Drawable::MASK_COLOR);
+        if ( nullptr != childImg ) { // allow control to dismiss their canvas and refresh itself?
+            // push children on the parent view
+            childImg->setPivot(0,0);
+            childImg->pushRotated(canvas,0,Drawable::MASK_COLOR);
+        }
     }
 }
 
@@ -131,7 +133,7 @@ void Container::EventHandler() {
         if ( children[current]->dirty ) {
             children[current]->Refresh(true);
             TFT_eSprite * what = children[current]->GetCanvas();
-            if ( directDraw ) {
+            if (( directDraw ) && ( nullptr!=what)) { // canvas can retull null to auto-manage itself
                 tft->setSwapBytes(true);
                 what->pushSprite(children[current]->clipX,children[current]->clipY,Drawable::MASK_COLOR);
             }

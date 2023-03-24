@@ -17,16 +17,18 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_3DIMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_3DIMAGE_CLASS__
-
-#include "../../lunokIoT.hpp"
-#include "base/Control.hpp"
+#ifndef __LUNOKIOT__MESH_DEFINES___
+#define __LUNOKIOT__MESH_DEFINES___
+#include <Arduino.h>
+#include <LilyGoWatch.h>
 
 namespace LuI {
     #define ENGINE_INVALID_VALUE -666
     #define CLOCKWISE 1
     #define COUNTER_CLOCKWISE 0
+    #define INVALID_MESH -1
+    #define MAX_MESHES 3
+    #define MAX_ORDERED_FACES 2000
 
     typedef struct __attribute__((__packed__)) {
         const float x;
@@ -97,6 +99,14 @@ namespace LuI {
         int32_t Max;
     } Range;
 
+    // define screen area
+    typedef struct {
+        int16_t xMin;
+        int16_t yMin;
+        int16_t xMax;
+        int16_t yMax;
+    } Clipping2D;
+
     typedef struct {
         // 2d info about
         float normalFacing=0;
@@ -109,49 +119,11 @@ namespace LuI {
         size_t faceOffset=0;
         uint16_t colorDeep=0;
         int16_t alpha=0;
-    //    int32_t deep=0;
+        uint16_t faceColor=0;
+        bool smooth=0;
     } OrderedFace3D;
 
-    class View3D: public Control {
-        protected:
-            uint16_t meshVertexCount=0;
-            Vertex3D *meshVertexData=nullptr;
-            uint16_t meshFaceCount=0;
-            Face3D * meshFaceData=nullptr;
-            Normal3D * meshNormalsData=nullptr;
-            OrderedFace3D * meshOrderedFaces=nullptr;
-            Range MeshDimensions;
-            uint16_t centerX;
-            uint16_t centerY;
-        public:
-            Vertex3D ScaleMesh = { 0.5,0.5,0.5 };
-            Angle3D RotateMesh = { 0,5,0 };
-            ~View3D();
-            View3D();
-            void Render();
-            void Rotate(INOUT Vertex3D & point, IN Angle3D & rotationAngles);
-            void Rotate(INOUT Normal3D & point, IN Angle3D & rotationAngles);
-            void Scale(INOUT Vertex3D & point, IN Vertex3D & axes);
-            void GetProjection(INOUT Vertex3D &vertex, OUT Point2D &pixel );
-            void UpdateRange(INOUT Range &range, IN int32_t value);
-            int16_t GetDeepForPoint(INOUT Vertex3D &point);
-            bool IsClockwise(INOUT Face3D &face);
-            float NormalFacing(INOUT Normal3D &normal);
-            bool AddModel(IN Mesh3DDescriptor * meshData);
-            void Refresh(bool swap=false) override;
-            static bool CacheIsFilled;
-            static float AngleSinCache[360];
-            static float AngleCosCache[360];
-            static float AngleCache[360];
-            static const double sq2;
-            static const double sq6;
-/*
-            float angleSinCache[360] = { 0.0 };
-float angleCosCache[360] = { 0.0 };
-float angleCache[360] = { 0.0 };
-*/
-    };
 };
 
-
 #endif
+

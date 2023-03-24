@@ -50,7 +50,7 @@ namespace LuI {
             uint32_t clipX=0;
             uint32_t clipY=0;
             virtual void EventHandler();
-            TFT_eSprite * GetCanvas();
+            virtual TFT_eSprite * GetCanvas();
             bool Attach(INOUT Control *control);
             virtual ~Control();
             Control(uint32_t w=100, uint32_t h=100);
