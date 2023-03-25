@@ -60,20 +60,16 @@ float View3D::NormalFacing(INOUT Normal3D &normal) {
 void View3D::Refresh(bool swap) {
     //lLog("View3D %p refresh\n",this);
     Control::Refresh(swap);
+
     centerX = width/2;
     centerY = height/2;
-
     // iterate all meshes to apply their last transformations
     int offset=0;
     for(offset=0;offset<MAX_MESHES;offset++) {
         if ( nullptr == mesh[offset] ) { continue; }
         mesh[offset]->ApplyTransform();
     }
-    if ( directDraw ) { Render(); }
-    if ( stepEnabled ) {
-        if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
-    }
-
+    if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
 }
 
 void View3D::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point) {
@@ -83,8 +79,8 @@ void View3D::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point) {
 void View3D::UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y) {
     clip.xMin=MIN(clip.xMin,x);
     clip.yMin=MIN(clip.yMin,y);
-    clip.xMax=MAX(clip.xMax,x);
-    clip.yMax=MAX(clip.yMax,y);
+    clip.xMax=MAX(x,clip.xMax);
+    clip.yMax=MAX(y,clip.yMax);
 }
 
 void View3D::GetProjection(INOUT Vertex3D &vertex, OUT Point2D &pixel ) {
@@ -143,6 +139,7 @@ bool View3D::IsClockwise(INOUT Face3D &face,uint16_t meshNumber) {
 }
 
 void View3D::Render() {
+    unsigned long bRender=millis();
     //lUILog("Clean...\n");
     /* THIS IS UNNECESARy, THE LAST CACHE IS VALID 
     // destroy caches
@@ -211,24 +208,33 @@ void View3D::Render() {
                 // backface culling
                 //if ( false == IsClockwise(pix0,pix1,pix2) ) { continue; } // backface-culing
                 if ( CLOCKWISE != IsClockwise(face,m) ) { continue; } // backface-culing
-                Point2D pix0;
-                Point2D pix1;
-                Point2D pix2;
-                GetProjection(p0,pix0);
-                GetProjection(p1,pix1);
-                GetProjection(p2,pix2);
-
-                uint32_t tp0x = centerX+pix0.x;
-                uint32_t tp0y = centerY+pix0.y;
-                uint32_t tp1x = centerX+pix1.x;
-                uint32_t tp1y = centerY+pix1.y;
-                uint32_t tp2x = centerX+pix2.x;
-                uint32_t tp2y = centerY+pix2.y;
+                                
                 int16_t alpha=(255*(float(medianDeep+abs(MeshDimensions.Min))/float(MaxDeep+abs(MeshDimensions.Min))));
                 if ( alpha > 0 ) {
+                    Point2D pix0;
+                    Point2D pix1;
+                    Point2D pix2;
+                    GetProjection(p0,pix0);
+                    GetProjection(p1,pix1);
+                    GetProjection(p2,pix2);
+
+                    uint32_t tp0x = centerX+pix0.x;
+                    uint32_t tp0y = centerY+pix0.y;
+                    uint32_t tp1x = centerX+pix1.x;
+                    uint32_t tp1y = centerY+pix1.y;
+                    uint32_t tp2x = centerX+pix2.x;
+                    uint32_t tp2y = centerY+pix2.y;
+
+                    bool isVisible=false;
+                    if ( ( tp0x > 0 ) && ( tp0x < width ) ) { isVisible = true; }
+                    else if ( ( tp0y > 0 ) && ( tp0y < height ) ) { isVisible = true; }
+                    else if ( ( tp1x > 0 ) && ( tp1x < width ) ) { isVisible = true; }
+                    else if ( ( tp1y > 0 ) && ( tp1y < height ) ) { isVisible = true; }
+                    else if ( ( tp2x > 0 ) && ( tp2x < width ) ) { isVisible = true; }
+                    else if ( ( tp2y > 0 ) && ( tp2y < height ) ) { isVisible = true; }
+                    if ( false == isVisible ) { continue; }
+
                     const uint16_t zcolor = tft->color565(alpha,alpha,alpha);
-                    // fill the cache
-                    //float distNormal = NormalFacing(meshNormalsData[m][i]);
                     float distNormal = NormalFacing(currentMesh->normalCache[i]);
                     
                     meshOrderedFaces[orderdFaces].normalFacing = distNormal;
@@ -244,16 +250,21 @@ void View3D::Render() {
                     meshOrderedFaces[orderdFaces].faceColor=face.color;
                     meshOrderedFaces[orderdFaces].smooth=face.smooth;
                     orderdFaces++;
+                    if ( orderdFaces >= MAX_ORDERED_FACES ) {
+                        lUILog("View3D %p MAX_ORDERED_FACES\n");
+                        goto noMoreFacesPlease;
+                    }
                 }
-
             }
         }
         currentDepth++;
     }
+    noMoreFacesPlease:
 
     // render here!
     //lUILog("Rendering...\n");
-    canvas->fillSprite(TFT_BLACK);
+    //canvas->fillSprite(TFT_BLACK);
+    canvas->fillSprite(viewBackgroundColor);
     for(int i=0;i<orderdFaces;i++) {
         int32_t tp0x = meshOrderedFaces[i].p0x;
         int32_t tp0y = meshOrderedFaces[i].p0y;
@@ -267,8 +278,6 @@ void View3D::Render() {
         bool smooth =  meshOrderedFaces[i].smooth;
 
         uint8_t mixProp=128;
-        //uint16_t deepColor = tft->alphaBlend(128,mixProp,meshOrderedFaces[i].colorDeep,finalColor);
-        //finalColor = tft->alphaBlend(mixProp,deepColor,finalColor);
         if ( smooth ) {
             mixProp=32;
         }
@@ -280,8 +289,9 @@ void View3D::Render() {
         }
         canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
     }
-    //lUILog("Render complete!\n");
-
+    unsigned long tRender=millis()-bRender;
+    uint16_t fps = 1000/tRender;
+    //lUILog("Render complete ms: %lu fps: %u\n", tRender,fps);
 }
 
 View3D::~View3D() {
@@ -296,6 +306,86 @@ View3D::View3D(): Control() {
     lLog("View3D %p created!\n",this);
     meshOrderedFaces=(OrderedFace3D *)ps_calloc(MAX_ORDERED_FACES,sizeof(OrderedFace3D));
 }
+
+
+TFT_eSprite * View3D::GetCanvas() {
+    // dont push image until directDraw is enabled
+    if (false == directDraw) { // dont show nothing until directDraw available
+        canvas->fillSprite(viewBackgroundColor);
+        //canvas->fillSprite(TFT_BLACK);
+        return canvas;
+    }
+    unsigned long bDirect=millis();
+    // Children dirty?
+    bool needRedraw=false;
+    for(uint16_t m=0;m<MAX_MESHES;m++) {
+        if ( nullptr == mesh[m]) { continue; }
+        if ( mesh[m]->dirty ) {
+            needRedraw=true;
+            break;
+        }
+    }
+    if ( needRedraw ) {
+        Render();
+    }
+    return canvas; // @TODO seems direct push is more efficient x'D 
+    // bugs with multi-view
+    const uint8_t border = 8;
+    // lets push a piece of myself to tft to get faster refresh
+    int32_t bx0 = int(centerX+ViewClipping.xMin)+clipX;
+    int32_t by0 = int(centerY+ViewClipping.yMin)+clipY;
+    int32_t bx1 = int(centerX+ViewClipping.xMax)+clipX;
+    int32_t by1 = int(centerY+ViewClipping.yMax)+clipY;
+    // correct the points (@TODO can be improved with MIN/MAX)
+    if ( bx0 < int(clipX+1) ) { bx0=clipX+1; }
+    else if ( bx0 > int(clipX+width-1) ) { bx0=clipX+width-1; }
+    if ( bx1 < int(clipX+1) ) { bx1=clipX+1; }
+    else if ( bx1 > int(clipX+width-1) ) { bx1=clipX+width-1; }
+    if ( by0 < int(clipY+1) ) { by0=clipY+1; }
+    else if ( by0 > int(clipY+height) ) { by0=clipY+height-1; }
+    if ( by1 < int(clipY+1) ) { by1=clipY+1; }
+    else if ( by1 > int(clipY+height) ) { by1=clipY+height-1; }
+    
+    //lLog("BX0: %d BY0: %d BX1: %d BY1: %d\n", bx0, by0, bx1, by1);
+    int32_t rw = (bx1-bx0);
+    int32_t rh = (by1-by0);
+
+    //@TODO sprite can be replaced with tft->setWindow and dump pixel data?
+    TFT_eSprite finalRender=TFT_eSprite(tft);
+    finalRender.setColorDepth(16);
+    finalRender.createSprite(rw,rh);
+
+    for (uint32_t y=by0;y<by1;y++) {
+        if ( canvas->height() <= y ) { break; }
+        for (uint32_t x=bx0;x<bx1;x++) {
+            if ( canvas->width() <= x ) { break; }
+            uint32_t color = canvas->readPixel(x,y);
+            //if ( TFT_BLACK == color ) { color = TFT_PINK; }
+            finalRender.drawPixel((x-bx0),(y-by0),color);
+        }
+    }
+    finalRender.pushSprite(bx0,by0);
+    finalRender.deleteSprite();
+
+    //tft->drawRect(bx0,by0,rw,rh,TFT_WHITE);
+
+    // fill rest of view
+    // up
+    tft->fillRect(clipX,clipY,width,by0-clipY,TFT_BLACK);
+    // left
+    tft->fillRect(clipX,by0,bx0-clipX,rh,TFT_BLACK);
+    // down
+    tft->fillRect(clipX,by1,width,(height-by1)+clipY,TFT_BLACK);
+    // right
+    tft->fillRect(bx1,by0,(width-bx1)+clipX,rh,TFT_BLACK);
+    unsigned long tDirect=millis()-bDirect;
+    uint16_t fps = 1000/tDirect;
+    lUILog("Direct complete ms: %lu fps: %u\n", tDirect,fps);
+    return nullptr;
+}
+
+
+
 /*
 int16_t View3D::AddModel(IN Mesh3DDescriptor * meshData) {
     if ( meshCount >= MAX_MESHES ) {
@@ -441,59 +531,6 @@ void View3D::Rotate(INOUT Vertex3D & point, IN Angle3D & rotationAngles) {
 
     //https://stackoverflow.com/questions/2096474/given-a-surface-normal-find-rotation-for-3d-plane
 
-}
-
-
-TFT_eSprite * View3D::GetCanvas() {
-    // dont push image until directDraw is enabled
-    if (false == directDraw) {
-        canvas->fillSprite(TFT_BLACK);
-        return canvas;
-    }
-    return canvas; // @TODO TEST
-    // lets push a piece of myself to tft to get faster refresh
-    uint8_t border = 8;
-    uint32_t bx = (centerX+ViewClipping.xMin);
-    uint32_t by = (centerY+ViewClipping.yMin);
-    uint32_t bw = (centerX+ViewClipping.xMax);
-    uint32_t bh = (centerY+ViewClipping.yMax);
-
-    uint32_t rw = (bw-bx)+(border*2);
-    uint32_t rh = (bh-by)+(border*2);
-    if (( rw >= width-border )||( rh >= height-border )) { // bigger buffer than canvas? Push via parent
-        return canvas;
-    } // if clip is bigger, send as usual
-    //unsigned long bpushTime=millis();
-    uint32_t sx = (clipX+bx)-border;
-    uint32_t sy = (clipY+by)-border;
-    if (( sx <= clipX )||( sy <= clipY )) { // bigger buffer than canvas? Push via parent
-        return canvas;
-    } // if clip is bigger, send as usual
-    //tft->drawRect(sx,sy,rw,rh,TFT_GREEN);
-    //lUILog("CLIP: X: %u Y: %u W: %u H: %u Control: X: %u Y: %u\n",bx,by,bw,bh,sx,sy);
-    TFT_eSprite finalRender=TFT_eSprite(tft);
-    finalRender.setColorDepth(16);
-
-    finalRender.createSprite(rw,rh);
-    for (uint32_t y=border;y<rh;y++) {
-        for (uint32_t x=border;x<rw;x++) {
-            int32_t rpx=bx+(x-border);
-            if ( rpx < 0 ) { continue; }
-            else if ( rpx >= width ) { continue; }
-            int32_t rpy=by+(y-border);
-            if ( rpy < 0 ) { continue; }
-            else if ( rpy >= height ) { continue; }
-            uint32_t color = canvas->readPixel(rpx,rpy);
-            finalRender.drawPixel(x,y,color);
-        }
-    }
-    finalRender.pushSprite(sx,sy);
-    finalRender.deleteSprite();
-    //unsigned long pushTime=millis()-bpushTime;
-    //uint16_t fps=1000/pushTime;
-    //lLog("Render %p time: %lu ms FPS: %u\n",this,pushTime,fps);
-    //dirty=true; // eternal dirty
-    return nullptr; // don't allow parent to push me
 }
 
 

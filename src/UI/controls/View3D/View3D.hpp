@@ -38,6 +38,7 @@ namespace LuI {
             Normal3D * meshNormalsData[MAX_MESHES]= { nullptr } ;
             */
         public:
+            uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
             OrderedFace3D * meshOrderedFaces= { nullptr };
             uint16_t centerX;
             uint16_t centerY;
@@ -57,9 +58,10 @@ namespace LuI {
             ~View3D();
             View3D();
             // events
-            bool stepEnabled=false; // can receive tap events?
             UICallback stepCallback=nullptr; // where call when tap
             void * stepCallbackParam=nullptr; // what pass to callbac
+
+            TFT_eSprite * GetCanvas();
             /*
             Vertex3D LocationMesh[MAX_MESHES] = {{0,0,0}};
             Angle3D RotationMesh[MAX_MESHES] = {{0,0,0}};
@@ -69,7 +71,6 @@ namespace LuI {
             //Angle3D RotationMesh = { 0,0,0 }; // current rotation
             //Vertex3D FinalScaleMesh = { 1,1,1 }; // desired scale
             //Angle3D FinalRotationMesh = { 0,0,0 }; // desired rotation
-            TFT_eSprite * GetCanvas();
             //void RotateStep();
             void ScaleStep();
             void Rotate(INOUT Vertex3D & point, IN Angle3D & rotationAngles);

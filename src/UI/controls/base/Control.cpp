@@ -75,7 +75,7 @@ void Control::EventHandler() {
         }
     }
 
-    if ( touchEnabled ) {
+    //if ( touchEnabled ) {
         if ( touched ) {
             if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
                     && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
@@ -100,7 +100,7 @@ void Control::EventHandler() {
                 dirty=true;
             }
         }
-    }
+    //}
 }
 
 void Control::Refresh(bool swap) {

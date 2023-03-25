@@ -37,7 +37,7 @@ namespace LuI {
             bool dirty=true; // forces redraw
 
             // events
-            bool touchEnabled=false; // can receive tap events?
+            //bool touchEnabled=false; // can receive tap events?
             UICallback tapCallback=nullptr; // where call when tap
             void * tapCallbackParam=nullptr; // what pass to callbac
             

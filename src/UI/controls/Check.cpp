@@ -34,7 +34,7 @@ Check::Check(bool swap) {
         Check * self=(Check*)obj;
         self->Switch();
     };
-    touchEnabled=true; // can receive tap events?
+    //touchEnabled=true; // can receive tap events?
 
 }
 

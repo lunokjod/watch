@@ -62,5 +62,5 @@ void Button::Refresh(bool swap) {
 
 Button::Button(LuI_Layout layout, size_t childs,uint16_t color): Container(layout,childs),color(color) {
     border=5;
-    touchEnabled=true;
+    //touchEnabled=true;
 }

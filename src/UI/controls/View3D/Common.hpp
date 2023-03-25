@@ -26,8 +26,8 @@ namespace LuI {
     #define ENGINE_INVALID_VALUE -666
     #define CLOCKWISE 1
     #define COUNTER_CLOCKWISE 0
-    #define INVALID_MESH -1
-    #define MAX_MESHES 3
+    //#define INVALID_MESH -1
+    #define MAX_MESHES 6
     #define MAX_ORDERED_FACES 2000
 
     typedef struct __attribute__((__packed__)) {

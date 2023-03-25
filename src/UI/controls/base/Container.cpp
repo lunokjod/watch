@@ -75,7 +75,7 @@ Container::~Container() {
 }
 
 void Container::Refresh(bool swap) {
-    lLog("%p Container::Refresh(%s)\n",this,(swap?"true":"false"));
+    //lLog("%p Container::Refresh(%s)\n",this,(swap?"true":"false"));
     if ( nullptr == canvas  ) { Control::Refresh(swap); }
     //lLog("Container refresh on %p <================\n",this);
     uint32_t displacement=border;
@@ -112,6 +112,7 @@ void Container::Refresh(bool swap) {
         children[current]->clipY = this->clipY+canvas->getPivotY();
         // refresh children appearance
         children[current]->Refresh((!swap)); // invert children
+
         TFT_eSprite * childImg = children[current]->GetCanvas();
         if ( nullptr != childImg ) { // allow control to dismiss their canvas and refresh itself?
             // push children on the parent view
