@@ -41,7 +41,7 @@ namespace LuI {
             Container(LuI_Layout layout=LuI_Vertical_Layout, size_t childs=1);
             ~Container();
             void EventHandler() override;
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false, bool swap=false) override;
     };
 };
 

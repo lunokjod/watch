@@ -30,17 +30,15 @@ namespace LuI {
             bool checked=false;
         public:
             void SetCheck(bool check=true) {
-                // force parent refresh and get fresh background (ugly but works)
-                if ( checked != check ) {
-                    checked=check;
-                    //dirty=true;
-                }
+                checked=check;
+//                if ( checked != check ) {
+//                }
             }
             bool GetCheck() { return checked; }
             void Switch() { SetCheck((!checked)); }
             ~Check();
             Check(bool swap=false);
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false,bool swap=false) override;
             //void EventHandler() override;
     };
 };

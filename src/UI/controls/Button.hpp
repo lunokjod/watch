@@ -29,9 +29,9 @@ namespace LuI {
         protected:
             uint16_t color=ThCol(button);
         public:
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false, bool swap=false) override;
             Button(LuI_Layout layout, size_t childs,uint16_t color=ThCol(button));
-            //void EventHandler();
+            void EventHandler();
     };
 };
 

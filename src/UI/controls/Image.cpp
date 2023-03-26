@@ -44,14 +44,14 @@ Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data,
     }
 }
 
-void Image::Refresh(bool swap) {
+void Image::Refresh(bool direct,bool swap) {
     lLog("Image %p refresh\n",this);
-    Control::Refresh(swap);
+    Control::Refresh(direct,swap);
     //centered
     canvas->setPivot((canvas->width()/2),(canvas->height()/2));
     imageCanvas->setPivot((imageCanvas->width()/2)+offsetX,(imageCanvas->height()/2)+offsetY);
     //canvas->setSwapBytes(swap);
     imageCanvas->pushRotated(canvas,0);
     //canvas->setSwapBytes((!swap));
-    Container::Refresh(swap);
+    Container::Refresh(direct,swap);
 }

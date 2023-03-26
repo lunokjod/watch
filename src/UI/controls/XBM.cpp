@@ -43,9 +43,9 @@ XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap
     //imageCanvas->pushImage(0,0,width,height, (uint16_t *)data);
 }
 
-void XBM::Refresh(bool swap) {
+void XBM::Refresh(bool direct,bool swap) {
     //lLog("XBM %p refresh\n",this);
-    Control::Refresh(swap);
+    Control::Refresh(direct,swap);
     //centered
     canvas->setPivot(canvas->width()/2,canvas->height()/2);
     imageCanvas->setPivot(imageCanvas->width()/2,imageCanvas->height()/2);

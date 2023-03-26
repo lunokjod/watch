@@ -28,6 +28,7 @@ bool Control::Attach(INOUT Control *control) {
     if ( parent ) { return false; }
     parent=control;
     lLog("Control %p attached to %p\n",this,control);
+    dirty=true; // mark myself as dirty to be refreshed
     return true;
 }
 
@@ -48,75 +49,75 @@ Control::Control(uint32_t w, uint32_t h): width(w),height(h) {
 void Control::SetSize(uint32_t w, uint32_t h) {
     this->width=w;
     this->height=h;
+    dirty=true;
 }
 
 void Control::SetWidth(uint32_t w) {
     this->width=w;
+    dirty=true;
 }
 
 void Control::SetHeight(uint32_t h) {
     this->height=h;
+    dirty=true;
 }
 
 void Control::EventHandler() {
-
     //tft->drawRect(clipX+3,clipY+3,width-6,height-6,TFT_RED); //@DEBUG
 
-    if ( dragEnable ) {
-        if ( touched ) {
-            if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
-                    && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
-                if ( touchDragDistance > 0.0 ) {
-                    if ( nullptr != dragCallback ) {
-                        (dragCallback)(dragCallbackParam);
-                    }
+    if ( touched ) {
+        // check drag
+        if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
+                && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
+            if ( touchDragDistance > 0.0 ) {
+                if ( nullptr != dragCallback ) {
+                    (dragCallback)(dragCallbackParam);
                 }
             }
         }
-    }
-
-    //if ( touchEnabled ) {
-        if ( touched ) {
-            if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
-                    && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
-                //  lLog("%p RECT: X: %d Y: %d W: %d H: %d\n",this,nCX,nCY,width,height);
-                if ( false == lastTouched ) { // yeah! IN!!!
-                    lLog("BEGIN TOUCH\n");
-                    lastTouched=true;
-                    dirty=true;
-                }
-            } else {
-                if (lastTouched) { // was touched, not now
-                    lLog("OUT TOUCH\n");
-                    lastTouched=false;
-                    dirty=true;
-                }
+        // check touch
+        if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
+                && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
+            //  lLog("%p RECT: X: %d Y: %d W: %d H: %d\n",this,nCX,nCY,width,height);
+            if ( false == lastTouched ) { // yeah! IN!!!
+                //lLog("BEGIN TOUCH\n");
+                lastTouched=true;
+                dirty=true;
             }
         } else {
-            if ( lastTouched )  { // launch callback on tap
-                lLog("LAUNCH TOUCH\n");
-                if ( nullptr != tapCallback ) { (tapCallback)(tapCallbackParam); }
+            if (lastTouched) { // was touched, not now
+                //lLog("OUT TOUCH\n");
                 lastTouched=false;
                 dirty=true;
             }
         }
-    //}
+    } else {
+        if ( lastTouched )  { // launch callback on tap
+            if ( nullptr != tapCallback ) {
+                lLog("LAUNCH TOUCH\n");
+                (tapCallback)(tapCallbackParam);
+            }
+            lastTouched=false;
+            dirty=true;
+        }
+    }
 }
 
-void Control::Refresh(bool swap) {
-    //lLog("%p Control::Refresh(%s)\n",this,(swap?"true":"false"));
-    if ( nullptr != canvas ) {
-        canvas->deleteSprite();
-        delete canvas;
-        canvas=nullptr;
+void Control::Refresh(bool direct, bool swap) {
+    // this base control don't support direct, only buffered
+    lLog("Control %p refresh canvas at %p swap: %s dirty: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"));
+    if ( dirty ) {
+        if ( nullptr != canvas ) {
+            canvas->deleteSprite();
+            delete canvas;
+            canvas=nullptr;
+        }
+        canvas = new TFT_eSprite(tft);
+        canvas->setColorDepth(16);
+        canvas->createSprite(width,height);
+        canvas->fillSprite(Drawable::MASK_COLOR);
+        dirty=false;
     }
-    canvas = new TFT_eSprite(tft);
-    canvas->setColorDepth(16);
-    canvas->createSprite(width,height);
-    canvas->setSwapBytes(swap);
-    canvas->fillSprite(Drawable::MASK_COLOR);
-    //lLog("Control %p refresh canvas at %p swap: %s\n",this,canvas,(swap?"true":"false"));
-    dirty=false;
 }
 
 TFT_eSprite * Control::GetCanvas() { return canvas; }

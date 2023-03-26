@@ -36,7 +36,7 @@ Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout lay
     imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
-    dragEnable=true;
+    //dragEnable=true;
     dragCallbackParam=this;
     dragCallback = [](void * obj){
         Buffer * self = (Buffer *)obj;
@@ -67,9 +67,9 @@ Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout lay
 
 }
 
-void Buffer::Refresh(bool swap) {
+void Buffer::Refresh(bool direct,bool swap) {
     lLog("Buffer %p refresh\n",this);
-    Control::Refresh(swap);
+    Control::Refresh(direct,swap);
     //centered
     canvas->setPivot(0,0); //(canvas->width()/2),(canvas->height()/2));
     //canvas->fillSprite(ThCol(background));

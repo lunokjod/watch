@@ -36,7 +36,7 @@ namespace LuI {
         public:
             ~XBM();
             XBM(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false);
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false,bool swap=false) override;
     };
 };
 

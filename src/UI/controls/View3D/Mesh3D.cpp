@@ -151,6 +151,11 @@ void Mesh3D::Rotate(Angle3D rotation) {
     dirty=true;
 }
 
+void Mesh3D::Scale(float scale) {
+    Vertex3D curr = { scale,scale,scale };
+    Scale(curr);
+}
+
 void Mesh3D::Scale(Vertex3D scale) {
     lLog("Mesh: %p After scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
     MeshScale.x=scale.x;
@@ -206,12 +211,20 @@ void Mesh3D::RotateVertex(INOUT Vertex3D & point, IN Angle3D & rotationAngles) {
     }
 }
 
+void Mesh3D::RotateNormals(IN Angle3D & rotationAngles) {
+    // rotate normals (lighting)
+    for(uint16_t i=0;i<meshFaceCount;i++) {
+        RotateNormal(normalCache[i],rotationAngles);
+    }
+    dirty=true;
+}
 
 void Mesh3D::RotateNormal(INOUT Normal3D & normal, IN Angle3D & rotationAngles) {
     float tempN;
     if ( 0.0 != rotationAngles.x ) {
         int angleOffset=(int)rotationAngles.x;
         if ( angleOffset < 0 ) { angleOffset+=360; }
+        if ( angleOffset > 359 ) { angleOffset%=360; }
         float anglex=AngleCache[angleOffset];
         //float anglex = (rotationAngles.x * M_PI) / 180.0;
         tempN = normal.vertexData[1];
@@ -223,6 +236,7 @@ void Mesh3D::RotateNormal(INOUT Normal3D & normal, IN Angle3D & rotationAngles) 
     if ( 0.0 != rotationAngles.y ) {
         int angleOffset=(int)rotationAngles.y;
         if ( angleOffset < 0 ) { angleOffset+=360; }
+        if ( angleOffset > 359 ) { angleOffset%=360; }
         float angley=AngleCache[angleOffset];
         //float angley = (rotationAngles.y * M_PI) / 180.0;
         tempN = normal.vertexData[2];
@@ -235,6 +249,7 @@ void Mesh3D::RotateNormal(INOUT Normal3D & normal, IN Angle3D & rotationAngles) 
     if ( 0.0 != rotationAngles.z ) {
         int angleOffset=(int)rotationAngles.z;
         if ( angleOffset < 0 ) { angleOffset+=360; }
+        if ( angleOffset > 359 ) { angleOffset%=360; }
         float anglez=AngleCache[angleOffset];
         //float anglez = (rotationAngles.z * M_PI) / 180.0;
         tempN = normal.vertexData[0];

@@ -27,7 +27,7 @@ using namespace LuI;
 
 
 bool Container::AddChild(INOUT Control *control, IN float quota) {
-    if ( currentChildSlot >= childNumber ) {
+    if ( currentChildSlot >= childNumber ) { // @TODO use for sentence to loop over free slots
         lLog("Container full!\n");
         return false;
     }
@@ -44,6 +44,7 @@ bool Container::AddChild(INOUT Control *control, IN float quota) {
         children[currentChildSlot] = control;
         quotaValues[currentChildSlot] = quota;
         currentChildSlot++;
+        this->dirty=true;
         return true;
     }
     return false;
@@ -66,7 +67,7 @@ Container::~Container() {
         for(size_t current=0;current<childNumber;current++) {
             if ( nullptr != children[current] ) {
                 delete children[current];
-                children[current]=nullptr;
+                //children[current]=nullptr;
             }
         }
         free(children);
@@ -74,13 +75,12 @@ Container::~Container() {
     //lLog("Container destroyed on %p\n",this);
 }
 
-void Container::Refresh(bool swap) {
-    //lLog("%p Container::Refresh(%s)\n",this,(swap?"true":"false"));
-    if ( nullptr == canvas  ) { Control::Refresh(swap); }
-    //lLog("Container refresh on %p <================\n",this);
+void Container::Refresh(bool direct,bool swap) {
+    lLog("Container %p refresh canvas at %p swap: %s dirty: %s direct: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"),(direct?"true":"false"));
+    bool wasDirty = dirty;
+    if (dirty) { Control::Refresh(direct,swap); } // allow children to draw whatsoever on canvas
+    // distribute children in my view space
     uint32_t displacement=border;
-    //uint32_t sizeWidth=((width-((border*2)+(border*childNumber)))/childNumber);
-    //uint32_t sizeHeight=((height-((border*2)+(border*childNumber)))/childNumber);
     for(size_t current=0;current<currentChildSlot;current++) {
         uint32_t sizeWidth=(width-border)/childNumber; // raw size
         uint32_t sizeHeight=(height-border)/childNumber;
@@ -89,7 +89,7 @@ void Container::Refresh(bool swap) {
         sizeWidth-=border;
         sizeHeight-=border;
         if ( nullptr == children[current] ) { // empty slot
-            // count space, but no draw
+            // count space, but control wants to draw itself with other methods
             if ( LuI_Vertical_Layout == layout ) {
                 displacement+=(sizeWidth)+border;
             } else {
@@ -111,8 +111,14 @@ void Container::Refresh(bool swap) {
         children[current]->clipX = this->clipX+canvas->getPivotX();
         children[current]->clipY = this->clipY+canvas->getPivotY();
         // refresh children appearance
-        children[current]->Refresh((!swap)); // invert children
-
+        if ( wasDirty ) {
+            // parent dirty, must refresh from my buffer
+            lLog("BUFFERED REFRESH DUE PARENT IS DIRTY\n");
+            children[current]->Refresh(false,(!swap)); // canvas redraw
+        } else {
+            children[current]->Refresh(direct,(!swap)); // canvas or direct (parent choice)
+        }
+        // compose my canvas
         TFT_eSprite * childImg = children[current]->GetCanvas();
         if ( nullptr != childImg ) { // allow control to dismiss their canvas and refresh itself?
             // push children on the parent view
@@ -120,23 +126,34 @@ void Container::Refresh(bool swap) {
             childImg->pushRotated(canvas,0,Drawable::MASK_COLOR);
         }
     }
+    // was dirty and can draw direct :D
+    if ( ( wasDirty ) && ( direct ) ) {
+        lLog("CONTAINER DIRECT\n");
+        canvas->pushSprite(clipX,clipY);
+    }
 }
 
 void Container::EventHandler() {
-
-    //tft->drawRect(clipX,clipY,width,height,TFT_GREEN);
-    
-    if ( dirty ) { Refresh(); }
-    Control::EventHandler();
+    //tft->drawRect(clipX,clipY,width,height,TFT_GREEN); //@DEBUG
+    // don't call parent eventhandler, container isn't sensitive
+    if ( dirty ) {
+        Refresh(directDraw);
+        return;
+    } // need cleanup?
+    // iterate my slots
     for(size_t current=0;current<currentChildSlot;current++) {
-        if ( nullptr == children[current] ) { continue; }
-        children[current]->EventHandler();
-        if ( children[current]->dirty ) {
-            children[current]->Refresh(true);
-            TFT_eSprite * what = children[current]->GetCanvas();
-            if (( directDraw ) && ( nullptr!=what)) { // canvas can retull null to auto-manage itself
-                tft->setSwapBytes(true);
-                what->pushSprite(children[current]->clipX,children[current]->clipY,Drawable::MASK_COLOR);
+        if ( nullptr == children[current] ) { continue; } // hole, prevously removed control ignored
+        children[current]->EventHandler(); // pass the handling duty
+        if ( children[current]->dirty ) { // I'm dirty?
+            children[current]->Refresh(directDraw); // buffered render
+            if ( directDraw ) {
+                TFT_eSprite * what = children[current]->GetCanvas(); // get view
+                if ( ( nullptr!=what) && ( directDraw ) ) {
+                    // canvas can return null to auto-manage itself
+                    tft->setSwapBytes(false);
+                    //lLog("Container push\n");
+                    what->pushSprite(children[current]->clipX,children[current]->clipY,Drawable::MASK_COLOR);
+                }
             }
         }
     }

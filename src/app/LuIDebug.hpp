@@ -36,7 +36,7 @@ class DebugLuIApplication : public TemplateLuIApplication {
         LuI::View3D * view3DTest6;
         LuI::View3D * view3DTest7;
         LuI::View3D * view3DTest8;
-        bool Tick();
+        //bool Tick();
         bool GrowOrDie=false;
         DebugLuIApplication();
         const char *AppName() override { return "Playground LuI"; };

@@ -29,15 +29,10 @@ namespace LuI {
 
     class View3D: public Control {
         protected:
-        /*
-            uint16_t meshCount=0; // maintain the number of meshes on view
-            uint16_t meshVertexCount[MAX_MESHES]= { 0 };
-            Vertex3D *meshVertexData[MAX_MESHES]= { nullptr };
-            uint16_t meshFaceCount[MAX_MESHES]= { 0 };
-            Face3D * meshFaceData[MAX_MESHES]= { nullptr };
-            Normal3D * meshNormalsData[MAX_MESHES]= { nullptr } ;
-            */
+            size_t renderCount=0;
         public:
+            typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK} RENDER;
+            RENDER RenderMode = FULL; 
             uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
             OrderedFace3D * meshOrderedFaces= { nullptr };
             uint16_t centerX;
@@ -46,7 +41,7 @@ namespace LuI {
             Range MeshDimensions;
             Mesh3D * mesh[MAX_MESHES] = { nullptr };
             void AddMesh3D(INOUT Mesh3D * meshObject);
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false,bool swap=false) override;
             void Render();
             void GetProjection(INOUT Vertex3D &vertex, OUT Point2D &pixel );
             void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
@@ -55,6 +50,7 @@ namespace LuI {
             int16_t GetDeepForPoint(INOUT Vertex3D &point);
             bool IsClockwise(INOUT Face3D &face,uint16_t meshNumber=0);
             float NormalFacing(INOUT Normal3D &normal);
+            float OriginalNormalFacing(INOUT Normal3D &normal);
             ~View3D();
             View3D();
             // events

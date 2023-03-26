@@ -29,18 +29,17 @@ Check::~Check() {
 
 Check::Check(bool swap) {
     lLog("Created Check on %p swap: %s\n",this,(swap?"true":"false"));
+    // enable tap callback
     tapCallbackParam=this; // what pass to callback
     tapCallback = [](void * obj){ // where call when tap
         Check * self=(Check*)obj;
         self->Switch();
     };
-    //touchEnabled=true; // can receive tap events?
-
 }
 
-void Check::Refresh(bool swap) {
+void Check::Refresh(bool direct,bool swap) {
     //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
-    Control::Refresh(swap);
+    Control::Refresh(direct,swap);
 
     //centered
     int32_t centerX=canvas->width()/2;
@@ -59,6 +58,7 @@ void Check::Refresh(bool swap) {
     uint16_t highlightBrightColor = tft->alphaBlend(128,TFT_WHITE,highlightColor);
     uint16_t highlightShadowColor = tft->alphaBlend(128,TFT_BLACK,highlightColor);
     uint16_t markColor = ThCol(mark);
+    /*
     if (( false == directDraw ) && ( true == swap )) {
         baseColor = ByteSwap(baseColor);
         brightColor = ByteSwap(brightColor);
@@ -71,7 +71,7 @@ void Check::Refresh(bool swap) {
         highlightShadowColor = ByteSwap(highlightShadowColor);
         
         markColor = ByteSwap(markColor);
-    }
+    }*/
 
 
     // tint over the background

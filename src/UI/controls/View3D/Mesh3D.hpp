@@ -27,8 +27,8 @@ namespace LuI {
         protected:
             Vertex3D *vertex=nullptr;
             Face3D * face=nullptr;
-            Normal3D * normal=nullptr;
         public:
+            Normal3D * normal=nullptr;
             Vertex3D MeshLocation = { 0,0,0 };
             Angle3D MeshRotation = { 0,0,0 };
             Vertex3D MeshScale = { 1,1,1 };
@@ -55,7 +55,9 @@ namespace LuI {
             void RelativeTranslate(Vertex3D location);
             void Rotate(Angle3D rotation);
             void Scale(Vertex3D scale);
+            void Scale(float scale);
             void Translate(Vertex3D location);
+            void RotateNormals(IN Angle3D & rotationAngles);
             void ApplyTransform();
             static void RotateVertex(INOUT Vertex3D & point, IN Angle3D & rotationAngles);
             static void RotateNormal(INOUT Normal3D & normal, IN Angle3D & rotationAngles);

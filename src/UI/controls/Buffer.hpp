@@ -42,7 +42,7 @@ namespace LuI {
             ~Buffer();
             TFT_eSprite * GetBuffer() { return imageCanvas; }
             Buffer(IN uint32_t width, IN uint32_t height, bool swap=false);
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false,bool swap=false) override;
             void EventHandler() override;
     };
 };

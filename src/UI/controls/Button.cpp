@@ -26,22 +26,25 @@
 #include "../UI.hpp"
 using namespace LuI;
 
-void Button::Refresh(bool swap) {
-    Control::Refresh(swap);
+void Button::Refresh(bool direct,bool swap) {
+    lLog("Button %p refresh canvas at %p swap: %s dirty: %s direct: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"),(direct?"true":"false"));
+    if ( false == dirty ) {
+        Container::Refresh(direct,swap); // notify to childs
+        return;
+    }
+    // redraw me, I'm dirty
+    Control::Refresh(false,swap); // refresh my canvas
     // draw button here!
     const int32_t radius = 8;
     uint16_t finalColor = color;
         
     // bright
-    uint16_t brightColor = canvas->alphaBlend(64,finalColor,TFT_WHITE);
+    uint16_t brightColor = tft->alphaBlend(64,finalColor,TFT_WHITE);
     // shadow
-    uint16_t shadowColor = canvas->alphaBlend(64,finalColor,TFT_BLACK);
+    uint16_t shadowColor = tft->alphaBlend(64,finalColor,TFT_BLACK);
 
-    //if ( false == directDraw ) {
-    if (( false == directDraw ) && ( swap )) {
-        //finalColor = ColorSwap(finalColor);
-        //brightColor = ColorSwap(brightColor);
-        //shadowColor = ColorSwap(shadowColor);
+    // swap colors if needed
+    if (( false == directDraw ) && ( false == swap )) {
         finalColor = ByteSwap(finalColor);
         brightColor = ByteSwap(brightColor);
         shadowColor = ByteSwap(shadowColor);
@@ -54,13 +57,24 @@ void Button::Refresh(bool swap) {
     // face
     uint16_t faceColor = finalColor;
     // bright when pressed
-    if ( lastTouched ) { faceColor=canvas->alphaBlend(192,finalColor,TFT_WHITE); }
+    if ( lastTouched ) { faceColor=tft->alphaBlend(192,finalColor,TFT_WHITE); }
     canvas->fillRoundRect(1,1,canvas->width()-2,canvas->height()-2,radius,faceColor);
-
-    Container::Refresh(swap);
+    // Get children appearance
+    Container::Refresh(false,(!swap));
+    if ( direct ) {
+        //lLog("BUTON DIRECT!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        canvas->pushSprite(clipX,clipY);
+    }
 }
 
 Button::Button(LuI_Layout layout, size_t childs,uint16_t color): Container(layout,childs),color(color) {
+    // a little stylished borders
     border=5;
-    //touchEnabled=true;
+}
+
+void Button::EventHandler() {
+    // I'm a button, react about events
+    Control::EventHandler();
+    // Butt... I'm a container also, send the word to children :)
+    Container::EventHandler();
 }

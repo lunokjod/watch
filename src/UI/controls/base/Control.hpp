@@ -41,7 +41,7 @@ namespace LuI {
             UICallback tapCallback=nullptr; // where call when tap
             void * tapCallbackParam=nullptr; // what pass to callbac
             
-            bool dragEnable=false;  // can receive drag events?
+            //bool dragEnable=false;  // can receive drag events?
             UICallback dragCallback=nullptr; // where call when drag
             void * dragCallbackParam=nullptr; // what pass to callbac
 
@@ -57,7 +57,7 @@ namespace LuI {
             void SetSize(uint32_t w, uint32_t h);
             void SetWidth(uint32_t w);
             void SetHeight(uint32_t h);
-            virtual void Refresh(bool swap=false);
+            virtual void Refresh(bool direct=false, bool swap=false);
     };
 };
 

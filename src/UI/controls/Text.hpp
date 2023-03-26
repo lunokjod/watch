@@ -39,7 +39,7 @@ namespace LuI {
         public:
             ~Text();
             Text(IN char * what, IN uint16_t color=TFT_WHITE,IN bool swap=false, IN uint8_t tsize=1, IN GFXfont *font=&FreeMonoBold9pt7b);
-            void Refresh(bool swap=false) override;
+            void Refresh(bool direct=false,bool swap=false) override;
     };
 };
 

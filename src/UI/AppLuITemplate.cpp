@@ -65,5 +65,10 @@ bool TemplateLuIApplication::Tick() {
 void TemplateLuIApplication::AddChild(INOUT LuI::Container *control ) {
     child=control;
     child->SetSize(canvas->width(),canvas->height());
-    child->Refresh(true); // do the wheel turn :D
+    child->Refresh(false);
+    // push the first image
+    TFT_eSprite * currentView = child->GetCanvas();
+    currentView->setPivot(0,0);
+    canvas->setPivot(0,0);
+    currentView->pushRotated(canvas,0,Drawable::MASK_COLOR); // push to app view
 }

@@ -58,9 +58,9 @@ Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN 
     imageTextCanvas->drawString(text,0,0);
 }
 
-void Text::Refresh(bool swap) {
+void Text::Refresh(bool direct,bool swap) {
     //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
-    Control::Refresh(swap);
+    Control::Refresh(direct,swap);
     //centered
     canvas->setPivot(canvas->width()/2,canvas->height()/2);
     imageTextCanvas->setPivot(imageTextCanvas->width()/2,imageTextCanvas->height()/2);
