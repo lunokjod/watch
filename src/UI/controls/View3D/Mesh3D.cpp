@@ -114,6 +114,7 @@ void Mesh3D::RelativeRotate(Angle3D rotation) {
     MeshRotation.x+=rotation.x;
     MeshRotation.y+=rotation.y;
     MeshRotation.z+=rotation.z;
+    //@TODO use modules instead of sums
     if ( MeshRotation.x > 359.0 ) { MeshRotation.x-=360.0; }
     else if ( MeshRotation.x < -359.0 ) { MeshRotation.x+=360.0; }
     if ( MeshRotation.y > 359.0 ) { MeshRotation.y-=360.0; }
@@ -124,11 +125,38 @@ void Mesh3D::RelativeRotate(Angle3D rotation) {
     dirty=true;
 }
 
+
+
+Vertex3D Mesh3D::SumVectors(Vertex3D location0,Vertex3D location1) {
+    Vertex3D result = {
+        location0.x+location1.x,
+        location0.y+location1.y,
+        location0.z+location1.z
+    };
+    return result;
+}
+
+Angle3D Mesh3D::SumAngles(Angle3D angle0,Angle3D angle1) {
+    //lLog("Mesh: %p After relative rotation: X: %f  Y: %f Z: %f\n",this,MeshRotation.x,MeshRotation.y,MeshRotation.z);
+    angle0.x+=angle1.x;
+    angle0.y+=angle1.y;
+    angle0.z+=angle1.z;
+    //@TODO use modules instead of sums
+    if ( angle0.x > 359.0 ) { angle0.x-=360.0; }
+    else if ( angle0.x < -359.0 ) { angle0.x+=360.0; }
+    if ( angle0.y > 359.0 ) { angle0.y-=360.0; }
+    else if ( angle0.y < -359.0 ) { angle0.y+=360.0; }
+    if ( angle0.z > 359.0 ) { angle0.z-=360.0; }
+    else if ( angle0.z < -359.0 ) { angle0.z+=360.0; }
+    //lLog("Mesh: %p Current relative rotation: X: %f  Y: %f Z: %f\n",this,MeshRotation.x,MeshRotation.y,MeshRotation.z);
+    return angle0;
+}
+
 void Mesh3D::RelativeScale(Vertex3D scale) {
     //lLog("Mesh: %p After relative scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
-    MeshScale.x+=scale.x;
-    MeshScale.y+=scale.y;
-    MeshScale.z+=scale.z;
+    MeshScale.x=(MeshScale.x+scale.x)/2;
+    MeshScale.y=(MeshScale.y+scale.y)/2;
+    MeshScale.z=(MeshScale.z+scale.z)/2;
     //lLog("Mesh: %p Current relative scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
     dirty=true;
 }
@@ -157,11 +185,11 @@ void Mesh3D::Scale(float scale) {
 }
 
 void Mesh3D::Scale(Vertex3D scale) {
-    lLog("Mesh: %p After scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
+    //lLog("Mesh: %p After scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
     MeshScale.x=scale.x;
     MeshScale.y=scale.y;
     MeshScale.z=scale.z;
-    lLog("Mesh: %p Current scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
+    //lLog("Mesh: %p Current scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
     dirty=true;
 }
 void Mesh3D::Translate(Vertex3D location) {
@@ -277,7 +305,10 @@ void Mesh3D::TranslateVertex(INOUT Vertex3D & point, IN Vertex3D & translate) { 
     point.z += translate.z;
 }
 
-void Mesh3D::ApplyTransform() {
+void Mesh3D::ApplyTransform(Vertex3D GlobalLocation, Angle3D GlobalRotation, Vertex3D GlobalScale) {
+    // https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
+    // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+
     if ( nullptr == vertexCache ) {
         vertexCache=(Vertex3D *)ps_calloc(meshVertexCount,sizeof(Vertex3D));
         if ( nullptr == vertexCache) {
@@ -299,41 +330,51 @@ void Mesh3D::ApplyTransform() {
             return;
         }
     }
+    /*
     if ( false == dirty ) {
-        lUILog("Mesh3D:ApplyTransform %p isn't dirty\n",this);
+        //lUILog("Mesh3D:ApplyTransform %p isn't dirty\n",this);
         return;
-    }
+    }*/
     //lUILog("Mesh3D:ApplyTransform %p copy mesh\n",this);
     memcpy(vertexCache,vertex,meshVertexCount*sizeof(Vertex3D));
     memcpy(faceCache,face,meshFaceCount*sizeof(Face3D));
     memcpy(normalCache,normal,meshFaceCount*sizeof(Normal3D));
 
-    //lUILog("Mesh3D:ApplyTransform %p begin transformation\n",this);
 
-    // apply rotation
-    //lUILog("Mesh3D:ApplyTransform %p rotate\n",this);
-    // rotate vertex!
+    // rotate local vertex
     for(uint16_t i=0;i<meshVertexCount;i++) {
         RotateVertex(vertexCache[i],MeshRotation);
     }
-    // rotate normals!
+    // rotate local normals!
     for(uint16_t i=0;i<meshFaceCount;i++) {
         RotateNormal(normalCache[i],MeshRotation);
     }
 
-    // apply scale
-    //lUILog("Mesh3D:ApplyTransform %p scale\n",this);
-    // scale vertex!
+    // scale global+local vertex
+    LuI::Vertex3D currentScale = {
+        (GlobalScale.x+MeshScale.x)/2,
+        (GlobalScale.y+MeshScale.y)/2,
+        (GlobalScale.z+MeshScale.z)/2
+    };
     for(uint16_t i=0;i<meshVertexCount;i++) {
-        ScaleVertex(vertexCache[i],MeshScale);
+        ScaleVertex(vertexCache[i],currentScale);
     }
 
-    // apply translate
-    //lUILog("Mesh3D:ApplyTransform %p translate\n",this);
-    // translate vertex!
+    // translate local+global vertex
+    Vertex3D sumLoc = SumVectors(GlobalLocation,MeshLocation);
     for(uint16_t i=0;i<meshVertexCount;i++) {
-        TranslateVertex(vertexCache[i],MeshLocation);
+        TranslateVertex(vertexCache[i],sumLoc);
     }
+
+    // global rotate vertex
+    for(uint16_t i=0;i<meshVertexCount;i++) {
+        RotateVertex(vertexCache[i],GlobalRotation);
+    }
+    // global rotate normals!
+    for(uint16_t i=0;i<meshFaceCount;i++) {
+        RotateNormal(normalCache[i],GlobalRotation);
+    }
+
     //lUILog("Mesh3D:ApplyTransform %p end transformation\n",this);
-    dirty=false;
+    dirty=true;
 }

@@ -51,7 +51,6 @@ void View3D::AddMesh3D(INOUT Mesh3D * meshObject) {
 }
 
 float View3D::OriginalNormalFacing(INOUT Normal3D &normal) {
-    //AAAAAAA
     if ( ENGINE_INVALID_VALUE != normal._deepCache ) { return normal._deepCache; }
     normal._deepCache=normal.vertexData[0]-normal.vertexData[1]+normal.vertexData[2];  
     //if(deep<0){ return true; }
@@ -76,9 +75,38 @@ void View3D::Refresh(bool direct,bool swap) {
     int offset=0;
     for(offset=0;offset<MAX_MESHES;offset++) {
         if ( nullptr == mesh[offset] ) { continue; }
-        mesh[offset]->ApplyTransform();
+        mesh[offset]->ApplyTransform(GlobalLocation,GlobalRotation,GlobalScale);
     }
     if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
+}
+void View3D::SetAllDirty() {
+    for(int offset=0;offset<MAX_MESHES;offset++) {
+        if ( nullptr == mesh[offset] ) { continue; }
+        mesh[offset]->dirty=true;
+    }
+    this->dirty=true;
+}
+
+void View3D::SetGlobalLocation(IN Vertex3D globLocation ) {
+    GlobalLocation=globLocation;
+    //SetDirty();
+}
+void View3D::SetGlobalScale(IN Vertex3D globRotation ) {
+    GlobalScale=globRotation;
+    //SetDirty();
+}
+void View3D::SetGlobalRotation(INOUT Angle3D globRotation ) {
+    // apply global shit
+    if ( globRotation.x > 359 ) { globRotation.x-=360; }
+    else if ( globRotation.x < 0 ) { globRotation.x+=360; }
+    if ( globRotation.y > 359 ) { globRotation.y-=360; }
+    else if ( globRotation.y < 0 ) { globRotation.y+=360; }
+    if ( globRotation.z > 359 ) { globRotation.z-=360; }
+    else if ( globRotation.z < 0 ) { globRotation.z+=360; }
+    GlobalRotation.x=globRotation.x;
+    GlobalRotation.y=globRotation.y;
+    GlobalRotation.z=globRotation.z;
+    //SetDirty();
 }
 
 void View3D::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point) {
@@ -247,6 +275,7 @@ void View3D::Render() {
                     float distNormal = NormalFacing(currentMesh->normalCache[i]);
                     // discard from normals if no FULL (no backface normals needed)
                     if ( ( distNormal < 0 ) && ( RENDER::FULL != RenderMode ) ) { continue; }
+                    //if ( ( distNormal < 0 ) ) { continue; }
                     meshOrderedFaces[orderdFaces].normalFacing = distNormal;
                     meshOrderedFaces[orderdFaces].faceOffset = i;
                     meshOrderedFaces[orderdFaces].p0x=tp0x;
@@ -275,6 +304,7 @@ void View3D::Render() {
     //lUILog("Rendering...\n");
     canvas->fillSprite(viewBackgroundColor);
     for(int i=0;i<orderdFaces;i++) {
+    //for(int i=orderdFaces-1;i>=0;i--) {
         int32_t tp0x = meshOrderedFaces[i].p0x;
         int32_t tp0y = meshOrderedFaces[i].p0y;
         int32_t tp1x = meshOrderedFaces[i].p1x;
@@ -285,8 +315,6 @@ void View3D::Render() {
         uint16_t finalColor = meshOrderedFaces[i].faceColor;
         bool smooth =  meshOrderedFaces[i].smooth;
         float dist = meshOrderedFaces[i].normalFacing;
-        // discard if no lights involved (already on painter algorythm)
-        //if ( ( RENDER::FULL != RenderMode ) && ( dist <= 0 )) { continue; }
         uint8_t mixProp=128;
         if ( smooth ) { mixProp=64; }
         if ( dist>0 ) { // normal faces view
@@ -310,7 +338,8 @@ void View3D::Render() {
         }
     }
     unsigned long tRender=millis()-bRender;
-    uint16_t fps = 1000/tRender;
+    uint16_t fps = 1;
+    if ( tRender > 0 ) { fps = 1000/tRender; }
     //lUILog("Render %p complete fps: %u ms: %lu faces: %u iteration: %u\n",this,fps,tRender,orderdFaces,renderCount);
     renderCount++;
 }
@@ -330,6 +359,12 @@ View3D::View3D(): Control() {
 
 
 TFT_eSprite * View3D::GetCanvas() {
+    if ( false == firstPush ) {
+        firstPush=true;
+        Render();
+        return canvas;
+
+    }
     // dont push image until directDraw is enabled
     /*
     if (false == directDraw) { // dont show nothing until directDraw available

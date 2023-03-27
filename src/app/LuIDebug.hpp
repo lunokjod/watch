@@ -27,6 +27,8 @@ class DebugLuIApplication : public TemplateLuIApplication {
     private:
         unsigned long nextTime=0;
     public:
+        bool followCamera=true;
+        bool showLights=true;
         LuI::View3D * view3DTest0;
         LuI::View3D * view3DTest1;
         LuI::View3D * view3DTest2;
@@ -39,6 +41,9 @@ class DebugLuIApplication : public TemplateLuIApplication {
         //bool Tick();
         bool GrowOrDie=false;
         DebugLuIApplication();
+        void FollowCamera();
+        void FixedCamera();
+        void SwitchLights();
         const char *AppName() override { return "Playground LuI"; };
 };
 

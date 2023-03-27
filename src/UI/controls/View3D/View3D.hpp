@@ -30,6 +30,10 @@ namespace LuI {
     class View3D: public Control {
         protected:
             size_t renderCount=0;
+            Vertex3D GlobalLocation = { 0,0,0 };
+            Angle3D GlobalRotation = { 0,0,0 };
+            Vertex3D GlobalScale = { 1,1,1 };
+            bool firstPush=false;
         public:
             typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK} RENDER;
             RENDER RenderMode = FULL; 
@@ -39,6 +43,14 @@ namespace LuI {
             uint16_t centerY;
             Clipping2D ViewClipping;
             Range MeshDimensions;
+            void SetAllDirty();
+            Vertex3D GetGlobalLocation() { return GlobalLocation; }
+            Angle3D GetGlobalRotation() { return GlobalRotation; }
+            Vertex3D GetGlobalScale() { return GlobalScale; }
+            void SetGlobalLocation(IN Vertex3D globLocation );
+            void SetGlobalScale(IN Vertex3D globRotation );
+            void SetGlobalRotation(INOUT Angle3D globRotation );
+
             Mesh3D * mesh[MAX_MESHES] = { nullptr };
             void AddMesh3D(INOUT Mesh3D * meshObject);
             void Refresh(bool direct=false,bool swap=false) override;

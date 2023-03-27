@@ -28,11 +28,11 @@ using namespace LuI;
 
 bool Container::AddChild(INOUT Control *control, IN float quota) {
     if ( currentChildSlot >= childNumber ) { // @TODO use for sentence to loop over free slots
-        lLog("Container full!\n");
+        lLog("Container %p full!\n",this);
         return false;
     }
     if ( nullptr == control ) { // empty hole
-        lLog("Child empty added\n");
+        lLog("Child %p empty added\n",this);
         children[currentChildSlot] = nullptr;
         quotaValues[currentChildSlot] = quota;
         currentChildSlot++;

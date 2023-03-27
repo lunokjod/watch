@@ -26,13 +26,15 @@
 #include "../UI/controls/Buffer.hpp"
 #include "../UI/controls/Check.hpp"
 #include "../UI/controls/Image.hpp"
+#include "../UI/controls/XBM.hpp"
 #include "../UI/controls/View3D/Mesh3D.hpp"
 #include "../UI/controls/View3D/View3D.hpp"
 
-//#include "../../tool/head.c"
+#include "../../tool/head.c"
 #include "../../tool/Cube.c"
 //#include "../../tool/glass.c"
-//#include "../../tool/Sphere.c"
+#include "../../tool/Plane001.c"
+#include "../../tool/Sphere.c"
 #include "../../tool/BackButton.c"
 //#include "../../tool/Planet001.c"
 //#include "../../tool/robot001.c"
@@ -41,82 +43,123 @@
 #include "../../tool/SuperMario003.c"
 //#include "../../tool/Text004.c"
 //#include "../../tool/Text005.c"
+#include "../../static/img_wireframe_18.c"
+#include "../../static/img_alpha_18.c"
+#include "../../static/img_wirecolor_18.c"
+#include "../../static/img_flatcolor_18.c"
+#include "../../static/img_fullrender_18.c"
+#include "../../static/img_camera_18.c"
+#include "../../static/img_landscape_18.c"
+#include "../../static/img_lightbulb_18.c"
+#include "../../static/img_back_16.xbm"
 
 DebugLuIApplication::DebugLuIApplication() {
     directDraw=false; // buffer start
-    LuI::Container *screen = new LuI::Container(LuI_Horizonal_Layout,1);
-    //screen->border=8;
+    // defines the root container
+    //LuI::Container *screen = new LuI::Container(LuI_Horizonal_Layout,1);
+
+    // defines the body
     LuI::Container * body = new LuI::Container(LuI_Vertical_Layout,1);
-    body->border=5;
+    //body->border=5;
     //LuI::Container * foot = new LuI::Container(LuI_Vertical_Layout,1);
-    screen->AddChild(body);
-    //screen->AddChild(foot,0.4);
 
-    //LuI::Container * footContainer = new LuI::Container(LuI_Vertical_Layout,2);
-    //foot->AddChild(footContainer);
-    /*
-    // want button with 2 slots in vertical layout (50/50)
-    LuI::Button * backButton = new LuI::Button(LuI_Vertical_Layout,2);
-
-    // load mesh from blender python script .c generated
-    LuI::Mesh3D * backAnimation = new LuI::Mesh3D(&BackButtonMesh);
-    // create a view for backAnimation
-    view3DTest0 = new LuI::View3D();
-    // small please!
-    backAnimation->Scale(0.15);
-    // add to view
-    view3DTest0->AddMesh3D(backAnimation);
-    // ugly workarround, transparent causes drops
-    view3DTest0->viewBackgroundColor=ThCol(button);
-    // use this as paramether for the callback when the render is done
-    view3DTest0->stepCallbackParam=view3DTest0;
-    // set a callback when the render is done
-    view3DTest0->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({0,5,0}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-    // add 3DView to button on first slot
-    backButton->AddChild(view3DTest0);
-    backButton->AddChild(new LuI::Text("Back"));
-    // add plain text to the next slot
-    // what to do when tap?
-    backButton->tapCallback = [](void * obj){ LaunchWatchface(); };
-    // add button to before defined container
-    footContainer->AddChild(backButton,0.9);
-    footContainer->AddChild(nullptr,1.1);
-    */
     // init
     canvas->fillSprite(ThCol(background)); // use theme colors
-    /*
-    if (nullptr != screen ) {
-        TFT_eSprite * content = screen->GetCanvas();
-        content->setPivot(0,0);
-        canvas->setPivot(0,0);
-        content->pushRotated(canvas,0,Drawable::MASK_COLOR);
-    }*/
+
+    LuI::Container * mainDiv = new LuI::Container(LuI_Vertical_Layout,3);
+    LuI::Container * btnPanelRight = new LuI::Container(LuI_Horizonal_Layout,5);
+    LuI::Container * btnPanelLeft = new LuI::Container(LuI_Horizonal_Layout,5);
+    LuI::Container * myTopButtonSet = new LuI::Container(LuI_Vertical_Layout,4);
+    LuI::Container * myBottomButtonSet = new LuI::Container(LuI_Vertical_Layout,4);
+
+    LuI::Container * centerDiv = new LuI::Container(LuI_Horizonal_Layout,3);
+
     view3DTest1 = new LuI::View3D();
-    LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&SuperMario003Mesh);
-    myMesh3d->Scale(0.9);
-    myMesh3d->Rotate({90,-90,0});
-    //myMesh3d->Translate({60,0,0});
+    LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&CubeMesh);
+    LuI::Mesh3D * myMesh3d2 = new LuI::Mesh3D(&CubeMesh);
+    LuI::Mesh3D * myMesh3d3 = new LuI::Mesh3D(&CubeMesh);
+    myMesh3d->Scale(0.5);    
+    myMesh3d2->Translate({60,0,0});
+    myMesh3d2->Scale(0.1);
+    myMesh3d3->Translate({-60,0,0});
+    view3DTest1->SetGlobalLocation({ 60,0,0 });
+    //view3DTest1->SetGlobalRotation({ 0,0,0 });
+    view3DTest1->SetGlobalScale({ 0.2,0.2,0.2 });
+    view3DTest1->viewBackgroundColor=TFT_BLACK; //ThCol(background);
     view3DTest1->stepCallbackParam=view3DTest1;
-    // set a callback when the render is done
-    view3DTest1->viewBackgroundColor=ThCol(background);
-    view3DTest1->stepCallback=[&](void * obj){
-        static float lightXDegree=0;
+    view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
+        static float rotationDeg=359;
+        static float scale=0.1;
         LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({0,-5,0}); // modify the first mesh (PlanetMesh) rotation
-        if ( LuI::View3D::RENDER::FULL == self->RenderMode ) {
-            lightXDegree+=5;
-            if ( lightXDegree > 359 ) { lightXDegree-=360; }
-            self->mesh[0]->RotateNormals({0,lightXDegree,0});
+
+        scale+=0.05;
+        if ( scale > 1.5 ) { scale = 0.1; }
+        self->mesh[1]->Scale(scale);
+        rotationDeg-=10;
+        if ( rotationDeg > 359 ) { rotationDeg-=360; }
+        else if ( rotationDeg < 0 ) { rotationDeg+=360; }
+        if ( followCamera ) {
+            self->SetGlobalRotation({0,rotationDeg,0});
+            view3DTest1->SetGlobalLocation({ 60,0,0 });
+        } else {
+            self->SetGlobalRotation({0,0,0});
+            view3DTest1->SetGlobalLocation({ 0,0,0 });
         }
+        self->mesh[2]->Rotate({0,rotationDeg*-1,0});
+
+        if ((showLights) && ( LuI::View3D::RENDER::FULL == self->RenderMode )) {
+            self->mesh[0]->RotateNormals({0,rotationDeg,0});
+            self->mesh[1]->RotateNormals({0,rotationDeg,0});
+            self->mesh[2]->RotateNormals({0,rotationDeg,0});
+        }
+        //lLog("ROT: %f\n",rotationDeg);
         self->dirty=true; // mark control as dirty (forces redraw)
     };
     view3DTest1->AddMesh3D(myMesh3d);
-    LuI::Container * mainDiv = new LuI::Container(LuI_Vertical_Layout,2);
-    LuI::Container * btnDiv = new LuI::Container(LuI_Horizonal_Layout,5);
+    view3DTest1->AddMesh3D(myMesh3d2);
+    view3DTest1->AddMesh3D(myMesh3d3);
+    
+
+
+    LuI::Button * backButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    backButton->tapCallback=[](void * obj){ LaunchWatchface(); };
+    LuI::XBM * backIcon = new LuI::XBM(img_back_16_width,img_back_16_height,img_back_16_bits);
+    backButton->AddChild(backIcon);
+    myTopButtonSet->AddChild(backButton);
+
+
+    LuI::Button * CameraButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    CameraButton->tapCallbackParam=this;
+    CameraButton->tapCallback=[](void * obj){
+        DebugLuIApplication * view = (DebugLuIApplication*)obj;
+        view->FollowCamera();
+    };
+    LuI::Image * cameraIcon = new LuI::Image(img_camera_18.width,img_camera_18.height,img_camera_18.pixel_data);
+    CameraButton->AddChild(cameraIcon);
+    myTopButtonSet->AddChild(CameraButton);
+
+
+    LuI::Button * fixedCameraButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    fixedCameraButton->tapCallbackParam=this;
+    fixedCameraButton->tapCallback=[](void * obj){
+        DebugLuIApplication * view = (DebugLuIApplication*)obj;
+        view->FixedCamera();
+    };
+    LuI::Image * landscapeIcon = new LuI::Image(img_landscape_18.width,img_landscape_18.height,img_landscape_18.pixel_data);
+    fixedCameraButton->AddChild(landscapeIcon);
+    myTopButtonSet->AddChild(fixedCameraButton);
+
+    LuI::Button * ShowLightButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    ShowLightButton->tapCallbackParam=this;
+    ShowLightButton->tapCallback=[](void * obj){
+        DebugLuIApplication * view = (DebugLuIApplication*)obj;
+        view->SwitchLights();
+    };
+    LuI::Image * lightsIcon = new LuI::Image(img_lightbulb_18.width,img_lightbulb_18.height,img_lightbulb_18.pixel_data);
+    ShowLightButton->AddChild(lightsIcon);
+    myTopButtonSet->AddChild(ShowLightButton);
+
+
 
 
     LuI::Button * ShowWireframeFlat=new LuI::Button(LuI_Horizonal_Layout,1);
@@ -124,25 +167,11 @@ DebugLuIApplication::DebugLuIApplication() {
     ShowWireframeFlat->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
         view->RenderMode=LuI::View3D::RENDER::FLATWIREFRAME;
+        view->Render();
     };
-    LuI::Mesh3D * wireFlatAnimation = new LuI::Mesh3D(&CubeMesh);
-    LuI::View3D * wireFlatAnimationView = new LuI::View3D();
-    wireFlatAnimation->Scale(0.3);
-    wireFlatAnimation->Rotate({float(random(0,359)),float(random(0,359)),float(random(0,359))});
-    wireFlatAnimationView->AddMesh3D(wireFlatAnimation);
-    wireFlatAnimationView->viewBackgroundColor=ThCol(button);
-    wireFlatAnimationView->RenderMode = LuI::View3D::RENDER::FLATWIREFRAME;
-    ShowWireframeFlat->AddChild(wireFlatAnimationView);
-    btnDiv->AddChild(ShowWireframeFlat);
-    wireFlatAnimationView->stepCallbackParam=wireFlatAnimationView;
-    wireFlatAnimationView->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({3,5,-2}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-    ShowWireframeFlat->AddChild(wireFlatAnimationView);
-    btnDiv->AddChild(ShowWireframeFlat);
-
+    LuI::Image * wireIcon = new LuI::Image(img_wireframe_18.width,img_wireframe_18.height,img_wireframe_18.pixel_data);
+    ShowWireframeFlat->AddChild(wireIcon);
+    btnPanelLeft->AddChild(ShowWireframeFlat);
 
 
     LuI::Button * ShowMask=new LuI::Button(LuI_Horizonal_Layout,1);
@@ -150,109 +179,61 @@ DebugLuIApplication::DebugLuIApplication() {
     ShowMask->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
         view->RenderMode=LuI::View3D::RENDER::MASK;
+        view->Render();
     };
-    LuI::Mesh3D * maskAnimation = new LuI::Mesh3D(&CubeMesh);
-    LuI::View3D * maskAnimationView = new LuI::View3D();
-    maskAnimation->Scale(0.3);
-    maskAnimation->Rotate({float(random(0,359)),float(random(0,359)),float(random(0,359))});
-    maskAnimationView->AddMesh3D(maskAnimation);
-    maskAnimationView->viewBackgroundColor=ThCol(button);
-    maskAnimationView->RenderMode = LuI::View3D::RENDER::MASK;
-    ShowMask->AddChild(maskAnimationView);
-    btnDiv->AddChild(ShowMask);
-    maskAnimationView->stepCallbackParam=maskAnimationView;
-    maskAnimationView->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({3,5,-2}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-    ShowMask->AddChild(maskAnimationView);
-    btnDiv->AddChild(ShowMask);
 
-
+    LuI::Image * alphaIcon = new LuI::Image(img_alpha_18.width,img_alpha_18.height,img_alpha_18.pixel_data);
+    ShowMask->AddChild(alphaIcon);
+    btnPanelLeft->AddChild(ShowMask);
 
     LuI::Button * ShowWireframe=new LuI::Button(LuI_Horizonal_Layout,1);
     ShowWireframe->tapCallbackParam=view3DTest1;
     ShowWireframe->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
         view->RenderMode=LuI::View3D::RENDER::WIREFRAME;
+        view->Render();
     };
-    LuI::Mesh3D * wireAnimation = new LuI::Mesh3D(&CubeMesh);
-    LuI::View3D * wireAnimationView = new LuI::View3D();
-    wireAnimation->Scale(0.3);
-    wireAnimation->Rotate({float(random(0,359)),float(random(0,359)),float(random(0,359))});
-    wireAnimationView->AddMesh3D(wireAnimation);
-    wireAnimationView->viewBackgroundColor=ThCol(button);
-    wireAnimationView->RenderMode = LuI::View3D::RENDER::WIREFRAME;
-    ShowWireframe->AddChild(wireAnimationView);
-    btnDiv->AddChild(ShowWireframe);
-    wireAnimationView->stepCallbackParam=wireAnimationView;
-    wireAnimationView->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({3,5,-2}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-
+    LuI::Image * wireColorIcon = new LuI::Image(img_wirecolor_18.width,img_wirecolor_18.height,img_wirecolor_18.pixel_data);
+    ShowWireframe->AddChild(wireColorIcon);
+    btnPanelLeft->AddChild(ShowWireframe);
 
     LuI::Button * ShowFlat=new LuI::Button(LuI_Horizonal_Layout,1);
     ShowFlat->tapCallbackParam=view3DTest1;
     ShowFlat->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
         view->RenderMode=LuI::View3D::RENDER::FLAT;
+        view->Render();
     };
-    LuI::Mesh3D * flatAnimation = new LuI::Mesh3D(&CubeMesh);
-    LuI::View3D * flatAnimationView = new LuI::View3D();
-    flatAnimation->Scale(0.3);
-    flatAnimation->Rotate({float(random(0,359)),float(random(0,359)),float(random(0,359))});
-    flatAnimationView->AddMesh3D(flatAnimation);
-    flatAnimationView->viewBackgroundColor=ThCol(button);
-    flatAnimationView->RenderMode = LuI::View3D::RENDER::FLAT;
-    ShowFlat->AddChild(flatAnimationView);
-    btnDiv->AddChild(ShowFlat);
-    flatAnimationView->stepCallbackParam=flatAnimationView;
-    flatAnimationView->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({3,5,-2}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-    ShowFlat->AddChild(flatAnimationView);
-    btnDiv->AddChild(ShowFlat);
-
+    LuI::Image * flatColorIcon = new LuI::Image(img_flatcolor_18.width,img_flatcolor_18.height,img_flatcolor_18.pixel_data);
+    ShowFlat->AddChild(flatColorIcon);
+    btnPanelLeft->AddChild(ShowFlat);
 
     LuI::Button * ShowFull=new LuI::Button(LuI_Horizonal_Layout,1);
     ShowFull->tapCallbackParam=view3DTest1;
     ShowFull->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
         view->RenderMode=LuI::View3D::RENDER::FULL;
+        view->Render();
     };
-    LuI::Mesh3D * fullAnimation = new LuI::Mesh3D(&CubeMesh);
-    LuI::View3D * fullAnimationView = new LuI::View3D();
-    fullAnimation->Scale(0.3);
-    fullAnimation->Rotate({float(random(0,359)),float(random(0,359)),float(random(0,359))});
-    fullAnimationView->AddMesh3D(fullAnimation);
-    fullAnimationView->viewBackgroundColor=ThCol(button);
-    fullAnimationView->RenderMode = LuI::View3D::RENDER::FULL;
-    ShowWireframe->AddChild(fullAnimationView);
-    btnDiv->AddChild(ShowWireframe);
-    fullAnimationView->stepCallbackParam=fullAnimationView;
-    fullAnimationView->stepCallback=[&](void * obj){
-        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
-        self->mesh[0]->RelativeRotate({3,5,-2}); // modify the first mesh (PlanetMesh) rotation
-        self->dirty=true; // mark control as dirty (forces redraw)
-    };
-    ShowFull->AddChild(fullAnimationView);
-    btnDiv->AddChild(ShowFull);
+
+    LuI::Image * fullrenderIcon = new LuI::Image(img_fullrender_18.width,img_fullrender_18.height,img_fullrender_18.pixel_data);
+    ShowFull->AddChild(fullrenderIcon);
+    btnPanelLeft->AddChild(ShowFull);
 
 
+    //mainDiv->border=5;
+    centerDiv->AddChild(myTopButtonSet,0.55);
+    centerDiv->AddChild(view3DTest1,2.45);
+    centerDiv->AddChild(myBottomButtonSet,0.0);
 
-
-    mainDiv->border=2;
-    mainDiv->AddChild(view3DTest1,1.6);
-    mainDiv->AddChild(btnDiv,0.4);
+    mainDiv->AddChild(btnPanelRight,0.0); // dyslexia test x'D
+    mainDiv->AddChild(centerDiv,2.45);
+    mainDiv->AddChild(btnPanelLeft,0.55);
     body->AddChild(mainDiv);
 
-
-    AddChild(screen);
+    //screen->AddChild(body);
+    AddChild(body);
+    // refresh view to first render splash
 
     directDraw=true; // push to TFT handled by app beyond this point
     lLog("END LOAD\n");
@@ -267,3 +248,17 @@ bool DebugLuIApplication::Tick() {
     EventHandler();
     return false; // is directDraw application
 }*/
+
+
+void DebugLuIApplication::FollowCamera() {
+    followCamera=true;
+}
+
+void DebugLuIApplication::FixedCamera() {
+    followCamera=false;
+}
+
+void DebugLuIApplication::SwitchLights() {
+    showLights=(!showLights);
+
+}
