@@ -49,11 +49,11 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     // if use quota, all the slot quotas must sum equal the total number of elements
     // example: default quota in 2 controls result 50/50% of view space with 1.0 of quota everyone (2.0 in total)
 
-    // add main view with quota of 1.8
+    // add main view with quota of 1.7
     screen->AddChild(viewContainer,1.7);
     // add bottom button bar shirnked
     screen->AddChild(bottomButtonContainer,0.3);
-    // 1.8 + 0.2 = 2.0 of quota (fine for 2 slots)
+    // 1.7 + 0.3 = 2.0 of quota (fine for 2 slots)
 
     // add back button to dismiss
     Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
@@ -90,7 +90,7 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     textButtonAlt->AddChild(new Text("Yep!",TFT_YELLOW,false,1,&FreeSerifItalic12pt7b));
     leftContainer->AddChild(textButtonAlt);
 
-    // -----> xbm 2 bit image button
+    // -----> xbm 1 bit image button
     Button *XBMButton = new Button();
     XBMButton->AddChild(new XBM(img_xbm_32_width,img_xbm_32_height,img_xbm_32_bits));
     leftContainer->AddChild(XBMButton);
