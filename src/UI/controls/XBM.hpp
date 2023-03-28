@@ -33,6 +33,7 @@ namespace LuI {
             const uint32_t imageHeight=0;
             const unsigned char *imageData=nullptr;
             TFT_eSprite * imageCanvas=nullptr;
+            uint16_t color=TFT_WHITE;
         public:
             ~XBM();
             XBM(IN uint32_t width, IN uint32_t height, IN unsigned char *data,bool swap=false);

@@ -28,48 +28,51 @@ using namespace LuI;
 
 void Button::Refresh(bool direct,bool swap) {
     lLog("Button %p refresh canvas at %p swap: %s dirty: %s direct: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"),(direct?"true":"false"));
+    // I'm not dirty, but called refresh, send the refresh to children trying to resolve
     if ( false == dirty ) {
         Container::Refresh(direct,swap); // notify to childs
         return;
     }
     // redraw me, I'm dirty
-    Control::Refresh(false,swap); // refresh my canvas
-    // draw button here!
-    const int32_t radius = 8;
-    uint16_t finalColor = color;
-        
-    // bright
-    uint16_t brightColor = tft->alphaBlend(64,finalColor,TFT_WHITE);
-    // shadow
-    uint16_t shadowColor = tft->alphaBlend(64,finalColor,TFT_BLACK);
+    Control::Refresh(false,swap); // refresh my own canvas
+    if ( decorations ) {
+        // draw button here!
+        const int32_t radius = 8;
+        uint16_t finalColor = color;
+            
+        // bright
+        uint16_t brightColor = tft->alphaBlend(64,finalColor,TFT_WHITE);
+        // shadow
+        uint16_t shadowColor = tft->alphaBlend(64,finalColor,TFT_BLACK);
 
-    // swap colors if needed
-    if (( false == directDraw ) && ( false == swap )) {
-        finalColor = ByteSwap(finalColor);
-        brightColor = ByteSwap(brightColor);
-        shadowColor = ByteSwap(shadowColor);
+        // swap colors if needed
+        if (( false == directDraw ) && ( false == swap )) {
+            finalColor = ByteSwap(finalColor);
+            brightColor = ByteSwap(brightColor);
+            shadowColor = ByteSwap(shadowColor);
+        }
+
+        // bright
+        canvas->drawRoundRect( 0, 0,canvas->width()-1,canvas->height()-1,radius,brightColor);
+        // shadow
+        canvas->drawRoundRect( 1, 1,canvas->width()-1,canvas->height()-1,radius,shadowColor);
+        // face
+        uint16_t faceColor = finalColor;
+        // bright when pressed
+        if ( lastTouched ) { faceColor=tft->alphaBlend(192,finalColor,TFT_WHITE); }
+        canvas->fillRoundRect(1,1,canvas->width()-2,canvas->height()-2,radius,faceColor);
     }
-
-    // bright
-    canvas->drawRoundRect( 0, 0,canvas->width()-1,canvas->height()-1,radius,brightColor);
-    // shadow
-    canvas->drawRoundRect( 1, 1,canvas->width()-1,canvas->height()-1,radius,shadowColor);
-    // face
-    uint16_t faceColor = finalColor;
-    // bright when pressed
-    if ( lastTouched ) { faceColor=tft->alphaBlend(192,finalColor,TFT_WHITE); }
-    canvas->fillRoundRect(1,1,canvas->width()-2,canvas->height()-2,radius,faceColor);
     // Get children appearance
     Container::Refresh(false,(!swap));
+
     if ( direct ) {
-        //lLog("BUTON DIRECT!!!!!!!!!!!!!!!!!!!!!!!!\n");
         canvas->pushSprite(clipX,clipY);
     }
 }
 
-Button::Button(LuI_Layout layout, size_t childs,uint16_t color): Container(layout,childs),color(color) {
-    // a little stylished borders
-    border=5;
+Button::Button(LuI_Layout layout, size_t childs,bool decorations,uint16_t color): Container(layout,childs),decorations(decorations),color(color) {
+    // a little stylished borders if decorations are enabled
+    if ( decorations ) { border=5; }
 }
 
 void Button::EventHandler() {

@@ -35,42 +35,39 @@ Text::~Text() {
 Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : text(what),color(color),swapColor(swap),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
     imageTextCanvas=new TFT_eSprite(tft);
-    imageTextCanvas->setColorDepth(16);
+    imageTextCanvas->setColorDepth(1);
     imageTextCanvas->setFreeFont(font);
-    uint16_t fcolor = color;
-    if ( swapColor ) {
-        double r = ((color >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-        double g = ((color >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-        double b = (color & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-        fcolor = canvas->color565(255*b,255*r,255*g);
-    }
-    imageTextCanvas->setTextColor(fcolor);
+    imageTextCanvas->setTextColor(TFT_WHITE);
     imageTextCanvas->setTextSize(tsize);
     imageTextCanvas->setTextDatum(TL_DATUM);
     int16_t width = imageTextCanvas->textWidth(text);
     int16_t height = imageTextCanvas->fontHeight()*tsize;
     imageTextCanvas->createSprite(width,height);
-    //if ( swapColor ) {
-    //    imageTextCanvas->fillSprite(TFT_TRANSPARENT);
-    //} else {
-        imageTextCanvas->fillSprite(Drawable::MASK_COLOR);
-    //}
+    imageTextCanvas->fillSprite(TFT_BLACK);
     imageTextCanvas->drawString(text,0,0);
 }
 
 void Text::Refresh(bool direct,bool swap) {
     //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
     Control::Refresh(direct,swap);
-    //centered
-    canvas->setPivot(canvas->width()/2,canvas->height()/2);
-    imageTextCanvas->setPivot(imageTextCanvas->width()/2,imageTextCanvas->height()/2);
-    
-    //if ( swapColor ) {
-        canvas->fillSprite(TFT_TRANSPARENT); // redraw with my own mask
-    //    imageTextCanvas->pushRotated(canvas,0,TFT_TRANSPARENT);
-    //} else {
-        canvas->fillSprite(Drawable::MASK_COLOR); // redraw with my own mask
-    //}
-    imageTextCanvas->pushRotated(canvas,0,Drawable::MASK_COLOR);
-    //canvas->setSwapBytes(swap);
+
+    uint16_t fcolor = color;
+    if ( swap ) { fcolor = ByteSwap(color);
+        /*
+        double r = ((color >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+        double g = ((color >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+        double b = (color & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+        fcolor = tft->color565(255*b,255*r,255*g);
+        */
+    }
+    // center text
+    int cXOff=(width-imageTextCanvas->width())/2;
+    int cYOff=(height-imageTextCanvas->height())/2;
+    for(int y=0;y<imageTextCanvas->height();y++) {
+        for(int x=0;x<imageTextCanvas->width();x++) {
+            bool isTextPart = imageTextCanvas->readPixel(x,y);
+            if ( false == isTextPart ) { continue; } 
+            canvas->drawPixel(cXOff+x,cYOff+y,fcolor);
+        }
+    }
 }

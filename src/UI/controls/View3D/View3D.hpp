@@ -48,6 +48,7 @@ namespace LuI {
             Angle3D GetGlobalRotation() { return GlobalRotation; }
             Vertex3D GetGlobalScale() { return GlobalScale; }
             void SetGlobalLocation(IN Vertex3D globLocation );
+            void SetGlobalScale(IN float scale );
             void SetGlobalScale(IN Vertex3D globRotation );
             void SetGlobalRotation(INOUT Angle3D globRotation );
 

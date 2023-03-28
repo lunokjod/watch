@@ -247,9 +247,6 @@ uint16_t ColorSwap(uint16_t colorToSwap) {
     uint8_t rC=255*r;
     uint8_t gC=255*g;
     uint8_t bC=255*b;
-    //RGB <- me
-    //BRG <- canvas rotate to
-    //NOPE GBR <- swap inverse corrected on push
     return ttgo->tft->color565(rC,gC,bC);
 }
 

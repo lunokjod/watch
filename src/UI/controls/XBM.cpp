@@ -47,7 +47,25 @@ void XBM::Refresh(bool direct,bool swap) {
     //lLog("XBM %p refresh\n",this);
     if (( dirty )||(nullptr==canvas)) { Control::Refresh(direct,swap); }
     //centered
-    canvas->setPivot(canvas->width()/2,canvas->height()/2);
-    imageCanvas->setPivot(imageCanvas->width()/2,imageCanvas->height()/2);
-    imageCanvas->pushRotated(canvas,0,TFT_BLACK);
+    //canvas->setPivot(canvas->width()/2,canvas->height()/2);
+    //imageCanvas->setPivot(imageCanvas->width()/2,imageCanvas->height()/2);
+    //imageCanvas->pushRotated(canvas,0,TFT_BLACK);
+    uint16_t fcolor = color;
+    if ( false == swap ) {
+        fcolor = ByteSwap(color);
+    }
+    // center image
+    int cXOff=(width-imageCanvas->width())/2;
+    int cYOff=(height-imageCanvas->height())/2;
+    for(int y=0;y<imageCanvas->height();y++) {
+        int32_t dY = cYOff+y;
+        for(int x=0;x<imageCanvas->width();x++) {
+            bool mustDraw = imageCanvas->readPixel(x,y);
+            if ( mustDraw) {
+                int32_t dX = cXOff+x;
+                canvas->drawPixel(dX,dY,fcolor);
+            }
+        }
+    }
+
 }

@@ -24,13 +24,15 @@
 #include "../UI.hpp"
 
 namespace LuI {
+    #define NO_DECORATION false
     // defines a button
     class Button : public Container {
         protected:
             uint16_t color=ThCol(button);
+            bool decorations=true;
         public:
             void Refresh(bool direct=false, bool swap=false) override;
-            Button(LuI_Layout layout, size_t childs,uint16_t color=ThCol(button));
+            Button(LuI_Layout layout=LuI_Vertical_Layout,size_t childs=1,bool decorations=true,uint16_t color=ThCol(button));
             void EventHandler();
     };
 };

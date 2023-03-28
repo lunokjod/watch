@@ -91,6 +91,12 @@ void View3D::SetGlobalLocation(IN Vertex3D globLocation ) {
     GlobalLocation=globLocation;
     //SetDirty();
 }
+
+void View3D::SetGlobalScale(IN float scale ) {
+    GlobalScale= { scale,scale,scale };
+    //SetDirty();
+}
+
 void View3D::SetGlobalScale(IN Vertex3D globRotation ) {
     GlobalScale=globRotation;
     //SetDirty();

@@ -32,26 +32,37 @@ Image::~Image() {
 }
 
 Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data,
-                                bool swap, LuI_Layout layout, size_t childs)
+                                uint16_t maskColor,bool swap, LuI_Layout layout, size_t childs)
                     : imageWidth(width),imageHeight(height),imageData(data),Container(layout,childs) {
     lLog("Image %p created!\n",this);
+    uint16_t fcolor = maskColor;
+    if ( false == swap ) {
+        fcolor = ByteSwap(maskColor);
+    }
+    lLog("---> ORIGINAL MASK COLOR: %x SWAPPED: %x\n",maskColor,fcolor);
+    this->maskColor = fcolor;
     imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
-    imageCanvas->setSwapBytes(swap);
-    if ( nullptr != data ) {
-        imageCanvas->pushImage(0,0,width,height, (uint16_t *)data);
-    }
+    if ( nullptr != data ) { imageCanvas->pushImage(0,0,width,height, (uint16_t *)data); }
 }
 
 void Image::Refresh(bool direct,bool swap) {
     lLog("Image %p refresh\n",this);
     Control::Refresh(direct,swap);
-    //centered
-    canvas->setPivot((canvas->width()/2),(canvas->height()/2));
-    imageCanvas->setPivot((imageCanvas->width()/2)+offsetX,(imageCanvas->height()/2)+offsetY);
-    //canvas->setSwapBytes(swap);
-    imageCanvas->pushRotated(canvas,0);
-    //canvas->setSwapBytes((!swap));
+    uint16_t fMaskcolor = maskColor;
+    // center image
+    int cXOff=(width-imageCanvas->width())/2;
+    int cYOff=(height-imageCanvas->height())/2;
+    for(int y=0;y<imageCanvas->height();y++) {
+        int32_t dY = cYOff+y;
+        for(int x=0;x<imageCanvas->width();x++) {
+            uint16_t originalColor = imageCanvas->readPixel(x,y);
+            if ( originalColor == fMaskcolor) { continue; }
+            int32_t dX = cXOff+x;
+            canvas->drawPixel(dX,dY,originalColor);
+        }
+    }
+
     Container::Refresh(direct,swap);
 }
