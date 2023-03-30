@@ -105,7 +105,7 @@ void Control::EventHandler() {
 
 void Control::Refresh(bool direct, bool swap) {
     // this base control don't support direct, only buffered
-    lLog("Control %p refresh canvas at %p swap: %s dirty: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"));
+    //lLog("Control %p refresh canvas at %p swap: %s dirty: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"));
     if ( dirty ) {
         if ( nullptr != canvas ) {
             canvas->deleteSprite();

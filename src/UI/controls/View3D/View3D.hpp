@@ -35,6 +35,12 @@ namespace LuI {
             Vertex3D GlobalScale = { 1,1,1 };
             bool firstPush=false;
         public:
+            //@TODO this must be thinked a little bit more
+            static TaskHandle_t renderTask;
+            static SemaphoreHandle_t renderMutex;
+            void ThreadedRender();
+            bool renderLoop=true;
+            
             typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK} RENDER;
             RENDER RenderMode = FULL; 
             uint32_t viewBackgroundColor=Drawable::MASK_COLOR;

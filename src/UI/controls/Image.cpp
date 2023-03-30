@@ -52,8 +52,8 @@ void Image::Refresh(bool direct,bool swap) {
     Control::Refresh(direct,swap);
     uint16_t fMaskcolor = maskColor;
     // center image
-    int cXOff=(width-imageCanvas->width())/2;
-    int cYOff=(height-imageCanvas->height())/2;
+    int cXOff=(int(width)-imageCanvas->width())/2;
+    int cYOff=(int(height)-imageCanvas->height())/2;
     for(int y=0;y<imageCanvas->height();y++) {
         int32_t dY = cYOff+y;
         for(int x=0;x<imageCanvas->width();x++) {

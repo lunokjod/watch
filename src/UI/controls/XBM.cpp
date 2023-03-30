@@ -55,8 +55,9 @@ void XBM::Refresh(bool direct,bool swap) {
         fcolor = ByteSwap(color);
     }
     // center image
-    int cXOff=(width-imageCanvas->width())/2;
-    int cYOff=(height-imageCanvas->height())/2;
+    int cXOff=(int(width)-imageCanvas->width())/2;
+    int cYOff=(int(height)-imageCanvas->height())/2;
+    //lLog("cXOff: %d cYOff: %d\n",cXOff,cYOff);
     for(int y=0;y<imageCanvas->height();y++) {
         int32_t dY = cYOff+y;
         for(int x=0;x<imageCanvas->width();x++) {

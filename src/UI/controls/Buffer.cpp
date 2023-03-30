@@ -19,8 +19,12 @@
 
 #include "Buffer.hpp"
 #include "../../app/LogView.hpp"
+#include <Ticker.h>
 
 using namespace LuI;
+
+//Ticker _bufferFadeAnim;
+//Buffer * _bufferFadeAnimRelatedBuffer=nullptr;
 
 Buffer::~Buffer() {
     lLog("Buffer %p destroyed!\n",this);
@@ -29,6 +33,16 @@ Buffer::~Buffer() {
         delete imageCanvas;
         imageCanvas=nullptr;
     }
+    if ( nullptr != barHorizontal ) {
+        barHorizontal->deleteSprite();
+        delete barHorizontal;
+        barHorizontal=nullptr;
+    }
+    if ( nullptr != barVertical ) {
+        barVertical->deleteSprite();
+        delete barVertical;
+        barVertical=nullptr;
+    }
 }
 Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout layout, size_t childs)
                                 : imageWidth(width),imageHeight(height) {//,Container(layout,childs) {
@@ -36,15 +50,14 @@ Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout lay
     imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
-    //dragEnable=true;
     dragCallbackParam=this;
     dragCallback = [](void * obj){
         Buffer * self = (Buffer *)obj;
         TFT_eSprite * buff = self->GetBuffer();
         int32_t originalOffX = self->offsetX;
         int32_t originalOffY = self->offsetY;
-        int16_t relDragX = touchDragVectorX; //self->lastDragX-touchDragVectorX;
-        int16_t relDragY = touchDragVectorY; // self->lastDragY-touchDragVectorY;
+        int16_t relDragX = touchDragVectorX;
+        int16_t relDragY = touchDragVectorY;
 
         // James Bruton smooth https://hackaday.com/2021/09/03/smooth-servo-motion-for-lifelike-animatronics/
         int32_t nOffX = self->offsetX+(relDragX*-1);
@@ -58,67 +71,72 @@ Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout lay
         else if ( self->offsetX > maxX ) { self->offsetX=maxX; }
         if ( self->offsetY < 0 ) { self->offsetY=0; }
         else if ( self->offsetY > maxY ) { self->offsetY=maxY; }
-
+        self->fadeDownBarsValue=255;
         // redraw only if offset changes
         if ( ( originalOffX != self->offsetX ) || ( originalOffY != self->offsetY) ) {
             self->dirty=true;
         }
     };
-
 }
 
 void Buffer::Refresh(bool direct,bool swap) {
-    lLog("Buffer %p refresh\n",this);
+    //lLog("Buffer %p refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
+    if ( false == dirty ) { return; } // I'm clean!!
     Control::Refresh(direct,swap);
     //centered
-    canvas->setPivot(0,0); //(canvas->width()/2),(canvas->height()/2));
-    //canvas->fillSprite(ThCol(background));
-
-    /*
-    //FAKE all to get the contents on the sprite instead the control
-    TFT_eSprite * realCanvas = canvas;
-    uint32_t realWidth = width;
-    uint32_t realHeight = height;
-    width=imageCanvas->width();
-    height=imageCanvas->width();
-    canvas=imageCanvas;
-    Container::Refresh(swap);
-    canvas=realCanvas;
-    width=realWidth;
-    height=realHeight;
-    */
+    canvas->setPivot(0,0);
     imageCanvas->setPivot(offsetX,offsetY);
     imageCanvas->pushRotated(canvas,0);
-}
 
-void Buffer::EventHandler() {
+    // redraw bars?
+    if ( false == showBars ) { return; } // dont continue if no bars enabled
+    //if ( hideBars ) { hideBars=false; return; } // hide bars received
+    if ( fadeDownBarsValue < 1 ) { return; } // ready fade-down
+    if ( nullptr == barHorizontal ) { // create bar buffer H
+        barHorizontal=new TFT_eSprite(tft);
+        barHorizontal->setColorDepth(1);
+        barHorizontal->createSprite(width-30,10);
+    }
+    int32_t percentX=0;
+    int32_t percentY=0;
+    const int32_t maxX = imageCanvas->width()-int(width);
+    const int32_t maxY = imageCanvas->height()-int(height);
+    percentX = (offsetX*(int(width)-50))/maxX;
+    percentY = (offsetY*(int(height)-50))/maxY;
 
-    if ( dirty ) { Refresh(); }
-/*
-    ttgo->tft->drawRect(clipX+3,clipY+3,width-6,height-6,TFT_BLUE);
+    barHorizontal->fillSprite(TFT_BLACK);
+    barHorizontal->drawRoundRect(0,0,width-30,10,5,TFT_WHITE);
+    barHorizontal->fillCircle(5+percentX,5,5,TFT_WHITE);
+    for(int y=0;y<barHorizontal->height();y++) {
+        for(int x=0;x<barHorizontal->width();x++) {
+            bool mustDraw = barHorizontal->readPixel(x,y);
+            if ( mustDraw ) {
+                uint16_t color = canvas->readPixel(15+x,5+y);
+                uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
+                canvas->drawPixel(15+x,5+y,fcolor);
+            }
+        }
+    }
     
-    // @TODO GET THE WINDOW!!!
-    for(size_t current=0;current<currentChildSlot;current++) {
-        if ( nullptr == children[current] ) { continue; }
-        children[current]->EventHandler();
-        if ( children[current]->dirty ) {
-            children[current]->Refresh(true);
-*/
-            //TFT_eSprite * what = children[current]->GetCanvas();
-            /*
-            if ( directDraw ) {
-                ttgo->tft->setSwapBytes(true);
-                what->pushSprite(children[current]->clipX,children[current]->clipY,Drawable::MASK_COLOR);
-            }*/
-        //}
-    //}
-    /*
-    uint32_t oTouchX = touchX;
-    uint32_t oTouchY = touchY;
-    touchX-=offsetX;
-    touchY-=offsetY;
-    */
-    Control::EventHandler();
-    //touchX=oTouchX;
-    //touchY=oTouchY;
+    if ( nullptr == barVertical ) { // create bar buffer V
+        barVertical=new TFT_eSprite(tft);
+        barVertical->setColorDepth(1);
+        barVertical->createSprite(10,height-30);
+    }
+    barVertical->fillSprite(TFT_BLACK);
+    barVertical->drawRoundRect(0,0,10,height-30,5,TFT_WHITE);
+    barVertical->fillCircle(5,5+percentY,5,TFT_WHITE);
+    for(int y=0;y<barVertical->height();y++) {
+        for(int x=0;x<barVertical->width();x++) {
+            bool mustDraw = barVertical->readPixel(x,y);
+            if ( mustDraw ) {
+                uint16_t color = canvas->readPixel(5+x,15+y);
+                uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
+                canvas->drawPixel(5+x,15+y,fcolor);
+            }
+        }
+    }
+
+    fadeDownBarsValue-=32;
+    dirty=true; // fade down
 }

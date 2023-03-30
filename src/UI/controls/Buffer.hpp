@@ -34,16 +34,18 @@ namespace LuI {
             const uint32_t imageWidth=0;
             const uint32_t imageHeight=0;
             TFT_eSprite * imageCanvas=nullptr;
+            TFT_eSprite * barHorizontal=nullptr;
+            TFT_eSprite * barVertical=nullptr;
+            int16_t fadeDownBarsValue=255; // used to fadedown bars effect
         public:
-            //int16_t lastDragX=0;
-            //int16_t lastDragY=0;
+            //bool hideBars=true;
+            bool showBars=true;
             int32_t offsetX=0;
             int32_t offsetY=0;
             ~Buffer();
             TFT_eSprite * GetBuffer() { return imageCanvas; }
             Buffer(IN uint32_t width, IN uint32_t height, bool swap=false);
             void Refresh(bool direct=false,bool swap=false) override;
-            void EventHandler() override;
     };
 };
 

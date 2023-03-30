@@ -24,14 +24,9 @@
 #include <esp_task_wdt.h>
 #include "Mesh3D.hpp"
 using namespace LuI;
-/*
-bool View3D::CacheIsFilled=false;
-float View3D::AngleSinCache[360];
-float View3D::AngleCosCache[360];
-float View3D::AngleCache[360];
-const double View3D::sq2 = sqrt(2);
-const double View3D::sq6 = sqrt(6);
-*/
+
+SemaphoreHandle_t View3D::renderMutex = xSemaphoreCreateMutex();
+TaskHandle_t View3D::renderTask = NULL;
 
 void View3D::AddMesh3D(INOUT Mesh3D * meshObject) {
     bool foundSlot=false;
@@ -181,7 +176,26 @@ bool View3D::IsClockwise(INOUT Face3D &face,uint16_t meshNumber) {
     return (face._clockWiseCache?true:false);
 }
 
+//@TODO this must be thinked a little bit more
+void _View3DThreadTask(void *data) {
+    View3D *self=(View3D*)data;
+    lLog("View3D render task begin\n");
+    while(self->renderLoop ) {
+        self->Render();
+    }
+    lLog("View3D render task ended\n");
+    vTaskDelete(NULL);
+}   
+
+void View3D::ThreadedRender() {
+    //@TODO lauch ::Render() in a thread
+    xTaskCreatePinnedToCore(_View3DThreadTask, "Rendr3D", LUNOKIOT_APP_STACK_SIZE, this, tskIDLE_PRIORITY, &this->renderTask,1);
+}
+// <======================================
+
+
 void View3D::Render() {
+    if( xSemaphoreTake( renderMutex, portMAX_DELAY) != pdTRUE )  { return; }
     unsigned long bRender=millis();
     //lUILog("Clean...\n");
     /* THIS IS UNNECESARy, THE LAST CACHE IS VALID 
@@ -348,6 +362,7 @@ void View3D::Render() {
     if ( tRender > 0 ) { fps = 1000/tRender; }
     //lUILog("Render %p complete fps: %u ms: %lu faces: %u iteration: %u\n",this,fps,tRender,orderdFaces,renderCount);
     renderCount++;
+    xSemaphoreGive( renderMutex );
 }
 
 View3D::~View3D() {
@@ -365,6 +380,7 @@ View3D::View3D(): Control() {
 
 
 TFT_eSprite * View3D::GetCanvas() {
+    // @TODO ugly code
     if ( false == firstPush ) {
         firstPush=true;
         Render();

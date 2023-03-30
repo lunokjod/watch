@@ -17,25 +17,22 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CHANGEME_LUI_APP__
-#define __LUNOKIOT__CHANGEME_LUI_APP__
+#ifndef __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_DEBUG__
+#define __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_DEBUG__
 
-#include "../system/Application.hpp"
-#include "../UI/controls/base/Control.hpp"
-#include "../UI/controls/base/Container.hpp"
+#include "../UI/AppLuITemplate.hpp"
+#include "../UI/controls/Buffer.hpp"
 
-class TemplateLuIApplication : public LunokIoTApplication {
-    private:
-        LuI::Container * child=nullptr;
-    protected:
-        LuI::Container * GetChild() { return child; }
-        void AddChild(INOUT LuI::Container *control );
-        void EventHandler();
+class LuiExperimentApplication : public TemplateLuIApplication {
     public:
-        const char *AppName() override { return "AppTemplateLuI without name"; };
-        TemplateLuIApplication();
-        ~TemplateLuIApplication();
-        virtual bool Tick();
+        LuiExperimentApplication();
+        const char *AppName() override { return "LuI Experiment"; };
+        bool Tick();
+        LunokIoTApplication *app0=nullptr;
+        LunokIoTApplication *app1=nullptr;
+        LuI::Buffer * testBuffer0=nullptr;
+        LuI::Buffer * testBuffer1=nullptr;
+        ~LuiExperimentApplication();
 };
 
 #endif

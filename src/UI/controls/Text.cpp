@@ -61,8 +61,9 @@ void Text::Refresh(bool direct,bool swap) {
         */
     }
     // center text
-    int cXOff=(width-imageTextCanvas->width())/2;
-    int cYOff=(height-imageTextCanvas->height())/2;
+    int cXOff=(int(width)-imageTextCanvas->width())/2;
+    int cYOff=(int(height)-imageTextCanvas->height())/2;
+
     for(int y=0;y<imageTextCanvas->height();y++) {
         for(int x=0;x<imageTextCanvas->width();x++) {
             bool isTextPart = imageTextCanvas->readPixel(x,y);
