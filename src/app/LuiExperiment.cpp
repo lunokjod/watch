@@ -29,7 +29,7 @@
 #include "LogView.hpp"
 
 #include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../../static/img_smartwatch_160.xbm"
+//#include "../../static/img_smartwatch_160.xbm"
 #include "../system/Datasources/kvo.hpp"
 #include "../system/SystemEvents.hpp"
 #include <ArduinoNvs.h>
@@ -87,7 +87,7 @@ LuiExperimentApplication::LuiExperimentApplication() {
     bottomButtonContainer->AddChild(nullptr,1.65);
 
 
-    viewContainer->AddChild(new XBM(img_smartwatch_160_width,img_smartwatch_160_height,img_smartwatch_160_bits,true));
+    //viewContainer->AddChild(new XBM(img_smartwatch_160_width,img_smartwatch_160_height,img_smartwatch_160_bits,true));
 
     ScreenRotateEvent = new EventKVO([&, this](){
         lUILog("User screen rotation: %u\n", bmaRotation);
