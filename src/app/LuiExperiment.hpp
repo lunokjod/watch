@@ -22,17 +22,15 @@
 
 #include "../UI/AppLuITemplate.hpp"
 #include "../UI/controls/Buffer.hpp"
+#include "../system/Datasources/kvo.hpp"
 
 class LuiExperimentApplication : public TemplateLuIApplication {
     public:
+        EventKVO * ScreenRotateEvent = nullptr;
+        uint8_t BMAtoTFTOrientation(uint8_t bma);
         LuiExperimentApplication();
-        const char *AppName() override { return "LuI Experiment"; };
-        bool Tick();
-        LunokIoTApplication *app0=nullptr;
-        LunokIoTApplication *app1=nullptr;
-        LuI::Buffer * testBuffer0=nullptr;
-        LuI::Buffer * testBuffer1=nullptr;
         ~LuiExperimentApplication();
+        const char *AppName() override { return "LuI Experiment"; };
 };
 
 #endif

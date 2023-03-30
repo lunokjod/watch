@@ -31,7 +31,7 @@
 #include "../static/img_mainmenu_debug.xbm"
 #include "Notifications.hpp"
 #include "../static/img_mainmenu_notifications.xbm"
-#include "Rotation.hpp"
+#include "LuIRotation.hpp"
 #include "../static/img_rotate_120.xbm"
 #include "Provisioning2.hpp"
 #include "../static/img_mainmenu_provisioning.xbm"
@@ -80,7 +80,7 @@ MainMenuApplicationEntry SettingsApps[] = {
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, [](void *unused) { LaunchApplication(new SetTimeApplication()); } },
     {"Timezone",img_timezone_120_bits, img_timezone_120_height, img_timezone_120_width, [](void *unused) { LaunchApplication(new SetTimeZoneApplication()); } },
     {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
-    {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, [](void *unused) { LaunchApplication(new RotationApplication()); } },
+    {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, [](void *unused) { LaunchApplication(new LuIRotateApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](void *unused) { LaunchApplication(new BrightnessApplication()); } },
 };
 int MaxSettingsAppOffset = sizeof(SettingsApps) / sizeof(SettingsApps[0])-1;

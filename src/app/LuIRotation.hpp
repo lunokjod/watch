@@ -17,26 +17,20 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__ROTATION_APP__
-#define __LUNOKIOT__ROTATION_APP__
+#ifndef __LUNOKIOT__APPLICATION__LUI_ROTATEWATCH__
+#define __LUNOKIOT__APPLICATION__LUI_ROTATEWATCH__
 
-#include <Arduino.h>
-#include <LilyGoWatch.h>
-#include "../system/Application.hpp"
-#include "../UI/widgets/CanvasWidget.hpp"
-#include "../UI/widgets/ButtonWidget.hpp"
-class RotationApplication: public LunokIoTApplication {
-    private:
-        unsigned long nextRedraw=0;
-        ButtonWidget * up=nullptr;
-        ButtonWidget * right=nullptr;
-        ButtonWidget * down=nullptr;
-        ButtonWidget * left=nullptr;
+#include "../UI/AppLuITemplate.hpp"
+#include "../system/Datasources/kvo.hpp"
+
+class LuIRotateApplication : public TemplateLuIApplication {
     public:
-        const char *AppName() override { return "Screen rotation"; };
-        RotationApplication();
-        ~RotationApplication();
-        bool Tick();
+        EventKVO * ScreenRotateEvent = nullptr; // system notify to me when orientation changes :)
+        uint8_t BMAtoTFTOrientation(uint8_t bma);
+        void DoScreenRotation(uint8_t from, uint8_t to);
+        LuIRotateApplication();
+        ~LuIRotateApplication();
+        const char *AppName() override { return "Rotate TFT"; };
 };
 
 #endif

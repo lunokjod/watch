@@ -25,9 +25,8 @@
 #include "../UI/controls/base/Container.hpp"
 
 class TemplateLuIApplication : public LunokIoTApplication {
-    private:
-        LuI::Container * child=nullptr;
     protected:
+        LuI::Container * child=nullptr;
         LuI::Container * GetChild() { return child; }
         void AddChild(INOUT LuI::Container *control );
         void EventHandler();

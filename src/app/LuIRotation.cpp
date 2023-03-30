@@ -18,43 +18,98 @@
 //
 
 #include "../UI/AppLuITemplate.hpp"
-#include "LuiExperiment.hpp"
+#include "LuIRotation.hpp"
 #include "../UI/controls/base/Container.hpp"
 #include "../UI/controls/Button.hpp"
-#include "../UI/controls/Text.hpp"
-#include "../UI/controls/Image.hpp"
 #include "../UI/controls/XBM.hpp"
-#include "../UI/controls/View3D/View3D.hpp"
-#include "../UI/controls/Buffer.hpp"
-#include "LogView.hpp"
 
 #include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../../static/img_smartwatch_160.xbm"
+#include "../static/img_lunokiot_logo.xbm" // sputnik image
 #include "../system/Datasources/kvo.hpp"
 #include "../system/SystemEvents.hpp"
 #include <ArduinoNvs.h>
 
-#include <LilyGoWatch.h>
 using namespace LuI;
 
 extern uint8_t bmaRotation;
-extern TTGOClass *ttgo;
 extern SemaphoreHandle_t UISemaphore;
+extern TFT_eSPI * tft;
 
-LuiExperimentApplication::~LuiExperimentApplication() {
+LuIRotateApplication::~LuIRotateApplication() {
     if ( nullptr != ScreenRotateEvent ) { delete ScreenRotateEvent; }
     NVS.setInt("ScreenRot",tft->getRotation(),false);
 }
 
-uint8_t LuiExperimentApplication::BMAtoTFTOrientation(uint8_t bma) {
-    if(0 == bmaRotation) { return 3; } // ttgo->tft->setRotation(3); }
-    else if(1 == bmaRotation) { return 1; } // ttgo->tft->setRotation(1); }
-    else if(2 == bmaRotation) { return 0; } //ttgo->tft->setRotation(0); }
-    else if(3 == bmaRotation) { return 2; } //ttgo->tft->setRotation(2); }
+uint8_t LuIRotateApplication::BMAtoTFTOrientation(uint8_t bma) {
+    /*
+    bmaRotation <-> tftRotation
+    0 = led right = 3
+    1 = led left  = 1
+    2 = led up    = 0
+    3 = led down  = 2
+    */
+    if(0 == bma) { return 3; }
+    else if(1 == bma) { return 1; }
+    else if(2 == bma) { return 0; }
+    else if(3 == bma) { return 2; }
+    // 4 and 5 are up and down (ignored here)
+    //lLog("UNKNOWN BMA!!! %u\n", bma);
     return -1;
 }
 
-LuiExperimentApplication::LuiExperimentApplication() {
+void LuIRotateApplication::DoScreenRotation(uint8_t from, uint8_t to) {
+    lUILog("ANIMATE FROM rotation: %u next: %u\n", from, to);
+
+    tft->setPivot(TFT_WIDTH/2,TFT_HEIGHT/2);
+    canvas->setPivot(canvas->width()/2,canvas->height()/2);
+    if ( 0 == from ) {
+        if ( 1 == to ) {
+            canvas->pushRotated(45);
+            delay(100);
+        } else if ( 3 == to ) {
+            canvas->pushRotated(-45);            
+            delay(100);
+        }
+    } else if ( 3 == from ) {
+        if ( 0 == to ) {
+            canvas->pushRotated(45);
+            delay(100);
+        } else if ( 2 == to ) {
+            canvas->pushRotated(-45);            
+            delay(100);
+        }
+    } else if ( 1 == from ) {
+        if ( 2 == to ) {
+            canvas->pushRotated(45);
+            delay(100);
+        } else if ( 0 == to ) {
+            canvas->pushRotated(-45);            
+            delay(100);
+        }
+    } else if ( 2 == from ) {
+        if ( 3 == to ) {
+            canvas->pushRotated(45);
+            delay(100);
+        } else if ( 1 == to ) {
+            canvas->pushRotated(-45);            
+            delay(100);
+        }
+    }
+    // 0 to 3/1
+    // 3 to 0/2
+    // 1 to 2/0
+    // 2 to 3/1
+    /*
+    bmaRotation <-> tftRotation
+    0 = led right = 3
+    1 = led left  = 1
+    2 = led up    = 0
+    3 = led down  = 2
+    */
+
+}
+
+LuIRotateApplication::LuIRotateApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
     // fill view with background color
     canvas->fillSprite(ThCol(background)); // use theme colors
@@ -86,51 +141,26 @@ LuiExperimentApplication::LuiExperimentApplication() {
     bottomButtonContainer->AddChild(backButton,0.35);
     bottomButtonContainer->AddChild(nullptr,1.65);
 
-
-    viewContainer->AddChild(new XBM(img_smartwatch_160_width,img_smartwatch_160_height,img_smartwatch_160_bits,true));
+    // add smartwatch image to ilustrate the orientation
+    viewContainer->AddChild(new XBM(img_lunokiot_logo_width,img_lunokiot_logo_height,img_lunokiot_logo_bits,true));
 
     ScreenRotateEvent = new EventKVO([&, this](){
-        lUILog("User screen rotation: %u\n", bmaRotation);
         if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_TIME_TICKS) == pdTRUE )  {
-            ttgo->tft->setRotation(BMAtoTFTOrientation(bmaRotation));
-            this->canvas->pushSprite(0,0);
+            uint8_t lastRotation = tft->getRotation();
+            uint8_t nextRotation = BMAtoTFTOrientation(bmaRotation);
+            if ( 255 == nextRotation ) {
+                // ignore up and down
+                xSemaphoreGive( UISemaphore );
+                return;
+            }
+            lUILog("User screen rotation: %u next: %u\n", lastRotation, nextRotation);
+            DoScreenRotation(lastRotation,nextRotation);
+            tft->setRotation(nextRotation);
+            canvas->pushSprite(0,0); // oriented frame (tft need redraw to apply changes)
             xSemaphoreGive( UISemaphore );
         }
-        //this->child->dirty=true;
     },BMA_EVENT_DIRECTION);
-/*
-bmaRotation <-> tftRotation
-0 = led right = 3
-1 = led left  = 1
-2 = led up    = 0
-3 = led down  = 2
-
-*/
     AddChild(screen);
     directDraw=true; // allow controls to direct redraw itself instead of push whole view Sprite
     // Thats all! the app is running
 }
-
-/*
-bool LuiExperimentApplication::Tick() {
-    TemplateLuIApplication::EventHandler();
-    bool mustPush0 = app0->Tick();
-    if ( mustPush0 ) {
-        TFT_eSprite * buffImg0 = testBuffer0->GetBuffer();
-        app0->canvas->setPivot(0,0);
-        buffImg0->setPivot(0,0);
-        app0->canvas->pushRotated(buffImg0,0);
-        testBuffer0->dirty=true;
-    }
-    bool mustPush1 = app1->Tick();
-    if ( mustPush1 ) {
-        TFT_eSprite * buffImg1 = testBuffer1->GetBuffer();
-        app1->canvas->setPivot(0,0);
-        buffImg1->setPivot(0,0);
-        app1->canvas->pushRotated(buffImg1,0);
-        testBuffer1->dirty=true;
-    }
-
-    return false; // is directDraw application
-}
-*/
