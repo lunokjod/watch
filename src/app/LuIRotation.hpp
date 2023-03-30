@@ -28,6 +28,7 @@ class LuIRotateApplication : public TemplateLuIApplication {
         EventKVO * ScreenRotateEvent = nullptr; // system notify to me when orientation changes :)
         uint8_t BMAtoTFTOrientation(uint8_t bma);
         void DoScreenRotation(uint8_t from, uint8_t to);
+        void CleanPush(TFT_eSprite * frame, float angle);
         LuIRotateApplication();
         ~LuIRotateApplication();
         const char *AppName() override { return "Rotate TFT"; };

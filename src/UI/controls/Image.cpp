@@ -44,6 +44,7 @@ Image::Image(IN uint32_t width,IN uint32_t height, IN unsigned char *data,
     imageCanvas=new TFT_eSprite(tft);
     imageCanvas->setColorDepth(16);
     imageCanvas->createSprite(width,height);
+    imageCanvas->setSwapBytes(swap);
     if ( nullptr != data ) { imageCanvas->pushImage(0,0,width,height, (uint16_t *)data); }
 }
 
@@ -59,6 +60,7 @@ void Image::Refresh(bool direct,bool swap) {
         for(int x=0;x<imageCanvas->width();x++) {
             uint16_t originalColor = imageCanvas->readPixel(x,y);
             if ( originalColor == fMaskcolor) { continue; }
+            if ( swap ) { originalColor = ByteSwap(originalColor); }
             int32_t dX = cXOff+x;
             canvas->drawPixel(dX,dY,originalColor);
         }

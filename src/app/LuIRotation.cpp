@@ -22,12 +22,16 @@
 #include "../UI/controls/base/Container.hpp"
 #include "../UI/controls/Button.hpp"
 #include "../UI/controls/XBM.hpp"
-
+#include "../UI/controls/Image.hpp"
+#include "../UI/controls/Text.hpp"
+#include "../UI/UI.hpp"
 #include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../static/img_lunokiot_logo.xbm" // sputnik image
+#include "../static/img_landscape_200.c"
 #include "../system/Datasources/kvo.hpp"
 #include "../system/SystemEvents.hpp"
 #include <ArduinoNvs.h>
+#include <LilyGoWatch.h>
+
 
 using namespace LuI;
 
@@ -56,45 +60,50 @@ uint8_t LuIRotateApplication::BMAtoTFTOrientation(uint8_t bma) {
     //lLog("UNKNOWN BMA!!! %u\n", bma);
     return -1;
 }
+void LuIRotateApplication::CleanPush(TFT_eSprite * frame, float angle) {
+    const uint32_t frameDelay=20;
+    //tft->fillScreen(TFT_BLACK);
+    int16_t minX,minY,maxX,maxY;
+    frame->getRotatedBounds(angle,&minX,&minY,&maxX,&maxY);
+    frame->pushRotated(angle);
+    // up
+    tft->fillRect(0,0,canvas->width(),minY,TFT_BLACK);
+    // left
+    tft->fillRect(0,minY,minX,maxY,TFT_BLACK);
+    // down
+    tft->fillRect(0,maxY,canvas->width(),canvas->height()-maxY,TFT_BLACK);
+    // right
+    tft->fillRect(maxX,minY,canvas->width()-maxX,maxY-minY,TFT_BLACK);
 
+    delay(frameDelay);
+}
 void LuIRotateApplication::DoScreenRotation(uint8_t from, uint8_t to) {
-    lUILog("ANIMATE FROM rotation: %u next: %u\n", from, to);
-
+    //lUILog("ANIMATE FROM rotation: %u next: %u\n", from, to);
     tft->setPivot(TFT_WIDTH/2,TFT_HEIGHT/2);
     canvas->setPivot(canvas->width()/2,canvas->height()/2);
+    TFT_eSprite * snapshoot = ScaleSprite(canvas,0.8);
+    CleanPush(snapshoot,0);
+    snapshoot->deleteSprite();
+    delete snapshoot;
+    snapshoot = ScaleSprite(canvas,0.6);
+    CleanPush(snapshoot,0);
+    int16_t rotation=0;
     if ( 0 == from ) {
-        if ( 1 == to ) {
-            canvas->pushRotated(45);
-            delay(100);
-        } else if ( 3 == to ) {
-            canvas->pushRotated(-45);            
-            delay(100);
-        }
+        if ( 1 == to ) { rotation=45;
+        } else if ( 3 == to ) { rotation=-45; }
     } else if ( 3 == from ) {
-        if ( 0 == to ) {
-            canvas->pushRotated(45);
-            delay(100);
-        } else if ( 2 == to ) {
-            canvas->pushRotated(-45);            
-            delay(100);
-        }
+        if ( 0 == to ) { rotation=45;
+        } else if ( 2 == to ) { rotation=-45; }
     } else if ( 1 == from ) {
-        if ( 2 == to ) {
-            canvas->pushRotated(45);
-            delay(100);
-        } else if ( 0 == to ) {
-            canvas->pushRotated(-45);            
-            delay(100);
-        }
+        if ( 2 == to ) { rotation=45;
+        } else if ( 0 == to ) { rotation=-45; }
     } else if ( 2 == from ) {
-        if ( 3 == to ) {
-            canvas->pushRotated(45);
-            delay(100);
-        } else if ( 1 == to ) {
-            canvas->pushRotated(-45);            
-            delay(100);
-        }
+        if ( 3 == to ) { rotation=45;
+        } else if ( 1 == to ) { rotation=-45; }
     }
+    CleanPush(snapshoot,rotation/2);
+    CleanPush(snapshoot,rotation);
+    CleanPush(snapshoot,rotation+(rotation/2));
     // 0 to 3/1
     // 3 to 0/2
     // 1 to 2/0
@@ -106,7 +115,8 @@ void LuIRotateApplication::DoScreenRotation(uint8_t from, uint8_t to) {
     2 = led up    = 0
     3 = led down  = 2
     */
-
+    snapshoot->deleteSprite();
+    delete(snapshoot);
 }
 
 LuIRotateApplication::LuIRotateApplication() {
@@ -142,17 +152,16 @@ LuIRotateApplication::LuIRotateApplication() {
     bottomButtonContainer->AddChild(nullptr,1.65);
 
     // add smartwatch image to ilustrate the orientation
-    viewContainer->AddChild(new XBM(img_lunokiot_logo_width,img_lunokiot_logo_height,img_lunokiot_logo_bits,true));
+    Container * innerdiv = new Container(LuI_Horizonal_Layout,2);
+    innerdiv->AddChild(new Text("This side up",TFT_WHITE,false,1,&FreeMonoBold12pt7b),0.6);
+    innerdiv->AddChild(new Image(img_landscape_200.width,img_landscape_200.height,img_landscape_200.pixel_data,true),1.4);
+    viewContainer->AddChild(innerdiv);
 
     ScreenRotateEvent = new EventKVO([&, this](){
+        uint8_t lastRotation = tft->getRotation();
+        uint8_t nextRotation = BMAtoTFTOrientation(bmaRotation);
+        if ( 255 == nextRotation ) { return; }
         if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_TIME_TICKS) == pdTRUE )  {
-            uint8_t lastRotation = tft->getRotation();
-            uint8_t nextRotation = BMAtoTFTOrientation(bmaRotation);
-            if ( 255 == nextRotation ) {
-                // ignore up and down
-                xSemaphoreGive( UISemaphore );
-                return;
-            }
             lUILog("User screen rotation: %u next: %u\n", lastRotation, nextRotation);
             DoScreenRotation(lastRotation,nextRotation);
             tft->setRotation(nextRotation);
