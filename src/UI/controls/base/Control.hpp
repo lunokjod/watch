@@ -37,13 +37,20 @@ namespace LuI {
             bool dirty=true; // forces redraw
 
             // events
-            //bool touchEnabled=false; // can receive tap events?
+            UICallback touchCallback=nullptr; // where call meanwhile thumb in
+            void * touchCallbackParam=nullptr; // what pass to callback
+
+            UICallback inTouchCallback=nullptr; // where call when thumb in
+            void * inTouchCallbackParam=nullptr; // what pass to callback
+
+            UICallback outTouchCallback=nullptr; // where call when thumb out
+            void * outTouchCallbackParam=nullptr; // what pass to callback
+
             UICallback tapCallback=nullptr; // where call when tap
-            void * tapCallbackParam=nullptr; // what pass to callbac
+            void * tapCallbackParam=nullptr; // what pass to callback
             
-            //bool dragEnable=false;  // can receive drag events?
             UICallback dragCallback=nullptr; // where call when drag
-            void * dragCallbackParam=nullptr; // what pass to callbac
+            void * dragCallbackParam=nullptr; // what pass to callback
 
             uint32_t height=0;
             uint32_t width=0;

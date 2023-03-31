@@ -22,10 +22,7 @@
 #include <LilyGoWatch.h>
 #include "Advanced.hpp"
 #include "LogView.hpp"
-#include "../static/img_back_32.xbm"
-#include "../static/img_trash_32.xbm"
-#include "../static/img_log_32.xbm"
-#include "../static/img_help_32.xbm"
+#include "../resources.hpp"
 #include "../UI/UI.hpp"
 #include "Shutdown.hpp"
 

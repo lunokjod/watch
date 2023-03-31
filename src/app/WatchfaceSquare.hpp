@@ -33,7 +33,7 @@
 #include "../static/img_step_32.xbm"
 #include "../static/img_distance_32.xbm"
 
-#include "MainMenu.hpp"
+#include "LuIMainMenu.hpp"
 #include "Steps.hpp"
 #include "Calendar.hpp"
 #include "Battery.hpp"

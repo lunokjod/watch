@@ -47,7 +47,7 @@ WatchfaceSquare::WatchfaceSquare() {
     }
 
     bottomRightButton = new ActiveRect(160, 160, 80, 80, [](void *unused) {
-        LaunchApplication(new MainMenuApplication());
+        LaunchApplication(new LuIMainMenuApplication());
     });
     if ( nullptr == bottomRightButton ) {
         lAppLog("Unable to allocate bottomRightButton\n");

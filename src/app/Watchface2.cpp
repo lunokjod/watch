@@ -26,7 +26,7 @@ extern TTGOClass *ttgo;
 
 #include "../app/LogView.hpp" // for lLog functions
 #include "../system/SystemEvents.hpp"
-#include "MainMenu.hpp"
+#include "LuIMainMenu.hpp"
 
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
@@ -82,7 +82,7 @@ Watchface2Application::Watchface2Application() {
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
 
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new MainMenuApplication()); });
+    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
     if ( nullptr == bottomRightButton ) {
         lAppLog("Unable to allocate bottomRightButton\n");
         return;

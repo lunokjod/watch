@@ -60,9 +60,9 @@
 
 typedef struct {
     const char *name;
-    unsigned char * imagebits;
-    int16_t height;
-    int16_t width;
+    const unsigned char * imagebits;
+    const int16_t height;
+    const int16_t width;
     UICallback callback;
 
 } MainMenuApplicationEntry;

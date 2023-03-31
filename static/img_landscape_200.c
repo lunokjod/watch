@@ -1,13 +1,7 @@
-/* GIMP RGB C-Source image dump (img_landscape_200.c) */
-
-static const struct {
-  unsigned int 	 width;
-  unsigned int 	 height;
-  unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
-  unsigned char	 pixel_data[180 * 101 * 2 + 1];
-} img_landscape_200 = {
+#include "resources.hpp"
+const GimpImage img_landscape_200 = {
   180, 101, 2,
-  "\236\235<\225]\225\\\225<\225<\225<\225<\225<\225\034\225\034\215\034\215\374"
+  (const unsigned char*)"\236\235<\225]\225\\\225<\225<\225<\225<\225<\225\034\225\034\215\034\215\374"
   "\214\374\214\374\214\034\225\034\225\034\225\034\215\034\215\034\215\034\225\034"
   "\225\374\214\374\224\374\224\374\224\374\224\374\224\374\224\373\224\373"
   "\224\373\224\374\224\034\235<\235\034\235\034\235<\235\\\245[\245[\255{\255"

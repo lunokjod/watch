@@ -22,8 +22,7 @@
 #include "BLEDevice.hpp"
 #include "BLEMonitor.hpp"
 #include "../system/Network/BLE.hpp"
-#include "../static/img_back_32.xbm"
-#include "../static/img_bluetooth_32.xbm"
+#include "../resources.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 #include <esp_task_wdt.h>

@@ -21,7 +21,7 @@
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "WatchfaceDot.hpp"
-#include "MainMenu.hpp"
+#include "LuIMainMenu.hpp"
 #include "../lunokIoT.hpp"
 
 
@@ -40,7 +40,7 @@ extern char *weatherIcon;
 extern bool UILongTapOverride; // don't allow long tap for task switcher
 
 WatchfaceDotApplication::WatchfaceDotApplication() {
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new MainMenuApplication()); });
+    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
     if ( nullptr == bottomRightButton ) {
         lAppLog("MEMORY ERROR: Unable to allocate bottomRightButton\n");
     }

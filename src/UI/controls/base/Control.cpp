@@ -66,21 +66,20 @@ void Control::EventHandler() {
     //tft->drawRect(clipX+3,clipY+3,width-6,height-6,TFT_RED); //@DEBUG
 
     if ( touched ) {
-        // check drag
+        // check area
         if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
                 && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
+            // check touch
+            if ( nullptr != touchCallback ) { (touchCallback)(touchCallbackParam); }
+            // check drag
             if ( touchDragDistance > 0.0 ) {
                 if ( nullptr != dragCallback ) {
                     (dragCallback)(dragCallbackParam);
                 }
             }
-        }
-        // check touch
-        if ( ( touchX > clipX ) && ( touchX < clipX+width ) 
-                && ( touchY > clipY ) && ( touchY < clipY+height )  ) {
-            //  lLog("%p RECT: X: %d Y: %d W: %d H: %d\n",this,nCX,nCY,width,height);
-            if ( false == lastTouched ) { // yeah! IN!!!
+            if ( false == lastTouched ) { // check tap
                 //lLog("BEGIN TOUCH\n");
+                if ( nullptr != inTouchCallback ) { (inTouchCallback)(inTouchCallbackParam); }
                 lastTouched=true;
                 dirty=true;
             }
@@ -93,9 +92,12 @@ void Control::EventHandler() {
         }
     } else {
         if ( lastTouched )  { // launch callback on tap
+            if ( nullptr != outTouchCallback ) { (outTouchCallback)(outTouchCallbackParam); }
             if ( nullptr != tapCallback ) {
-                lLog("LAUNCH TOUCH\n");
-                (tapCallback)(tapCallbackParam);
+                if ( touchDragDistance == 0 ) {
+                    lLog("LAUNCH TOUCH\n");
+                    (tapCallback)(tapCallbackParam);
+                }
             }
             lastTouched=false;
             dirty=true;

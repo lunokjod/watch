@@ -33,12 +33,17 @@ namespace LuI {
             const uint32_t imageTextHeight=0;
             TFT_eSprite * imageTextCanvas=nullptr;
             const GFXfont *font=nullptr;
-            const char * text=nullptr;
+            char * text=nullptr;
             uint16_t color=TFT_WHITE; 
+            bool useBackground=false;
+            uint16_t backgroundColor; 
             bool swapColor=false;
+            uint8_t textSize=1;
         public:
+            void SetBackgroundColor(uint16_t color) { backgroundColor=color; useBackground=true; }
+            void SetText(char * what);
             ~Text();
-            Text(IN char * what, IN uint16_t color=TFT_WHITE,IN bool swap=false, IN uint8_t tsize=1, IN GFXfont *font=&FreeMonoBold9pt7b);
+            Text(char * what, IN uint16_t color=TFT_WHITE,IN bool swap=false, IN uint8_t tsize=1, IN GFXfont *font=&FreeMonoBold9pt7b);
             void Refresh(bool direct=false,bool swap=false) override;
     };
 };

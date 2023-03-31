@@ -26,10 +26,7 @@
 
 class LuiExperimentApplication : public TemplateLuIApplication {
     public:
-        EventKVO * ScreenRotateEvent = nullptr;
-        uint8_t BMAtoTFTOrientation(uint8_t bma);
         LuiExperimentApplication();
-        ~LuiExperimentApplication();
         const char *AppName() override { return "LuI Experiment"; };
 };
 

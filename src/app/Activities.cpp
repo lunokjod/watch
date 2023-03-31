@@ -24,10 +24,7 @@
 #include "../lunokiot_config.hpp"
 
 #include "Activities.hpp"
-
-#include "../static/img_activity_running.xbm"
-#include "../static/img_activity_walking.xbm"
-#include "../static/img_activity_stay.xbm"
+#include "../resources.hpp"
 
 ActivitiesApplication::~ActivitiesApplication() {
     if ( nullptr != giroLog ) {

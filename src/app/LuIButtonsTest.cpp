@@ -26,10 +26,7 @@
 #include "../UI/controls/XBM.hpp"
 #include "../UI/controls/View3D/View3D.hpp"
 
-#include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../../static/img_xbm_32.xbm"
-#include "../../static/img_house_32.c"
-#include "../../tool/BackButton.c"
+#include "../resources.hpp"
 
 using namespace LuI;
 

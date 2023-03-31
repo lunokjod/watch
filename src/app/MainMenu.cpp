@@ -21,18 +21,14 @@
 #include <LilyGoWatch.h>
 #include "MainMenu.hpp"
 #include "../lunokiot_config.hpp"
-#include "../static/img_mainmenu_back.xbm"
-
-#include "../static/img_mainmenu_options.xbm"
 #include "SettingsMenu.hpp"
 
-#include "../static/img_mainmenu_battery.xbm"
+#include "../resources.hpp"
+
 #include "Battery.hpp"
 
-#include "../static/img_mainmenu_debug.xbm"
 
 #include "Notifications.hpp"
-#include "../static/img_mainmenu_notifications.xbm"
 
 //#include "Rotation.hpp"
 //#include "../static/img_rotate_120.xbm"
@@ -47,35 +43,29 @@
 //#include "../static/img_timezone_120.xbm"
 
 #include "About.hpp"
-#include "../static/img_mainmenu_about.xbm"
 
 #include "Steps.hpp"
-#include "../static/img_mainmenu_steps.xbm"
 
 #include "Brightness.hpp"
-#include "../static/img_mainmenu_bright.xbm"
 
 //#include "Advanced.hpp"
 //#include "../static/img_mainmenu_cpu.xbm"
 
 #include "Activities.hpp"
-#include "../static/img_mainmenu_activity.xbm"
 
 //#include "Bluetooth.hpp"
 //#include "../static/img_mainmenu_bluetooth.xbm"
 
 
-#include "../static/img_mainmenu_chat.xbm"
-#include "PeerApplication.hpp"
+//#include "../static/img_mainmenu_chat.xbm"
+//#include "PeerApplication.hpp"
 
-#include "../static/img_mainmenu_calculator.xbm"
 #include "Calculator.hpp"
 
 //#include "../static/img_mainmenu_dungeon.xbm"
 //#include "Dungeon/Dungeon.hpp"
 //#include "LockPicking.hpp"
 
-#include "../static/img_mainmenu_stopwatch.xbm"
 #include "Stopwatch.hpp"
 
 #include "Settings.hpp"
@@ -106,8 +96,8 @@
 //#include "../static/img_mainmenu_update.xbm"
 //#include "OTAUpdate.hpp"
 
-#include "../static/img_mainmenu_lamp.xbm"
-#include "Lamp.hpp"
+//#include "../static/img_mainmenu_lamp.xbm"
+//#include "Lamp.hpp"
 
 #include "LogView.hpp"
 //#include "../static/img_mainmenu_lastapps.xbm"
@@ -117,23 +107,28 @@
 //#include "FreehandKeyboardSetup.hpp"
 //#include "BLEMonitor.hpp"
 
-#include "../static/img_mainmenu_calendar.xbm"
 #include "Calendar.hpp"
 
-#include "../static/img_mainmenu_player.xbm"
-#include "BLEPlayer.hpp"
+//#include "../static/img_mainmenu_player.xbm"
+//#include "BLEPlayer.hpp"
 
 //#include "../static/img_mainmenu_watchface.xbm"
 //#include "WatchfaceSelector.hpp"
 
-#include "BatteryLog.hpp"
+//#include "BatteryLog.hpp"
 //#include "WatchfaceAlwaysOn.hpp"
-#include "Engine3D.hpp"
+//#include "Engine3D.hpp"
 //#include "ThumbTest.hpp"
 //#include "GestureSettings.hpp"
+//#include "Assistant.hpp"
+#include "LuIDebug.hpp"
+//#include "LuiBufferTest.hpp"
+#include "LuIButtonsTest.hpp"
+#include "LuiExperiment.hpp"
+
 typedef struct {
     const char *name;
-    unsigned char * imagebits;
+    const unsigned char * imagebits;
     int16_t height;
     int16_t width;
     UICallback callback;
@@ -143,11 +138,17 @@ typedef struct {
 int32_t currentAppOffset = 0;
 const MainMenuApplicationEntry AllApps[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
-//    {"BattLog",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new BatteryLogApplication()); } },
+//    {"Rotate",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIRotateApplication()); } },
+
+    {"LuI",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
+//    {"LuIButtons",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new DebugLuIButtonsApplication()); } },
+//    {"LuI3D",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new DebugLuIApplication()); } },
 //    {"3DTEST",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new Engine3DApplication()); } },
+//    {"LuIBuffer",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiBufferTestApplication()); } },
+//    {"Hello",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new AssistantApplication()); } },
+//    {"BattLog",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new BatteryLogApplication()); } },
 //    {"Select",img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](IGNORE_PARAM) { LaunchApplication(new WatchfaceSelectorApplication()); } },
 //    {"Gestures",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new GestureSettings()); } },
-//    {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) { LaunchApplication(new AboutApplication()); } },
 //    {"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, [](IGNORE_PARAM) { LaunchApplication(new DungeonGameApplication()); } },
 //    {"LockPick",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LockPickingGameApplication()); } },
 //    {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new BLEMonitorApplication()); } },
@@ -170,7 +171,7 @@ const MainMenuApplicationEntry AllApps[] = {
     {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](IGNORE_PARAM) { LaunchApplication(new SettingsMenuApplication()); } },
     {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](IGNORE_PARAM) { LaunchApplication(new CalendarApplication()); } },
     {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](IGNORE_PARAM) { LaunchApplication(new CalculatorApplication()); } },
-    {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](IGNORE_PARAM) { LaunchApplication(new LampApplication()); } },
+//    {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](IGNORE_PARAM) { LaunchApplication(new LampApplication()); } },
 //    {"Player",img_mainmenu_player_bits, img_mainmenu_player_height, img_mainmenu_player_width, [](IGNORE_PARAM) { LaunchApplication(new BLEPlayerApplication()); } },
 //    {"Peers",img_mainmenu_chat_bits, img_mainmenu_chat_height, img_mainmenu_chat_width, [](IGNORE_PARAM) { LaunchApplication(new PeerApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) { LaunchApplication(new AboutApplication()); } },

@@ -1,13 +1,24 @@
 /* GIMP RGB C-Source image dump (testImageBackground.c) */
+#include "resources.hpp"
 
-static const struct {
+/*
+{
   unsigned int 	 width;
   unsigned int 	 height;
-  unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
+  unsigned int 	 bytes_per_pixel; // 2:RGB16, 3:RGB, 4:RGBA 
   unsigned char	 pixel_data[586 * 300 * 2 + 1];
-} testImageBackground = {
+} 
+
+{
+  unsigned int 	 width;
+  unsigned int 	 height;
+  unsigned int 	 bytes_per_pixel;
+  unsigned char	 pixel_data[586 * 300 * 2 + 1];
+} 
+*/
+const GimpImage testImageBackground = {
   586, 300, 2,
-  "\000\000\000\000\000\000\000\000\000\000\040\000A\010A\010\040\000!\000A\010\000\000\040\000\040\000\000\000!\000A\010A\010"
+  (unsigned char*)"\000\000\000\000\000\000\000\000\000\000\040\000A\010A\010\040\000!\000A\010\000\000\040\000\040\000\000\000!\000A\010A\010"
   "A\010\000\000\040\000!\000\040\000a\010\040\000\000\000\000\000\000\000\000\000!\000A\010A\010\000\000\000\000A\010A\010"
   "B\010\244\020\011B%!A\010\040\000@\010@\010A\010\000\000\000\000\040\000b\010\202\020!\000\000\000\040"
   "\000\000\000A\010A\010B\010b\010KJ\363{\012:\203\010\202\010A\010\344\040\250\071b\020!\010"

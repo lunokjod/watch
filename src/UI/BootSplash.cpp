@@ -36,7 +36,7 @@
 
 #include "UI.hpp"
 #include "../app/LogView.hpp" // lLog shit
-#include "../static/img_lunokiot_logo.xbm" // sputnik image
+#include "../resources.hpp"
 
 extern TTGOClass *ttgo; // ttgo lib
 

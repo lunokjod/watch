@@ -25,8 +25,7 @@
 #include "../UI/controls/Image.hpp"
 #include "../UI/controls/Text.hpp"
 #include "../UI/UI.hpp"
-#include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../static/img_landscape_200.c"
+#include "../resources.hpp"
 #include "../system/Datasources/kvo.hpp"
 #include "../system/SystemEvents.hpp"
 #include <ArduinoNvs.h>
@@ -65,15 +64,15 @@ void LuIRotateApplication::CleanPush(TFT_eSprite * frame, float angle) {
     //tft->fillScreen(TFT_BLACK);
     int16_t minX,minY,maxX,maxY;
     frame->getRotatedBounds(angle,&minX,&minY,&maxX,&maxY);
-    frame->pushRotated(angle);
     // up
-    tft->fillRect(0,0,canvas->width(),minY,TFT_BLACK);
+    tft->fillRect(0,0,canvas->width(),minY+1,TFT_BLACK);
     // left
     tft->fillRect(0,minY,minX,maxY,TFT_BLACK);
     // down
     tft->fillRect(0,maxY,canvas->width(),canvas->height()-maxY,TFT_BLACK);
     // right
-    tft->fillRect(maxX,minY,canvas->width()-maxX,maxY-minY,TFT_BLACK);
+    tft->fillRect(maxX,minY,canvas->width()-maxX,maxY,TFT_BLACK);
+    frame->pushRotated(angle);
 
     delay(frameDelay);
 }

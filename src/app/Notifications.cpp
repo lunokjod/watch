@@ -26,10 +26,9 @@
 #include "LogView.hpp"
 #include "../system/Datasources/database.hpp"
 #include "../system/Application.hpp"
-#include "../static/img_trash_32.xbm"
-// App icons
-#include "../../static/img_icon_telegram_48.c"
-#include "../../static/img_icon_mail_48.c"
+
+#include "resources.hpp"
+
 
 extern void NotificationLogSQL(const char * sqlQuery);
 volatile int NotificationDbID=-1;

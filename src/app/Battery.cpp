@@ -20,11 +20,9 @@
 #include <Arduino.h>
 #include "Battery.hpp"
 #include "../lunokiot_config.hpp"
-#include "../static/img_battery_empty_160.c"
-#include "../static/img_power_64.xbm"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
-
+#include "../resources.hpp"
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
 

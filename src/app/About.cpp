@@ -74,7 +74,7 @@ Dependency Graph
 const char *AboutBoxTextEmptyLine="";
 
 const char *AboutBoxTextLogo=":lIoT:";
-#include "../../static/lunokiot_logo_32.xbm" // sputnik image for AboutBoxTextLogo
+#include "../resources.hpp"
 
 const char *AboutBoxTextScroll[] = {
     "A short time ago",

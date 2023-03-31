@@ -32,25 +32,36 @@ Text::~Text() {
     }
 }
 
-Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : text(what),color(color),swapColor(swap),font(font) {
+Text::Text(char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : color(color),swapColor(swap),textSize(tsize),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
+    SetText(what);
+}
+void Text::SetText(char * what) {
+    this->text=what;
+    if ( nullptr != imageTextCanvas ) {
+        imageTextCanvas->deleteSprite();
+        delete imageTextCanvas;
+    } 
     imageTextCanvas=new TFT_eSprite(tft);
     imageTextCanvas->setColorDepth(1);
     imageTextCanvas->setFreeFont(font);
     imageTextCanvas->setTextColor(TFT_WHITE);
-    imageTextCanvas->setTextSize(tsize);
+    imageTextCanvas->setTextSize(textSize);
     imageTextCanvas->setTextDatum(TL_DATUM);
     int16_t width = imageTextCanvas->textWidth(text);
-    int16_t height = imageTextCanvas->fontHeight()*tsize;
+    int16_t height = imageTextCanvas->fontHeight()*textSize;
     imageTextCanvas->createSprite(width,height);
     imageTextCanvas->fillSprite(TFT_BLACK);
     imageTextCanvas->drawString(text,0,0);
+    dirty=true;
+
 }
-
 void Text::Refresh(bool direct,bool swap) {
-    //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
+    //lLog("Text %p Refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
     Control::Refresh(direct,swap);
-
+    uint16_t backColor = Drawable::MASK_COLOR;
+    if ( useBackground ) { backColor=backgroundColor; }
+    canvas->fillSprite(backColor);
     uint16_t fcolor = color;
     if ( swap ) { fcolor = ByteSwap(color);
         /*

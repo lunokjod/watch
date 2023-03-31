@@ -1,13 +1,7 @@
-/* GIMP RGB C-Source image dump (img_alpha_18.c) */
-
-static const struct {
-  unsigned int 	 width;
-  unsigned int 	 height;
-  unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
-  unsigned char	 pixel_data[18 * 18 * 2 + 1];
-} img_alpha_18 = {
+#include "../src/resources.hpp"
+const GimpImage img_alpha_18 = {
   18, 18, 2,
-  "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
+  (const unsigned char*)"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
   "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
   "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"
   "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377"

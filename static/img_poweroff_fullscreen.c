@@ -1,13 +1,7 @@
-/* GIMP RGB C-Source image dump (img_poweroff_fullscreen.c) */
-
-static const struct PROGMEM {
-  unsigned int 	 width;
-  unsigned int 	 height;
-  unsigned int 	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
-  unsigned char	 pixel_data[240 * 240 * 2 + 1];
-} img_poweroff_fullscreen = PROGMEM {
+#include "resources.hpp"
+const GimpImage img_poweroff_fullscreen = {
   240, 240, 2,
-  "\206\061\206\061\206\061\206\061\206\061\206\061\206\061\206\061e)\206\061\206\061"
+  (const unsigned char *)"\206\061\206\061\206\061\206\061\206\061\206\061\206\061\206\061e)\206\061\206\061"
   "e)\206\061\206\061\206\061\206\061\206\061\206\061e)\206\061e)\206\061\206\061\206"
   "\061\206\061\206\061\206\061e)\206\061\206\061\206\061e)\206\061\206\061\206\061\206"
   "\061\206\061e)\206\061\206\061\206\061\206\061\206\061\206\061\206\061\206\061\206"

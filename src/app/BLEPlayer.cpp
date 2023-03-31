@@ -24,9 +24,7 @@
 #include <Arduino_JSON.h>
 #include "BLEPlayer.hpp"
 #include "../system/SystemEvents.hpp"
-#include "../static/img_play_48.xbm"
-//#include "../static/img_reload_48.xbm"
-#include "../static/img_pause_48.xbm"
+#include "../resources.hpp"
 #include "../system/Network/BLE.hpp"
 char *MusicState=nullptr;
 bool MusicStateDbObtained=false;

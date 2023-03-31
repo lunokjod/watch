@@ -27,8 +27,7 @@
 #include "../UI/controls/View3D/View3D.hpp"
 #include "../UI/controls/Buffer.hpp"
 
-#include "../../static/img_backscreen_24.xbm" // system back screen image
-#include "../../static/testImageBackground.c"
+#include "../resources.hpp"
 
 using namespace LuI;
 

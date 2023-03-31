@@ -27,7 +27,7 @@
 #include <cmath>
 #include <esp_task_wdt.h>
 #include "../UI/base/Widget.hpp"
-//#include "../static/plane3DSample.c"
+
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 
@@ -847,7 +847,6 @@ myNormalsNumber = 190;
 
 
     lAppLog("Loading mesh...\n");
-    //#include "../static/meshData.c"
 
     //facesToRender=(OrderedFace3D*)ps_calloc(myFacesNumber,sizeof(OrderedFace3D));
     facesToRender=(OrderedFace3D*)calloc(myFacesNumber,sizeof(OrderedFace3D));
