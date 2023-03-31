@@ -30,9 +30,12 @@ namespace LuI {
     class Paginator: public Control {
         protected:
             uint8_t pages;
+            bool useBackground=false;
+            uint16_t backgroundColor; 
         public:
             int16_t border=5;
             uint8_t current;
+            void SetBackgroundColor(uint16_t color) { backgroundColor=color; useBackground=true; }
             Paginator(IN uint8_t pages);
             void SetCurrent(IN uint8_t page) { current=page; dirty=true; }
             void Refresh(bool direct=false,bool swap=false) override;

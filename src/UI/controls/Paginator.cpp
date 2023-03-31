@@ -29,10 +29,14 @@ Paginator::Paginator(IN uint8_t pages): pages(pages) {
 void Paginator::Refresh(bool direct,bool swap) {
     //lLog("Paginator %p Refresh swap: %s\n",this,(swap?"true":"false"));
     Control::Refresh(direct,swap);
+    uint16_t backColor = Drawable::MASK_COLOR;
+    if ( useBackground ) { backColor=backgroundColor; }
+    canvas->fillSprite(backColor);
     const uint8_t dotRad = 5;
     const int16_t separator=(width-(border*2))/pages;
     for(int pn=0;pn<=pages;pn++) {
-        canvas->fillCircle(border+(pn*separator),height/2,dotRad,TFT_DARKGREY);
+        if ( pn < current ) { canvas->drawCircle(border+(pn*separator),height/2,dotRad,TFT_DARKGREY); }
+        else if ( pn >= current ) { canvas->fillCircle(border+(pn*separator),height/2,dotRad,TFT_DARKGREY); }
     }
     canvas->fillCircle(border+(current*separator),height/2,dotRad,TFT_WHITE);
 
