@@ -205,11 +205,36 @@ void TakeScreenShootSound() {
 
 }
 
-// reduce the number of colors for move images internally
-
+TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform) {
+    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    if ( nullptr == canvas ) { return nullptr; }
+    canvas->setColorDepth(view->getColorDepth());
+    if ( nullptr == canvas->createSprite(view->width(), view->height()) ) {
+        delete canvas;
+        return nullptr;
+    }
+    for(int y=0;y<view->height();y++) {
+        for(int x=0;x<view->width();x++) {
+            uint16_t color = view->readPixel(x,y);
+            int nx=transform.a*x+transform.b*y;
+            int ny=transform.c*x+transform.d*y;
+            canvas->drawPixel(nx,ny,color);
+        }
+    }
+    return canvas;
+    /*
+    for (let i = 0; i < shape.pts.length; i++) {
+        let pt = shape.pts[i]
+        let x = a * pt[0] + b * pt[1]
+        let y = c * pt[0] + d * pt[1]
+        newPts.push({ x: x, y: y })
+    }*/
+}
 // reduce the size of image using float value (0.5=50%)
 TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     if ( nullptr == view ) { return nullptr; }
+    //if ( 1.0 == divisor ) { return DuplicateSprite(view); } // is the same!!! @TODO Duplicate invert colors :( invert colors
+    if ( divisor < 0.0 ) { divisor=0.05; } // dont allow 0 scale
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 

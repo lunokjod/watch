@@ -25,11 +25,19 @@
 #include <esp_event_base.h>
 #include <functional> // callbacks 
 typedef std::function<void (void* payload)> UICallback; // repeated declaration
+typedef std::function<void (void* payload,void* payload2)> UICallback2;
 
 extern TFT_eSPI * tft;
 //extern TTGOClass *ttgo; // ttgo lib
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
+
+typedef struct {
+    float a;
+    float b;
+    float c;
+    float d;
+} TransformationMatrix;
 
 /*
  * Use template to get the theme colors
@@ -148,8 +156,9 @@ void ScreenSleep();
 void ScreenWake();
 
 //TFT_eSprite *TakeScreenShoot();
-TFT_eSprite *DuplicateSprite(TFT_eSprite *view);
-TFT_eSprite *ScaleSprite(TFT_eSprite *view, float divisor = 0.5);
+TFT_eSprite * DuplicateSprite(TFT_eSprite *view);
+TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform);
+TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor = 0.5);
 TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int16_t maxH);
 
 #endif
