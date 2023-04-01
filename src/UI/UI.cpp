@@ -206,6 +206,7 @@ void TakeScreenShootSound() {
 }
 
 TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform) {
+    // https://www.mathsisfun.com/algebra/matrix-transform.html
     TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
     if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());

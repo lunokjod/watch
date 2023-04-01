@@ -79,7 +79,7 @@ LuiExperimentApplication::LuiExperimentApplication() {
     // here the main view
 
     view3DTest1 = new LuI::View3D();
-    view3DTest1->RenderMode=LuI::View3D::RENDER::NODRAW;
+    view3DTest1->RenderMode=LuI::View3D::RENDER::NODRAW; // only will show bilboards, not meshes
 
     LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&CubeMesh);
     // render into bilboards
@@ -88,8 +88,8 @@ LuiExperimentApplication::LuiExperimentApplication() {
     billboardRaw->createSprite(img_asteroid0_64.width,img_asteroid0_64.height);
     billboardRaw->pushImage(0,0,img_asteroid0_64.width,img_asteroid0_64.height,(const uint16_t *)img_asteroid0_64.pixel_data);
     myMesh3d->bilboard=billboardRaw; // view take care of destruct on leave :)
-    myMesh3d->Rotate({random(0,359),random(0,359),random(0,359)});
-    myMesh3d->Scale(3.0);
+    myMesh3d->Rotate({(float)random(0,359),(float)random(0,359),(float)random(0,359)});
+    myMesh3d->Scale(4);
     myMesh3d->Translate({0,0,0});
 
     LuI::Mesh3D * myMesh3d2 = new LuI::Mesh3D(&CubeMesh);
@@ -99,8 +99,8 @@ LuiExperimentApplication::LuiExperimentApplication() {
     billboardRaw2->createSprite(img_asteroid1_64.width,img_asteroid1_64.height);
     billboardRaw2->pushImage(0,0,img_asteroid1_64.width,img_asteroid1_64.height,(const uint16_t *)img_asteroid1_64.pixel_data);
     myMesh3d2->bilboard=billboardRaw2; // view take care of destruct on leave :)
-    myMesh3d2->Rotate({random(0,359),random(0,359),random(0,359)});
-    myMesh3d2->Scale(4.0);
+    myMesh3d2->Rotate({(float)random(0,359),(float)random(0,359),(float)random(0,359)});
+    myMesh3d2->Scale(4);
     myMesh3d2->Translate({0,0,0});
 
 
@@ -111,13 +111,13 @@ LuiExperimentApplication::LuiExperimentApplication() {
     billboardRaw3->createSprite(img_asteroid2_64.width,img_asteroid2_64.height);
     billboardRaw3->pushImage(0,0,img_asteroid2_64.width,img_asteroid2_64.height,(const uint16_t *)img_asteroid2_64.pixel_data);
     myMesh3d3->bilboard=billboardRaw3; // view take care of destruct on leave :)
-    myMesh3d3->Rotate({random(0,359),random(0,359),random(0,359)});
-    myMesh3d3->Scale(3.5);
+    myMesh3d3->Rotate({(float)random(0,359),(float)random(0,359),(float)random(0,359)});
+    myMesh3d3->Scale(4);
     myMesh3d3->Translate({0,0,0});
 
     view3DTest1->SetGlobalLocation({ 0,0,0 });
     //view3DTest1->SetGlobalRotation({ 0,0,0 });
-    view3DTest1->SetGlobalScale({ 0.6,0.6,0.6 });
+    view3DTest1->SetGlobalScale({ 1,1,1 });
     view3DTest1->viewBackgroundColor=TFT_BLACK; //ThCol(background);
     view3DTest1->stepCallbackParam=view3DTest1;
     view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
@@ -128,13 +128,14 @@ LuiExperimentApplication::LuiExperimentApplication() {
         scale+=scaleIncrement;
         if ( scale > 3.5 ) { scaleIncrement*=-1; }
         else if ( scale < 0.1 ) { scaleIncrement*=-1; }
-        //self->mesh[0]->Scale(scale);
-        rotationDeg-=1.5;
+        rotationDeg-=3;
         if ( rotationDeg > 359 ) { rotationDeg-=360; }
         else if ( rotationDeg < 0 ) { rotationDeg+=360; }
         self->SetGlobalRotation({0,rotationDeg,0});
         //view3DTest1->SetGlobalLocation({ 0,0,0 });
-        //self->mesh[0]->Rotate({0,rotationDeg*-1,0});
+        self->mesh[0]->RelativeRotate({0,3.3,0});
+        self->mesh[1]->RelativeRotate({3.3,0,0});
+        self->mesh[2]->RelativeRotate({0,0,3.3});
         self->dirty=true; // mark control as dirty (forces redraw)
     };
     
@@ -166,6 +167,34 @@ LuiExperimentApplication::LuiExperimentApplication() {
             delete newCopy;
         }*/
     };
+    view3DTest1->renderCallbackParam=view3DTest1;
+    view3DTest1->renderCallback=[&](void * obj, void *canvas) {
+        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
+        TFT_eSprite * myView=(TFT_eSprite *)canvas; // recover the view3DTest0
+        static int16_t pixelSize = 1;
+        static int16_t incrementPixel=1;
+        pixelSize+=incrementPixel;
+        if ( pixelSize >= 24 ) { incrementPixel*=-1; }
+        else if ( pixelSize <= 1 ) { incrementPixel*=-1; }
+        //lLog("pixelSize: %d incrementPixel: %d\n",pixelSize,incrementPixel);
+        for(int y=0;y<myView->height();y+=pixelSize) {
+            for(int x=0;x<myView->width();x+=pixelSize) {
+                uint16_t color = myView->readPixel(x,y);
+                for(int cy=0;cy<pixelSize;cy++){
+                    int32_t fy=y+cy;
+                    if ( fy >= myView->height() ) { break; }
+                    for(int cx=0;cx<pixelSize;cx++){
+                        int32_t fx=x+cx;
+                        if ( fx >= myView->width() ) { break; }
+                        int16_t colorN = myView->readPixel(fx,fy);
+                        color = tft->alphaBlend(128,color,colorN);
+                    }
+                }
+                myView->fillRect(x,y,pixelSize,pixelSize,ColorSwap(color));
+            }
+        }
+    };
+
 
     view3DTest1->AddMesh3D(myMesh3d);
     view3DTest1->AddMesh3D(myMesh3d2);

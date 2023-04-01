@@ -202,30 +202,60 @@ void View3D::DrawBilboards() {
         Range dimensions = MeshDimensions;
         int16_t realRange = (dimensions.Max-dimensions.Min);
         for(uint16_t i=0;i< currentMesh->meshVertexCount;i++) {
-            Point2D pix;
-            GetProjection(currentMesh->vertexCache[i],pix);
-            int16_t deep = GetDeepForPoint(currentMesh->vertexCache[i]);
+            Vertex3D currVertex = currentMesh->vertexCache[i];
+
+            int16_t deep = GetDeepForPoint(currVertex);
             int16_t realDeep = deep-dimensions.Min;
-            float scaleValue = float(realDeep)/float(realRange);
-            if ( scaleValue < 0.1 ) { continue; } //scaleValue=0.1; } // don't render at all
+            float scaleValue = float(realDeep)/float(realRange); // scale from zbuffer
+            /*
+            // scale relative to mesh? maybe isn't good approach
+            Vertex3D vertexScale = currentMesh->MeshScale;
+            float vertexMedian = (vertexScale.x+vertexScale.y+vertexScale.z)/3;
+            scaleValue=(scaleValue+vertexMedian)/2;
+            */
+            if ( scaleValue < 0.2 ) { continue; } // don't render at all
+
+            Point2D pix;
+            GetProjection(currVertex,pix);
+            int32_t controlX = (centerX+pix.x);
+            int32_t controlY = (centerY+pix.y);
+            if ( controlX < 0 ) { continue; }
+            else if ( controlY < 0 ) { continue; }
+            else if ( controlX > canvas->width() ) { continue; }
+            else if ( controlY > canvas->height() ) { continue; }
+
+
             TFT_eSprite * scaledBillboard = ScaleSprite(currentMesh->bilboard,scaleValue);
+            /* @TODO rotate bilboard from mesh rotation
+            Angle3D currentRotation = currentMesh->MeshRotation;
+            int16_t minX,minY,maxX,maxY;
+            scaledBillboard->getRotatedBounds(currentRotation.y,&minX,&minY,&maxX,&maxY);
+            TFT_eSprite * scaledAndRotated= new TFT_eSprite(tft);
+            scaledAndRotated->setColorDepth(16);
+            scaledAndRotated->setSwapBytes(true);
+            scaledAndRotated->createSprite(maxX,maxY);
+            scaledBillboard->pushRotated(scaledAndRotated,(int16_t)currentRotation.y);
+            scaledBillboard->deleteSprite();
+            delete scaledBillboard;
+            */
+            TFT_eSprite * scaledAndRotated=scaledBillboard;
             //lLog("SCALE: %p -> %p %f\n",currentMesh->bilboard,scaledBillboard,scaleValue);
-            int32_t fx = (centerX+pix.x)-(scaledBillboard->width()/2);
-            int32_t fy = (centerY+pix.y)-(scaledBillboard->height()/2);
+            int32_t fx = controlX-(scaledAndRotated->width()/2);
+            int32_t fy = controlY-(scaledAndRotated->height()/2);
 
             int16_t colorWeight = 255*scaleValue;
             if ( colorWeight>255 ) { colorWeight=255; }
 
-            for(int y=0;y<scaledBillboard->height();y++) {
-                for(int x=0;x<scaledBillboard->width();x++) {
-                    uint16_t color = ByteSwap(scaledBillboard->readPixel(x,y));
+            for(int y=0;y<scaledAndRotated->height();y++) {
+                for(int x=0;x<scaledAndRotated->width();x++) {
+                    uint16_t color = ByteSwap(scaledAndRotated->readPixel(x,y));
                     if ( TFT_GREEN == color ) { continue; }
                     uint16_t deepColor = tft->alphaBlend(colorWeight,color,TFT_BLACK);
                     canvas->drawPixel(fx+x,fy+y,deepColor);
                 }
             }
-            scaledBillboard->deleteSprite();
-            delete scaledBillboard;
+            scaledAndRotated->deleteSprite();
+            delete scaledAndRotated;
         }
     }
 }
@@ -361,8 +391,10 @@ void View3D::Render() {
 
     // render here!
     //lUILog("Rendering...\n");
-    canvas->fillSprite(viewBackgroundColor);
-    if ( nullptr != beforeRenderCallback ) { (beforeRenderCallback)(beforeRenderCallbackParam,canvas); }
+    
+    // fill with background color or do beforerender callback?
+    if ( nullptr == beforeRenderCallback ) { canvas->fillSprite(viewBackgroundColor); }
+    else { (beforeRenderCallback)(beforeRenderCallbackParam,canvas); }
 
     for(int i=0;i<orderdFaces;i++) {
         // don't render faces from bilboards
