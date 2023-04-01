@@ -30,31 +30,19 @@
 #include "../UI/controls/Buffer.hpp"
 #include "LogView.hpp"
 
-
-#include "../system/Datasources/kvo.hpp"
-#include "../system/SystemEvents.hpp"
-#include <ArduinoNvs.h>
-
+#include "../UI/UI.hpp"
 #include <LilyGoWatch.h>
 using namespace LuI;
 #include "../resources.hpp"
 
-
-const IconMenuEntry TestIcons[] = {
-//    {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
-    {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](IGNORE_PARAM) {  } },
-    {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, [](IGNORE_PARAM) {  } },
-    {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) {  } },
-    {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](IGNORE_PARAM) {  } },
-    {"Stopwatch",img_mainmenu_stopwatch_bits, img_mainmenu_stopwatch_height, img_mainmenu_stopwatch_width, [](IGNORE_PARAM) {  } },
-    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](IGNORE_PARAM) {  } },
-    {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](IGNORE_PARAM) {  } },
-    {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](IGNORE_PARAM) {  } },
-    {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](IGNORE_PARAM) {  } },
-    {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) {  } },
-};
-int TestIconsNumber = sizeof(TestIcons) / sizeof(TestIcons[0])-1;
-
+//#include "../../static/img_textureTest3d.c"
+#include "../../static/img_asteroid0_64.c"
+#include "../../static/img_asteroid1_64.c"
+#include "../../static/img_asteroid2_64.c"
+#include "../../static/img_brokenMoon.c"
+//#include "../../tool/Circle.c"
+//#include "../../tool/Bilboards.c"
+extern TFT_eSPI * tft;
 
 LuiExperimentApplication::LuiExperimentApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
@@ -88,11 +76,106 @@ LuiExperimentApplication::LuiExperimentApplication() {
     bottomButtonContainer->AddChild(backButton,0.35);
     bottomButtonContainer->AddChild(nullptr,1.65);
 
-    IconMenu * testMenu0 = new IconMenu(LuI_Horizonal_Layout,TestIconsNumber,TestIcons);
-    //IconMenu * testMenu1 = new IconMenu(LuI_Vertical_Layout,TestIconsNumber,TestIcons);
-    viewContainer->AddChild(testMenu0);
-    //viewContainer->AddChild(testMenu1);
+    // here the main view
+
+    view3DTest1 = new LuI::View3D();
+    view3DTest1->RenderMode=LuI::View3D::RENDER::NODRAW;
+
+    LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&CubeMesh);
+    // render into bilboards
+    TFT_eSprite * billboardRaw = new TFT_eSprite(tft);
+    billboardRaw->setColorDepth(16);
+    billboardRaw->createSprite(img_asteroid0_64.width,img_asteroid0_64.height);
+    billboardRaw->pushImage(0,0,img_asteroid0_64.width,img_asteroid0_64.height,(const uint16_t *)img_asteroid0_64.pixel_data);
+    myMesh3d->bilboard=billboardRaw; // view take care of destruct on leave :)
+    myMesh3d->Rotate({random(0,359),random(0,359),random(0,359)});
+    myMesh3d->Scale(3.0);
+    myMesh3d->Translate({0,0,0});
+
+    LuI::Mesh3D * myMesh3d2 = new LuI::Mesh3D(&CubeMesh);
+    // render into bilboards
+    TFT_eSprite * billboardRaw2 = new TFT_eSprite(tft);
+    billboardRaw2->setColorDepth(16);
+    billboardRaw2->createSprite(img_asteroid1_64.width,img_asteroid1_64.height);
+    billboardRaw2->pushImage(0,0,img_asteroid1_64.width,img_asteroid1_64.height,(const uint16_t *)img_asteroid1_64.pixel_data);
+    myMesh3d2->bilboard=billboardRaw2; // view take care of destruct on leave :)
+    myMesh3d2->Rotate({random(0,359),random(0,359),random(0,359)});
+    myMesh3d2->Scale(4.0);
+    myMesh3d2->Translate({0,0,0});
+
+
+    LuI::Mesh3D * myMesh3d3 = new LuI::Mesh3D(&CubeMesh);
+    // render into bilboards
+    TFT_eSprite * billboardRaw3 = new TFT_eSprite(tft);
+    billboardRaw3->setColorDepth(16);
+    billboardRaw3->createSprite(img_asteroid2_64.width,img_asteroid2_64.height);
+    billboardRaw3->pushImage(0,0,img_asteroid2_64.width,img_asteroid2_64.height,(const uint16_t *)img_asteroid2_64.pixel_data);
+    myMesh3d3->bilboard=billboardRaw3; // view take care of destruct on leave :)
+    myMesh3d3->Rotate({random(0,359),random(0,359),random(0,359)});
+    myMesh3d3->Scale(3.5);
+    myMesh3d3->Translate({0,0,0});
+
+    view3DTest1->SetGlobalLocation({ 0,0,0 });
+    //view3DTest1->SetGlobalRotation({ 0,0,0 });
+    view3DTest1->SetGlobalScale({ 0.6,0.6,0.6 });
+    view3DTest1->viewBackgroundColor=TFT_BLACK; //ThCol(background);
+    view3DTest1->stepCallbackParam=view3DTest1;
+    view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
+        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
+        static float rotationDeg=359;
+        static float scale=0.1;
+        static float scaleIncrement=0.05;
+        scale+=scaleIncrement;
+        if ( scale > 3.5 ) { scaleIncrement*=-1; }
+        else if ( scale < 0.1 ) { scaleIncrement*=-1; }
+        //self->mesh[0]->Scale(scale);
+        rotationDeg-=1.5;
+        if ( rotationDeg > 359 ) { rotationDeg-=360; }
+        else if ( rotationDeg < 0 ) { rotationDeg+=360; }
+        self->SetGlobalRotation({0,rotationDeg,0});
+        //view3DTest1->SetGlobalLocation({ 0,0,0 });
+        //self->mesh[0]->Rotate({0,rotationDeg*-1,0});
+        self->dirty=true; // mark control as dirty (forces redraw)
+    };
+    
+    view3DTest1->beforeRenderCallbackParam=view3DTest1;
+    view3DTest1->beforeRenderCallback=[&](void * obj, void *canvas){  // called when data refresh is done (before render)
+        LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
+        TFT_eSprite * myView=(TFT_eSprite *)canvas; // recover the view3DTest0
+        myView->setSwapBytes(true);
+        //int32_t px = (self->width-img_brokenMoon.width)/2;
+        //int32_t py = (self->height-img_brokenMoon.height)/2;
+        myView->pushImage(0,0,img_brokenMoon.width,img_brokenMoon.height,(const uint16_t *)img_brokenMoon.pixel_data);
+        myView->setSwapBytes(false);
+        /* shar demo... */
+        /*
+        TransformationMatrix whatChange;
+        whatChange.a=0.91796;
+        whatChange.b=1;
+        whatChange.c=1.5;
+        whatChange.d=0.22516;
+        TFT_eSprite * newCopy = ShearSprite(myView, whatChange);
+        if ( nullptr != newCopy ){
+            for(int y=0;y<newCopy->height();y++) {
+                for(int x=0;x<newCopy->width();x++) {
+                    uint16_t color = newCopy->readPixel(x,y);
+                    myView->drawPixel(x,y,color);
+                }
+            }
+            newCopy->deleteSprite();
+            delete newCopy;
+        }*/
+    };
+
+    view3DTest1->AddMesh3D(myMesh3d);
+    view3DTest1->AddMesh3D(myMesh3d2);
+    view3DTest1->AddMesh3D(myMesh3d3);
+    viewContainer->AddChild(view3DTest1);
+
     AddChild(screen);
     directDraw=true; // allow controls to direct redraw itself instead of push whole view Sprite
     // Thats all! the app is running
+}
+
+LuiExperimentApplication::~LuiExperimentApplication() {
 }

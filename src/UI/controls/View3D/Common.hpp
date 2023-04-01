@@ -121,6 +121,7 @@ namespace LuI {
         int16_t alpha=0;
         uint16_t faceColor=0;
         bool smooth=0;
+        uint16_t fromMesh=0;
     } OrderedFace3D;
 
 };

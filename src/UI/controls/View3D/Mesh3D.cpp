@@ -106,6 +106,12 @@ Mesh3D::~Mesh3D() {
     if ( nullptr != normal ) { free(normal); }
     if ( nullptr != vertexCache ) { free(vertexCache); }
     if ( nullptr != normalCache ) { free(normalCache); }
+
+    if ( nullptr != bilboard ) {
+        bilboard->deleteSprite();
+        delete bilboard;
+        bilboard=nullptr;
+    }
     lLog("Mesh: %p destroyed\n",this);
 }
 

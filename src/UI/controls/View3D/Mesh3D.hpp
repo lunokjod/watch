@@ -39,6 +39,8 @@ namespace LuI {
             Vertex3D *vertexCache=nullptr;
             Face3D * faceCache=nullptr;
             Normal3D * normalCache=nullptr;
+            //bool bilboarded=false;
+            TFT_eSprite * bilboard=nullptr;
 
             bool dirty=true;
             static bool _CacheIsFilled;

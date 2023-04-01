@@ -41,7 +41,7 @@ namespace LuI {
             void ThreadedRender();
             bool renderLoop=true;
             
-            typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK} RENDER;
+            typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK, NODRAW} RENDER;
             RENDER RenderMode = FULL; 
             uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
             OrderedFace3D * meshOrderedFaces= { nullptr };
@@ -75,6 +75,14 @@ namespace LuI {
             // events
             UICallback stepCallback=nullptr; // where call when tap
             void * stepCallbackParam=nullptr; // what pass to callbac
+            void DrawBilboards();
+            
+            UICallback2 beforeRenderCallback=nullptr; // where call when tap
+            void * beforeRenderCallbackParam=nullptr; // what pass to callbac
+
+            UICallback2 renderCallback=nullptr; // where call when tap
+            void * renderCallbackParam=nullptr; // what pass to callbac
+
 
             TFT_eSprite * GetCanvas();
             /*

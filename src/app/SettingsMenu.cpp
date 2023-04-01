@@ -23,7 +23,7 @@
 #include "../lunokiot_config.hpp"
 
 #include "../static/img_mainmenu_back.xbm"
-#include "MainMenu.hpp"
+#include "LuIMainMenu.hpp"
 #include "../static/img_mainmenu_options.xbm"
 #include "Settings.hpp"
 #include "../static/img_mainmenu_battery.xbm"

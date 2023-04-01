@@ -193,6 +193,42 @@ void View3D::ThreadedRender() {
 }
 // <======================================
 
+void View3D::DrawBilboards() {    
+    for(uint16_t m=0;m<MAX_MESHES;m++) { // iterate meshes
+        Mesh3D * currentMesh = mesh[m];
+        if ( nullptr == currentMesh ) { continue; }
+        if ( nullptr == currentMesh->bilboard ) { continue; } // is bilboarded one?
+        // get the vertex coords
+        Range dimensions = MeshDimensions;
+        int16_t realRange = (dimensions.Max-dimensions.Min);
+        for(uint16_t i=0;i< currentMesh->meshVertexCount;i++) {
+            Point2D pix;
+            GetProjection(currentMesh->vertexCache[i],pix);
+            int16_t deep = GetDeepForPoint(currentMesh->vertexCache[i]);
+            int16_t realDeep = deep-dimensions.Min;
+            float scaleValue = float(realDeep)/float(realRange);
+            if ( scaleValue < 0.1 ) { continue; } //scaleValue=0.1; } // don't render at all
+            TFT_eSprite * scaledBillboard = ScaleSprite(currentMesh->bilboard,scaleValue);
+            //lLog("SCALE: %p -> %p %f\n",currentMesh->bilboard,scaledBillboard,scaleValue);
+            int32_t fx = (centerX+pix.x)-(scaledBillboard->width()/2);
+            int32_t fy = (centerY+pix.y)-(scaledBillboard->height()/2);
+
+            int16_t colorWeight = 255*scaleValue;
+            if ( colorWeight>255 ) { colorWeight=255; }
+
+            for(int y=0;y<scaledBillboard->height();y++) {
+                for(int x=0;x<scaledBillboard->width();x++) {
+                    uint16_t color = ByteSwap(scaledBillboard->readPixel(x,y));
+                    if ( TFT_GREEN == color ) { continue; }
+                    uint16_t deepColor = tft->alphaBlend(colorWeight,color,TFT_BLACK);
+                    canvas->drawPixel(fx+x,fy+y,deepColor);
+                }
+            }
+            scaledBillboard->deleteSprite();
+            delete scaledBillboard;
+        }
+    }
+}
 
 void View3D::Render() {
     if( xSemaphoreTake( renderMutex, portMAX_DELAY) != pdTRUE )  { return; }
@@ -230,8 +266,8 @@ void View3D::Render() {
 
     // get mesh dimensions and ranges
     for(uint16_t m=0;m<MAX_MESHES;m++) {
-        if ( nullptr == mesh[m] ) { continue; }
         Mesh3D * currentMesh=mesh[m];
+        if ( nullptr == currentMesh ) { continue; }
         for(uint16_t i=0;i<currentMesh->meshVertexCount;i++) {
             Point2D pix;
             GetProjection(currentMesh->vertexCache[i],pix);
@@ -247,8 +283,10 @@ void View3D::Render() {
     size_t orderdFaces=0;
     while ( currentDepth < MaxDeep ) {
         for(uint16_t m=0;m<MAX_MESHES;m++) {
-            if ( nullptr == mesh[m] ) { continue; }
             Mesh3D * currentMesh=mesh[m];
+            if ( nullptr == currentMesh ) { continue; }
+            //if ( nullptr != currentMesh->bilboard ) { continue; } // ignore bilboarded meshes
+
             for(uint16_t i=0;i<currentMesh->meshFaceCount;i++) {
                 Face3D & face = currentMesh->faceCache[i];
                 Vertex3D & p0 = currentMesh->vertexCache[face.vertex[0]];
@@ -290,7 +328,7 @@ void View3D::Render() {
                     else if ( ( tp2x > 0 ) && ( tp2x < width ) ) { isVisible = true; }
                     else if ( ( tp2y > 0 ) && ( tp2y < height ) ) { isVisible = true; }
                     if ( false == isVisible ) { continue; }
-
+            
                     const uint16_t zcolor = tft->color565(alpha,alpha,alpha);
                     float distNormal = NormalFacing(currentMesh->normalCache[i]);
                     // discard from normals if no FULL (no backface normals needed)
@@ -308,6 +346,7 @@ void View3D::Render() {
                     meshOrderedFaces[orderdFaces].alpha=alpha;
                     meshOrderedFaces[orderdFaces].faceColor=face.color;
                     meshOrderedFaces[orderdFaces].smooth=face.smooth;
+                    meshOrderedFaces[orderdFaces].fromMesh=m; // save the mesh offset
                     orderdFaces++;
                     if ( orderdFaces >= MAX_ORDERED_FACES ) {
                         lUILog("View3D %p MAX_ORDERED_FACES\n");
@@ -323,8 +362,12 @@ void View3D::Render() {
     // render here!
     //lUILog("Rendering...\n");
     canvas->fillSprite(viewBackgroundColor);
+    if ( nullptr != beforeRenderCallback ) { (beforeRenderCallback)(beforeRenderCallbackParam,canvas); }
+
     for(int i=0;i<orderdFaces;i++) {
-    //for(int i=orderdFaces-1;i>=0;i--) {
+        // don't render faces from bilboards
+        if ( mesh[meshOrderedFaces[i].fromMesh]->bilboard ) { continue; }
+
         int32_t tp0x = meshOrderedFaces[i].p0x;
         int32_t tp0y = meshOrderedFaces[i].p0y;
         int32_t tp1x = meshOrderedFaces[i].p1x;
@@ -343,8 +386,7 @@ void View3D::Render() {
             finalColor = tft->alphaBlend(mixProp,nColor,finalColor);
         } else { // normal is negated, must be darken
             finalColor = tft->alphaBlend(192,TFT_BLACK,finalColor);
-        }
-
+        }        
         if ( RENDER::FULL == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
         } else if ( RENDER::FLAT == RenderMode ) {
@@ -355,8 +397,10 @@ void View3D::Render() {
             canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_WHITE);
         } else if ( RENDER::MASK == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_WHITE);
-        }
+        } // else NODRAW
     }
+    DrawBilboards();
+    if ( nullptr != renderCallback ) { (renderCallback)(renderCallbackParam,canvas); }
     unsigned long tRender=millis()-bRender;
     uint16_t fps = 1;
     if ( tRender > 0 ) { fps = 1000/tRender; }

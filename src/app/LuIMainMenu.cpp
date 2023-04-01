@@ -50,7 +50,7 @@ using namespace LuI;
 
 const IconMenuEntry LuIMainMenuItems[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
-//    {"LuI",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
+    {"LuI",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](IGNORE_PARAM) { LaunchApplication(new BrightnessApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, [](IGNORE_PARAM) { LaunchApplication(new NotificacionsApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); } },
@@ -74,7 +74,7 @@ LuIMainMenuApplication::LuIMainMenuApplication() {
     screen->AddChild(paginator,0.5);
     mainMenu = new IconMenu(LuI_Horizonal_Layout,LuIMainMenuItemsNumber,LuIMainMenuItems);
     screen->AddChild(mainMenu,2.0);
-    entryText=new Text("",TFT_WHITE,false,1,&FreeMonoBold18pt7b);
+    entryText=new Text((char*)"",TFT_WHITE,false,1,&FreeMonoBold18pt7b);
     entryText->SetBackgroundColor(TFT_BLACK);
     screen->AddChild(entryText,0.5);
     mainMenu->pageCallbackParam=this;
