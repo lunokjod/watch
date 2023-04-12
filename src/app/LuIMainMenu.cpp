@@ -43,14 +43,18 @@
 #include "Settings.hpp"
 #include "Calendar.hpp"
 #include "LuiExperiment.hpp"
-
+#include "LuITest.hpp"
+//#include "LuIDemoRubiks.hpp"
+#include "ScreenTest.hpp"
 #include "LogView.hpp"
 
 using namespace LuI;
-
 const IconMenuEntry LuIMainMenuItems[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
-    {"LuI",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
+    {"LuITest",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuITestApplication()); } },
+//    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },
+////    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
+    {"LuIDemos",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](IGNORE_PARAM) { LaunchApplication(new BrightnessApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, [](IGNORE_PARAM) { LaunchApplication(new NotificacionsApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); } },
@@ -67,12 +71,12 @@ int LuIMainMenuItemsNumber = sizeof(LuIMainMenuItems) / sizeof(LuIMainMenuItems[
 LuIMainMenuApplication::LuIMainMenuApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
     canvas->fillSprite(TFT_BLACK);
-    Container * screen = new Container(LuI_Horizonal_Layout,3); // up pager, center icon, bottom text
+    Container * screen = new Container(LuI_Horizontal_Layout,3); // up pager, center icon, bottom text
     paginator=new Paginator(LuIMainMenuItemsNumber);
     paginator->border=40;
     paginator->SetBackgroundColor(TFT_BLACK);
     screen->AddChild(paginator,0.5);
-    mainMenu = new IconMenu(LuI_Horizonal_Layout,LuIMainMenuItemsNumber,LuIMainMenuItems);
+    mainMenu = new IconMenu(LuI_Horizontal_Layout,LuIMainMenuItemsNumber,LuIMainMenuItems);
     screen->AddChild(mainMenu,2.0);
     entryText=new Text((char*)"",TFT_WHITE,false,1,&FreeMonoBold18pt7b);
     entryText->SetBackgroundColor(TFT_BLACK);
