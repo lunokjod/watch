@@ -18,7 +18,7 @@
 //
 
 #include "../UI/AppLuITemplate.hpp"
-#include "LuIBufferTest.hpp"
+#include "LuiTwoApps.hpp"
 #include "../UI/controls/base/Container.hpp"
 #include "../UI/controls/Button.hpp"
 #include "../UI/controls/Text.hpp"
@@ -26,12 +26,20 @@
 #include "../UI/controls/XBM.hpp"
 #include "../UI/controls/View3D/View3D.hpp"
 #include "../UI/controls/Buffer.hpp"
-
+#include "LogView.hpp"
 #include "../resources.hpp"
+
+#include "Steps.hpp"
+#include "WatchfaceDot.hpp"
 
 using namespace LuI;
 
-LuIBufferTestApplication::LuIBufferTestApplication() {
+LuiTwoAppsApplication::~LuiTwoAppsApplication() {
+    if ( nullptr != app0 ) { delete app0; }
+    if ( nullptr != app1 ) { delete app1; }
+}
+
+LuiTwoAppsApplication::LuiTwoAppsApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
     // fill view with background color
     canvas->fillSprite(ThCol(background)); // use theme colors
@@ -42,7 +50,7 @@ LuIBufferTestApplication::LuIBufferTestApplication() {
     Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,2);
 
     // main view space
-    Container * viewContainer = new Container(LuI_Vertical_Layout,1);
+    Container * viewContainer = new Container(LuI_Vertical_Layout,2);
 
     // if use quota, all the slot quotas must sum equal the total number of elements
     // example: default quota in 2 controls result 50/50% of view space with 1.0 of quota everyone (2.0 in total)
@@ -66,18 +74,40 @@ LuIBufferTestApplication::LuIBufferTestApplication() {
     bottomButtonContainer->AddChild(nullptr,1.65);
 
 
-    // Main view here
-    Buffer * testBuffer=new Buffer(testImageBackground.width,testImageBackground.height);
-    // get the buffer
-    TFT_eSprite * buffImg = testBuffer->GetBuffer();
-    // fill with awesome image :D
-    buffImg->pushImage(0,0,testImageBackground.width,testImageBackground.height,(uint16_t *)testImageBackground.pixel_data);
-
-    viewContainer->AddChild(testBuffer);
-    testBuffer->dirty=true;
+    // app 0 on buffer0
+    app0 = new StepsApplication();
+    testBuffer0=new Buffer(TFT_WIDTH,TFT_HEIGHT);
+    viewContainer->AddChild(testBuffer0);
+    // app 1 on buffer1
+    app1 = new WatchfaceDotApplication();
+    testBuffer1=new Buffer(TFT_WIDTH,TFT_HEIGHT);
+    viewContainer->AddChild(testBuffer1);
 
 
     AddChild(screen);
     directDraw=true; // allow controls to direct redraw itself instead of push whole view Sprite
     // Thats all! the app is running
+}
+
+
+bool LuiTwoAppsApplication::Tick() {
+    TemplateLuIApplication::EventHandler();
+    bool mustPush0 = app0->Tick();
+    if ( mustPush0 ) {
+        TFT_eSprite * buffImg0 = testBuffer0->GetBuffer();
+        app0->canvas->setPivot(0,0);
+        buffImg0->setPivot(0,0);
+        app0->canvas->pushRotated(buffImg0,0);
+        testBuffer0->dirty=true;
+    }
+    bool mustPush1 = app1->Tick();
+    if ( mustPush1 ) {
+        TFT_eSprite * buffImg1 = testBuffer1->GetBuffer();
+        app1->canvas->setPivot(0,0);
+        buffImg1->setPivot(0,0);
+        app1->canvas->pushRotated(buffImg1,0);
+        testBuffer1->dirty=true;
+    }
+
+    return false; // is directDraw application
 }

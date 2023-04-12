@@ -38,9 +38,9 @@ namespace LuI {
             //@TODO this must be thinked a little bit more
             static TaskHandle_t renderTask;
             static SemaphoreHandle_t renderMutex;
-            void ThreadedRender();
-            bool renderLoop=true;
-            
+            //void ThreadedRender();
+            //bool renderLoop=true;
+            uint16_t MaskColor=TFT_WHITE;
             typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK, NODRAW} RENDER;
             RENDER RenderMode = FULL; 
             uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
@@ -55,12 +55,12 @@ namespace LuI {
             Vertex3D GetGlobalScale() { return GlobalScale; }
             void SetGlobalLocation(IN Vertex3D globLocation );
             void SetGlobalScale(IN float scale );
-            void SetGlobalScale(IN Vertex3D globRotation );
+            void SetGlobalScale(IN Vertex3D globScale );
             void SetGlobalRotation(INOUT Angle3D globRotation );
 
             Mesh3D * mesh[MAX_MESHES] = { nullptr };
             void AddMesh3D(INOUT Mesh3D * meshObject);
-            void Refresh(bool direct=false,bool swap=false) override;
+            void Refresh(bool direct=false) override;
             void Render();
             void GetProjection(INOUT Vertex3D &vertex, OUT Point2D &pixel );
             void UpdateClipWith(INOUT Clipping2D &clip, IN int16_t x,IN int16_t y);
@@ -73,51 +73,19 @@ namespace LuI {
             ~View3D();
             View3D();
             // events
-            UICallback stepCallback=nullptr; // where call when tap
-            void * stepCallbackParam=nullptr; // what pass to callbac
+            UICallback stepCallback=nullptr; // where call when engine do a step (geometry)
+            void * stepCallbackParam=nullptr; // what pass to callback
             void DrawBilboards();
             
-            UICallback2 beforeRenderCallback=nullptr; // where call when tap
-            void * beforeRenderCallbackParam=nullptr; // what pass to callbac
+            UICallback2 beforeRenderCallback=nullptr; // where call when all is clear to start
+            void * beforeRenderCallbackParam=nullptr; // what pass to callback
 
-            UICallback2 renderCallback=nullptr; // where call when tap
-            void * renderCallbackParam=nullptr; // what pass to callbac
+            UICallback2 renderCallback=nullptr; // where call when render is done
+            void * renderCallbackParam=nullptr; // what pass to callback
 
 
-            TFT_eSprite * GetCanvas();
-            /*
-            Vertex3D LocationMesh[MAX_MESHES] = {{0,0,0}};
-            Angle3D RotationMesh[MAX_MESHES] = {{0,0,0}};
-            Vertex3D ScaleMesh[MAX_MESHES] = {{1,1,1}};
+            //TFT_eSprite * GetCanvas();
 
-            //Vertex3D ScaleMesh = { 1,1,1 }; // current scale
-            //Angle3D RotationMesh = { 0,0,0 }; // current rotation
-            //Vertex3D FinalScaleMesh = { 1,1,1 }; // desired scale
-            //Angle3D FinalRotationMesh = { 0,0,0 }; // desired rotation
-            //void RotateStep();
-            void ScaleStep();
-            void Rotate(INOUT Vertex3D & point, IN Angle3D & rotationAngles);
-            void Rotate(INOUT Normal3D & point, IN Angle3D & rotationAngles);
-            void Rotate(IN Angle3D &rotationAngles, bool save=true);
-            void Rotate(IN Angle3D &rotationAngles,int16_t meshId,bool save=true);
-            void Scale(IN Vertex3D & axes);
-            void Scale(INOUT Vertex3D & point, IN Vertex3D & axes);
-            void Translate(IN Vertex3D & translate,int16_t meshNumber=0,bool save=true);
-            void Translate(INOUT Vertex3D & point, IN Vertex3D & translate);
-            void TranslateMesh(IN Vertex3D & translate,int16_t meshNumber);
-            int16_t AddModel(IN Mesh3DDescriptor * meshData);
-            static bool CacheIsFilled;
-            static float AngleSinCache[360];
-            static float AngleCosCache[360];
-            static float AngleCache[360];
-            static const double sq2;
-            static const double sq6;
-            */
-/*
-            float angleSinCache[360] = { 0.0 };
-float angleCosCache[360] = { 0.0 };
-float angleCache[360] = { 0.0 };
-*/
     };
 };
 

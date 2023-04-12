@@ -26,9 +26,9 @@ using namespace LuI;
 Paginator::Paginator(IN uint8_t pages): pages(pages) {
 }
 
-void Paginator::Refresh(bool direct,bool swap) {
+void Paginator::Refresh(bool direct) {
     //lLog("Paginator %p Refresh swap: %s\n",this,(swap?"true":"false"));
-    Control::Refresh(direct,swap);
+    Control::Refresh(direct);
     uint16_t backColor = Drawable::MASK_COLOR;
     if ( useBackground ) { backColor=backgroundColor; }
     canvas->fillSprite(backColor);

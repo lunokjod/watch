@@ -35,7 +35,7 @@
 DebugLuIApplication::DebugLuIApplication() {
     directDraw=false; // buffer start
     // defines the root container
-    //LuI::Container *screen = new LuI::Container(LuI_Horizonal_Layout,1);
+    //LuI::Container *screen = new LuI::Container(LuI_Horizontal_Layout,1);
 
     // defines the body
     LuI::Container * body = new LuI::Container(LuI_Vertical_Layout,1);
@@ -46,12 +46,12 @@ DebugLuIApplication::DebugLuIApplication() {
     canvas->fillSprite(ThCol(background)); // use theme colors
 
     LuI::Container * mainDiv = new LuI::Container(LuI_Vertical_Layout,3);
-    LuI::Container * btnPanelRight = new LuI::Container(LuI_Horizonal_Layout,5);
-    LuI::Container * btnPanelLeft = new LuI::Container(LuI_Horizonal_Layout,5);
+    LuI::Container * btnPanelRight = new LuI::Container(LuI_Horizontal_Layout,5);
+    LuI::Container * btnPanelLeft = new LuI::Container(LuI_Horizontal_Layout,5);
     LuI::Container * myTopButtonSet = new LuI::Container(LuI_Vertical_Layout,4);
     LuI::Container * myBottomButtonSet = new LuI::Container(LuI_Vertical_Layout,4);
 
-    LuI::Container * centerDiv = new LuI::Container(LuI_Horizonal_Layout,3);
+    LuI::Container * centerDiv = new LuI::Container(LuI_Horizontal_Layout,3);
 
     view3DTest1 = new LuI::View3D();
     LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&CubeMesh);
@@ -100,14 +100,14 @@ DebugLuIApplication::DebugLuIApplication() {
     
 
 
-    LuI::Button * backButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * backButton=new LuI::Button(LuI_Horizontal_Layout,1);
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); };
     LuI::XBM * backIcon = new LuI::XBM(img_back_16_width,img_back_16_height,img_back_16_bits);
     backButton->AddChild(backIcon);
     myTopButtonSet->AddChild(backButton);
 
 
-    LuI::Button * CameraButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * CameraButton=new LuI::Button(LuI_Horizontal_Layout,1);
     CameraButton->tapCallbackParam=this;
     CameraButton->tapCallback=[](void * obj){
         DebugLuIApplication * view = (DebugLuIApplication*)obj;
@@ -118,7 +118,7 @@ DebugLuIApplication::DebugLuIApplication() {
     myTopButtonSet->AddChild(CameraButton);
 
 
-    LuI::Button * fixedCameraButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * fixedCameraButton=new LuI::Button(LuI_Horizontal_Layout,1);
     fixedCameraButton->tapCallbackParam=this;
     fixedCameraButton->tapCallback=[](void * obj){
         DebugLuIApplication * view = (DebugLuIApplication*)obj;
@@ -128,7 +128,7 @@ DebugLuIApplication::DebugLuIApplication() {
     fixedCameraButton->AddChild(landscapeIcon);
     myTopButtonSet->AddChild(fixedCameraButton);
 
-    LuI::Button * ShowLightButton=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowLightButton=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowLightButton->tapCallbackParam=this;
     ShowLightButton->tapCallback=[](void * obj){
         DebugLuIApplication * view = (DebugLuIApplication*)obj;
@@ -141,7 +141,7 @@ DebugLuIApplication::DebugLuIApplication() {
 
 
 
-    LuI::Button * ShowWireframeFlat=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowWireframeFlat=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowWireframeFlat->tapCallbackParam=view3DTest1;
     ShowWireframeFlat->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
@@ -153,7 +153,7 @@ DebugLuIApplication::DebugLuIApplication() {
     btnPanelLeft->AddChild(ShowWireframeFlat);
 
 
-    LuI::Button * ShowMask=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowMask=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowMask->tapCallbackParam=view3DTest1;
     ShowMask->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
@@ -165,7 +165,7 @@ DebugLuIApplication::DebugLuIApplication() {
     ShowMask->AddChild(alphaIcon);
     btnPanelLeft->AddChild(ShowMask);
 
-    LuI::Button * ShowWireframe=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowWireframe=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowWireframe->tapCallbackParam=view3DTest1;
     ShowWireframe->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
@@ -176,7 +176,7 @@ DebugLuIApplication::DebugLuIApplication() {
     ShowWireframe->AddChild(wireColorIcon);
     btnPanelLeft->AddChild(ShowWireframe);
 
-    LuI::Button * ShowFlat=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowFlat=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowFlat->tapCallbackParam=view3DTest1;
     ShowFlat->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;
@@ -187,7 +187,7 @@ DebugLuIApplication::DebugLuIApplication() {
     ShowFlat->AddChild(flatColorIcon);
     btnPanelLeft->AddChild(ShowFlat);
 
-    LuI::Button * ShowFull=new LuI::Button(LuI_Horizonal_Layout,1);
+    LuI::Button * ShowFull=new LuI::Button(LuI_Horizontal_Layout,1);
     ShowFull->tapCallbackParam=view3DTest1;
     ShowFull->tapCallback=[](void * obj){
         LuI::View3D * view = (LuI::View3D*)obj;

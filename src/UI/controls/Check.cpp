@@ -27,8 +27,8 @@ Check::~Check() {
     lLog("Check %p destroyed!\n",this);
 }
 
-Check::Check(bool swap) {
-    lLog("Created Check on %p swap: %s\n",this,(swap?"true":"false"));
+Check::Check() {
+    lLog("Created Check on %p\n",this);
     // enable tap callback
     tapCallbackParam=this; // what pass to callback
     tapCallback = [](void * obj){ // where call when tap
@@ -37,9 +37,17 @@ Check::Check(bool swap) {
     };
 }
 
-void Check::Refresh(bool direct,bool swap) {
-    //lLog("Text %p Refresh swap: %s\n",this,(swap?"true":"false"));
-    Control::Refresh(direct,swap);
+void Check::SetCheck(bool check) {
+    if ( checked != check ) {
+        checked=check;
+        dirty=true;
+    }
+}
+
+void Check::Refresh(bool direct) {
+    //lLog("Check %p Refresh \n",this);
+    if ( false == dirty ) { return; }
+    Control::Refresh();
 
     //centered
     int32_t centerX=canvas->width()/2;
@@ -128,9 +136,11 @@ void Check::Refresh(bool direct,bool swap) {
         canvas->fillCircle(20,32,dotSize,dotColor); // decorative dot remarks false
     }
     */
+   if ( direct ) { canvas->pushSprite(clipX,clipY,Drawable::MASK_COLOR); }
 }
-
 /*
+// must be called to call my ::Refresh()
 void Check::EventHandler() {
     Control::EventHandler();
-}*/
+}
+*/

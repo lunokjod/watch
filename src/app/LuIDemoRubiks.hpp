@@ -17,29 +17,16 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
+#ifndef __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_RUBIKS__
+#define __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_RUBIKS__
 
-#include "../../lunokIoT.hpp"
-#include "base/Control.hpp"
-#include <LilyGoWatch.h>
+#include "../UI/AppLuITemplate.hpp"
+#include "../UI/controls/View3D/View3D.hpp"
 
-namespace LuI {
-
-    // defines root of any screen element
-    class XBM: public Control {
-        protected:
-            const uint32_t imageWidth=0;
-            const uint32_t imageHeight=0;
-            const unsigned char *imageData=nullptr;
-            TFT_eSprite * imageCanvas=nullptr;
-            uint16_t color=TFT_WHITE;
-        public:
-            ~XBM();
-            XBM(IN uint32_t width, IN uint32_t height, IN unsigned char *data);
-            void Refresh(bool direct=false) override;
-    };
+class LuIExperimentRubiksApplication : public TemplateLuIApplication {
+    public:
+        LuIExperimentRubiksApplication();
+        const char *AppName() override { return "LuI Demo Rubik's cube"; };
 };
-
 
 #endif

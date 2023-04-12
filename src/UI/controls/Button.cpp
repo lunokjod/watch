@@ -26,15 +26,17 @@
 #include "../UI.hpp"
 using namespace LuI;
 
-void Button::Refresh(bool direct,bool swap) {
-    lLog("Button %p refresh canvas at %p swap: %s dirty: %s direct: %s\n",this,canvas,(swap?"true":"false"),(dirty?"true":"false"),(direct?"true":"false"));
+void Button::Refresh(bool direct) {
+    lLog("Button %p refresh canvas dirty: %s direct: %s\n",this,(dirty?"true":"false"),(direct?"true":"false"));
     // I'm not dirty, but called refresh, send the refresh to children trying to resolve
     if ( false == dirty ) {
-        Container::Refresh(direct,swap); // notify to childs
+        Container::Refresh(direct); // notify to childs
         return;
+
     }
     // redraw me, I'm dirty
-    Control::Refresh(false,swap); // refresh my own canvas
+    Control::Refresh();
+
     if ( decorations ) {
         // draw button here!
         const int32_t radius = 8;
@@ -46,11 +48,12 @@ void Button::Refresh(bool direct,bool swap) {
         uint16_t shadowColor = tft->alphaBlend(64,finalColor,TFT_BLACK);
 
         // swap colors if needed
-        if (( false == directDraw ) && ( false == swap )) {
+        /*
+        if ( false == direct ) {
             finalColor = ByteSwap(finalColor);
             brightColor = ByteSwap(brightColor);
             shadowColor = ByteSwap(shadowColor);
-        }
+        }*/
 
         // bright
         canvas->drawRoundRect( 0, 0,canvas->width()-1,canvas->height()-1,radius,brightColor);
@@ -61,13 +64,16 @@ void Button::Refresh(bool direct,bool swap) {
         // bright when pressed
         if ( lastTouched ) { faceColor=tft->alphaBlend(192,finalColor,TFT_WHITE); }
         canvas->fillRoundRect(1,1,canvas->width()-2,canvas->height()-2,radius,faceColor);
+    } else { // no decoration, fill with color?
+        //canvas->fillSprite(color);
     }
-    // Get children appearance
-    Container::Refresh(false,(!swap));
-
+    // Get children appearance, don't allow to push direct
     if ( direct ) {
-        canvas->pushSprite(clipX,clipY);
+        Container::Refresh(false);
+        canvas->pushSprite(clipX,clipY, Drawable::MASK_COLOR);
+        return;
     }
+    Container::Refresh(direct);
 }
 
 Button::Button(LuI_Layout layout, size_t childs,bool decorations,uint16_t color): Container(layout,childs),decorations(decorations),color(color) {
@@ -76,8 +82,8 @@ Button::Button(LuI_Layout layout, size_t childs,bool decorations,uint16_t color)
 }
 
 void Button::EventHandler() {
-    // I'm a button, react about events
+    // I'm a button, react about events (tapCallback mostly)
     Control::EventHandler();
-    // Butt... I'm a container also, send the word to children :)
+    // Butt... I'm also a container, 'share the word' x'D with children :)
     Container::EventHandler();
 }

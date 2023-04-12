@@ -34,18 +34,6 @@ extern bool UILongTapOverride;
 TemplateLuIApplication::TemplateLuIApplication() {
     UILongTapOverride=true;
     directDraw=false;
-    /*
-    //AddChild();
-    Tick();
-    canvas->fillSprite(ThCol(background)); // use theme colors
-    if (nullptr != child ) {
-        TFT_eSprite * content = child->GetCanvas();
-        content->setPivot(0,0);
-        canvas->setPivot(0,0);
-        content->pushRotated(canvas,0,Drawable::MASK_COLOR);
-    }
-    directDraw=true; // push to TFT beyond this point
-    */
 }
 
 TemplateLuIApplication::~TemplateLuIApplication() {
@@ -63,12 +51,14 @@ bool TemplateLuIApplication::Tick() {
 }
 
 void TemplateLuIApplication::AddChild(INOUT LuI::Container *control ) {
+    lAppLog("ADDCHILD BEGIN CONSTRUCTOR HERE\n");
     child=control;
     child->SetSize(canvas->width(),canvas->height());
-    child->Refresh(false);
-    // push the first image
+    child->Refresh(false); // force get first frame
+    // push to my canvas
     TFT_eSprite * currentView = child->GetCanvas();
     currentView->setPivot(0,0);
     canvas->setPivot(0,0);
     currentView->pushRotated(canvas,0,Drawable::MASK_COLOR); // push to app view
+    lAppLog("ADDCHILD END CONSTRUCTOR HERE\n");
 }

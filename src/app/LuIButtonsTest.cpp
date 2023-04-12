@@ -36,7 +36,7 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     canvas->fillSprite(ThCol(background)); // use theme colors
 
     /// create root container with two slots horizontal
-    Container * screen = new Container(LuI_Horizonal_Layout,2);
+    Container * screen = new Container(LuI_Horizontal_Layout,2);
     // bottom buttons container
     Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,2);
 
@@ -64,9 +64,9 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     bottomButtonContainer->AddChild(nullptr,1.7);
 
     // creates the two columns of sample buttons
-    Container * leftContainer= new Container(LuI_Horizonal_Layout,3);
+    Container * leftContainer= new Container(LuI_Horizontal_Layout,3);
     viewContainer->AddChild(leftContainer);
-    Container * rightContainer= new Container(LuI_Horizonal_Layout,3);
+    Container * rightContainer= new Container(LuI_Horizontal_Layout,3);
     viewContainer->AddChild(rightContainer);
 
     // fill viewContainer with different type of buttons
@@ -126,6 +126,7 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
         currentRot.y+=5;
         currentRot.z+=5;
         self->SetGlobalRotation(currentRot);
+        self->dirty=true;
     };
     sparklesView->AddMesh3D(sparkles);
     Button3d->AddChild(sparklesView,0.8);

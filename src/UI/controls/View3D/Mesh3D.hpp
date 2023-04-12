@@ -32,6 +32,7 @@ namespace LuI {
             Vertex3D MeshLocation = { 0,0,0 };
             Angle3D MeshRotation = { 0,0,0 };
             Vertex3D MeshScale = { 1,1,1 };
+
             uint16_t meshVertexCount=0;
             uint16_t meshFaceCount=0;
             
@@ -39,8 +40,11 @@ namespace LuI {
             Vertex3D *vertexCache=nullptr;
             Face3D * faceCache=nullptr;
             Normal3D * normalCache=nullptr;
-            //bool bilboarded=false;
+
+            // bilboard related, @note add bilboard disables rendering of mesh
             TFT_eSprite * bilboard=nullptr;
+            uint16_t bilboardMaskColor=TFT_GREEN;
+            float bilboardMultiplier=1.0;
 
             bool dirty=true;
             static bool _CacheIsFilled;

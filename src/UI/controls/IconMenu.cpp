@@ -35,7 +35,7 @@ IconMenu::~IconMenu() {
     }
 }
 
-IconMenu::IconMenu(LuI_Layout layout, int menuEntries,const IconMenuEntry *optionList,bool swap) 
+IconMenu::IconMenu(LuI_Layout layout, int menuEntries,const IconMenuEntry *optionList) 
                         : layout(layout), numEntries(menuEntries), entries(optionList) {
     lLog("IconMenu %p created!\n",this);
 
@@ -48,8 +48,8 @@ IconMenu::IconMenu(LuI_Layout layout, int menuEntries,const IconMenuEntry *optio
     outTouchCallbackParam=this;
     outTouchCallback = [](void * obj){
         IconMenu * self = (IconMenu *)obj;
-        //lLog("OUT\n");
         self->alreadyChanged=false;
+        //lLog("OUT\n");
     };
 
     tapCallbackParam=this;
@@ -59,9 +59,9 @@ IconMenu::IconMenu(LuI_Layout layout, int menuEntries,const IconMenuEntry *optio
     };
     dragCallbackParam=this;
     dragCallback = [&](void * obj){
+        //lLog("DRAG\n");
         IconMenu * self = (IconMenu *)obj;
         if ( self->alreadyChanged ) { return; }
-
         int32_t originalDisplace=self->displacement;
         int32_t maxDrag = self->width *0.5;//-(self->width/3);
         self->displacement = touchDragVectorX;
@@ -96,46 +96,58 @@ void IconMenu::Launch() {
     (currentEntry.callback)(this);
 }
 
-void IconMenu::Refresh(bool direct,bool swap) {
-    //lLog("Buffer %p refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
+void IconMenu::Refresh(bool direct) {
+    lLog("IconMenu %p refresh direct: %s dirty: %s\n",this,(direct?"true":"false"),(dirty?"true":"false"));
     if ( false == dirty ) { return; } // I'm clean!!
-    Control::Refresh(direct,swap);
+    Control::Refresh(false);
 
     IconMenuEntry currentEntry = entries[selectedEntry];
     if ( false == touched ) { displacement=0; }
 
-    canvas->fillSprite(TFT_BLACK);
+    canvas->fillSprite(backgroundColor);
     int16_t offX=((width-currentEntry.width)/2);
     int16_t offY=((height-currentEntry.height)/2);
-    if ( LuI_Horizonal_Layout == layout ) { offX+=displacement; }
+    if ( LuI_Horizontal_Layout == layout ) { offX+=displacement; }
     else { offY+=displacement; }
     float colourPercent;
-    if ( LuI_Horizonal_Layout == layout ) { colourPercent=width/2; }
+    if ( LuI_Horizontal_Layout == layout ) { colourPercent=width/2; }
     else { colourPercent=height/2; }
     colourPercent=(abs(displacement)/colourPercent);
     if ( colourPercent > 1.0 ) { colourPercent = 1.0; }
     else if ( colourPercent < 0.1 ) { colourPercent = 0.1; }
-    uint16_t iconColor=tft->alphaBlend(255*colourPercent,TFT_BLACK,TFT_WHITE);
+    uint16_t iconColor=tft->alphaBlend(255*colourPercent,backgroundColor,TFT_WHITE);
 
-    uint16_t iconNewColor=tft->alphaBlend(255*colourPercent,TFT_WHITE,TFT_BLACK);
+    uint16_t iconNewColor=tft->alphaBlend(255*colourPercent,TFT_WHITE,backgroundColor);
 
     if ( displacement > 0 ) {
         // show last?
-        if ( selectedEntry-1 < 0 ) { return; }
-        IconMenuEntry nextEntry = entries[selectedEntry-1];
-        int16_t noffX=((width-nextEntry.width)/2);
-        int16_t noffY=((height-nextEntry.height)/2);
-        canvas->drawXBitmap(noffX,noffY,nextEntry.imagebits,nextEntry.width,nextEntry.height,iconNewColor);
-
+        if ( selectedEntry-1 > -1 ) {
+            IconMenuEntry nextEntry = entries[selectedEntry-1];
+            int16_t noffX=((width-nextEntry.width)/2);
+            int16_t noffY=((height-nextEntry.height)/2);
+            canvas->drawXBitmap(noffX,noffY,nextEntry.imagebits,nextEntry.width,nextEntry.height,iconNewColor);
+        }
     } else if ( displacement < 0 ) {
         // show next?
-        if ( selectedEntry+1 > numEntries ) { return; }
-        IconMenuEntry nextEntry = entries[selectedEntry+1];
-        int16_t noffX=((width-nextEntry.width)/2);
-        int16_t noffY=((height-nextEntry.height)/2);
-        canvas->drawXBitmap(noffX,noffY,nextEntry.imagebits,nextEntry.width,nextEntry.height,iconNewColor);
+        if ( selectedEntry+1 < numEntries ) {
+            IconMenuEntry nextEntry = entries[selectedEntry+1];
+            int16_t noffX=((width-nextEntry.width)/2);
+            int16_t noffY=((height-nextEntry.height)/2);
+            canvas->drawXBitmap(noffX,noffY,nextEntry.imagebits,nextEntry.width,nextEntry.height,iconNewColor);
+        }
+    } else {
+        if ( showCatalogue ) { //@TODO show other icons alongside like a "tabs"
+            // horizontal
+            /*
+            if ( selectedEntry-1 > -1 ) {
+                IconMenuEntry nextEntry = entries[selectedEntry-1];
+                int16_t noffX=((width-nextEntry.width)/2);
+                int16_t noffY=((height-nextEntry.height)/2);
+                canvas->drawXBitmap(noffX,noffY,nextEntry.imagebits,nextEntry.width,nextEntry.height,iconColor);
+            }*/
+        }
     }
     canvas->drawXBitmap(offX,offY,currentEntry.imagebits,currentEntry.width,currentEntry.height,iconColor);
-
+    if ( direct ) { canvas->pushSprite(clipX,clipY); }
     //lLog("currentEntry: %u/%u '%s' displace: %d WIDTH: %d\n", selectedEntry,numEntries,currentEntry.name,displacement,width);
 }

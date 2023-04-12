@@ -38,14 +38,23 @@ namespace LuI {
             TFT_eSprite * barVertical=nullptr;
             int16_t fadeDownBarsValue=255; // used to fadedown bars effect
         public:
+            UICallback bufferPushCallback=nullptr; // where call when tap
+            void * bufferPushCallbackParam=nullptr; // what pass to callback
             //bool hideBars=true;
             bool showBars=true;
             int32_t offsetX=0;
             int32_t offsetY=0;
             ~Buffer();
             TFT_eSprite * GetBuffer() { return imageCanvas; }
-            Buffer(IN uint32_t width, IN uint32_t height, bool swap=false);
-            void Refresh(bool direct=false,bool swap=false) override;
+            void SetBuffer(TFT_eSprite *newBuffer) {
+                TFT_eSprite * temp = imageCanvas;
+                imageCanvas=newBuffer;
+                temp->deleteSprite();
+                delete temp;
+            }
+            void DrawBars();
+            Buffer(IN uint32_t width, IN uint32_t height);
+            void Refresh(bool direct=false) override;
     };
 };
 

@@ -135,5 +135,7 @@ extern const GimpImage img_poweroff_fullscreen;
 
 #include "../src/UI/controls/View3D/Common.hpp"
 extern const LuI::Mesh3DDescriptor CubeMesh;
+extern const LuI::Mesh3DDescriptor PlaneMesh;
+extern const LuI::Mesh3DDescriptor SuperPlaneMesh;
 extern const LuI::Mesh3DDescriptor BackButtonMesh;
 #endif

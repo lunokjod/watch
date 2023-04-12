@@ -31,7 +31,7 @@ XBM::~XBM() {
     }
 }
 
-XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap) :
+XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data) :
                             imageWidth(width),imageHeight(height),imageData(data) {
     lLog("XBM %p created!\n",this);
     imageCanvas=new TFT_eSprite(tft);
@@ -43,15 +43,15 @@ XBM::XBM(IN uint32_t width,IN uint32_t height, IN unsigned char *data, bool swap
     //imageCanvas->pushImage(0,0,width,height, (uint16_t *)data);
 }
 
-void XBM::Refresh(bool direct,bool swap) {
-    lLog("XBM %p refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
-    if (( dirty )||(nullptr==canvas)) { Control::Refresh(direct,swap); }
+void XBM::Refresh(bool direct) {
+    lLog("XBM %p refresh direct: %s\n",this,(direct?"true":"false"));
+    if (( dirty )||(nullptr==canvas)) { Control::Refresh(direct); }
     //centered
     //canvas->setPivot(canvas->width()/2,canvas->height()/2);
     //imageCanvas->setPivot(imageCanvas->width()/2,imageCanvas->height()/2);
     //imageCanvas->pushRotated(canvas,0,TFT_BLACK);
     uint16_t fcolor = color;
-    if ( false == swap ) {
+    if ( false == direct ) {
         fcolor = ByteSwap(color);
     }
     // center image

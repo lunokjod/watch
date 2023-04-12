@@ -17,26 +17,34 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
+#ifndef __LUNOKIOT__CONTROL_DRAW_CLASS__
+#define __LUNOKIOT__CONTROL_DRAW_CLASS__
 
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
 #include <LilyGoWatch.h>
+#include "base/Control.hpp"
 
 namespace LuI {
 
     // defines root of any screen element
-    class XBM: public Control {
+    class Draw: public Control {
         protected:
             const uint32_t imageWidth=0;
             const uint32_t imageHeight=0;
-            const unsigned char *imageData=nullptr;
             TFT_eSprite * imageCanvas=nullptr;
-            uint16_t color=TFT_WHITE;
         public:
-            ~XBM();
-            XBM(IN uint32_t width, IN uint32_t height, IN unsigned char *data);
+            UICallback drawPushCallback=nullptr; // where call when tap
+            void * drawPushCallbackParam=nullptr; // what pass to callback
+            ~Draw();
+            TFT_eSprite * GetBuffer() { return imageCanvas; }
+            void SetBuffer(TFT_eSprite *newBuffer) {
+                TFT_eSprite * temp = imageCanvas;
+                imageCanvas=newBuffer;
+                temp->deleteSprite();
+                delete temp;
+            }
+            Draw(IN uint32_t width, IN uint32_t height);
             void Refresh(bool direct=false) override;
     };
 };

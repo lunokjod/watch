@@ -29,16 +29,12 @@ namespace LuI {
         protected:
             bool checked=false;
         public:
-            void SetCheck(bool check=true) {
-                checked=check;
-//                if ( checked != check ) {
-//                }
-            }
+            void SetCheck(bool check=true);
             bool GetCheck() { return checked; }
             void Switch() { SetCheck((!checked)); }
             ~Check();
-            Check(bool swap=false);
-            void Refresh(bool direct=false,bool swap=false) override;
+            Check();
+            void Refresh(bool direct=false) override;
             //void EventHandler() override;
     };
 };

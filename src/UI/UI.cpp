@@ -42,7 +42,7 @@
 #include "AudioOutputI2S.h"
 #endif
 
-#include "../app/TaskSwitcher.hpp"
+//#include "../app/TaskSwitcher.hpp"
 
 #include "../system/Application.hpp"
 #include "../lunokIoT.hpp"
@@ -344,8 +344,9 @@ TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
     if ( nullptr == screenShootCanvas ) { return nullptr; }
     screenShootCanvas->setColorDepth(view->getColorDepth());
     screenShootCanvas->createSprite(view->width(),view->height());
-    screenShootCanvas->fillSprite(CanvasWidget::MASK_COLOR);
-    view->pushRotated(screenShootCanvas,0,CanvasWidget::MASK_COLOR);
+    //screenShootCanvas->fillSprite(CanvasWidget::MASK_COLOR);
+    view->setPivot(view->width()/2,view->height()/2);
+    view->pushRotated(screenShootCanvas,0);//,CanvasWidget::MASK_COLOR);
     return screenShootCanvas;
 }
 
@@ -458,7 +459,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                     
                     if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
                         LaunchWatchface(); // return to user configured watchface
-                    } else { LaunchApplication(new TaskSwitcher()); }
+                    } // else { LaunchApplication(new TaskSwitcher()); }
                     xSemaphoreGive( UIDrawProcess );
                     return;
                 }

@@ -46,6 +46,8 @@ namespace LuI {
             const IconMenuEntry *entries;
             int numEntries=0;
         public:
+            bool showCatalogue=false;
+            uint16_t backgroundColor=TFT_BLACK;
             int selectedEntry=0;
             UICallback pageCallback=nullptr; // where call when tap
             void * pageCallbackParam=nullptr; // what pass to callback
@@ -53,12 +55,12 @@ namespace LuI {
             bool alreadyChanged=false;
             int16_t lastRelDrag=0;
             int16_t relDrag=0;
-            LuI_Layout layout=LuI_Horizonal_Layout;
+            LuI_Layout layout=LuI_Horizontal_Layout;
             int32_t displacement=0;
             void Launch();
             ~IconMenu();
-            IconMenu(LuI_Layout layout=LuI_Horizonal_Layout, int menuEntries=0,const IconMenuEntry *optionList=nullptr,bool swap=false);
-            void Refresh(bool direct=false,bool swap=false) override;
+            IconMenu(LuI_Layout layout=LuI_Horizontal_Layout, int menuEntries=0,const IconMenuEntry *optionList=nullptr);
+            void Refresh(bool direct=false) override;
     };
 };
 

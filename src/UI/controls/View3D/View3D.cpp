@@ -38,10 +38,11 @@ void View3D::AddMesh3D(INOUT Mesh3D * meshObject) {
         }
     }
     if ( false == foundSlot ) {
-        lUILog("View3D %p View FULL\n",this);
+        lUILog("View3D %p View FULL, Cannot add more than %d meshes\n",this,MAX_MESHES);
         return;
     }
     mesh[offset] = meshObject;
+    meshObject->dirty=true;
     dirty=true;
 }
 
@@ -60,9 +61,10 @@ float View3D::NormalFacing(INOUT Normal3D &normal) {
 }
 
 
-void View3D::Refresh(bool direct,bool swap) {
-    //lLog("View3D %p refresh canvas at %p swap: %s\n",this,canvas,(swap?"true":"false"));
-    if ( nullptr == canvas  ) { Control::Refresh(direct,swap); }
+void View3D::Refresh(bool direct) {
+    if ( false == dirty ) { return; }
+    //lLog("View3D %p refresh canvas at %p direct: %s\n",this,canvas,(direct?"true":"false"));
+    if ( nullptr == canvas  ) { Control::Refresh(); }
     //if ( dirty ) { Control::Refresh(swap); }
     centerX = width/2;
     centerY = height/2;
@@ -72,29 +74,32 @@ void View3D::Refresh(bool direct,bool swap) {
         if ( nullptr == mesh[offset] ) { continue; }
         mesh[offset]->ApplyTransform(GlobalLocation,GlobalRotation,GlobalScale);
     }
+    Render();
+    if ( direct ) { canvas->pushSprite(clipX,clipY,viewBackgroundColor); }
     if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
 }
+
 void View3D::SetAllDirty() {
     for(int offset=0;offset<MAX_MESHES;offset++) {
         if ( nullptr == mesh[offset] ) { continue; }
         mesh[offset]->dirty=true;
     }
-    this->dirty=true;
+    dirty=true;
 }
 
 void View3D::SetGlobalLocation(IN Vertex3D globLocation ) {
     GlobalLocation=globLocation;
-    //SetDirty();
+    SetAllDirty();
 }
 
 void View3D::SetGlobalScale(IN float scale ) {
     GlobalScale= { scale,scale,scale };
-    //SetDirty();
+    SetAllDirty();
 }
 
-void View3D::SetGlobalScale(IN Vertex3D globRotation ) {
-    GlobalScale=globRotation;
-    //SetDirty();
+void View3D::SetGlobalScale(IN Vertex3D globScale ) {
+    GlobalScale=globScale;
+    SetAllDirty();
 }
 void View3D::SetGlobalRotation(INOUT Angle3D globRotation ) {
     // apply global shit
@@ -107,7 +112,7 @@ void View3D::SetGlobalRotation(INOUT Angle3D globRotation ) {
     GlobalRotation.x=globRotation.x;
     GlobalRotation.y=globRotation.y;
     GlobalRotation.z=globRotation.z;
-    //SetDirty();
+    SetAllDirty();
 }
 
 void View3D::UpdateClipWith(INOUT Clipping2D &clip, IN Point2D &point) {
@@ -175,13 +180,18 @@ bool View3D::IsClockwise(INOUT Face3D &face,uint16_t meshNumber) {
     }
     return (face._clockWiseCache?true:false);
 }
-
+/*
 //@TODO this must be thinked a little bit more
 void _View3DThreadTask(void *data) {
     View3D *self=(View3D*)data;
     lLog("View3D render task begin\n");
+    unsigned long announceThread=0;
     while(self->renderLoop ) {
         self->Render();
+        if ( millis() > announceThread ) {
+            announceThread=millis()+3000;
+            lLog("View3D %p Render Task alive\n",self);
+        }
     }
     lLog("View3D render task ended\n");
     vTaskDelete(NULL);
@@ -192,7 +202,7 @@ void View3D::ThreadedRender() {
     xTaskCreatePinnedToCore(_View3DThreadTask, "Rendr3D", LUNOKIOT_APP_STACK_SIZE, this, tskIDLE_PRIORITY, &this->renderTask,1);
 }
 // <======================================
-
+*/
 void View3D::DrawBilboards() {    
     for(uint16_t m=0;m<MAX_MESHES;m++) { // iterate meshes
         Mesh3D * currentMesh = mesh[m];
@@ -207,22 +217,29 @@ void View3D::DrawBilboards() {
             int16_t deep = GetDeepForPoint(currVertex);
             int16_t realDeep = deep-dimensions.Min;
             float scaleValue = float(realDeep)/float(realRange); // scale from zbuffer
-            /*
-            // scale relative to mesh? maybe isn't good approach
-            Vertex3D vertexScale = currentMesh->MeshScale;
-            float vertexMedian = (vertexScale.x+vertexScale.y+vertexScale.z)/3;
-            scaleValue=(scaleValue+vertexMedian)/2;
+
+            /* bad idea, so small or soo huge bilboars dont pay
+            // scale relative to mesh
+            Vertex3D meshScale = currentMesh->MeshScale;
+            float meshScaleMed=(meshScale.x+meshScale.y+meshScale.z)/3;
+            scaleValue=meshScaleMed*scaleValue; // increment bilboard size with mesh scale
             */
-            if ( scaleValue < 0.2 ) { continue; } // don't render at all
+
+            scaleValue=scaleValue*currentMesh->bilboardMultiplier; // increment with multiplier
+            
+            if ( scaleValue < 0.2) { continue; } // don't render at all: is too small to pay the effort
 
             Point2D pix;
             GetProjection(currVertex,pix);
             int32_t controlX = (centerX+pix.x);
             int32_t controlY = (centerY+pix.y);
-            if ( controlX < 0 ) { continue; }
-            else if ( controlY < 0 ) { continue; }
-            else if ( controlX > canvas->width() ) { continue; }
-            else if ( controlY > canvas->height() ) { continue; }
+            // take care of always show, including when out of view with margins
+            int32_t bilboardMargin=(((currentMesh->bilboard->width()+currentMesh->bilboard->height())/2)*scaleValue)/2;
+
+            if ( controlX < bilboardMargin*-1 ) { continue; }
+            else if ( controlY < bilboardMargin*-1 ) { continue; }
+            else if ( controlX > canvas->width()+bilboardMargin ) { continue; }
+            else if ( controlY > canvas->height()+bilboardMargin ) { continue; }
 
 
             TFT_eSprite * scaledBillboard = ScaleSprite(currentMesh->bilboard,scaleValue);
@@ -249,9 +266,12 @@ void View3D::DrawBilboards() {
             for(int y=0;y<scaledAndRotated->height();y++) {
                 for(int x=0;x<scaledAndRotated->width();x++) {
                     uint16_t color = ByteSwap(scaledAndRotated->readPixel(x,y));
-                    if ( TFT_GREEN == color ) { continue; }
-                    uint16_t deepColor = tft->alphaBlend(colorWeight,color,TFT_BLACK);
-                    canvas->drawPixel(fx+x,fy+y,deepColor);
+                    if ( currentMesh->bilboardMaskColor == color ) { continue; }
+                    uint16_t finalColor = color; // flat by default
+                    if ( RENDER::FULL == RenderMode ) { finalColor = tft->alphaBlend(colorWeight,color,TFT_BLACK); }
+                    if ( RENDER::MASK == RenderMode ) { finalColor= MaskColor; }
+                    //@TODO make sensible to FLATWIREFRAME (show borders) and WIREFRAME (with colors)
+                    canvas->drawPixel(fx+x,fy+y,finalColor);
                 }
             }
             scaledAndRotated->deleteSprite();
@@ -399,6 +419,7 @@ void View3D::Render() {
     for(int i=0;i<orderdFaces;i++) {
         // don't render faces from bilboards
         if ( mesh[meshOrderedFaces[i].fromMesh]->bilboard ) { continue; }
+        if ( RENDER::NODRAW == RenderMode ) { continue; }
 
         int32_t tp0x = meshOrderedFaces[i].p0x;
         int32_t tp0y = meshOrderedFaces[i].p0y;
@@ -407,28 +428,32 @@ void View3D::Render() {
         int32_t tp2x = meshOrderedFaces[i].p2x;
         int32_t tp2y = meshOrderedFaces[i].p2y;
 
-        uint16_t finalColor = meshOrderedFaces[i].faceColor;
-        bool smooth =  meshOrderedFaces[i].smooth;
-        float dist = meshOrderedFaces[i].normalFacing;
-        uint8_t mixProp=128;
-        if ( smooth ) { mixProp=64; }
-        if ( dist>0 ) { // normal faces view
-            uint8_t baseCol=(128*dist);
-            uint16_t nColor = tft->color565(baseCol,baseCol,baseCol);
-            finalColor = tft->alphaBlend(mixProp,nColor,finalColor);
-        } else { // normal is negated, must be darken
-            finalColor = tft->alphaBlend(192,TFT_BLACK,finalColor);
-        }        
-        if ( RENDER::FULL == RenderMode ) {
-            canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
+
+        if ( ( RENDER::FULL == RenderMode ) || ( RENDER::WIREFRAME == RenderMode ) ) {
+            uint16_t finalColor = meshOrderedFaces[i].faceColor;
+            bool smooth =  meshOrderedFaces[i].smooth;
+            float dist = meshOrderedFaces[i].normalFacing;
+            uint8_t mixProp=128;
+            if ( smooth ) { mixProp=64; }
+            if ( dist>0 ) { // normal faces view
+                uint8_t baseCol=(128*dist);
+                uint16_t nColor = tft->color565(baseCol,baseCol,baseCol);
+                finalColor = tft->alphaBlend(mixProp,nColor,finalColor);
+            } else { // normal is negated, must be darken
+                finalColor = tft->alphaBlend(192,TFT_BLACK,finalColor);
+            }
+
+            if ( RENDER::FULL == RenderMode ) {
+                canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
+            } else if ( RENDER::WIREFRAME == RenderMode ) {
+                canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
+            }
         } else if ( RENDER::FLAT == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,meshOrderedFaces[i].faceColor);
-        } else if ( RENDER::WIREFRAME == RenderMode ) {
-            canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
         } else if ( RENDER::FLATWIREFRAME == RenderMode ) {
-            canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_WHITE);
+            canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,MaskColor);
         } else if ( RENDER::MASK == RenderMode ) {
-            canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,TFT_WHITE);
+            canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,MaskColor);
         } // else NODRAW
     }
     DrawBilboards();
@@ -443,26 +468,30 @@ void View3D::Render() {
 
 View3D::~View3D() {
     lLog("View3D %p destroyed!\n",this);
+    //renderLoop = false;
     if ( nullptr != meshOrderedFaces ) { free(meshOrderedFaces); }
     for(uint16_t m=0;m<MAX_MESHES;m++) {
         if ( nullptr == mesh[m] ) { continue; }
         delete mesh[m];
     }
 }
-View3D::View3D(): Control() {
+View3D::View3D() { //}: Control() {
     lLog("View3D %p created!\n",this);
     meshOrderedFaces=(OrderedFace3D *)ps_calloc(MAX_ORDERED_FACES,sizeof(OrderedFace3D));
 }
 
-
+/*
 TFT_eSprite * View3D::GetCanvas() {
+    lLog("View3D %p GetCanvas()\n",this);
+    */
     // @TODO ugly code
+    /*
     if ( false == firstPush ) {
         firstPush=true;
         Render();
         return canvas;
 
-    }
+    }*/
     // dont push image until directDraw is enabled
     /*
     if (false == directDraw) { // dont show nothing until directDraw available
@@ -470,9 +499,10 @@ TFT_eSprite * View3D::GetCanvas() {
         canvas->fillSprite(TFT_BLACK);
         return canvas;
     }*/
+    /*
     unsigned long bDirect=millis();
     // Children dirty?
-    bool needRedraw=false;
+    bool needRedraw=dirty;
     for(uint16_t m=0;m<MAX_MESHES;m++) {
         if ( nullptr == mesh[m]) { continue; }
         if ( mesh[m]->dirty ) {
@@ -480,10 +510,9 @@ TFT_eSprite * View3D::GetCanvas() {
             break;
         }
     }
-    if ( needRedraw ) {
-        Render();
-    }
+    if ( needRedraw ) { Render(); }
     return canvas; // @TODO seems direct push is more efficient o_O'?
+}*/
     /**
     // bugs with multi-view
     const uint8_t border = 8;
@@ -539,4 +568,25 @@ TFT_eSprite * View3D::GetCanvas() {
     lUILog("Direct complete ms: %lu fps: %u\n", tDirect,fps);
     return nullptr;
     */
+
+
+
+/*
+// https://computergraphics.stackexchange.com/questions/1866/how-to-map-square-texture-to-triangle
+// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+void Mesh3D::Barycentric(Point p, Point a, Point b, Point c, float &u, float &v, float &w)
+{
+    Vector v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = Dot(v0, v0);
+    float d01 = Dot(v0, v1);
+    float d11 = Dot(v1, v1);
+    float d20 = Dot(v2, v0);
+    float d21 = Dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    v = (d11 * d20 - d01 * d21) / denom;
+    w = (d00 * d21 - d01 * d20) / denom;
+    u = 1.0f - v - w;
 }
+*/

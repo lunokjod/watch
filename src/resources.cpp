@@ -30,6 +30,8 @@
 #include "../static/img_power_64.xbm"
 #include "../static/testImageBackground.c"
 
+#include "../tool/Plane.c"
+#include "../tool/SuperPlane.c"
 #include "../tool/Cube.c"
 
 #include "../static/img_wireframe_18.c"

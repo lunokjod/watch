@@ -22,10 +22,13 @@
 #include "../../../lunokIoT.hpp"
 #include "Control.hpp"
 #define LuI_Layout bool
-#define LuI_Horizonal_Layout true
+#define LuI_Horizontal_Layout true
 #define LuI_Vertical_Layout false
-
 namespace LuI {
+//    uint16_t  dmaBuffer2[16*16]; // Toggle buffer for 16*16 MCU block, 512bytes
+//    uint16_t* dmaBufferPtr = dmaBuffer1;
+//    bool dmaBufferSel = 0;
+
     // defines a container
     class Container : public Control {
         protected:
@@ -41,7 +44,7 @@ namespace LuI {
             Container(LuI_Layout layout=LuI_Vertical_Layout, size_t childs=1);
             ~Container();
             void EventHandler() override;
-            void Refresh(bool direct=false, bool swap=false) override;
+            void Refresh(bool direct=false) override;
     };
 };
 

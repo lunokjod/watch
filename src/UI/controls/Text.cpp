@@ -32,12 +32,12 @@ Text::~Text() {
     }
 }
 
-Text::Text(char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : color(color),swapColor(swap),textSize(tsize),font(font) {
+Text::Text(const char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : color(color),swapColor(swap),textSize(tsize),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
     SetText(what);
 }
-void Text::SetText(char * what) {
-    this->text=what;
+void Text::SetText(const char * what) {
+    this->text=(char*)what;
     if ( nullptr != imageTextCanvas ) {
         imageTextCanvas->deleteSprite();
         delete imageTextCanvas;
@@ -48,38 +48,42 @@ void Text::SetText(char * what) {
     imageTextCanvas->setTextColor(TFT_WHITE);
     imageTextCanvas->setTextSize(textSize);
     imageTextCanvas->setTextDatum(TL_DATUM);
-    int16_t width = imageTextCanvas->textWidth(text);
-    int16_t height = imageTextCanvas->fontHeight()*textSize;
-    imageTextCanvas->createSprite(width,height);
+    int16_t twidth = imageTextCanvas->textWidth(text);
+    int16_t theight = imageTextCanvas->fontHeight()*textSize;
+    imageTextCanvas->createSprite(twidth,theight);
     imageTextCanvas->fillSprite(TFT_BLACK);
     imageTextCanvas->drawString(text,0,0);
     dirty=true;
-
 }
-void Text::Refresh(bool direct,bool swap) {
-    //lLog("Text %p Refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
-    Control::Refresh(direct,swap);
-    uint16_t backColor = Drawable::MASK_COLOR;
-    if ( useBackground ) { backColor=backgroundColor; }
-    canvas->fillSprite(backColor);
+
+void Text::Refresh(bool direct) {
+    if ( false == dirty ) { return; }
+    lLog("Text %p refresh dirty: %s direct: %s\n",this,(dirty?"true":"false"),(direct?"true":"false"));
+    //lLog("Text %p refresh dirty: %s\n",this,(dirty?"true":"false"));
+    Control::Refresh();
+
     uint16_t fcolor = color;
-    if ( swap ) { fcolor = ByteSwap(color);
-        /*
-        double r = ((color >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
-        double g = ((color >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
-        double b = (color & 0x1F) / 31.0;         // blue  0.0 .. 1.0
-        fcolor = tft->color565(255*b,255*r,255*g);
-        */
-    }
+    uint16_t backColor = backgroundColor;
+    /*
+    if ( (false== direct) && ( directDraw )) { // parent push, swap bytes to match TFT
+        lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+        fcolor = ByteSwap(fcolor);
+        backColor = ByteSwap(backColor);
+    }*/
+    canvas->fillSprite(backColor);
     // center text
     int cXOff=(int(width)-imageTextCanvas->width())/2;
     int cYOff=(int(height)-imageTextCanvas->height())/2;
-
+    lLog("COLOR: %x %x BACKGROUND: %x %x TRANSP: %x\n",fcolor,color,backColor,backgroundColor,Drawable::MASK_COLOR);
     for(int y=0;y<imageTextCanvas->height();y++) {
         for(int x=0;x<imageTextCanvas->width();x++) {
             bool isTextPart = imageTextCanvas->readPixel(x,y);
             if ( false == isTextPart ) { continue; } 
             canvas->drawPixel(cXOff+x,cYOff+y,fcolor);
         }
+    }
+    if ( direct ) {
+        lLog("DIRECT\n");
+        canvas->pushSprite(clipX,clipY,Drawable::MASK_COLOR);
     }
 }

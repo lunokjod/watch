@@ -17,29 +17,22 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
-#define __LUNOKIOT__CONTROL_XBMIMAGE_CLASS__
+#ifndef __LUNOKIOT__APPLICATION__LUI_TWOAPPS_DEBUG__
+#define __LUNOKIOT__APPLICATION__LUI_TWOAPPS_DEBUG__
 
-#include "../../lunokIoT.hpp"
-#include "base/Control.hpp"
-#include <LilyGoWatch.h>
+#include "../UI/AppLuITemplate.hpp"
+#include "../UI/controls/Buffer.hpp"
 
-namespace LuI {
-
-    // defines root of any screen element
-    class XBM: public Control {
-        protected:
-            const uint32_t imageWidth=0;
-            const uint32_t imageHeight=0;
-            const unsigned char *imageData=nullptr;
-            TFT_eSprite * imageCanvas=nullptr;
-            uint16_t color=TFT_WHITE;
-        public:
-            ~XBM();
-            XBM(IN uint32_t width, IN uint32_t height, IN unsigned char *data);
-            void Refresh(bool direct=false) override;
-    };
+class LuiTwoAppsApplication : public TemplateLuIApplication {
+    public:
+        LuiTwoAppsApplication();
+        const char *AppName() override { return "LuI Two apps"; };
+        bool Tick();
+        LunokIoTApplication *app0=nullptr;
+        LunokIoTApplication *app1=nullptr;
+        LuI::Buffer * testBuffer0=nullptr;
+        LuI::Buffer * testBuffer1=nullptr;
+        ~LuiTwoAppsApplication();
 };
-
 
 #endif

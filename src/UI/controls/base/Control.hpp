@@ -33,8 +33,9 @@ namespace LuI {
             TFT_eSprite *canvas=nullptr;
             bool lastTouched=false;
             Control *parent=nullptr;
+            //bool lastIn=false; // triggers when finger leaves my area
         public:
-            bool dirty=true; // forces redraw
+            bool dirty=true; // forces redraw on instance
 
             // events
             UICallback touchCallback=nullptr; // where call meanwhile thumb in
@@ -51,7 +52,7 @@ namespace LuI {
             
             UICallback dragCallback=nullptr; // where call when drag
             void * dragCallbackParam=nullptr; // what pass to callback
-
+            
             uint32_t height=0;
             uint32_t width=0;
             uint32_t clipX=0;
@@ -64,7 +65,8 @@ namespace LuI {
             void SetSize(uint32_t w, uint32_t h);
             void SetWidth(uint32_t w);
             void SetHeight(uint32_t h);
-            virtual void Refresh(bool direct=false, bool swap=false);
+            void Rebuild();
+            virtual void Refresh(bool direct=false);
     };
 };
 

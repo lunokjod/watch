@@ -38,7 +38,7 @@ namespace LuI {
             void SetBackgroundColor(uint16_t color) { backgroundColor=color; useBackground=true; }
             Paginator(IN uint8_t pages);
             void SetCurrent(IN uint8_t page) { current=page; dirty=true; }
-            void Refresh(bool direct=false,bool swap=false) override;
+            void Refresh(bool direct=false) override;
     };
 };
 

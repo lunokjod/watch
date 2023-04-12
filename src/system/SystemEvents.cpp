@@ -665,6 +665,7 @@ void SaveDataBeforeShutdown() {
                 deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
 
         SqlLog(usageStatics);
+        free(usageStatics);
 
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit

@@ -31,9 +31,9 @@ namespace LuI {
             uint16_t color=ThCol(button);
             bool decorations=true;
         public:
-            void Refresh(bool direct=false, bool swap=false) override;
+            void Refresh(bool direct=false) override;
             Button(LuI_Layout layout=LuI_Vertical_Layout,size_t childs=1,bool decorations=true,uint16_t color=ThCol(button));
-            void EventHandler();
+            void EventHandler() override;
     };
 };
 

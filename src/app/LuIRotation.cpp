@@ -124,12 +124,12 @@ LuIRotateApplication::LuIRotateApplication() {
     canvas->fillSprite(ThCol(background)); // use theme colors
 
     /// create root container with two slots horizontal
-    Container * screen = new Container(LuI_Horizonal_Layout,2);
+    Container * screen = new Container(LuI_Horizontal_Layout,2);
     // bottom buttons container
     Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,2);
 
     // main view space
-    Container * viewContainer = new Container(LuI_Horizonal_Layout,1);
+    Container * viewContainer = new Container(LuI_Horizontal_Layout,1);
 
     // if use quota, all the slot quotas must sum equal the total number of elements
     // example: default quota in 2 controls result 50/50% of view space with 1.0 of quota everyone (2.0 in total)
@@ -143,7 +143,7 @@ LuIRotateApplication::LuIRotateApplication() {
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
-    XBM * backButtonIcon = new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits,true);
+    XBM * backButtonIcon = new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
     // put the icon inside the button
     backButton->AddChild(backButtonIcon);
     // shrink button to left and empty control oversized (want button on left bottom)
@@ -151,7 +151,7 @@ LuIRotateApplication::LuIRotateApplication() {
     bottomButtonContainer->AddChild(nullptr,1.65);
 
     // add smartwatch image to ilustrate the orientation
-    Container * innerdiv = new Container(LuI_Horizonal_Layout,2);
+    Container * innerdiv = new Container(LuI_Horizontal_Layout,2);
     innerdiv->AddChild(new Text("This side up",TFT_WHITE,false,1,&FreeMonoBold12pt7b),0.6);
     innerdiv->AddChild(new Image(img_landscape_200.width,img_landscape_200.height,img_landscape_200.pixel_data,true),1.4);
     viewContainer->AddChild(innerdiv);

@@ -21,12 +21,13 @@
 #define __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_DEBUG__
 
 #include "../UI/AppLuITemplate.hpp"
-#include "../UI/controls/View3D/View3D.hpp"
+#include "../UI/controls/IconMenu.hpp"
+#include "../UI/controls/Buffer.hpp"
 
 class LuiExperimentApplication : public TemplateLuIApplication {
     public:
-        LuI::View3D * view3DTest1;
-        ~LuiExperimentApplication();
+        LuI::IconMenu * demoMenu=nullptr;
+        LuI::Buffer * bufferInfo=nullptr;
         LuiExperimentApplication();
         const char *AppName() override { return "LuI Experiment"; };
 };

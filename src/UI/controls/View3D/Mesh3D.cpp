@@ -160,9 +160,9 @@ Angle3D Mesh3D::SumAngles(Angle3D angle0,Angle3D angle1) {
 
 void Mesh3D::RelativeScale(Vertex3D scale) {
     //lLog("Mesh: %p After relative scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
-    MeshScale.x=(MeshScale.x+scale.x)/2;
-    MeshScale.y=(MeshScale.y+scale.y)/2;
-    MeshScale.z=(MeshScale.z+scale.z)/2;
+    MeshScale.x=MeshScale.x*scale.x;
+    MeshScale.y=MeshScale.y*scale.y;
+    MeshScale.z=MeshScale.z*scale.z;
     //lLog("Mesh: %p Current relative scale: X: %f  Y: %f Z: %f\n",this,MeshScale.x,MeshScale.y,MeshScale.z);
     dirty=true;
 }
@@ -358,9 +358,9 @@ void Mesh3D::ApplyTransform(Vertex3D GlobalLocation, Angle3D GlobalRotation, Ver
 
     // scale global+local vertex
     LuI::Vertex3D currentScale = {
-        (GlobalScale.x+MeshScale.x)/2,
-        (GlobalScale.y+MeshScale.y)/2,
-        (GlobalScale.z+MeshScale.z)/2
+        MeshScale.x*GlobalScale.x,
+        MeshScale.y*GlobalScale.y,
+        MeshScale.z*GlobalScale.z
     };
     for(uint16_t i=0;i<meshVertexCount;i++) {
         ScaleVertex(vertexCache[i],currentScale);

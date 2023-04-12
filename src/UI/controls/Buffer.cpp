@@ -44,7 +44,7 @@ Buffer::~Buffer() {
         barVertical=nullptr;
     }
 }
-Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout layout, size_t childs)
+Buffer::Buffer(IN uint32_t width, IN uint32_t height)//,LuI_Layout layout, size_t childs)
                                 : imageWidth(width),imageHeight(height) {//,Container(layout,childs) {
     lLog("Buffer %p created!\n",this);
     imageCanvas=new TFT_eSprite(tft);
@@ -79,17 +79,7 @@ Buffer::Buffer(IN uint32_t width, IN uint32_t height,bool swap)//,LuI_Layout lay
     };
 }
 
-void Buffer::Refresh(bool direct,bool swap) {
-    //lLog("Buffer %p refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
-    if ( false == dirty ) { return; } // I'm clean!!
-    Control::Refresh(direct,swap);
-    //centered
-    canvas->setPivot(0,0);
-    imageCanvas->setPivot(offsetX,offsetY);
-    imageCanvas->pushRotated(canvas,0);
-
-    // redraw bars?
-    if ( false == showBars ) { return; } // dont continue if no bars enabled
+void Buffer::DrawBars() {
     //if ( hideBars ) { hideBars=false; return; } // hide bars received
     if ( fadeDownBarsValue < 1 ) { return; } // ready fade-down
     if ( nullptr == barHorizontal ) { // create bar buffer H
@@ -99,10 +89,15 @@ void Buffer::Refresh(bool direct,bool swap) {
     }
     int32_t percentX=0;
     int32_t percentY=0;
-    const int32_t maxX = imageCanvas->width()-int(width);
-    const int32_t maxY = imageCanvas->height()-int(height);
-    percentX = (offsetX*(int(width)-50))/maxX;
-    percentY = (offsetY*(int(height)-50))/maxY;
+    int32_t maxX = imageCanvas->width()-int(width);
+    // dont divide by zero
+    if (maxX != 0) {
+        percentX = (offsetX*(int(width)-50))/maxX;
+    }
+    int32_t maxY = imageCanvas->height()-int(height);
+    if (maxY != 0) {
+        percentY = (offsetY*(int(height)-50))/maxY;
+    }
 
     barHorizontal->fillSprite(TFT_BLACK);
     barHorizontal->drawRoundRect(0,0,width-30,10,5,TFT_WHITE);
@@ -117,7 +112,7 @@ void Buffer::Refresh(bool direct,bool swap) {
             }
         }
     }
-    
+
     if ( nullptr == barVertical ) { // create bar buffer V
         barVertical=new TFT_eSprite(tft);
         barVertical->setColorDepth(1);
@@ -136,6 +131,22 @@ void Buffer::Refresh(bool direct,bool swap) {
             }
         }
     }
+}
+
+void Buffer::Refresh(bool direct) {
+    //lLog("Buffer %p refresh direct: %s \n",this,(direct?"true":"false"));
+    if ( false == dirty ) { return; } // I'm clean!!
+    Control::Refresh();
+
+    if ( nullptr != bufferPushCallback ) { (bufferPushCallback)(bufferPushCallbackParam); }
+
+    //centered
+    canvas->setPivot(0,0);
+    imageCanvas->setPivot(offsetX,offsetY);
+    imageCanvas->pushRotated(canvas,0);
+    // redraw bars?
+    if ( showBars ) { DrawBars(); }
+    if ( direct ) { canvas->pushSprite(clipX,clipY); }
 
     fadeDownBarsValue-=32;
     dirty=true; // fade down
