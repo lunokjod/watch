@@ -788,11 +788,6 @@ void Engine3DApplication::UpdateRange(INOUT Range &range, IN int32_t value) {
 
 // demo app entrypoint
 Engine3DApplication::Engine3DApplication() {
-    #ifdef ESP32_DMA
-        lAppLog("DMA enabled\n");
-    #else
-        lAppLog("DMA not enabled\n");
-    #endif
 
     // precalculate angles
     for(int i=0;i<360;i++){ 

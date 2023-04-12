@@ -585,7 +585,6 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
  * UIStart begin the UI loop, to handle UI events
  */
 void UIStart() {
-
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy

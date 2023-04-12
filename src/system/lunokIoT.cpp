@@ -107,6 +107,15 @@ LunokIoT::LunokIoT() {
     // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
     tft = ttgo->tft;
+    #ifdef ESP32_DMA
+        lSysLog("DMA Availiable\n");
+        /* crash :(
+        bool DMAReached = tft->initDMA();
+        lUILog("TFT DMA Status: %s\n",(DMAReached?"true":"false"));
+        */
+    #else
+        lAppLog("DMA not availiable\n");
+    #endif
     // storage init
     SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings

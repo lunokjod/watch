@@ -76,6 +76,7 @@ LuITestApplication::LuITestApplication() {
 
     Mesh3D * meshTest = new Mesh3D(&CubeMesh);
     view3DTest = new View3D();
+    view3DTest->viewBackgroundColor=ThCol(background);
     view3DTest->AddMesh3D(meshTest);
     testButton->tapCallbackParam=this;
     testButton->tapCallback=[](void *obj) {

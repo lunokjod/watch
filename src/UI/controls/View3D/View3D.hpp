@@ -84,7 +84,7 @@ namespace LuI {
             void * renderCallbackParam=nullptr; // what pass to callback
 
 
-            //TFT_eSprite * GetCanvas();
+            TFT_eSprite * GetCanvas();
 
     };
 };

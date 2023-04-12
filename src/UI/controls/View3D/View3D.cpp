@@ -64,8 +64,7 @@ float View3D::NormalFacing(INOUT Normal3D &normal) {
 void View3D::Refresh(bool direct) {
     if ( false == dirty ) { return; }
     //lLog("View3D %p refresh canvas at %p direct: %s\n",this,canvas,(direct?"true":"false"));
-    if ( nullptr == canvas  ) { Control::Refresh(); }
-    //if ( dirty ) { Control::Refresh(swap); }
+    Control::Refresh();
     centerX = width/2;
     centerY = height/2;
     // iterate all meshes to apply their last transformations
@@ -75,7 +74,9 @@ void View3D::Refresh(bool direct) {
         mesh[offset]->ApplyTransform(GlobalLocation,GlobalRotation,GlobalScale);
     }
     Render();
-    if ( direct ) { canvas->pushSprite(clipX,clipY,viewBackgroundColor); }
+    if (( directDraw ) && ( direct )) {
+        canvas->pushSprite(clipX,clipY,viewBackgroundColor);
+    }
     if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
 }
 
@@ -480,10 +481,13 @@ View3D::View3D() { //}: Control() {
     meshOrderedFaces=(OrderedFace3D *)ps_calloc(MAX_ORDERED_FACES,sizeof(OrderedFace3D));
 }
 
-/*
+
 TFT_eSprite * View3D::GetCanvas() {
-    lLog("View3D %p GetCanvas()\n",this);
-    */
+    //lLog("View3D %p GetCanvas()\n",this);
+    if (directDraw) { return canvas; } // deny render without DirectDraw
+    return nullptr;
+}
+
     // @TODO ugly code
     /*
     if ( false == firstPush ) {
