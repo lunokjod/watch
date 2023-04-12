@@ -114,7 +114,7 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     sparklesView->SetGlobalScale(0.15);  // mesh methers=pixels 240Meters=240pixels
     sparkles->Scale(0.15);
     sparklesView->SetGlobalRotation({float(random(0,360)),float(random(0,360)),float(random(0,360))}); // add some random
-    sparklesView->viewBackgroundColor=ThCol(button);
+    sparklesView->SetBackgroundColor(ThCol(button));
     sparklesView->RenderMode = View3D::RENDER::FLAT; // set rendering to color cheaper-cpu one
     sparklesView->stepCallbackParam=sparklesView; // pass view to callback
     // *** see the coments in the bottom of this constructor: "sparklesView->dirty=true;"

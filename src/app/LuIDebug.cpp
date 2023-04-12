@@ -64,7 +64,7 @@ DebugLuIApplication::DebugLuIApplication() {
     view3DTest1->SetGlobalLocation({ 60,0,0 });
     //view3DTest1->SetGlobalRotation({ 0,0,0 });
     view3DTest1->SetGlobalScale({ 0.2,0.2,0.2 });
-    view3DTest1->viewBackgroundColor=TFT_BLACK; //ThCol(background);
+    view3DTest1->SetBackgroundColor(TFT_BLACK); //ThCol(background);
     view3DTest1->stepCallbackParam=view3DTest1;
     view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
         static float rotationDeg=359;

@@ -75,7 +75,7 @@ void View3D::Refresh(bool direct) {
     }
     Render();
     if (( directDraw ) && ( direct )) {
-        canvas->pushSprite(clipX,clipY,viewBackgroundColor);
+        canvas->pushSprite(clipX,clipY);
     }
     if ( nullptr != stepCallback ) { (stepCallback)(stepCallbackParam); }
 }

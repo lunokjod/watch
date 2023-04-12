@@ -34,6 +34,7 @@ namespace LuI {
             Angle3D GlobalRotation = { 0,0,0 };
             Vertex3D GlobalScale = { 1,1,1 };
             bool firstPush=false;
+            uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
         public:
             //@TODO this must be thinked a little bit more
             static TaskHandle_t renderTask;
@@ -43,7 +44,7 @@ namespace LuI {
             uint16_t MaskColor=TFT_WHITE;
             typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK, NODRAW} RENDER;
             RENDER RenderMode = FULL; 
-            uint32_t viewBackgroundColor=Drawable::MASK_COLOR;
+            void SetBackgroundColor(uint16_t color) { viewBackgroundColor=color; }
             OrderedFace3D * meshOrderedFaces= { nullptr };
             uint16_t centerX;
             uint16_t centerY;

@@ -117,7 +117,7 @@ LuIExperimentPlanetApplication::LuIExperimentPlanetApplication() {
 
     view3DTest1->SetGlobalLocation({ 0,0,0 });
     view3DTest1->SetGlobalScale({ 1,1,1 });
-    view3DTest1->viewBackgroundColor=TFT_BLACK; //ThCol(background);
+    view3DTest1->SetBackgroundColor(TFT_BLACK); //ThCol(background);
     view3DTest1->stepCallbackParam=view3DTest1;
     view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
         LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
