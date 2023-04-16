@@ -24,8 +24,10 @@
 #include <LilyGoWatch.h>
 #include <esp_event_base.h>
 #include <functional> // callbacks 
+
 typedef std::function<void (void* payload)> UICallback; // repeated declaration
 typedef std::function<void (void* payload,void* payload2)> UICallback2;
+typedef std::function<void (void* payload,void* payload2,void* payload3)> UICallback3;
 
 extern TFT_eSPI * tft;
 //extern TTGOClass *ttgo; // ttgo lib
@@ -39,6 +41,16 @@ typedef struct {
     float d;
 } TransformationMatrix;
 
+// A floating point
+struct u32Point {
+  uint32_t x;
+  uint32_t y;
+};
+
+float CalcTriArea(u32Point *v1,u32Point *v2,u32Point *v3);
+bool IsPointInTri(u32Point *pt, u32Point *v1, u32Point *v2, u32Point *v3);
+bool isInside( int x, int y, int x1, int y1, int x2, int y2, int x3, int y3);
+float area(int x1, int y1, int x2, int y2, int x3, int y3);
 /*
  * Use template to get the theme colors
  */

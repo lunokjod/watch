@@ -108,6 +108,44 @@ extern const unsigned char img_mainmenu_lamp_bits[];
 #define img_xbm_32_height 32
 extern const unsigned char img_xbm_32_bits[];
 
+#define img_check_32_width 32
+#define img_check_32_height 32
+extern const unsigned char img_check_32_bits[];
+
+
+
+#define img_home_64_width 64
+#define img_home_64_height 58
+extern const unsigned char img_home_64_bits[];
+
+#define img_planet_64_width 64
+#define img_planet_64_height 48
+extern const unsigned char img_planet_64_bits[];
+
+#define img_glider_64_width 64
+#define img_glider_64_height 64
+extern const unsigned char img_glider_64_bits[];
+
+#define img_cube_64_width 64
+#define img_cube_64_height 64
+extern const unsigned char img_cube_64_bits[];
+
+#define img_work_64_width 64
+#define img_work_64_height 64
+extern const unsigned char img_work_64_bits[];
+
+#define img_sleep_64_width 64
+#define img_sleep_64_height 64
+extern const unsigned char img_sleep_64_bits[];
+
+#define img_milestone_64_width 64
+#define img_milestone_64_height 64
+extern const unsigned char img_milestone_64_bits[];
+
+#define img_no_64_width 64
+#define img_no_64_height 64
+extern const unsigned char img_no_64_bits[];
+
 
 typedef struct {
   unsigned int 	 width;
@@ -132,6 +170,12 @@ extern const GimpImage img_house_32;
 extern const GimpImage img_icon_telegram_48;
 extern const GimpImage img_icon_mail_48;
 extern const GimpImage img_poweroff_fullscreen;
+
+extern const GimpImage img_weather_200;
+extern const GimpImage img_weather_300;
+extern const GimpImage img_weather_500;
+extern const GimpImage img_weather_600;
+extern const GimpImage img_weather_800;
 
 #include "../src/UI/controls/View3D/Common.hpp"
 extern const LuI::Mesh3DDescriptor CubeMesh;

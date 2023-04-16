@@ -171,6 +171,20 @@ void StepsApplication::CreateStats() {
     char sqlQueryBuffer[strlen(sqlQuery)+8] = { 0 };
     sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
 
+    systemDatabase->SendSQL(sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
+        GraphWidget * myGraph=(GraphWidget*)data;
+        int i;
+        for (i = 0; i<argc; i++){
+            //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
+            if ( 0 != strcmp(azColName[i],"message")) { continue; }        
+            if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
+            else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
+            else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
+        }
+        myGraph->PushValue(1);
+        return 0;
+    }, (void*)activityGraph);
+    /*
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
@@ -188,6 +202,7 @@ void StepsApplication::CreateStats() {
         }, (void*)activityGraph, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
+    */
 }
 StepsApplication::StepsApplication() {
     btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){

@@ -240,7 +240,7 @@ LunokIoT::LunokIoT() {
     SplashAnnounceEnd();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
-
+    
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };
@@ -369,6 +369,7 @@ bool LunokIoT::CpuSpeed(uint32_t mhz) {
     if ( mhz == currentMhz ) { return true; } // nothing to do :)
     lSysLog("CPU: Freq: %u Mhz to %u Mhz\n", currentMhz, mhz);
     #ifdef LUNOKIOT_SERIAL
+            //Serial.flush();
             Serial.end();
     #endif
     esp_task_wdt_reset();

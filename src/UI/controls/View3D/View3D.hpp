@@ -84,6 +84,9 @@ namespace LuI {
             UICallback2 renderCallback=nullptr; // where call when render is done
             void * renderCallbackParam=nullptr; // what pass to callback
 
+            UICallback3 polygonCallback=nullptr; // where call when render is done
+            void * polygonCallbackParam=nullptr; // what pass to callback
+
 
             TFT_eSprite * GetCanvas();
 

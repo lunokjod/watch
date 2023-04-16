@@ -30,14 +30,24 @@ Text::~Text() {
         delete imageTextCanvas;
         imageTextCanvas=nullptr;
     }
+    if ( nullptr != text ) {
+        free(text);
+        text=nullptr;
+    }
 }
 
-Text::Text(const char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : color(color),swapColor(swap),textSize(tsize),font(font) {
+Text::Text(IN char * what, IN uint16_t color,IN bool swap, IN uint8_t tsize, IN GFXfont *font) : color(color),swapColor(swap),textSize(tsize),font(font) {
     lLog("Created Text on %p swap: %s\n",this,(swap?"true":"false"));
     SetText(what);
 }
 void Text::SetText(const char * what) {
-    this->text=(char*)what;
+    if ( ( nullptr != text ) && ( 0 == strcmp(what,text) ) ) { return; }
+    if ( nullptr != text ) {
+        free(text);
+        text=nullptr;
+    }
+    text=(char*)ps_malloc(strlen(what)+1);
+    strcpy(text,what);
     if ( nullptr != imageTextCanvas ) {
         imageTextCanvas->deleteSprite();
         delete imageTextCanvas;
@@ -74,7 +84,7 @@ void Text::Refresh(bool direct) {
     // center text
     int cXOff=(int(width)-imageTextCanvas->width())/2;
     int cYOff=(int(height)-imageTextCanvas->height())/2;
-    lLog("COLOR: %x %x BACKGROUND: %x %x TRANSP: %x\n",fcolor,color,backColor,backgroundColor,Drawable::MASK_COLOR);
+    //lLog("COLOR: %x %x BACKGROUND: %x %x TRANSP: %x\n",fcolor,color,backColor,backgroundColor,Drawable::MASK_COLOR);
     for(int y=0;y<imageTextCanvas->height();y++) {
         for(int x=0;x<imageTextCanvas->width();x++) {
             bool isTextPart = imageTextCanvas->readPixel(x,y);
@@ -83,7 +93,7 @@ void Text::Refresh(bool direct) {
         }
     }
     if ( direct ) {
-        lLog("DIRECT\n");
+        //lLog("DIRECT\n");
         canvas->pushSprite(clipX,clipY,Drawable::MASK_COLOR);
     }
 }

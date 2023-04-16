@@ -409,7 +409,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (systemSleep) { return; }
     systemSleep = true;
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY-3, NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY, NULL,1);
     if ( pdPASS == intTaskOk ) { return; }
     systemSleep = false;
     lSysLog("ERROR: cannot launch DoSleep!!!\n");
@@ -670,7 +670,7 @@ void SaveDataBeforeShutdown() {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
-    //StopDatabase();
+    StopDatabase();
     //delay(100);
 
     //StopBLE();
@@ -870,13 +870,15 @@ void SystemBMARestitution() {
                 continue;
             }
             sprintf(query,fmtStr,r.day,r.month,r.year,r.hour,r.minute,r.second,BMAMessages[currAct]);
+            if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
+            /*
             if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
                 int  rc = db_exec(lIoTsystemDatabase,query);
                 if (rc != SQLITE_OK) {
                     lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
                 }
                 xSemaphoreGive( SqlLogSemaphore ); // free
-            }
+            }*/
             free(query);
 
 //BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_QUERY_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
@@ -1089,6 +1091,7 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
             identified = true;
         } else if (IP_EVENT_STA_LOST_IP == id) {
             lNetLog("FreeRTOS event:'%s' Network: IP Lost\n", base);
+            WiFi.mode(WIFI_OFF);
             identified = true;
         } else if (IP_EVENT_AP_STAIPASSIGNED == id) {
             ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
@@ -1741,7 +1744,7 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TASK_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &AXPInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     //delay(150);
 

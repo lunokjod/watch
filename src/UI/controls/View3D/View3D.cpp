@@ -383,7 +383,7 @@ void View3D::Render() {
                     const uint16_t zcolor = tft->color565(alpha,alpha,alpha);
                     float distNormal = NormalFacing(currentMesh->normalCache[i]);
                     // discard from normals if no FULL (no backface normals needed)
-                    if ( ( distNormal < 0 ) && ( RENDER::FULL != RenderMode ) ) { continue; }
+                    if ( ( distNormal < 0 ) && ( RENDER::FULL == RenderMode ) ) { continue; }
                     //if ( ( distNormal < 0 ) ) { continue; }
                     meshOrderedFaces[orderdFaces].normalFacing = distNormal;
                     meshOrderedFaces[orderdFaces].faceOffset = i;
@@ -429,7 +429,6 @@ void View3D::Render() {
         int32_t tp2x = meshOrderedFaces[i].p2x;
         int32_t tp2y = meshOrderedFaces[i].p2y;
 
-
         if ( ( RENDER::FULL == RenderMode ) || ( RENDER::WIREFRAME == RenderMode ) ) {
             uint16_t finalColor = meshOrderedFaces[i].faceColor;
             bool smooth =  meshOrderedFaces[i].smooth;
@@ -440,15 +439,16 @@ void View3D::Render() {
                 uint8_t baseCol=(128*dist);
                 uint16_t nColor = tft->color565(baseCol,baseCol,baseCol);
                 finalColor = tft->alphaBlend(mixProp,nColor,finalColor);
-            } else { // normal is negated, must be darken
+                if ( RENDER::FULL == RenderMode ) {
+                    canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
+                } else if ( RENDER::WIREFRAME == RenderMode ) {
+                    canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
+                }
+            }
+            /*} else { // normal is negated, must be darken or brighten? @:(
                 finalColor = tft->alphaBlend(192,TFT_BLACK,finalColor);
-            }
+            }*/
 
-            if ( RENDER::FULL == RenderMode ) {
-                canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
-            } else if ( RENDER::WIREFRAME == RenderMode ) {
-                canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,finalColor);
-            }
         } else if ( RENDER::FLAT == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,meshOrderedFaces[i].faceColor);
         } else if ( RENDER::FLATWIREFRAME == RenderMode ) {
@@ -456,6 +456,7 @@ void View3D::Render() {
         } else if ( RENDER::MASK == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,MaskColor);
         } // else NODRAW
+        if ( nullptr != polygonCallback ) { (polygonCallback)(polygonCallbackParam,canvas,&meshOrderedFaces[i]); }
     }
     DrawBilboards();
     if ( nullptr != renderCallback ) { (renderCallback)(renderCallbackParam,canvas); }
@@ -484,8 +485,8 @@ View3D::View3D() { //}: Control() {
 
 TFT_eSprite * View3D::GetCanvas() {
     //lLog("View3D %p GetCanvas()\n",this);
-    if (directDraw) { return canvas; } // deny render without DirectDraw
-    return nullptr;
+    if (directDraw) { return canvas; }
+    return nullptr; // deny render without DirectDraw
 }
 
     // @TODO ugly code

@@ -23,13 +23,9 @@
 #include "WatchfaceDot.hpp"
 #include "LuIMainMenu.hpp"
 #include "../lunokIoT.hpp"
-
-
-#include "../static/img_weather_200.c"
-#include "../static/img_weather_300.c"
-#include "../static/img_weather_500.c"
-#include "../static/img_weather_600.c"
-#include "../static/img_weather_800.c"
+#include "../resources.hpp"
+#include "../system/Network/BLE.hpp"
+#include <WiFi.h>
 
 extern bool weatherSyncDone;
 extern int weatherId;
@@ -44,7 +40,7 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
     if ( nullptr == bottomRightButton ) {
         lAppLog("MEMORY ERROR: Unable to allocate bottomRightButton\n");
     }
-    displayBuffer = new CanvasWidget(48,48);
+    displayBuffer = new CanvasWidget(48,48); // fill with status
 
     locX=random(0,displayBuffer->canvas->width());
     locY=random(0,displayBuffer->canvas->height());
@@ -54,11 +50,9 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
     displayBuffer->canvas->setTextSize(1);
     displayBuffer->canvas->setTextDatum(CC_DATUM);
     displayBuffer->canvas->setTextColor(TFT_WHITE);
-    /*
-    dotSize = (uint8_t*)ps_malloc(displayBuffer->canvas->width()*displayBuffer->canvas->height());
-    for(int off=0;off<48*48;off++) {
-        dotSize[off]=2;
-    }*/
+
+    locationBuffer = new CanvasWidget(120,120);
+    
     Tick();
     UILongTapOverride=true;
     UINextTimeout = millis()+UITimeout; // auto-sleep
@@ -67,6 +61,7 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
 WatchfaceDotApplication::~WatchfaceDotApplication() {
     if ( nullptr != bottomRightButton ) { delete bottomRightButton; }
     if ( nullptr != displayBuffer ) { delete displayBuffer; }
+    if ( nullptr != locationBuffer ) { delete locationBuffer; }
     //if ( nullptr != dotSize ) { free(dotSize); }
     UILongTapOverride=false;
 }
@@ -146,19 +141,20 @@ bool WatchfaceDotApplication::Tick() {
         int16_t heightPxText = displayBuffer->canvas->fontHeight();
         locX=locX+(locXDir?+1:-1);
         locY=locY+(locYDir?+1:-1);
+        const uint8_t border=2;
 
-        if ( locX > (displayBuffer->canvas->width()-(lenPxText/2)) ) {
-            locX = (displayBuffer->canvas->width()-(lenPxText/2));
+        if ( locX > (displayBuffer->canvas->width()-(lenPxText/2))-border ) {
+            locX = (displayBuffer->canvas->width()-(lenPxText/2))-border;
             locXDir=false;
-        } else if ( locX < (lenPxText/2) ) {
-            locX = (lenPxText/2);
+        } else if ( locX < (lenPxText/2)+border ) {
+            locX = (lenPxText/2)+border;
             locXDir=true;
         }
-        if ( locY > displayBuffer->canvas->height()-(heightPxText/2) ) {
-            locY = displayBuffer->canvas->height()-(heightPxText/2);
+        if ( locY > (displayBuffer->canvas->height()-(heightPxText/2))-border ) {
+            locY = displayBuffer->canvas->height()-(heightPxText/2)-border;
             locYDir=false;
-        } else if ( locY < (heightPxText/2) ) {
-            locY = (heightPxText/2);
+        } else if ( locY < (heightPxText/2)+border ) {
+            locY = (heightPxText/2)+border;
             locYDir=true;
         }
         displayBuffer->canvas->setTextColor(TFT_BLACK);
@@ -168,19 +164,44 @@ bool WatchfaceDotApplication::Tick() {
         displayBuffer->canvas->drawString(buffer,locX+1,locY+1);
         displayBuffer->canvas->setTextColor(TFT_WHITE);
         displayBuffer->canvas->drawString(buffer,locX,locY);
-
-        //size_t dotOffset=0;
+        // 5x5 draw
         for (int y=0;y<displayBuffer->canvas->height();y++) {
             for (int x=0;x<displayBuffer->canvas->width();x++) {
                 uint16_t color = displayBuffer->canvas->readPixel(x,y);
-                /*
-                if ( TFT_WHITE == color ) { dotSize[dotOffset]=6; }
-                dotSize[dotOffset]--;
-                if ( dotSize[dotOffset] < 1 ) { dotSize[dotOffset]=1; }
-                canvas->fillCircle((x*5)+5,(y*5)+5,dotSize[dotOffset],color);
-                dotOffset++;
-                */
                 canvas->fillCircle((x*5)+5,(y*5)+5,dotSize,color);
+            }
+        }
+
+        if ( showDetails ) {
+            locationBuffer->canvas->fillSprite(TFT_PINK);
+            char textBuffer[100] = { 0 }; // much more than can be represented x'D
+            locationBuffer->canvas->setTextFont(0);
+            locationBuffer->canvas->setTextSize(1);
+            locationBuffer->canvas->setTextDatum(TL_DATUM);
+            locationBuffer->canvas->setTextColor(TFT_WHITE);
+            wl_status_t whatBoutWifi = WiFi.status();
+            if ( ( WL_NO_SHIELD !=  whatBoutWifi )&&( WL_DISCONNECTED !=  whatBoutWifi )) {
+                sprintf(textBuffer,"WiFi");
+                locationBuffer->canvas->drawString(textBuffer,5,5);
+            }
+            if ( bleEnabled ) {
+                sprintf(textBuffer,"BLE");
+                locationBuffer->canvas->drawString(textBuffer,5,15);
+                // ignore not-set and unset
+                if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
+                    //sprintf(textBuffer,"Zone: %d", BLELocationZone);
+                    sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
+                    locationBuffer->canvas->setTextDatum(CC_DATUM);
+                    locationBuffer->canvas->drawString(textBuffer,locationBuffer->canvas->width()/2,locationBuffer->canvas->height()/2);
+                }
+            }
+            // 2x2 draw
+            for (int y=0;y<locationBuffer->canvas->height();y++) {
+                for (int x=0;x<locationBuffer->canvas->width();x++) {
+                    uint16_t color = locationBuffer->canvas->readPixel(x,y);
+                    if ( TFT_PINK == color ) { continue; }
+                    canvas->fillCircle((x*2)+1,(y*2)+1,1,color);
+                }
             }
         }
         nextRefresh=millis()+(1000/12);

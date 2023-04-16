@@ -21,11 +21,14 @@
 #define __LUNOKIOT__APPLICATION__LUI_EXPERIMENT_RUBIKS__
 
 #include "../UI/AppLuITemplate.hpp"
-#include "../UI/controls/View3D/View3D.hpp"
+//#include "../UI/controls/View3D/View3D.hpp"
+#include <LilyGoWatch.h>
 
 class LuIExperimentRubiksApplication : public TemplateLuIApplication {
     public:
+        TFT_eSprite * texture=nullptr;
         LuIExperimentRubiksApplication();
+        ~LuIExperimentRubiksApplication();
         const char *AppName() override { return "LuI Demo Rubik's cube"; };
 };
 

@@ -34,8 +34,18 @@
 #include <LilyGoWatch.h>
 using namespace LuI;
 #include "../resources.hpp"
+#include "../static/img_checkboard_16.c"
+#include "sys/param.h"
 
 extern TFT_eSPI * tft;
+
+LuIExperimentRubiksApplication::~LuIExperimentRubiksApplication() {
+    if ( nullptr != texture ) {
+        if ( texture->created() ) { texture->deleteSprite(); }
+        delete texture;
+        texture=nullptr;
+    }
+}
 
 LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
@@ -69,17 +79,23 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
     bottomButtonContainer->AddChild(backButton,0.35);
     bottomButtonContainer->AddChild(nullptr,1.65);
 
+
+    texture = new TFT_eSprite(tft);
+    texture->setColorDepth(16);
+    texture->createSprite(img_checkboard_16.width,img_checkboard_16.height);
+    texture->setSwapBytes(true);
+    texture->pushImage(0,0,img_checkboard_16.width,img_checkboard_16.height,(uint16_t *)img_checkboard_16.pixel_data);
+
     // here the main view
     LuI::View3D * view3DTest1 = new LuI::View3D();
     view3DTest1->RenderMode=LuI::View3D::RENDER::FULL; // only will show bilboards, not meshes
 
     float cubeSize=38;
     // fake center cube on 0,0,0
-    /**
     LuI::Mesh3D * cube0 = new LuI::Mesh3D(&CubeMesh);
     cube0->Translate({0,0,0});
     view3DTest1->AddMesh3D(cube0);
-    */
+/*
 // cross
     LuI::Mesh3D * cube1 = new LuI::Mesh3D(&CubeMesh);
     cube1->Translate({cubeSize,0,0});
@@ -193,10 +209,10 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
     LuI::Mesh3D * cube26 = new LuI::Mesh3D(&CubeMesh);
     cube26->Translate({cubeSize*-1,cubeSize*-1,0});
     view3DTest1->AddMesh3D(cube26);
-
+    */
 
     view3DTest1->SetGlobalLocation({ 0,0,0 });
-    view3DTest1->SetGlobalScale(0.025);
+    //view3DTest1->SetGlobalScale(0.025);
     view3DTest1->SetBackgroundColor(TFT_BLACK); //ThCol(background);
     view3DTest1->stepCallbackParam=view3DTest1;
     view3DTest1->stepCallback=[&](void * obj){  // called when data refresh is done (before render)
@@ -211,9 +227,6 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
         if ( rotationDeg > 359 ) { rotationDeg-=360; }
         else if ( rotationDeg < 0 ) { rotationDeg+=360; }
         self->SetGlobalRotation({0,float(rotationDeg),0});
-        //self->mesh[0]->RelativeRotate({0,3.3,0});
-        //self->mesh[1]->RelativeRotate({3.3,0,0});
-        //self->mesh[2]->RelativeRotate({0,0,3.3});
         self->dirty=true; // mark control as dirty (forces redraw)
     };
     /* no background
@@ -226,34 +239,53 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
         myView->setSwapBytes(false);
     };
     */
-
-    /* no post-render
-    view3DTest1->renderCallbackParam=view3DTest1;
-    view3DTest1->renderCallback=[&](void * obj, void *canvas) {
+    // post-render
+    view3DTest1->polygonCallbackParam=view3DTest1;
+    view3DTest1->polygonCallback=[&](void * obj, void *canvas, void * faceData) {
         LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
         TFT_eSprite * myView=(TFT_eSprite *)canvas; // recover the view3DTest0
-        static int16_t pixelSize = 1;
-        static int16_t incrementPixel=1;
-        pixelSize+=incrementPixel;
-        if ( pixelSize >= 12 ) { incrementPixel*=-1; }
-        else if ( pixelSize <= 1 ) { incrementPixel*=-1; }
-        for(int y=0;y<myView->height();y+=pixelSize) {
-            for(int x=0;x<myView->width();x+=pixelSize) {
-                uint16_t color = myView->readPixel(x,y);
-                for(int cy=0;cy<pixelSize;cy++){
-                    int32_t fy=y+cy;
-                    if ( fy >= myView->height() ) { break; }
-                    for(int cx=0;cx<pixelSize;cx++){
-                        int32_t fx=x+cx;
-                        if ( fx >= myView->width() ) { break; }
-                        int16_t colorN = myView->readPixel(fx,fy);
-                        color = tft->alphaBlend(128,color,colorN);
-                    }
-                }
-                myView->fillRect(x,y,pixelSize,pixelSize,ColorSwap(color));
+        OrderedFace3D * face=(OrderedFace3D*)faceData; // get face data
+
+        TransformationMatrix transform { 2,0,0,2 }; // default flat
+        //@TODO do something with the polygon vertex and get the transform
+
+        //float polyArea = area(face->p0x,face->p0y,face->p1x,face->p1y,face->p2x,face->p2y);
+        //float scaleValue=(polyArea/1000)*2; // is a triangle, double is a square
+        //lLog("Scale ratio: %f\n",scaleValue);
+        int16_t minX = MIN(face->p0x,face->p1x);
+        minX = MIN(minX,face->p2x);
+        int16_t maxX = MAX(face->p0x,face->p1x);
+        maxX = MAX(maxX,face->p2x);
+
+        int16_t minY = MIN(face->p0y,face->p1y);
+        minY = MIN(minY,face->p2y);
+        int16_t maxY = MAX(face->p0y,face->p1y);
+        maxY = MAX(maxY,face->p2y);
+        // A/D Scale
+        // B/C Rotate
+        transform.b = ((float(minX)/float(maxX))*2)-1.0;
+        transform.c = ((float(minY)/float(maxY))*2)-1.0;
+        //lLog("Transform A: %f\n",transform.a);
+        //lLog("Transform C: %f\n",transform.c);
+
+        TFT_eSprite * finalImage = ShearSprite(texture,transform);
+        int16_t drawOffsetX = ((face->p0x+face->p1x+face->p2x)/3)-(finalImage->width()/2);
+        int16_t drawOffsetY = ((face->p0y+face->p1y+face->p2y)/3)-(finalImage->height()/2);
+        for ( int y=0;y<finalImage->height();y++) {
+            for ( int x=0;x<finalImage->width();x++) {
+                uint16_t pixColor = finalImage->readPixel(x,y);
+                if ( TFT_PINK == pixColor ) { continue; }
+                int fx=drawOffsetX+x;
+                int fy=drawOffsetY+y;
+                bool validPix = isInside(fx,fy,face->p0x,face->p0y,
+                                        face->p1x,face->p1y,
+                                        face->p2x,face->p2y);
+                if ( validPix ) { myView->drawPixel(fx,fy,pixColor); }
             }
         }
-    };*/
+        finalImage->deleteSprite();
+        delete finalImage;
+    };
 
 
     viewContainer->AddChild(view3DTest1);

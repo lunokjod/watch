@@ -41,10 +41,6 @@ using namespace LuI;
 extern TFT_eSPI * tft;
 #include "../../static/img_worldcollide_160.c"
 
-#include "../../static/img_home_64.xbm"
-#include "../../static/img_planet_64.xbm"
-#include "../../static/img_glider_64.xbm"
-#include "../../static/img_cube_64.xbm"
 
 const IconMenuEntry LuIExperimentsMenuItems[] = {
     {"Home",img_home_64_bits, img_home_64_height, img_home_64_width, [](void *obj) {

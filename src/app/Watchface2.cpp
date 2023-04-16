@@ -38,13 +38,8 @@ extern TTGOClass *ttgo;
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
 
-#include "../static/img_weather_200.c"
-#include "../static/img_weather_300.c"
-#include "../static/img_weather_500.c"
-#include "../static/img_weather_600.c"
-
-#include "../static/img_weather_800.c"
 #include "Stopwatch.hpp"
+#include "resources.hpp"
 
 int currentSec = random(0, 60);
 int currentMin = random(0, 60);

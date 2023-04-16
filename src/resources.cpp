@@ -13,7 +13,7 @@
 #include "../static/img_mainmenu_about.xbm"
 #include "../static/img_log_32.xbm"
 
-
+#include "../static/img_check_32.xbm"
 
 
 
@@ -67,3 +67,19 @@
 #include "../static/img_landscape_200.c"
 
 #include "../tool/BackButton.c"
+
+
+#include "../static/img_weather_200.c"
+#include "../static/img_weather_300.c"
+#include "../static/img_weather_500.c"
+#include "../static/img_weather_600.c"
+#include "../static/img_weather_800.c"
+
+#include "../static/img_home_64.xbm"
+#include "../static/img_planet_64.xbm"
+#include "../static/img_glider_64.xbm"
+#include "../static/img_cube_64.xbm"
+#include "../static/img_work_64.xbm"
+#include "../static/img_sleep_64.xbm"
+#include "../static/img_milestone_64.xbm"
+#include "../static/img_no_64.xbm"

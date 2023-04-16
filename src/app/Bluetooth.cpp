@@ -21,9 +21,12 @@
 #include <LilyGoWatch.h>
 #include "Bluetooth.hpp"
 #include <NimBLEDevice.h>
+#include "../resources.hpp"
+/*
 #include "../static/img_back_32.xbm"
-#include "../static/img_lock_32.xbm"
 #include "../static/img_trash_32.xbm"
+*/
+#include "../static/img_lock_32.xbm"
 #include "../system/Network/BLE.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"

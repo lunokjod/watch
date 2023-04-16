@@ -62,11 +62,16 @@ NotificacionsApplication::NotificacionsApplication() {
     NotificationDbID=-1;
     NotificationDbObtained=false;
     parsedJSON=false;
+    if ( nullptr != systemDatabase ) {
+        systemDatabase->SendSQL("SELECT * FROM notifications WHERE data LIKE '{\"t\":\"notify\",%' ORDER BY timestamp DESC LIMIT 1;",NotificacionsApplicationSQLiteCallback);
+    }
+    /*
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         //int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback=SQLiteCallback)
         db_exec(lIoTsystemDatabase,"SELECT * FROM notifications WHERE data LIKE '{\"t\":\"notify\",%' ORDER BY timestamp DESC LIMIT 1;",NotificacionsApplicationSQLiteCallback);
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
+    */
     btnMarkRead=new ButtonImageXBMWidget(canvas->width()-48,canvas->height()-48,48,48,[&,this](void *bah){
         if ( -1 != NotificationDbID ) {
             const char SQLDeleteEntry[] = "DELETE FROM notifications WHERE id=%d;";

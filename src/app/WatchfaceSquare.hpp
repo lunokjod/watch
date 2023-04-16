@@ -25,11 +25,14 @@
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
 
+#include "../resources.hpp"
+/*
 #include "../static/img_weather_200.c"
 #include "../static/img_weather_300.c"
 #include "../static/img_weather_500.c"
 #include "../static/img_weather_600.c"
 #include "../static/img_weather_800.c"
+*/
 #include "../static/img_step_32.xbm"
 #include "../static/img_distance_32.xbm"
 

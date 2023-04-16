@@ -39,9 +39,10 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include <string.h>
 
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../static/img_trash_32.xbm"
-#include "../static/img_back_32.xbm"
-#include "../static/img_check_32.xbm"
+#include "../resources.hpp"
+//#include "../static/img_trash_32.xbm"
+//#include "../static/img_back_32.xbm"
+//#include "../static/img_check_32.xbm"
 
 #include "../system/Datasources/perceptron.hpp"
 extern TTGOClass *ttgo;

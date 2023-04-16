@@ -95,11 +95,16 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
 }
 
 void BLEPlayerApplication::DBRefresh() {
+    if ( nullptr != systemDatabase ) {  
+        systemDatabase->SendSQL("SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
+        systemDatabase->SendSQL("SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
+    }
+    /*
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
         db_exec(lIoTsystemDatabase,"SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
         xSemaphoreGive( SqlLogSemaphore ); // free
-    }
+    }*/
 }
 const char MusicPlayGadgetbridgeCmd[] =  "{\"t\":\"music\",\"n\":\"play\"}";
 const char MusicPauseGadgetbridgeCmd[] = "{\"t\":\"music\",\"n\":\"pause\"}";

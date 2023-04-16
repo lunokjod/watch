@@ -138,7 +138,7 @@ void ScreenSleep() {
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
-        Serial.flush();
+        //Serial.flush();
         //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         LoT().CpuSpeed(80);
     }
@@ -205,23 +205,100 @@ void TakeScreenShootSound() {
 
 }
 
+
+// https://www.gamedev.net/forums/topic.asp?topic_id=295943
+/* IsPointInTri() - 
+ * Used by IsPointInQuad(). Function takes the point and the triangle's 
+ * vertices. It finds the area of the passed triangle (v1 v2 v3), and then the
+ * areas of the three triangles (pt v2 v3), (pt v1 v3), and (pt v1 v2). If the
+ * sum of these three is greater than the first, then the point is outside of
+ * the triangle.
+ */
+bool IsPointInTri(u32Point *pt, u32Point *v1, u32Point *v2, u32Point *v3) {
+  float TotalArea = CalcTriArea(v1, v2, v3);
+  float Area1 = CalcTriArea(pt, v2, v3);
+  float Area2 = CalcTriArea(pt, v1, v3);
+  float Area3 = CalcTriArea(pt, v1, v2);
+
+  if((Area1 + Area2 + Area3) > TotalArea)
+    return false;
+  else
+    return true;
+}
+
+/* CalcTriArea() - 
+ * Find the area of a triangle. This function uses the 1/2 determinant
+ * method. Given three points (x1, y1), (x2, y2), (x3, y3):
+ *             | x1 y1 1 |
+ * Area = .5 * | x2 y2 1 |
+ *             | x3 y3 1 |
+ * From: http://mcraefamily.com/MathHelp/GeometryTriangleAreaDeterminant.htm
+ */
+float CalcTriArea(u32Point *v1,u32Point *v2,u32Point *v3) {
+  float det = 0.0f;
+  det = ((v1->x - v3->x) * (v2->y - v3->y)) - ((v2->x - v3->x) * (v1->y - v3->y));
+  return (det / 2.0f);
+}
+
+//https://stackoverflow.com/questions/13300904/determine-whether-point-lies-inside-triangle
+float area(int x1, int y1, int x2, int y2, int x3, int y3) {
+   return abs((x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2))/2.0);
+}
+/* A function to check whether point P(x, y) lies inside the triangle formed 
+   by A(x1, y1), B(x2, y2) and C(x3, y3) */
+bool isInside( int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
+   /* Calculate area of triangle ABC */
+   float A = area (x1, y1, x2, y2, x3, y3);
+
+   /* Calculate area of triangle PBC */  
+   float A1 = area (x, y, x2, y2, x3, y3);
+
+   /* Calculate area of triangle PAC */  
+   float A2 = area (x1, y1, x, y, x3, y3);
+
+   /* Calculate area of triangle PAB */   
+   float A3 = area (x1, y1, x2, y2, x, y);
+
+   /* Check if sum of A1, A2 and A3 is same as A */
+   return (A == A1 + A2 + A3);
+}
+
 TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform) {
     // https://www.mathsisfun.com/algebra/matrix-transform.html
     TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
     if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());
-    if ( nullptr == canvas->createSprite(view->width(), view->height()) ) {
+    if ( nullptr == canvas->createSprite(view->width()*transform.a, view->height()*transform.d) ) {
         delete canvas;
         return nullptr;
     }
+    canvas->fillSprite(TFT_PINK); // transparency
+
+    // apply transform
     for(int y=0;y<view->height();y++) {
         for(int x=0;x<view->width();x++) {
             uint16_t color = view->readPixel(x,y);
             int nx=transform.a*x+transform.b*y;
             int ny=transform.c*x+transform.d*y;
-            canvas->drawPixel(nx,ny,color);
+            if ( nx < 0 ) { continue; }
+            else if ( nx > canvas->width() ) { continue; }
+            if ( ny < 0 ) { continue; }
+            else if ( ny > canvas->height() ) { continue; }
+            //canvas->drawPixel(nx,ny,color);
+            canvas->fillRect(nx,ny,transform.a*1.0,transform.d*1.0,color);
         }
     }
+    /*
+    // fill holes
+    for(int y=0;y<canvas->height();y++) {
+        for(int x=1;x<canvas->width();x++) {
+            uint16_t color = canvas->readPixel(x,y);
+            if ( TFT_PINK != color ) { continue; }
+            color = canvas->readPixel(x-1,y);
+            canvas->drawPixel(x,y,color);
+        }
+    }*/
+
     return canvas;
     /*
     for (let i = 0; i < shape.pts.length; i++) {

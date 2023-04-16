@@ -39,7 +39,11 @@ bool ParseGadgetBridgeJSON(JSONVar &json) {
     String jsonString = json.stringify(json);
     char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
     sprintf(myShitbuffer,"%s",jsonString.c_str());
-    NotificatioLog(myShitbuffer);
+    if ( nullptr != systemDatabase ) {
+        systemDatabase->SendSQL(myShitbuffer);
+    }
+    free(myShitbuffer);
+    //NotificatioLog(myShitbuffer);
     lSysLog("------AAAAAAAAA------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {

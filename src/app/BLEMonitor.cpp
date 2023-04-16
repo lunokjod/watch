@@ -62,7 +62,7 @@ void BLEMonitorTask(void *data) {
                 lNetLog("BLEMonitorTask: Scan %d begin\n", BLEMonitorScanLoops);
                 // pBLEScan->clearDuplicateCache();
                 // pBLEScan->clearResults();
-                //pBLEScan->setMaxResults(5);
+                pBLEScan->setMaxResults(5);
                 BLEScanResults foundDevices = pBLEScan->start(4);
                 // lAppLog("BLE: Devices found: %d\n",foundDevices.getCount());
                 // pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
@@ -103,11 +103,13 @@ BLEMonitorApplication::BLEMonitorApplication() {
     //NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
     lAppLog("Already know devices:\n");
+    if ( nullptr != systemDatabase ) { systemDatabase->SendSQL("SELECT COUNT(1) FROM bluetooth;"); }
+    /*
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        db_exec(lIoTsystemDatabase,"SELECT COUNT(*) FROM bluetooth;");
+        db_exec(lIoTsystemDatabase,"SELECT COUNT(1) FROM bluetooth;");
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
-
+    */
     //bool enabled = NVS.getInt("BLEEnabled");
     //if ( enabled ) { StartBLE(); }
 

@@ -352,10 +352,14 @@ bool AboutApplication::Tick() {
 
         TemplateApplication::btnBack->DirectDraw();
         // Direct draw xD
+
+        //TransformationMatrix imgTransf = { 0.46, 0.18, 0.06, 0.95 };
+        //TFT_eSprite * transformedCopy = ShearSprite(perspectiveTextBuffer->canvas,imgTransf);
         perspectiveTextBuffer->canvas->pushSprite(
             (TFT_WIDTH-perspectiveTextBuffer->canvas->width())/2
             ,(TFT_HEIGHT-perspectiveTextBuffer->canvas->height())/2);
-
+        //transformedCopy->deleteSprite();
+        //delete transformedCopy;
         nextRedraw=millis()+AboutBoxTextScrollDelay;
     }
     return false; // directdraw pointless response

@@ -21,16 +21,49 @@
 #define ___LUNOKIOT__SYSTEM__DATABASE___
 
 #include <sqlite3.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
+
+typedef struct {
+    char * query;
+    sqlite3_callback callback;
+    void * payload;
+} SQLQueryData;
+
+class Database {
+    protected:
+        TaskHandle_t databaseQueueTask = NULL;
+        const UBaseType_t uxQueueLength=5;
+        const UBaseType_t uxItemSize=sizeof(SQLQueryData);
+        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY;
+
+    public:
+        sqlite3 *databaseDescriptor;
+        QueueHandle_t queue;
+        static void _DatabaseWorkerTask(void *args);
+        Database(const char *filename);
+        ~Database();
+        void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr);
+};
+extern Database * systemDatabase;
 
 void StartDatabase();
 void StopDatabase();
+
+//@TODO @DEPRECATED SHIT MUST BE PORTED TO Database class
+void SqlUpdateBluetoothDevice(const char * mac,double distance=-1, int locationGroup=0);
+void SqlJSONLog(const char * from, const char * logLine);
+void SqlAddBluetoothDevice(const char * mac, double distance=-1, int locationGroup=0);
+void SqlRefreshBluetoothDevice(const char * mac);
+//void SqlCleanUnusedBluetoothDevices();
+
+/*
 void SqlLog(const char * logLine);
 extern sqlite3 *lIoTsystemDatabase;
 extern SemaphoreHandle_t SqlLogSemaphore;
-void SqlJSONLog(const char * from, const char * logLine);
-//extern int db_exec(sqlite3 *db, const char *sql);
+//int db_exec(sqlite3 *db, const char *sql);
 void NotificatioLog(const char * notificationData);
-
+void SQLQuery(void *args,sqlite3_callback callback);
 int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback=nullptr);
-
+*/
 #endif

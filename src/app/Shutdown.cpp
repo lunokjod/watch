@@ -43,7 +43,7 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
 #endif
     nextRedraw=0;
     timeFromBegin=millis();
-    Serial.flush();
+    //Serial.flush();
 
     this->canvas->setSwapBytes(true);
     this->canvas->pushImage(0,0,img_poweroff_fullscreen.width,img_poweroff_fullscreen.height, (uint16_t *)img_poweroff_fullscreen.pixel_data);

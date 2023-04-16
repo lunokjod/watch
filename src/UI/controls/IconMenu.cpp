@@ -97,7 +97,7 @@ void IconMenu::Launch() {
 }
 
 void IconMenu::Refresh(bool direct) {
-    lLog("IconMenu %p refresh direct: %s dirty: %s\n",this,(direct?"true":"false"),(dirty?"true":"false"));
+    //lLog("IconMenu %p refresh direct: %s dirty: %s\n",this,(direct?"true":"false"),(dirty?"true":"false"));
     if ( false == dirty ) { return; } // I'm clean!!
     Control::Refresh(false);
 

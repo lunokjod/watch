@@ -26,9 +26,11 @@
 class WatchfaceDotApplication : public LunokIoTApplication {
     private:
         ActiveRect * bottomRightButton = nullptr;
+        ActiveRect * topRightButton = nullptr;
         unsigned long nextRefresh=0;
         unsigned long nextDrop=0;
         CanvasWidget * displayBuffer = nullptr;
+        CanvasWidget * locationBuffer = nullptr;
         //uint8_t *dotSize = nullptr;
         bool drawDot=false;
         unsigned long nextBlink=0;
@@ -41,6 +43,7 @@ class WatchfaceDotApplication : public LunokIoTApplication {
         int16_t circleRadius[20] = { 0 };
         int16_t circleX[20]= { 0 };
         int16_t circleY[20]= { 0 };
+        bool showDetails=true;
     public:
         const char *AppName() override { return "Watchface Dot"; };
         WatchfaceDotApplication();

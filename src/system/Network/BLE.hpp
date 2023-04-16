@@ -69,6 +69,16 @@
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
+
+enum BLEZoneLocations {
+    UNKNOWN=0,
+    // general sites (add do you want)
+    HOME,
+    WORK,
+    REST,
+    MARK
+};
+
 // represent BLE remote devices
 class lBLEDevice {
     public:
@@ -80,6 +90,7 @@ class lBLEDevice {
         int rssi = 0;
         int8_t txPower = 0;
         double distance = -1;
+        int locationGroup=BLEZoneLocations::UNKNOWN;
         ~lBLEDevice();
 };
 
@@ -96,5 +107,18 @@ bool IsBLEEnabled();
 bool IsBLEInUse();
 bool IsBLEPeerConnected();
 bool BLESendUART(const char * data);
-//extern volatile bool bleServiceRunning;
+
+extern const char * BLEZoneLocationsHumanReadable[];
+
+extern BLEZoneLocations BLELocationZone;
+
+extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
+extern std::list <lBLEDevice*>BLEKnowDevices;
+
+extern volatile bool bleWaitStop; // internal flag to wait BLEStop task
+extern bool bleEnabled; // is the service on?
+extern volatile bool bleBeingUsed;   // downloading something
+extern volatile bool bleAdvertising;
+
+
 #endif

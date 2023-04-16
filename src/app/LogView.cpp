@@ -135,6 +135,9 @@ LogViewApplication::LogViewApplication() {
     appWidget=appLog;
     dataWidget=dataLog;
 
+    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser);
+    systemDatabase->SendSQL("SELECT origin FROM jsonLog ORDER BY id DESC LIMIT 200;", LogEventsParserJSON);
+    /*
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
         //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
@@ -143,6 +146,7 @@ LogViewApplication::LogViewApplication() {
         sqlite3_exec(lIoTsystemDatabase, "SELECT origin FROM jsonLog ORDER BY id DESC LIMIT 200;", LogEventsParserJSON, nullptr, &zErrMsg);
         xSemaphoreGive( SqlLogSemaphore );
     }
+    */
     Tick();
 }
 

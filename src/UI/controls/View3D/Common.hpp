@@ -104,12 +104,20 @@ namespace LuI {
     typedef struct {
         // 2d info about
         float normalFacing=0;
+        int p0x=0;
+        int p1x=0;
+        int p2x=0;
+        int p0y=0;
+        int p1y=0;
+        int p2y=0;
+        /*
         uint32_t p0x=0;
         uint32_t p1x=0;
         uint32_t p2x=0;
         uint32_t p0y=0;
         uint32_t p1y=0;
         uint32_t p2y=0;
+        */
         size_t faceOffset=0;
         uint16_t colorDeep=0;
         int16_t alpha=0;

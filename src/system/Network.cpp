@@ -358,7 +358,7 @@ void NetworkTasksCheck() {
         lNetLog("Network: BLE must be temporaly disabled to maximize WiFi effort\n");
         StopBLE();
     }
-    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TINY_STACK_SIZE,NULL,tskIDLE_PRIORITY-6, NULL,0);
+    BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TINY_STACK_SIZE,NULL,tskIDLE_PRIORITY, NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
         StartBLE();
