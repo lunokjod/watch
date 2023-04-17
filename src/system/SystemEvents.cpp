@@ -855,14 +855,17 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
     xSemaphoreGive( UISemaphore ); // free
 
 }
+
 void SystemBMARestitution() {
+    // the date must be from the past (when event occurs)
+    // other "real-time events" don't need set timestamp manually
     const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
     if (BMAActivitesOffset > 0 ) {
         for(int c=0;c<BMAActivitesOffset;c++) {
             uint8_t currAct=BMAActivitesBuffer[c];
             RTC_Date r=BMAActivitesTimes[c];
             lEvLog("BMA: Pending activity (%d): %02u:%02u:%02u date: %02u-%02u-%04u ",c,r.hour,r.minute,r.second,r.day,r.month,r.year); 
-            lLog("%u '%s' dump to SQLite\n",c,BMAMessages[currAct]);
+            lLog("%u: '%s' dump to SQLite\n",currAct,BMAMessages[currAct]);
             size_t totalsz = strlen(fmtStr)+40;
             char * query=(char*)ps_malloc(totalsz);
             if ( nullptr == query ) {
@@ -871,19 +874,7 @@ void SystemBMARestitution() {
             }
             sprintf(query,fmtStr,r.day,r.month,r.year,r.hour,r.minute,r.second,BMAMessages[currAct]);
             if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
-            /*
-            if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-                int  rc = db_exec(lIoTsystemDatabase,query);
-                if (rc != SQLITE_OK) {
-                    lSysLog("SQL: ERROR: Unable exec: '%s'\n", query);
-                }
-                xSemaphoreGive( SqlLogSemaphore ); // free
-            }*/
             free(query);
-
-//BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_QUERY_STACK_SIZE,  query, uxTaskPriorityGet(NULL), NULL,1);
-//if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
-
         }
         BMAActivitesOffset=0;
     }

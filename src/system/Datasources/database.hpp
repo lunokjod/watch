@@ -33,14 +33,18 @@ typedef struct {
 class Database {
     protected:
         TaskHandle_t databaseQueueTask = NULL;
-        const UBaseType_t uxQueueLength=5;
+        const UBaseType_t uxQueueLength=3;
         const UBaseType_t uxItemSize=sizeof(SQLQueryData);
-        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY;
-
-    public:
+        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY+2;
         sqlite3 *databaseDescriptor;
+        const char * filename;
         QueueHandle_t queue;
-        static void _DatabaseWorkerTask(void *args);
+        volatile bool taskRunning=false;
+        volatile bool taskEnded=false;
+    public:
+        //static void _DatabaseWorkerTask(void *args);
+        // dont call directly!
+        void _DatabaseWorkerTaskLoop();
         Database(const char *filename);
         ~Database();
         void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr);

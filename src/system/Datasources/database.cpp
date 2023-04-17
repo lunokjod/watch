@@ -57,11 +57,12 @@ const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FRO
 //StaticTask_t SQLTaskHandler;
 //StackType_t SQLStack[LUNOKIOT_TASK_STACK_SIZE];
 
-char *zErrMsg = 0;
+char *zErrMsg = nullptr;
 //volatile bool sqliteDbProblem=false;
 
 //sqlite3 *lIoTsystemDatabase = nullptr;
-SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
+//SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
+SemaphoreHandle_t SqlSemaphore = xSemaphoreCreateMutex();
 
 // https://www.sqlite.org/syntaxdiagrams.html
 
@@ -99,6 +100,13 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* 
     esp_task_wdt_reset();
     unsigned long startT = millis();
     int rc = sqlite3_exec(db, sql, resultCallback, payload, &zErrMsg);
+    /*
+    if ( SQLITE_IOERR == rc ) {
+        lLog("SQL: Retry\n");
+        delay(100);
+        // retry!!!
+        rc = sqlite3_exec(db, sql, resultCallback, payload, &zErrMsg);
+    }*/
     if (SQLITE_OK != rc) {
         lSysLog("SQL: ERROR: '%s' (%d)\n", zErrMsg, rc);
         lSysLog("SQL: ERROR QUERY: '%s'\n", sql);
@@ -121,87 +129,99 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* 
     return rc;
 }
 
-// sql worker task (works in loop until killed)
-void Database::_DatabaseWorkerTask(void *args) {
-    Database * myDatabase=(Database *)args;
-    while(true) {
+void Database::_DatabaseWorkerTaskLoop() {
+    taskRunning=true;
+    taskEnded=false;
+    //create queue
+    queue = xQueueCreate( uxQueueLength, sizeof( uxItemSize ) );
+    //sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
+    
+    if (db_open(filename, &databaseDescriptor)) {
+        lSysLog("ERROR: Datasource: Unable to open sqlite3 '%s'!\n",filename);
+        databaseDescriptor=nullptr;
+        vQueueDelete(queue);
+        queue=NULL;
+        taskEnded=true;
+        taskRunning=false;
+        return;
+    }
+    lLog("Database: %p open\n");
+
+    while(taskRunning) {
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        xTaskDelayUntil( &nextCheck, (50 / portTICK_PERIOD_MS) );
         esp_task_wdt_reset();
         SQLQueryData * myData=nullptr;
-        BaseType_t res= xQueueReceive(myDatabase->queue, &myData, portMAX_DELAY);
+        BaseType_t res= xQueueReceive(queue, &myData, LUNOKIOT_EVENT_TIME_TICKS);
         if ( pdTRUE != res ) { continue; }
         if ( nullptr == myData ) { continue; }
-        //lLog("Database: %p running %p '%s' and callback %p\n",myDatabase,myData,myData->query,myData->callback);
+        //lLog("Database: %p running %p '%s' and callback %p\n",this,myData,myData->query,myData->callback);
         // execute query
-        int rc = db_exec(myDatabase->databaseDescriptor, myData->query,myData->callback,myData->payload);
-        free(myData->query);
-        free(myData);
-        if (SQLITE_OK != rc) {
-            //lLog("This cannot be goood.... @TODO @DEBUG <---------------\n");
+        int rc;
+        if( xSemaphoreTake( SqlSemaphore, portMAX_DELAY) == pdTRUE )  {
+            rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
+            xSemaphoreGive( SqlSemaphore ); // free
         }
 
-    }
-    /*
-        //lLog("Database: %p waiting orders...\n",myDatabase);
-        //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        //xTaskDelayUntil( &nextCheck, (1000 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
-        bool moreWorkToDo=true;
-        while(moreWorkToDo) {
-            SQLQueryData * myData=nullptr;
-            esp_task_wdt_reset();
-            BaseType_t res= xQueueReceive(myDatabase->queue, &myData, portMAX_DELAY);
-            esp_task_wdt_reset();
-            if ( pdTRUE != res ) { moreWorkToDo=false; continue; }
-            if ( nullptr == myData ) { continue; }
-            //lLog("Database: %p running %p '%s' and callback %p\n",myDatabase,myData,myData->query,myData->callback);
-            // execute query
-            int rc = db_exec(myDatabase->databaseDescriptor, myData->query,myData->callback);
-            esp_task_wdt_reset();
-            // wait a bit
-            //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-            //xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
-            // destroy message
-            free(myData->query);
-            free(myData);
-            if (SQLITE_OK != rc) {
-                //lLog("This cannot be goood.... @TODO @DEBUG <---------------\n");
-            }
+        UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
+        lLog("Database: Watermark Stack: %u\n",highWater);
+        if (SQLITE_OK != rc) {
+
         }
-    }*/
-    // rever return, the class killme with task descriptor
+        free(myData->query);
+        free(myData);
+    }
+    // close db
+    sqlite3_close(databaseDescriptor);
+    databaseDescriptor=nullptr;
+    // destroy queue
+    vQueueDelete(queue);
+    queue=NULL;
+    lLog("Database: %p close\n", this);
+    taskEnded=true;
 }
 
 Database::Database(const char *filename) {
     lLog("Database: '%s' on %p\n", filename, this);
-    sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
-    if (db_open(filename, &databaseDescriptor)) {
-        lSysLog("ERROR: Datasource: Unable to open sqlite3!\n");
-        databaseDescriptor=nullptr;
-        xSemaphoreGive( SqlLogSemaphore ); // free
-        return;
-    }
-    lLog("Database: %p open\n");
-    //create queue
-    queue = xQueueCreate( uxQueueLength, sizeof( uxItemSize ) );
+    this->filename=filename;
     //register queue consumer on single core
-    xTaskCreatePinnedToCore(Database::_DatabaseWorkerTask, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASE_CORE);
+    xTaskCreatePinnedToCore([](void *args) {
+        Database * myDatabase=(Database *)args;
+
+        myDatabase->_DatabaseWorkerTaskLoop();
+        
+        lLog("Database: %p Task dies here!\n",myDatabase);
+        vTaskDelete(NULL); // kill myself
+
+    }, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASE_CORE);
+
+    lLog("Database: %p Wake thread %p...\n",this,databaseQueueTask);
+    while(false == taskRunning) {
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
+    }
+    lLog("Database: %p Thread %p running\n",this,databaseQueueTask);
 }
 
 Database::~Database() {
-    // destroy queue
-    vQueueDelete(queue);
-    queue=NULL;
     // kill thread
-    vTaskDelete(databaseQueueTask);
-    // close db
-    sqlite3_close(databaseDescriptor);
-    lLog("Database: %p close\n", this);
-
-
+    lLog("Database: %p Killing thread %p...\n",this,databaseQueueTask);
+    taskRunning=false;
+    while(false == taskEnded) {
+        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
+    }
+    lLog("Database: %p Thread %p dead\n",this,databaseQueueTask);
+    databaseQueueTask=NULL;
+    ///vTaskDelete(databaseQueueTask);
 }
 
 void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *payload) {
     // add element to queue
-    if ( NULL == queue ) { return; }
+    if ( NULL == queue ) {
+        lLog("Database: %p ERROR: No queue valid for this database (see the logs)\n");
+        return;
+    }
     SQLQueryData * newQuery = (SQLQueryData *)ps_malloc(sizeof(SQLQueryData));
     char * queryCopy = (char*)ps_malloc(strlen(sqlQuery)+1);
     sprintf(queryCopy,sqlQuery);
@@ -504,8 +524,19 @@ void SqlLog(const char * logLine) {
 
 
 void NotificatioLog(const char * notificationData) {
-    lLog("@TODO NOTIFICATION LOG DISABLED\n");
+    const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+    size_t totalsz = strlen(fmtStr)+strlen(notificationData)+1;
+    char * query=(char*)ps_malloc(totalsz);
+    if ( nullptr == query ) {
+        lSysLog("SQL: Unable to allocate: %u bytes\n", totalsz);
+        return;
+    }
+    //lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    sprintf(query,fmtStr,notificationData);
+    systemDatabase->SendSQL(query);
+    free(query);
     return;
+
     /*
     CheckDatabase();
     if ( nullptr == lIoTsystemDatabase ) {
@@ -527,14 +558,8 @@ void NotificatioLog(const char * notificationData) {
 }
 
 void NotificationLogSQL(const char * sqlQuery) {
-    return;
-    /*
-    CheckDatabase();
-    if ( nullptr == lIoTsystemDatabase ) {
-        return;
-    }
     //const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
-    //strlen(fmtStr)+
+    //strlen(fmtStr)+10;
     size_t totalsz = strlen(sqlQuery)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {
@@ -543,6 +568,14 @@ void NotificationLogSQL(const char * sqlQuery) {
     }
     //lSysLog("SQL: Query alloc size: %u\n", totalsz);
     strcpy(query,sqlQuery);
+    systemDatabase->SendSQL(query);
+    free(query);
+    return;
+    /*
+    CheckDatabase();
+    if ( nullptr == lIoTsystemDatabase ) {
+        return;
+    }
     BaseType_t intTaskOk = xTaskCreatePinnedToCore(_intrnalSql, "", LUNOKIOT_TASK_STACK_SIZE,  query, tskIDLE_PRIORITY-2, NULL,DATABASE_CORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch SQL task\n"); }
     //delay(50);

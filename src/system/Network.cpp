@@ -266,6 +266,7 @@ void NetworkTaskRun(void *data) {
         WiFi.mode(WIFI_OFF);
         lNetLog("Network: WiFi timeout! (more luck next time!)\n");
         SqlJSONLog("nonetwork","");
+        esp_task_wdt_reset();
         StartBLE();
         vTaskDelete(NULL);
     }
@@ -297,7 +298,7 @@ void NetworkTaskRun(void *data) {
 
                 unsigned long taskTimeout = millis()+15000;
                 bool taskAborted=false;
-                while(networkTaskRunning) { //@TODO must implement timeout
+                while(networkTaskRunning) {
                     delay(1000); // one second
                     if ( networkTaskRunning ) {
                         lNetLog("NetworkTask: Waiting task '%s'...\n", tsk->name);
@@ -329,6 +330,7 @@ void NetworkTaskRun(void *data) {
     delay(200);
     wifiOverride=false;
     lNetLog("Network: Pending tasks end!\n");
+    esp_task_wdt_reset();
     StartBLE();
     vTaskDelete(NULL);
 }
@@ -339,6 +341,7 @@ void NetworkTasksCheck() {
     if ( false == NVS.getInt("WifiEnabled") ) {
         liLog("WiFI: Refusing to start (disabled by user)\n");
         //SqlJSONLog("disabled",""); // notify to the log the user disable
+        esp_task_wdt_reset();
         StartBLE(); // restore BLE
         return;
     }
@@ -361,6 +364,7 @@ void NetworkTasksCheck() {
     BaseType_t taskOK = xTaskCreatePinnedToCore(NetworkTaskRun,"",LUNOKIOT_TINY_STACK_SIZE,NULL,tskIDLE_PRIORITY, NULL,0);
     if ( pdPASS != taskOK ) {
         lNetLog("NetworkTask: ERROR Trying to launch Tasks\n");
+        esp_task_wdt_reset();
         StartBLE();
     }
 }

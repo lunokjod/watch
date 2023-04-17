@@ -30,6 +30,7 @@
 #include "../system/Network/BLE.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
+#include <esp_task_wdt.h>
 
 extern bool bleEnabled;
 
@@ -55,7 +56,8 @@ BluetoothApplication::BluetoothApplication() {
         BLEKickAllPeers();
         NimBLEDevice::deleteAllBonds();
         StopBLE();
-        StartBLE(true);
+        esp_task_wdt_reset();
+        StartBLE();
         lAppLog("BLE: Bound devices removed\n");
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     generatedPin = BLEDevice::getSecurityPasskey();

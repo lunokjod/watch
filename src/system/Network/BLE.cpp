@@ -243,11 +243,7 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         newDev->lastSeen = newDev->firstSeen;
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
             BLEKnowDevices.push_back(newDev);
-            xSemaphoreGive( BLEKnowDevicesSemaphore );
-        }
-        SqlRefreshBluetoothDevice(newDev->addr.toString().c_str());
-        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-            SqlAddBluetoothDevice(newDev->addr.toString().c_str(),newDev->distance,newDev->locationGroup);
+            SqlAddBluetoothDevice(newDev->addr.toString().c_str(), newDev->distance, newDev->locationGroup);
             xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
         //lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
@@ -417,6 +413,13 @@ void BLELoopTask(void * data) {
                     lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
                     pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
                     pBLEScan->clearDuplicateCache();
+                    lNetLog("BLE: Refreshing devices from database...\n");
+                    if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                        for (auto const& dev : BLEKnowDevices) {
+                            SqlRefreshBluetoothDevice(dev->addr.toString().c_str());
+                        }
+                        xSemaphoreGive( BLEKnowDevicesSemaphore );
+                    }
                     lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
                     bleLocationScanCounter++;
                 }
@@ -527,11 +530,20 @@ static void BLEStartTask(void* args) {
         xSemaphoreGive( BLEUpDownStep );
         vTaskDelete(NULL);
     }
-    if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(BLECleanUnusedQuery); }
     //SqlCleanUnusedBluetoothDevices();
         // lets bring up BLE
     lNetLog("BLE: Starting...\n"); // notify to log
     bleEnabled = true;             // notify BLE is in use
+    esp_err_t rc = esp_task_wdt_status(NULL);
+    if ( ESP_OK == rc ) {
+        lNetLog("BLE: Disable Watchdog in task\n");
+        rc = esp_task_wdt_delete(NULL);
+        if ( ESP_OK != rc ) { lNetLog("BLE: disabled Watchdog from task: FAIL\n"); }
+    }
+
+    esp_task_wdt_reset();
+    if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(BLECleanUnusedQuery); }
+    esp_task_wdt_reset();
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
     char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
@@ -540,10 +552,12 @@ static void BLEStartTask(void* args) {
     // Create the BLE Device
     lSysLog("------------------> DEBUG: free stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
     lNetLog("------------------> DEBUG: @WARNING CRASH CAN BECOME HERE!!!!!!!!!!!!!!!!!!!!!!\n");
+    esp_task_wdt_reset();
     BLEDevice::init(std::string(BTName)); // hate strings    
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
     lNetLog("BLE: generated PIN: %06d\n",generatedPin);
+    esp_task_wdt_reset();
     BLEDevice::setSecurityPasskey(generatedPin);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
     NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
@@ -619,6 +633,7 @@ static void BLEStartTask(void* args) {
     NimBLEDescriptor * lBMATempDescCharacteristic = lBMATempCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
     lBMATempDescCharacteristic->setValue("Acceleromether Temperature");
 #endif
+    esp_task_wdt_reset();
     // Start the services
     pLunokIoTService->start();
     pBattService->start();
@@ -649,6 +664,7 @@ static void BLEStartTask(void* args) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
         vTaskDelete(NULL);
     }
+    esp_task_wdt_reset();
     adv->start();
 
     FreeSpace();
@@ -676,7 +692,7 @@ void StartBLE(bool synced) {
     
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_QUERY_STACK_SIZE,
+                        LUNOKIOT_MID_STACK_SIZE,
                         nullptr,
                         tskIDLE_PRIORITY+1,
                         &BLEStartHandler,
