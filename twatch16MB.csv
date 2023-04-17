@@ -7,7 +7,7 @@
 phy_init,  data,      phy,     0xf000,  0x1000,
    ota_0,   app,    ota_0,    0x10000,      4M,
    ota_1,   app,    ota_1,           ,      4M,
- storage,  data,   spiffs,           ,      2M, 
+  spiffs,  data,   spiffs,           ,      2M, 
      nvs,  data,      nvs,           ,    512K,
 coredump,  data, coredump,           ,     64K,
 # factory,   app,  factory,           ,      4M,

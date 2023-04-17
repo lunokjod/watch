@@ -27,7 +27,7 @@
 #include <esp_ota_ops.h>
 
 #include <Arduino.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <ArduinoNvs.h>
 #include <WiFi.h>
 #include <cstdio>
@@ -117,7 +117,7 @@ LunokIoT::LunokIoT() {
         lAppLog("DMA not availiable\n");
     #endif
     // storage init
-    SPIFFSReady = SPIFFS.begin(); // needed for SQLite activity database and other blobs
+    SPIFFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings
     lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
 
@@ -133,19 +133,19 @@ LunokIoT::LunokIoT() {
 
     bool alreadyFormattedSPIFFS = NVS.getInt("spiffsReady"); // get special key from NVS
     if ( false == alreadyFormattedSPIFFS ) {
-        lSysLog("SPIFFS: user wants format disk\n");
+        lSysLog("LittleFS: user wants format disk\n");
         SPIFFSReady=false; // mark as clean forced
     }
     // format SPIFFS if needed
     if ( false == SPIFFSReady ) {
-        lSysLog("SPIFFS: Format SPIFFS....\n");        
+        lSysLog("LittleFS: Format LittleFS....\n");        
         SplashFormatSPIFFSAnnounce();
-        SPIFFSReady = SPIFFS.format();
+        SPIFFSReady = LittleFS.format();
         if ( false == SPIFFSReady ) {
             lSysLog("SPIFFS: ERROR: Unable to format!!!\n");
             SPIFFSReady=false;
         } else {
-            SPIFFSReady = SPIFFS.begin(); // mount again
+            SPIFFSReady = LittleFS.begin(); // mount again
             NVS.setInt("spiffsReady",true,false); // assume format reached and disable it in next boot
         }
     }
@@ -304,14 +304,14 @@ bool LunokIoT::IsNetworkInUse() {
 }
 void LunokIoT::ListSPIFFS() {
     if ( false == SPIFFSReady ) { return; }
-    lSysLog("SPIFFS: contents:\n");
-    File root = SPIFFS.open("/");
+    lSysLog("LittleFS: contents:\n");
+    File root = LittleFS.open("/");
     if (!root) {
-        lLog("SPIFFS: ERROR: Failed to open directory\n");
+        lLog("LittleFS: ERROR: Failed to open directory\n");
         return;
     }
     if (!root.isDirectory()) {
-        lLog("SPIFFS: ERROR: not a directory\n");
+        lLog("LittleFS: ERROR: not a directory\n");
         return;
     }
     File file = root.openNextFile();
@@ -323,9 +323,9 @@ void LunokIoT::ListSPIFFS() {
         }
         file = root.openNextFile();
     }
-    size_t totalSPIFFS = SPIFFS.totalBytes();
-    size_t usedSPIFFS = SPIFFS.usedBytes();
-    lSysLog("SPIFFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
+    size_t totalSPIFFS = LittleFS.totalBytes();
+    size_t usedSPIFFS = LittleFS.usedBytes();
+    lSysLog("LittleFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
 }
 
 
@@ -365,6 +365,8 @@ void LunokIoT::BootReason() { // check boot status
 
 
 bool LunokIoT::CpuSpeed(uint32_t mhz) {
+    lLog("@TODO @DEBUG DISABLED CPUSPEED FOR TESTING\n");
+    return true;
     uint32_t currentMhz = getCpuFrequencyMhz();
     if ( mhz == currentMhz ) { return true; } // nothing to do :)
     lSysLog("CPU: Freq: %u Mhz to %u Mhz\n", currentMhz, mhz);

@@ -178,6 +178,7 @@ extern const GimpImage img_weather_600;
 extern const GimpImage img_weather_800;
 
 #include "../src/UI/controls/View3D/Common.hpp"
+extern const LuI::Mesh3DDescriptor CuboidMesh;
 extern const LuI::Mesh3DDescriptor CubeMesh;
 extern const LuI::Mesh3DDescriptor PlaneMesh;
 extern const LuI::Mesh3DDescriptor SuperPlaneMesh;

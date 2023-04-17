@@ -33,6 +33,7 @@
 #include "../tool/Plane.c"
 #include "../tool/SuperPlane.c"
 #include "../tool/Cube.c"
+#include "../tool/Cuboid.c"
 
 #include "../static/img_wireframe_18.c"
 #include "../static/img_alpha_18.c"

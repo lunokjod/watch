@@ -90,6 +90,7 @@ class lBLEDevice {
         int rssi = 0;
         int8_t txPower = 0;
         double distance = -1;
+        bool dbSync=false;
         int locationGroup=BLEZoneLocations::UNKNOWN;
         ~lBLEDevice();
 };
@@ -100,6 +101,7 @@ extern volatile bool bleServiceRunning;
 
 void StartBLE(bool synched=false);
 void StopBLE();
+void SaveBLEDevicesToDB();
 
 void BLESetupHooks();
 void BLEKickAllPeers();

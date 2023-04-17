@@ -492,14 +492,6 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             xSemaphoreGive( UIDrawProcess );
             return;
         }
-        // get the current app view
-        TFT_eSprite *appView = currentApplication->canvas;
-        if ( nullptr == appView ) {
-            lUILog("Unable to get app canvas!\n");
-            xSemaphoreGive( UISemaphore );
-            xSemaphoreGive( UIDrawProcess );
-            return;
-        } // do nothing
         
         // verify long tap to launch TaskSwitcher
         if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
@@ -511,18 +503,9 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 if (( false == UILongTapOverride ) && ( pushTime > LUNOKIOT_TOUCH_LONG_MS )&&( false == UIlongTap )) {
                     UIlongTap=true; // locked until thumb up
                     lEvLog("UI: Touchpad long tap\n");
-                    /*
-                    // simply decorative, notifiyng the user about the action
-                    ttgo->tft->fillCircle(touchX,touchY,70,TFT_WHITE);
-                    //ttgo->tft->fillCircle(touchX,touchY,50,TFT_WHITE);
-                    ttgo->tft->drawCircle(touchX,touchY,80,TFT_WHITE);
-                    */
                     // announce haptic on launch the long tap task
                     #ifdef LILYGO_WATCH_2020_V3
-                        //ttgo->motor->onec(40);
-                        //delay(100);
                         ttgo->motor->onec(80);
-                        //delay(200);
                     #endif
 
                     //@TODO here is a good place to draw a circular menu and use the finger as arrow
@@ -547,8 +530,17 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             changes = keyboardInstance->Tick();
         } else {
             if ( false == UIlongTap ) { // only if no long tap in progress
-                // perform the call to the app logic
-                changes = currentApplication->Tick();
+                if ( directDraw ) {
+                    changes = currentApplication->Tick();
+                } else {
+                    // set lower priority
+                    UBaseType_t myPriority = uxTaskPriorityGet(NULL);
+                    vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
+                    // perform the call to the app logic
+                    changes = currentApplication->Tick();
+                    // return to my priority
+                    vTaskPrioritySet(NULL,myPriority);
+                }
             }
         }
         if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
@@ -557,7 +549,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
             if ( nullptr != keyboardInstance ) {
                 keyboardInstance->canvas->pushSprite(0,0);
             } else {
-                appView->pushSprite(0,0); // push appView to tft
+                // get the current app view
+                TFT_eSprite *appView = currentApplication->canvas;
+                if ( nullptr != appView ) {
+                    appView->pushSprite(0,0); // push appView to tft
+                }
             }
         }
         xSemaphoreGive( UISemaphore );
@@ -615,9 +611,8 @@ static void UITickTask(void* args) {
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         // Dynamic FPS... the apps receives less events per second
         if (( ESP_OK != what )||( isDelayed )) {
-            FPS--;
+            //FPS--;
             if ( FPS < 1 ) { FPS=1; }
-            //if ( false == directDraw ) { lUILog("UI: Tick delay! (fps: %d)\n",FPS); }
         }
     }
     lEvLog("UITickTask: is dead!!!\n");
@@ -664,9 +659,9 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
 void UIStart() {
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 10,   // so much, but with multitask delays... maybe this is the most easy
+        .queue_size = 19,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
-        .task_priority = tskIDLE_PRIORITY+4, // priorize UI over rest of system (responsive UI)
+        .task_priority = tskIDLE_PRIORITY+5, // priorize UI over rest of system (responsive UI)
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // normal arduinofw setup task stack
         .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
@@ -702,75 +697,6 @@ void UIStart() {
     uiLoopRc = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
 
 }
-/*
-void _UINotifyPoint2DChange(Point2D *point) { // @TODO react with Point2D
-    esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, (void*)point, sizeof(point), LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
-    if ( ESP_ERR_TIMEOUT == what ) {
-        //Serial.println("UI: Poin2D: Change Notification timeout");
-    }
-}
-*/
-/*
-
-
-// Implementing Mid-Point Circle Drawing Algorithm
-void midPointCircleDraw(int x_centre, int y_centre, int r) {
-    int x = r, y = 0;
-     
-    // Printing the initial point on the axes
-    // after translation
-    printf("(%d, %d) ", x + x_centre, y + y_centre);
-     
-    // When radius is zero only a single
-    // point will be printed
-    if (r > 0)
-    {
-        printf("(%d, %d) ", x + x_centre, -y + y_centre);
-        printf("(%d, %d) ", y + x_centre, x + y_centre);
-        printf("(%d, %d)\n", -y + x_centre, x + y_centre);
-    }
-     
-    // Initialising the value of P
-    int P = 1 - r;
-    while (x > y)
-    {
-        y++;
-         
-        // Mid-point is inside or on the perimeter
-        if (P <= 0)
-            P = P + 2*y + 1;
-             
-        // Mid-point is outside the perimeter
-        else
-        {
-            x--;
-            P = P + 2*y - 2*x + 1;
-        }
-         
-        // All the perimeter points have already been printed
-        if (x < y)
-            break;
-         
-        // Printing the generated point and its reflection
-        // in the other octants after translation
-        printf("(%d, %d) ", x + x_centre, y + y_centre);
-        printf("(%d, %d) ", -x + x_centre, y + y_centre);
-        printf("(%d, %d) ", x + x_centre, -y + y_centre);
-        printf("(%d, %d)\n", -x + x_centre, -y + y_centre);
-         
-        // If the generated point is on the line x = y then
-        // the perimeter points have already been printed
-        if (x != y)
-        {
-            printf("(%d, %d) ", y + x_centre, x + y_centre);
-            printf("(%d, %d) ", -y + x_centre, x + y_centre);
-            printf("(%d, %d) ", y + x_centre, -x + y_centre);
-            printf("(%d, %d)\n", -y + x_centre, -x + y_centre);
-        }
-    }
-}
-*/
-
 
 // Implementing Mid-Point Circle Drawing Algorithm
 void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload) {
@@ -979,7 +905,3 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         }
     }
 }
-
-/*
-
-*/

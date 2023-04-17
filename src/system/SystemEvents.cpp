@@ -72,7 +72,7 @@ extern TTGOClass *ttgo; // ttgo library
 
 #include <SPI.h>
 #include <FS.h>
-#include <SPIFFS.h>
+#include <LittleFS.h>
 
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
 
@@ -623,7 +623,6 @@ static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32
     {
         stepCount = nowSteps + lastBootStepCount;
         lEvLog("BMA423: Event: Steps: %d\n", stepCount);
-        //lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaA\n");
     }
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
@@ -667,9 +666,10 @@ void SaveDataBeforeShutdown() {
         SqlLog(usageStatics);
         free(usageStatics);
 
-        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
+        //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
+    StopBLE();
     StopDatabase();
     //delay(100);
 
@@ -678,7 +678,7 @@ void SaveDataBeforeShutdown() {
     //delay(50);
     LoT().SPIFFSReady=false; // mark as unused
     //IsSPIFFSEnabled()
-    SPIFFS.end();
+    LittleFS.end();
     lEvLog("SPIFFS: Closed\n");
 
     NVS.close();
