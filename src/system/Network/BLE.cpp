@@ -713,9 +713,9 @@ void StartBLE(bool synced) {
 
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_MID_STACK_SIZE,
+                        LUNOKIOT_TASK_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY+8,
+                        tskIDLE_PRIORITY+4,
                         &BLEStartHandler,
                         CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
@@ -796,7 +796,7 @@ void StopBLE() {
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
                         &waitFor,
-                        tskIDLE_PRIORITY+2,
+                        tskIDLE_PRIORITY+4,
                         NULL,
                         CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {

@@ -1128,107 +1128,106 @@ static void AXPInterruptController(void *args) {
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         if (pdTRUE != done) { continue; }
 
-        if (irqAxp) {
-            lEvLog("AXP202: INT received\n");
-            int readed = ttgo->power->readIRQ();
-            if ( AXP_PASS != readed ) { xSemaphoreGive(I2cMutex); continue; }
-            if (ttgo->power->isChargingIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery charging\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isChargingDoneIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery fully charged\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattEnterActivateIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery active\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattExitActivateIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery free\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattPlugInIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery present\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattRemoveIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery removed\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattTempLowIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery temperature low\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isBattTempHighIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Battery temperature high\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isVbusPlugInIRQ()) {
-                ttgo->power->clearIRQ();
-                vbusPresent = true;
-                lEvLog("AXP202: Power source\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isVbusRemoveIRQ()) {
-                ttgo->power->clearIRQ();
-                vbusPresent = false;
-                lEvLog("AXP202: No power\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isPEKShortPressIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Event PEK Button short press\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isPEKLongtPressIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Event PEK Button long press\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            } else if (ttgo->power->isTimerTimeoutIRQ()) {
-                ttgo->power->clearIRQ();
-                lEvLog("AXP202: Event Timer timeout\n");
-                irqAxp = false;
-                xSemaphoreGive(I2cMutex);
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                continue;
-            }
-            ttgo->power->clearIRQ(); // <= if this is enabled, the AXP turns dizzy until next event
-            lSysLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
+        if ( false == irqAxp ) { xSemaphoreGive(I2cMutex); continue; }
+        lEvLog("AXP202: INT received\n");
+        int readed = ttgo->power->readIRQ();
+        if ( AXP_PASS != readed ) { xSemaphoreGive(I2cMutex); continue; }
+        if (ttgo->power->isChargingIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery charging\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isChargingDoneIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery fully charged\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattEnterActivateIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery active\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattExitActivateIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery free\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattPlugInIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery present\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattRemoveIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery removed\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattTempLowIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery temperature low\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isBattTempHighIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Battery temperature high\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isVbusPlugInIRQ()) {
+            ttgo->power->clearIRQ();
+            vbusPresent = true;
+            lEvLog("AXP202: Power source\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isVbusRemoveIRQ()) {
+            ttgo->power->clearIRQ();
+            vbusPresent = false;
+            lEvLog("AXP202: No power\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isPEKShortPressIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Event PEK Button short press\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isPEKLongtPressIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Event PEK Button long press\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            continue;
+        } else if (ttgo->power->isTimerTimeoutIRQ()) {
+            ttgo->power->clearIRQ();
+            lEvLog("AXP202: Event Timer timeout\n");
+            irqAxp = false;
+            xSemaphoreGive(I2cMutex);
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            continue;
         }
+        ttgo->power->clearIRQ();
+        lSysLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
         irqAxp = false;
         xSemaphoreGive(I2cMutex);
     }
