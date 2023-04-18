@@ -676,10 +676,10 @@ void SaveDataBeforeShutdown() {
     //StopBLE();
     //delay(50);
     //delay(50);
-    LoT().SPIFFSReady=false; // mark as unused
+    LoT().LittleFSReady=false; // mark as unused
     //IsSPIFFSEnabled()
     LittleFS.end();
-    lEvLog("SPIFFS: Closed\n");
+    lEvLog("LittleFSReady: Closed\n");
 
     NVS.close();
     lEvLog("NVS: Closed\n");
@@ -687,7 +687,7 @@ void SaveDataBeforeShutdown() {
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     if ( ttgo->bl->isOn() ) {
-        LaunchApplication(new ShutdownApplication());
+        LaunchApplication(new ShutdownApplication(),false);
     }
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }

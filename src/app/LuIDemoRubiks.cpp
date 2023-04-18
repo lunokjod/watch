@@ -36,6 +36,7 @@ using namespace LuI;
 #include "../resources.hpp"
 #include "../static/img_checkboard_16.c"
 #include "sys/param.h"
+//#include "../tool/Cuboid001.c"
 
 extern TFT_eSPI * tft;
 
@@ -92,8 +93,9 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
 
     float cubeSize=38;
     // fake center cube on 0,0,0
-    LuI::Mesh3D * cube0 = new LuI::Mesh3D(&CubeMesh);
+    LuI::Mesh3D * cube0 = new LuI::Mesh3D(&CuboidMesh);
     cube0->Translate({0,0,0});
+    cube0->Rotate({0,0,0});
     view3DTest1->AddMesh3D(cube0);
 /*
 // cross
@@ -220,13 +222,18 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
         static int rotationDeg=359;
         static float scale=0.1;
         static float scaleIncrement=0.05;
+        static float xLocation=-100;
         scale+=scaleIncrement;
         if ( scale > 3.5 ) { scaleIncrement*=-1; }
         else if ( scale < 0.1 ) { scaleIncrement*=-1; }
         rotationDeg-=5;
         if ( rotationDeg > 359 ) { rotationDeg-=360; }
         else if ( rotationDeg < 0 ) { rotationDeg+=360; }
-        self->SetGlobalRotation({0,float(rotationDeg),0});
+        self->SetGlobalLocation({0,xLocation,0});
+        //self->SetGlobalRotation({0,float(rotationDeg),0});
+        //self->mesh[0]->Translate({xLocation,0,0});
+        xLocation+=5.0;
+        if ( xLocation > 200 ) { xLocation = -100; }
         self->dirty=true; // mark control as dirty (forces redraw)
     };
     /* no background
@@ -240,6 +247,7 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
     };
     */
     // post-render
+    /*
     view3DTest1->polygonCallbackParam=view3DTest1;
     view3DTest1->polygonCallback=[&](void * obj, void *canvas, void * faceData) {
         LuI::View3D * self=(LuI::View3D *)obj; // recover the view3DTest0
@@ -286,7 +294,7 @@ LuIExperimentRubiksApplication::LuIExperimentRubiksApplication() {
         finalImage->deleteSprite();
         delete finalImage;
     };
-
+    */
 
     viewContainer->AddChild(view3DTest1);
 

@@ -142,7 +142,7 @@ void SplashMeanWhile(void *data) { // task to do boot animation
 
 void SplashFormatSPIFFSAnnounce() { // announce the SPIFFS format to user
     ttgo->tft->setTextDatum(BC_DATUM);
-    ttgo->tft->drawString("SPIFFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
+    ttgo->tft->drawString("LittleFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
 }
 
 void SplashAnnounce() {

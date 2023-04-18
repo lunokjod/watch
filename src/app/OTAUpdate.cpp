@@ -270,7 +270,7 @@ ota_end:
             esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
             wifiOverride=false;
             lAppLog("OTA: ESP_HTTPS_OTA upgrade successful. Rebooting ...\n");
-            LaunchApplication(new ShutdownApplication(true,true));
+            LaunchApplication(new ShutdownApplication(true,true),false);
             return;
         } else {
             if (ota_finish_err == ESP_ERR_OTA_VALIDATE_FAILED) {

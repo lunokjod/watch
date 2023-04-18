@@ -25,8 +25,8 @@
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
 
-#include "../system/Datasources/kvo.hpp"
-#include "../system/SystemEvents.hpp"
+//#include "../system/Datasources/kvo.hpp"
+//#include "../system/SystemEvents.hpp"
 
 #include <LilyGoWatch.h>
 
@@ -44,15 +44,13 @@
 #include "Calendar.hpp"
 #include "LuiExperiment.hpp"
 //#include "LuITest.hpp"
-#include "LuIDemoRubiks.hpp"
+//#include "LuIDemoRubiks.hpp"
 //#include "ScreenTest.hpp"
-#include "LogView.hpp"
 #include "KnowLocations.hpp"
 
 using namespace LuI;
 const IconMenuEntry LuIMainMenuItems[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
-//    {"Locations",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new KnowLocationApplication()); } },
 //    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
 //    {"LuIDemos",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
@@ -62,6 +60,7 @@ const IconMenuEntry LuIMainMenuItems[] = {
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); } },
     {"Stopwatch",img_mainmenu_stopwatch_bits, img_mainmenu_stopwatch_height, img_mainmenu_stopwatch_width, [](IGNORE_PARAM) { LaunchApplication(new StopwatchApplication()); } },
     {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](IGNORE_PARAM) { LaunchApplication(new SettingsMenuApplication()); } },
+    {"Locations",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new KnowLocationApplication()); } },
     {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](IGNORE_PARAM) { LaunchApplication(new CalendarApplication()); } },
     {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](IGNORE_PARAM) { LaunchApplication(new CalculatorApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) { LaunchApplication(new AboutApplication()); } },

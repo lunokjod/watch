@@ -90,7 +90,7 @@ Do not use ESP_LOGI functions inside.
 }
 
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
-bool LunokIoT::IsSPIFFSEnabled() { return SPIFFSReady; }
+bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats!!
@@ -117,9 +117,9 @@ LunokIoT::LunokIoT() {
         lAppLog("DMA not availiable\n");
     #endif
     // storage init
-    SPIFFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
+    LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings
-    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
+    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
 
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
     //lUILog("User screen rotation: %d\n", rotation);
@@ -131,27 +131,27 @@ LunokIoT::LunokIoT() {
 
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
 
-    bool alreadyFormattedSPIFFS = NVS.getInt("spiffsReady"); // get special key from NVS
-    if ( false == alreadyFormattedSPIFFS ) {
+    bool alreadyFormattedLittleFS = NVS.getInt("littleFSReady"); // get special key from NVS
+    if ( false == alreadyFormattedLittleFS ) {
         lSysLog("LittleFS: user wants format disk\n");
-        SPIFFSReady=false; // mark as clean forced
+        LittleFSReady=false; // mark as clean forced
     }
-    // format SPIFFS if needed
-    if ( false == SPIFFSReady ) {
+    // format LittleFS if needed
+    if ( false == LittleFSReady ) {
         lSysLog("LittleFS: Format LittleFS....\n");        
         SplashFormatSPIFFSAnnounce();
-        SPIFFSReady = LittleFS.format();
-        if ( false == SPIFFSReady ) {
-            lSysLog("SPIFFS: ERROR: Unable to format!!!\n");
-            SPIFFSReady=false;
+        LittleFSReady = LittleFS.format();
+        if ( false == LittleFSReady ) {
+            lSysLog("LittleFS: ERROR: Unable to format!!!\n");
+            LittleFSReady=false;
         } else {
-            SPIFFSReady = LittleFS.begin(); // mount again
-            NVS.setInt("spiffsReady",true,false); // assume format reached and disable it in next boot
+            LittleFSReady = LittleFS.begin(); // mount again
+            NVS.setInt("littleFSReady",true,false); // assume format reached and disable it in next boot
         }
     }
     // banner storages again
-    lSysLog("Storage: NVS: %s, SPIFFS: %s\n", (NVSReady?"yes":"NO"), (SPIFFSReady?"yes":"NO"));
-    ListSPIFFS(); // show contents to serial
+    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
+    ListLittleFS(); // show contents to serial
     /*
     esp_err_t taskStatus = esp_task_wdt_status(NULL);
     if ( ESP_ERR_INVALID_STATE != taskStatus ) {
@@ -302,8 +302,8 @@ bool LunokIoT::IsNetworkInUse() {
     if ( ( wifiOverride ) || ( IsBLEInUse() ) || ( (WL_NO_SHIELD != WiFi.status()) && (WL_IDLE_STATUS != WiFi.status())) ) { return true; }
     return false;
 }
-void LunokIoT::ListSPIFFS() {
-    if ( false == SPIFFSReady ) { return; }
+void LunokIoT::ListLittleFS() {
+    if ( false == LittleFSReady ) { return; }
     lSysLog("LittleFS: contents:\n");
     File root = LittleFS.open("/");
     if (!root) {

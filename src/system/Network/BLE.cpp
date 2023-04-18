@@ -175,17 +175,15 @@ class LBLEServerCallbacks: public BLEServerCallbacks {
 // advertiser callbacks
 class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice* advertisedDevice) {
-        /*lNetLog("BLE: '%s' '%s'\n", 
-            advertisedDevice->getAddress().toString().c_str(),
-            advertisedDevice->getName().c_str()
-        );*/
         bool alreadyKnown = false;
         int FinalZone=-1;
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
             for (auto const& dev : BLEKnowDevices) {
                 if ( dev->addr == advertisedDevice->getAddress() ) {
+                    char *finalName = (char*)"";
+                    if ( nullptr != dev->devName ) { finalName = dev->devName; }
                     lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times) zone: %d\n",
-                                            dev->devName,dev->addr.toString().c_str(),
+                                            finalName,dev->addr.toString().c_str(),
                                             ((millis()-dev->firstSeen)/1000),
                                             ((millis()-dev->lastSeen)/1000),
                                             dev->seenCount,dev->locationGroup);
@@ -438,11 +436,13 @@ void BLELoopTask(void * data) {
             }
             bleAdvertisingTimeout=millis()+LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL;
         }
+
+
         // clean old BLE peers here
         if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
             size_t b4Devs = BLEKnowDevices.size();
             BLEKnowDevices.remove_if([](lBLEDevice *dev){
-                int16_t seconds = (millis()-dev->lastSeen)/1000;
+                unsigned long seconds = (millis()-dev->lastSeen);
                 if ( seconds > LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL ) {
                     // if location is set, save to db
                     if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
@@ -532,6 +532,7 @@ void BLELoopTask(void * data) {
     vTaskDelete(NULL); // harakiri x'D
 }
 
+char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
 static void BLEStartTask(void* args) {
     // get lock 
     if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
@@ -555,10 +556,8 @@ static void BLEStartTask(void* args) {
         rc = esp_task_wdt_delete(NULL);
         if ( ESP_OK != rc ) { lNetLog("BLE: disabled Watchdog from task: FAIL\n"); }
     }
-    delay(100);
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
-    char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
     lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
     //lSysLog("------------------> DEBUG: free stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
@@ -567,6 +566,8 @@ static void BLEStartTask(void* args) {
     // Create the BLE Device
     lNetLog("BLE: Init...\n");
     BLEDevice::init(std::string(BTName)); // hate strings    
+    esp_task_wdt_reset();
+
     lNetLog("BLE: Apply security....\n");
     BLEDevice::setSecurityAuth(true,true,true);
     uint32_t generatedPin=random(0,999999);
@@ -710,9 +711,9 @@ void StartBLE(bool synced) {
 
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_TASK_STACK_SIZE,
+                        LUNOKIOT_MID_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY+3,
+                        tskIDLE_PRIORITY+8,
                         &BLEStartHandler,
                         CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {

@@ -41,8 +41,8 @@ class LunokIoT {
             static LunokIoT _myInstance;
             return _myInstance;
         }
-        void ListSPIFFS();
-        bool IsSPIFFSEnabled();
+        void ListLittleFS();
+        bool IsLittleFSEnabled();
         bool IsNVSEnabled();
         void BootReason();
         bool IsNetworkInUse();
@@ -53,7 +53,7 @@ class LunokIoT {
         LunokIoT(LunokIoT&&) = delete;                  // Move construct
         LunokIoT& operator=(LunokIoT const&) = delete;  // Copy assign
         LunokIoT& operator=(LunokIoT &&) = delete;      // Move assign
-        bool SPIFFSReady=false; // @TODO
+        bool LittleFSReady=false;
         size_t selectedWatchFace=0;
     protected:
         LunokIoT();

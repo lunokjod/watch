@@ -86,7 +86,7 @@ void Provisioning2DestroyNVS() {
         lLog("Provisioning: NVS: Provisioning data destroyed\n");
         NVS.setInt("provisioned",0,false);
         provisioned=false;
-        LaunchApplication(new ShutdownApplication(true,true));
+        LaunchApplication(new ShutdownApplication(true,true),false);
     }
 }
 
