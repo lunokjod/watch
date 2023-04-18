@@ -448,7 +448,9 @@ void BLELoopTask(void * data) {
                     if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
                         SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
                     }
-                    lNetLog("BLE: Removed expired seen device: '%s' %s\n",dev->devName,dev->addr.toString().c_str());
+                    char *finalName = (char*)"";
+                    if ( nullptr != dev->devName ) { finalName = dev->devName; }
+                    lNetLog("BLE: Removed expired seen device: '%s' %s\n",finalName,dev->addr.toString().c_str());
                     delete dev;
                     dev=nullptr;
                     return true;
