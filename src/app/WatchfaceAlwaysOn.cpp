@@ -22,9 +22,9 @@
 extern TTGOClass *ttgo;
 #include "LogView.hpp" // log capabilities
 #include "WatchfaceAlwaysOn.hpp"
-#define MINIMUM_BACKLIGHT 5
-
+#include "../UI/UI.hpp"
 WatchfaceAlwaysOn::WatchfaceAlwaysOn() {
+    if ( MINIMUM_BACKLIGHT != ttgo->bl->getLevel() ) { ttgo->setBrightness(MINIMUM_BACKLIGHT); }
     UINextTimeout = millis()+UITimeout; // auto-sleep
     Tick();
 }

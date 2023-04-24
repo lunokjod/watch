@@ -34,6 +34,8 @@ extern TFT_eSPI * tft;
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
 
+#define MINIMUM_BACKLIGHT 5
+void SetUserBrightness();
 typedef struct {
     float a;
     float b;

@@ -41,12 +41,12 @@ AdvancedSettingsApplication::AdvancedSettingsApplication() {
     },img_back_32_bits,img_back_32_height,img_back_32_width,ThCol(text),ThCol(button),false);
     btnErase=new ButtonImageXBMWidget(5,5,64,64,[&,this](void *bah){
         NVS.eraseAll(true);
-        LaunchApplication(new ShutdownApplication(true,false),false);
+        LaunchApplication(new ShutdownApplication(true,false));
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
 
     btnEraseSPIFFS = new ButtonTextWidget(79,5,64,240-5-79,[](void *bah) {
         NVS.setInt("littleFSReady",false);
-        LaunchApplication(new ShutdownApplication(true,true),false);
+        LaunchApplication(new ShutdownApplication(true,true));
     },"LittleFS",ThCol(text),ThCol(high));
 
     btnLog=new ButtonImageXBMWidget(20,80,64,200,[&,this](void *bah){

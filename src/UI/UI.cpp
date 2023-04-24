@@ -24,6 +24,8 @@
 #include <esp_event.h>
 #include <esp_event_base.h>
 #include <functional>
+#include <esp_task_wdt.h>
+#include <ArduinoNvs.h>
 
 #include "lunokiot_config.hpp"
 #include "UI.hpp"
@@ -101,6 +103,11 @@ bool screenShootInProgress = false; // @TODO watchface must show it
 
 
 SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
+
+void SetUserBrightness() {
+    uint8_t userBright = NVS.getInt("lBright");
+    ttgo->setBrightness(userBright);
+}
 
 void ScreenWake() {
     bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
@@ -429,7 +436,7 @@ TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
 
 extern SemaphoreHandle_t I2cMutex;
 
-SemaphoreHandle_t UIDrawProcess = xSemaphoreCreateMutex();
+//SemaphoreHandle_t UIDrawProcess = xSemaphoreCreateMutex();
 
 /*
  * Update touch and screen 
@@ -485,80 +492,77 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
 
     // try to get UI lock
     bool changes = false;
-    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
-        if ( nullptr == currentApplication ) {
-            // no app, nothing to do
-            xSemaphoreGive( UISemaphore );
-            xSemaphoreGive( UIDrawProcess );
-            return;
-        }
-        
-        // verify long tap to launch TaskSwitcher
-        if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
-            UIlongTap=false;
-        } else { 
-            if  ( 0.0 == touchDragDistance ) {
-                // touch full-system reactors, long tap to show the task list
-                unsigned long pushTime = millis() - touchDownTimeMS; // how much time?
-                if (( false == UILongTapOverride ) && ( pushTime > LUNOKIOT_TOUCH_LONG_MS )&&( false == UIlongTap )) {
-                    UIlongTap=true; // locked until thumb up
-                    lEvLog("UI: Touchpad long tap\n");
-                    // announce haptic on launch the long tap task
-                    #ifdef LILYGO_WATCH_2020_V3
-                        ttgo->motor->onec(80);
-                    #endif
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) != pdTRUE )  { return; };
+    // no app?, nothing to do
+    if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
+    
+    // verify long tap to launch TaskSwitcher
+    if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
+        UIlongTap=false;
+    } else { 
+        if  ( 0.0 == touchDragDistance ) {
+            // touch full-system reactors, long tap to show the task list
+            unsigned long pushTime = millis() - touchDownTimeMS; // how much time?
+            if (( false == UILongTapOverride ) && ( pushTime > LUNOKIOT_TOUCH_LONG_MS )&&( false == UIlongTap )) {
+                UIlongTap=true; // locked until thumb up
+                lEvLog("UI: Touchpad long tap\n");
+                // announce haptic on launch the long tap task
+                #ifdef LILYGO_WATCH_2020_V3
+                    ttgo->motor->onec(80);
+                #endif
 
-                    //@TODO here is a good place to draw a circular menu and use the finger as arrow
-                    // Up tasks
-                    // Down appointments
-                    // Left email
-                    // Right notifications...
-                    // and more...
+                //@TODO here is a good place to draw a circular menu and use the finger as arrow
+                // Up tasks
+                // Down appointments
+                // Left email
+                // Right notifications...
+                // and more...
 
-                    xSemaphoreGive( UISemaphore );
-                    
-                    if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
-                        LaunchWatchface(); // return to user configured watchface
-                    } // else { LaunchApplication(new TaskSwitcher()); }
-                    xSemaphoreGive( UIDrawProcess );
-                    return;
-                }
+                xSemaphoreGive( UISemaphore );
+                
+                if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
+                    LaunchWatchface(); // return to user configured watchface
+                } // else { LaunchApplication(new TaskSwitcher()); }
+                //xSemaphoreGive( UIDrawProcess );
+                return;
             }
         }
-        // if screen-keyboard is enabled, send the Tick like normal application
-        if ( nullptr != keyboardInstance ) {
-            changes = keyboardInstance->Tick();
-        } else {
-            if ( false == UIlongTap ) { // only if no long tap in progress
-                if ( directDraw ) {
-                    changes = currentApplication->Tick();
-                } else {
-                    // set lower priority
-                    UBaseType_t myPriority = uxTaskPriorityGet(NULL);
-                    vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
-                    // perform the call to the app logic
-                    changes = currentApplication->Tick();
-                    // return to my priority
-                    vTaskPrioritySet(NULL,myPriority);
-                }
-            }
-        }
-        if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
-
-        if ( changes ) {
-            if ( nullptr != keyboardInstance ) {
-                keyboardInstance->canvas->pushSprite(0,0);
-            } else {
-                // get the current app view
-                TFT_eSprite *appView = currentApplication->canvas;
-                if ( nullptr != appView ) {
-                    appView->pushSprite(0,0); // push appView to tft
-                }
-            }
-        }
-        xSemaphoreGive( UISemaphore );
     }
-    xSemaphoreGive( UIDrawProcess );
+    esp_task_wdt_reset();
+    // if screen-keyboard is enabled, send the Tick like normal application
+    if ( nullptr != keyboardInstance ) {
+        changes = keyboardInstance->Tick();
+    } else {
+        if ( false == UIlongTap ) { // only if no long tap in progress
+            if ( directDraw ) {
+                changes = currentApplication->Tick();
+            } else {
+                // set lower priority
+                //UBaseType_t myPriority = uxTaskPriorityGet(NULL);
+                //vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
+                // perform the call to the app logic
+                changes = currentApplication->Tick();
+                // return to my priority
+                //vTaskPrioritySet(NULL,myPriority);
+            }
+        }
+    }
+    esp_task_wdt_reset();
+    if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
+
+    if ( changes ) {
+        if ( nullptr != keyboardInstance ) {
+            keyboardInstance->canvas->pushSprite(0,0);
+        } else {
+            // get the current app view
+            TFT_eSprite *appView = currentApplication->canvas;
+            if ( nullptr != appView ) {
+                appView->pushSprite(0,0); // push appView to tft
+            }
+        }
+    }
+    xSemaphoreGive( UISemaphore );
+    esp_task_wdt_reset();
 }
 
 static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -659,7 +663,7 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
 void UIStart() {
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 19,   // so much, but with multitask delays... maybe this is the most easy
+        .queue_size = 24,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = tskIDLE_PRIORITY+5, // priorize UI over rest of system (responsive UI)
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // normal arduinofw setup task stack

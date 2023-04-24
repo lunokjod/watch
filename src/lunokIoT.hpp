@@ -22,6 +22,8 @@
 
 #include "lunokiot_config.hpp" // WARNING: generated file, the original from "tools/lunokiot_config.hpp.template"
 #include "system/Network/BLE.hpp"
+#include "system/Network/WiFi.hpp"
+#include "system/Network.hpp"
 
 // almost empty defines to clarify the paramethers direction (see declarations below)
 #define IN const // clarify to developer if the data is input or output
@@ -48,6 +50,16 @@ class LunokIoT {
         bool IsNetworkInUse();
         bool CpuSpeed(IN uint32_t mhz);
 
+        // network things
+        void DestroyWiFi();
+        LoTWiFi * CreateWiFi();
+        LoTWiFi * GetWiFi() { return wifi; }
+
+        void DestroyBLE();
+        LoTBLE * CreateBLE();
+        LoTBLE * GetBLE() { return ble; }
+
+        
         // delete copy and move constructors and assign operators
         LunokIoT(LunokIoT const&) = delete;             // Copy construct
         LunokIoT(LunokIoT&&) = delete;                  // Move construct
@@ -59,6 +71,10 @@ class LunokIoT {
         LunokIoT();
         ~LunokIoT() {}; // implemented here ¿what kind of singleton.... x'D
     private:
+        const float BootWifiPerformSeconds = 10; // time to first wifi tasks launch
+        Ticker BootWifiPerform; // used to launch tasks on first boot faster than "one cycle"
+        LoTWiFi * wifi=nullptr; // used internally
+        LoTBLE * ble=nullptr;
         bool normalBoot=true;
         bool NVSReady=false;
         void InitLogs();

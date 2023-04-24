@@ -271,7 +271,6 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 uint16_t doSleepThreads = 0;
 SemaphoreHandle_t DoSleepTaskSemaphore = xSemaphoreCreateMutex();
 
-extern bool wifiOverride;
 static void DoSleepTask(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_timer.html
     // what about change all timers to:
@@ -391,13 +390,10 @@ static void DoSleepTask(void *args) {
     lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
 
+    // get stepcounter meanwhile sleep
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     stepCount = lastBootStepCount+ttgo->bma->getCounter();
     xSemaphoreGive(I2cMutex);
-
-    //uint32_t nowSteps = ttgo->bma->getCounter();
-    //lLog("@TODO STEPS: %u for LOW BATTERY MODE\n", nowSteps);
-
 
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     systemSleep = false;
@@ -409,7 +405,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (systemSleep) { return; }
     systemSleep = true;
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY, NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY+2, NULL,1);
     if ( pdPASS == intTaskOk ) { return; }
     systemSleep = false;
     lSysLog("ERROR: cannot launch DoSleep!!!\n");
@@ -438,18 +434,20 @@ const char *BMAMessages[] = {
     "Activity: Invalid",
     "Activity: None"
 };
-
+/*
 const uint16_t BMAActivitesBufferMaxEntries=3;
 uint8_t *BMAActivitesBuffer=nullptr;
 RTC_Date *BMAActivitesTimes=nullptr;
 size_t BMAActivitesOffset=0;
+*/
 
 static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    /*
     if ( nullptr == BMAActivitesBuffer ) {
         BMAActivitesBuffer = (uint8_t*)ps_malloc(BMAActivitesBufferMaxEntries);
         BMAActivitesTimes=(RTC_Date*)ps_calloc(BMAActivitesBufferMaxEntries,sizeof(RTC_Date)); // mmmm, I'm not sure about this
         BMAActivitesOffset=0;
-    }
+    }*/
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     const char *nowActivity = ttgo->bma->getActivity();
     xSemaphoreGive(I2cMutex);
@@ -507,6 +505,15 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             //SqlLog("Activity: None");
         }
         if ( -1 != activity ) {
+            const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+            size_t totalsz = strlen(fmtStr)+80;
+            char * query=(char*)ps_malloc(totalsz);
+            sprintf(query,fmtStr,BMAMessages[activity]);
+            if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
+            free(query);
+            delay(100);
+        }
+            /*
             lSysLog("Activity: holding activity and data %d on offset: %u\n",activity,BMAActivitesOffset);
             BMAActivitesBuffer[BMAActivitesOffset]=activity;
             //RTC_Date r = ttgo->rtc->getDateTime();
@@ -521,7 +528,7 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
                 SystemBMARestitution();
                 BMAActivitesOffset=0;
             }
-        }
+        }*/
         FreeSpace();
 
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);
@@ -573,7 +580,7 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
         LaunchApplication(new BatteryApplication());
     } else {
         uint8_t userBright = NVS.getInt("lBright"); // restore user light
-        if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
+        if ( userBright > MINIMUM_BACKLIGHT ) { ttgo->setBrightness(userBright); } // reset the user brightness
     }
 }
 
@@ -669,17 +676,12 @@ void SaveDataBeforeShutdown() {
         //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (200 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
-    StopBLE();
+    LoT().DestroyWiFi();
+    LoT().DestroyBLE();
     StopDatabase();
-    //delay(100);
-
-    //StopBLE();
-    //delay(50);
-    //delay(50);
     LoT().LittleFSReady=false; // mark as unused
-    //IsSPIFFSEnabled()
     LittleFS.end();
-    lEvLog("LittleFSReady: Closed\n");
+    lEvLog("LittleFS: Closed\n");
 
     NVS.close();
     lEvLog("NVS: Closed\n");
@@ -687,7 +689,7 @@ void SaveDataBeforeShutdown() {
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     if ( ttgo->bl->isOn() ) {
-        LaunchApplication(new ShutdownApplication(),false);
+        LaunchApplication(new ShutdownApplication());
     }
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
@@ -822,7 +824,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    SqlLog("stop");
+    //SqlLog("stop");
     lSysLog("System event: Stop\n");
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
@@ -857,6 +859,8 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
 }
 
 void SystemBMARestitution() {
+    return;
+    /*
     // the date must be from the past (when event occurs)
     // other "real-time events" don't need set timestamp manually
     const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
@@ -878,11 +882,12 @@ void SystemBMARestitution() {
         }
         BMAActivitesOffset=0;
     }
+    */
 }
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
-    SqlLog("wake");
+    //SqlLog("wake");
 
     TakeAllSamples(); // get current pose
     
@@ -917,11 +922,13 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Up and running!\n");
     FreeSpace();
+    /*
     if ( ( NVS.getInt("WifiEnabled") ) && ( false == provisioned ) ) {
         // wifi is enabled but no provisioned? Launch the prov to suggest the user to do it
         LaunchApplication(new Provisioning2Application());
         return;
     }
+    */
     if ( nullptr == currentApplication ) { LaunchWatchface(false); }
 }
 
@@ -1082,7 +1089,7 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
             identified = true;
         } else if (IP_EVENT_STA_LOST_IP == id) {
             lNetLog("FreeRTOS event:'%s' Network: IP Lost\n", base);
-            WiFi.mode(WIFI_OFF);
+            //WiFi.mode(WIFI_OFF);
             identified = true;
         } else if (IP_EVENT_AP_STAIPASSIGNED == id) {
             ip_event_ap_staipassigned_t *assignedIP = (ip_event_ap_staipassigned_t *)event_data;
@@ -1635,10 +1642,10 @@ void SystemEventsStart() {
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 8,                             // maybe so big?
+        .queue_size = 32,                             // maybe so big?
         .task_name = "lEvTask",                      // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+8,         // a little bit faster?
-        .task_stack_size = LUNOKIOT_TASK_STACK_SIZE, // don't need so much
+        .task_priority = tskIDLE_PRIORITY+6,         // a little bit faster?
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                            // to core 1
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
     //delay(50);
@@ -1734,13 +1741,13 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TASK_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TASK_STACK_SIZE, nullptr, tskIDLE_PRIORITY+12, &AXPInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     //delay(150);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &BMAInterruptControllerHandle,0);
+    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+12, &BMAInterruptControllerHandle,0);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
 
     lSysLog("RTC interrupts @DEBUG @TODO DISABLED\n");

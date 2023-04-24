@@ -145,14 +145,14 @@ KnowLocationApplication::KnowLocationApplication() {
                     lNetLog("BLE: Location recognition: Last Scan stopped!\n");
                 }
                 lNetLog("BLE: Location recognition: Scan begin\n");
-                pBLEScan->clearDuplicateCache();
-                pBLEScan->clearResults();
-                pBLEScan->setMaxResults(255);
+                //pBLEScan->clearDuplicateCache();
+                //pBLEScan->clearResults();
+                pBLEScan->setMaxResults(5);
                 pBLEScan->setDuplicateFilter(true);
                 BLEScanResults foundDevices = pBLEScan->start(1);
                 lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
-                pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-                pBLEScan->clearDuplicateCache();
+                //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+                //pBLEScan->clearDuplicateCache();
             }
         }
     };

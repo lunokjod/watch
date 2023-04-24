@@ -94,8 +94,8 @@ BLEMonitorApplication::~BLEMonitorApplication()
     if (false == pBLEScan->isScanning()) {
         pBLEScan->stop();
     }
-    pBLEScan->clearDuplicateCache();
-    pBLEScan->clearResults();
+    //pBLEScan->clearDuplicateCache();
+    //pBLEScan->clearResults();
 }
 
 BLEMonitorApplication::BLEMonitorApplication() {

@@ -48,7 +48,7 @@ BLEZoneLocations BLELocationZone=BLEZoneLocations::UNKNOWN; // unknown by defaul
 
 const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE
-EventKVO * BLEWStartEvent = nullptr; 
+//EventKVO * BLEWStartEvent = nullptr; 
 //EventKVO * BLEWLightSleepEvent = nullptr;
 EventKVO * BLEWStopEvent = nullptr;
 // monitor the sensors
@@ -65,7 +65,6 @@ bool BLEGadgetbridgeCommandPending = false;
 bool BLEBangleJSCommandPending = false;
 SemaphoreHandle_t BLEGadgetbridge = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
 
-TaskHandle_t BLELoopTaskHandler;
 TaskHandle_t BLEStartHandler;
 // monitor devices to publish on GATT
 NimBLECharacteristic * battCharacteristic = nullptr;
@@ -95,6 +94,134 @@ uint32_t bleLocationScanCounter=0;
 
 const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
 const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
+
+void LoTBLE::_BLELoopTask() {
+    if ( nullptr != systemDatabase ) {
+        // Create tables and clean SQL old devices
+        systemDatabase->SendSQL(BLECreateTable);
+        systemDatabase->SendSQL(BLECleanUnusedQuery);
+        delay(50);
+    }
+    // Start BLE
+    uint8_t BLEAddress[6];                  // 6 octets are the BLE address
+    esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
+    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
+    lNetLog("BLE: %p Device name: '%s'\n",this,BTName); // notify to log
+
+    //@TODO START BLE
+    lNetLog("BLE: %p Init...\n",this);
+    BLEDevice::init(std::string(BTName)); // hate strings    
+
+    unsigned long nextUserSettingCheckMS=0;
+    while ( true ) {
+        TickType_t nextCheck = xTaskGetTickCount();
+        xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) );
+        if ( millis() > nextUserSettingCheckMS ) {
+            // check if user wants me
+            bool enabled = NVS.getInt("BLEEnabled");
+            if ( false == enabled ) { 
+                lNetLog("BLE: %p User settings don't agree\n",this);
+                break;
+            }
+            nextUserSettingCheckMS = millis()+UserSettingsCheckMS;
+        }
+        SuspendTasks();
+        if ( false == taskRunning ) { ResumeTasks(); break; } // force ble stop
+        ResumeTasks();
+    
+        //lLog("LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOL\n");
+
+    }
+    // Stop BLE
+    lNetLog("BLE: %p Deinit...\n",this);
+    BLEDevice::deinit(true);
+
+}
+
+void LoTBLE::_TryStopTask() {
+    bool enabled = NVS.getInt("BLEEnabled");
+    if ( true == enabled ) {  return; }
+    // stop the task
+    if ( NULL != BLELoopTaskHandler ) {
+        SuspendTasks();
+        taskRunning=false;
+        ResumeTasks();
+        while ( NULL != BLELoopTaskHandler ) {
+            lNetLog("BLE: %p Waiting for task ends...\n");
+            TickType_t nextCheck = xTaskGetTickCount();
+            xTaskDelayUntil( &nextCheck, (1000 / portTICK_PERIOD_MS) );
+        }
+    }
+}
+
+void LoTBLE::_TryLaunchTask() {
+    if ( NULL != BLELoopTaskHandler ) { return; }
+    // run the task thread
+    BaseType_t taskOK = xTaskCreatePinnedToCore([](void *obj) {
+        LoTBLE * self = (LoTBLE*)obj;
+        lNetLog("BLE: %p loop task begin here\n", self);
+        self->SuspendTasks();
+        self->taskRunning=true;
+        self->ResumeTasks();
+
+        self->_BLELoopTask();
+
+        self->SuspendTasks();
+        self->BLELoopTaskHandler=NULL;
+        self->ResumeTasks();
+        lNetLog("BLE: %p loop task die here\n", self);
+        vTaskDelete(NULL);
+    }, "loTble", LUNOKIOT_TASK_STACK_SIZE, this, tskIDLE_PRIORITY,
+                    &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
+    if ( pdPASS != taskOK ) {
+        lNetLog("BLE: %p ERROR Trying to launch loop BLE Task\n",this);
+    }
+}
+
+LoTBLE::LoTBLE() {
+    BLEWStartEvent = new EventKVO([&](){ _TryLaunchTask(); },SYSTEM_EVENT_WAKE);
+    BLEWStopEvent = new EventKVO([&](){ _TryStopTask(); },SYSTEM_EVENT_STOP);
+    bool enabled = NVS.getInt("BLEEnabled");
+    if ( false == enabled ) { 
+        lNetLog("BLE: %p User settings don't agree\n",this);
+        return;
+    }
+    _TryLaunchTask();
+
+
+}
+
+LoTBLE::~LoTBLE() {
+    delete BLEWStartEvent;
+    BLEWStartEvent=nullptr;
+    delete BLEWStopEvent;
+    BLEWStopEvent=nullptr;
+    // stop the task
+    if ( NULL != BLELoopTaskHandler ) {
+        SuspendTasks();
+        taskRunning=false;
+        ResumeTasks();
+        while ( NULL != BLELoopTaskHandler ) {
+            lNetLog("BLE: %p Waiting for task ends...\n");
+            TickType_t nextCheck = xTaskGetTickCount();
+            xTaskDelayUntil( &nextCheck, (1000 / portTICK_PERIOD_MS) );
+        }
+    }
+    lNetLog("BLE: %p die here\n");
+}
+
+void LoTBLE::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); }
+void LoTBLE::ResumeTasks() { xSemaphoreGive( taskLock ); }
+
+
+
+
+
+
+
+
+
+
 
 
 bool IsBLEPeerConnected() { return blePeer; }
@@ -393,71 +520,76 @@ void SaveBLEDevicesToDB() {
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
     lNetLog("BLE: Task begin\n");
+    esp_err_t rc = esp_task_wdt_status(NULL);
+    if ( ESP_OK == rc ) {
+        lNetLog("BLE: Disable Watchdog in loop task\n");
+        rc = esp_task_wdt_delete(NULL);
+        if ( ESP_OK != rc ) { lNetLog("BLE: disabled Watchdog from loop task: FAIL\n"); }
+    }
+
     oldDeviceConnected = false;
     deviceConnected = false;
-    unsigned long bleAdvertisingTimeout=0;
+    unsigned long bleAdvertisingTimeout=millis()+12000; // a little delay from first scan
     while(bleEnabled) {
         esp_task_wdt_reset();
-        delay(300);
-        NimBLEAdvertising *adv = pServer->getAdvertising();
-        if ( nullptr != adv ) { bleAdvertising = adv->isAdvertising(); }
 
         if ( millis() > bleAdvertisingTimeout ) {
+            NimBLEAdvertising *adv = pServer->getAdvertising();
+            if ( nullptr != adv ) { bleAdvertising = adv->isAdvertising(); }
             // do a scan trying to harvest BLE devices for Location Triggers
             if ( bleAdvertising ) {
-                NimBLEScan *pBLEScan = BLEDevice::getScan();
-                if (bleEnabled) {
-                    if (pBLEScan->isScanning()) {
-                        pBLEScan->stop();
-                        lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
-                        //delay(100);
-                    }
-                    lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
-                    //pBLEScan->clearDuplicateCache();
-                    //pBLEScan->clearResults();
-                    pBLEScan->setMaxResults(6);
-                    //pBLEScan->setInterval(1000);
-                    //pBLEScan->setWindow(999);  // less or equal setInterval value
-                    //pBLEScan->setDuplicateFilter(true);
-                    pBLEScan->setDuplicateFilter(true);
-                    BLEScanResults foundDevices = pBLEScan->start(1);
-                    lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
-                    pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-                    lNetLog("BLE: Refreshing devices from database...\n");
-                    if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-                        for (auto const& dev : BLEKnowDevices) {
-                            if ( false == dev->dbSync ) { SqlRefreshBluetoothDevice(dev->addr.toString().c_str()); }
+                adv->stop();
+                // clean old BLE peers here
+                if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                    size_t b4Devs = BLEKnowDevices.size();
+                    BLEKnowDevices.remove_if([](lBLEDevice *dev) {
+                        unsigned long seconds = (millis()-dev->lastSeen);
+                        if ( seconds > LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL ) {
+                            // if location is set, save to db
+                            if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
+                                esp_task_wdt_reset();
+                                SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
+                            }
+                            char *finalName = (char*)"";
+                            if ( nullptr != dev->devName ) { finalName = dev->devName; }
+                            lNetLog("BLE: Removed expired seen device: '%s' %s\n",finalName,dev->addr.toString().c_str());
+                            delete dev;
+                            dev=nullptr;
+                            return true;
                         }
-                        xSemaphoreGive( BLEKnowDevicesSemaphore );
-                    }
-                    lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
-                    bleLocationScanCounter++;
+                        return false;
+                    });
+                    esp_task_wdt_reset();
+                    xSemaphoreGive( BLEKnowDevicesSemaphore );
                 }
+                NimBLEScan *pBLEScan = BLEDevice::getScan();
+                if (pBLEScan->isScanning()) {
+                    pBLEScan->stop();
+                    lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
+                    delay(100);
+                }
+                lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
+                //pBLEScan->clearResults();
+                pBLEScan->setMaxResults(3);
+                pBLEScan->setInterval(1000);
+                pBLEScan->setWindow(999);  // less or equal setInterval value
+                pBLEScan->setDuplicateFilter(true);
+                //delay(50);
+                BLEScanResults foundDevices = pBLEScan->start(2);
+                lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
+                //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+                lNetLog("BLE: Refreshing devices from database...\n");
+                if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                    for (auto const& dev : BLEKnowDevices) {
+                        if ( false == dev->dbSync ) { SqlRefreshBluetoothDevice(dev->addr.toString().c_str()); }
+                    }
+                    xSemaphoreGive( BLEKnowDevicesSemaphore );
+                }
+                lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
+                adv->start();
+                bleLocationScanCounter++;
             }
             bleAdvertisingTimeout=millis()+LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL;
-        }
-
-
-        // clean old BLE peers here
-        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-            size_t b4Devs = BLEKnowDevices.size();
-            BLEKnowDevices.remove_if([](lBLEDevice *dev){
-                unsigned long seconds = (millis()-dev->lastSeen);
-                if ( seconds > LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL ) {
-                    // if location is set, save to db
-                    if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
-                        SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
-                    }
-                    char *finalName = (char*)"";
-                    if ( nullptr != dev->devName ) { finalName = dev->devName; }
-                    lNetLog("BLE: Removed expired seen device: '%s' %s\n",finalName,dev->addr.toString().c_str());
-                    delete dev;
-                    dev=nullptr;
-                    return true;
-                }
-                return false;
-            });
-            xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
 
         // disconnecting
@@ -534,41 +666,8 @@ void BLELoopTask(void * data) {
     vTaskDelete(NULL); // harakiri x'D
 }
 
-char BTName[15] = { 0 };                // buffer for build the name like: "lunokIoT_69fa"
 static void BLEStartTask(void* args) {
-    // get lock 
-    if( xSemaphoreTake( BLEUpDownStep, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) != pdTRUE )  {
-        lNetLog("BLE: ERROR: Unable to obtain the lock, cannot start\n");
-        vTaskDelete(NULL);
-    }
-    // check if user wants BLE
-    bool enabled = NVS.getInt("BLEEnabled");
-    if ( false == enabled ) { 
-        liLog("BLE disabled by user\n");
-        xSemaphoreGive( BLEUpDownStep );
-        vTaskDelete(NULL);
-    }
-    //SqlCleanUnusedBluetoothDevices();
-        // lets bring up BLE
-    lNetLog("BLE: Starting...\n"); // notify to log
-    bleEnabled = true;             // notify BLE is in use
-    esp_err_t rc = esp_task_wdt_status(NULL);
-    if ( ESP_OK == rc ) {
-        lNetLog("BLE: Disable Watchdog in task\n");
-        rc = esp_task_wdt_delete(NULL);
-        if ( ESP_OK != rc ) { lNetLog("BLE: disabled Watchdog from task: FAIL\n"); }
-    }
-    uint8_t BLEAddress[6];                  // 6 octets are the BLE address
-    esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
-    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-    lNetLog("BLE: Device name: '%s'\n",BTName); // notify to log
-    //lSysLog("------------------> DEBUG: free stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
-    esp_task_wdt_reset();
 
-    // Create the BLE Device
-    lNetLog("BLE: Init...\n");
-    BLEDevice::init(std::string(BTName)); // hate strings    
-    esp_task_wdt_reset();
 
     lNetLog("BLE: Apply security....\n");
     BLEDevice::setSecurityAuth(true,true,true);
@@ -666,6 +765,14 @@ static void BLEStartTask(void* args) {
     adv->addServiceUUID(BLE_SERVICE_LUNOKIOT);
     adv->addServiceUUID(BLE_SERVICE_BATTERY);
 
+    // generate the table if isnt created before
+    esp_task_wdt_reset();
+    if ( nullptr != systemDatabase ) {
+        systemDatabase->SendSQL(BLECreateTable);
+        systemDatabase->SendSQL(BLECleanUnusedQuery);
+        delay(50);
+    }
+
     BLEScan * pBLEScan = BLEDevice::getScan();
     pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), true);
     pBLEScan->setActiveScan(false); //active scan uses more power
@@ -674,13 +781,16 @@ static void BLEStartTask(void* args) {
     pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
+    /*
     BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_NETWORK_STACK_SIZE, NULL, tskIDLE_PRIORITY+1,
+                    LUNOKIOT_NETWORK_STACK_SIZE, NULL, tskIDLE_PRIORITY+5,
                     &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
         vTaskDelete(NULL);
     }
+                    */
+
     esp_task_wdt_reset();
     adv->start();
 
@@ -688,7 +798,7 @@ static void BLEStartTask(void* args) {
     lNetLog("BLE: Started!\n");
     vTaskDelete(NULL);
 }
-
+/*
 // call to start
 void StartBLE(bool synced) {
     bool enabled = NVS.getInt("BLEEnabled");
@@ -704,18 +814,12 @@ void StartBLE(bool synced) {
         liLog("BLE: Refusing to start (already started)\n");
         return;
     }
-    // generate the table if isnt created before
-    esp_task_wdt_reset();
-    if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(BLECreateTable); }
-    esp_task_wdt_reset();
-    if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(BLECleanUnusedQuery); }
-    esp_task_wdt_reset();
 
     BaseType_t taskOK = xTaskCreatePinnedToCore( BLEStartTask,
                         "bleStartTask",
-                        LUNOKIOT_TASK_STACK_SIZE,
+                        LUNOKIOT_MID_STACK_SIZE,
                         nullptr,
-                        tskIDLE_PRIORITY+4,
+                        tskIDLE_PRIORITY+7,
                         &BLEStartHandler,
                         CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
@@ -728,11 +832,10 @@ void StartBLE(bool synced) {
         lNetLog("BLE: Waiting service starts...\n");
         while(not bleServiceRunning) {
             TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-            /*
             if ( NULL != BLEStartHandler ) {
                 UBaseType_t highWater = uxTaskGetStackHighWaterMark(BLEStartHandler);
                 lNetLog("BLE STACK: %u\n",highWater);
-            }*/
+            }
             esp_task_wdt_reset();
             xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
         }
@@ -740,7 +843,7 @@ void StartBLE(bool synced) {
         //}
     }
 }
-
+*/
 
 void BLEKickAllPeers() {
     if ( false == bleEnabled ) { return; }
@@ -771,7 +874,7 @@ static void BLEStopTask(void* args) {
     if ( BLEDevice::getScan()->isScanning()) {
         lNetLog("BLE: Waiting scan stops...\n");
         BLEDevice::getScan()->stop();
-        BLEDevice::getScan()->clearResults();
+        //BLEDevice::getScan()->clearResults();
     }
     bleEnabled=false;
     lNetLog("BLE: Waiting service stops...\n");
@@ -796,7 +899,7 @@ void StopBLE() {
                         "bleStopTask",
                         LUNOKIOT_TASK_STACK_SIZE,
                         &waitFor,
-                        tskIDLE_PRIORITY+4,
+                        tskIDLE_PRIORITY+2,
                         NULL,
                         CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
@@ -815,9 +918,10 @@ void StopBLE() {
 
 // install hooks for events
 void BLESetupHooks() {
+    /*
     if ( nullptr == BLEWStartEvent ) {
         BLEWStartEvent = new EventKVO([](){ StartBLE(); },SYSTEM_EVENT_WAKE);
-    }
+    }*/
     if ( nullptr == BLEWStopEvent ) {
         lNetLog("BLE: @TODO DISABLED STOP ON EVENT STOP\n");
         //BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_STOP);

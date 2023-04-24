@@ -17,14 +17,28 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__ESP32_NETWORK__SUPPPORT___
-#define __LUNOKIOT__ESP32_NETWORK__SUPPPORT___
 
-#include "../lunokiot_config.hpp"
-#include "Network/WiFi.hpp"
-#include "Network/Tasks/NTP.hpp"
-#include "Network/Tasks/GeoIP.hpp"
-#include "Network/Tasks/Weather.hpp"
-#include "Network/BLE.hpp"
+#ifndef ___LUNOKIOT__WEATHER__WIFI_TASK___
+#define ___LUNOKIOT__WEATHER__WIFI_TASK___
+
+#include "../WiFi.hpp"
+#include <LilyGoWatch.h>
+
+
+class WeatherWifiTask: public LoTWiFiTask {
+    private:
+        String jsonBuffer;
+        const unsigned long Every15M = 1000*60*15;
+        unsigned long nextShoot = 0;
+        String NetworkHTTPGETRequest(const char* serverName);
+        bool NetworkGetSecureWeather();
+        bool NetworkParseWeatherData();
+
+    public:
+        void Launch() override;
+        bool Check() override;
+        ~WeatherWifiTask() override {};
+        const char * Name() override { return "Weather"; }
+};
 
 #endif

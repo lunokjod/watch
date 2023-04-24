@@ -26,6 +26,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
+#include "../UI/transition/ZoomOut.hpp" // animation
 #include "../app/LogView.hpp"
 
 #include "../app/Watchface2.hpp"
@@ -37,7 +38,9 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 
 #include <functional>
 #include <string.h>
+#include "Datasources/database.hpp"
 
+//extern Database * systemDatabase;
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../resources.hpp"
 //#include "../static/img_trash_32.xbm"
@@ -118,7 +121,7 @@ void KillApplicationTaskSync(LunokIoTApplication *instance) {
         void * where=(void *)instance;
         lUILog("KillApplicationTask: %p '%s' closing...\n", where,instance->AppName());
         delete instance;
-        delay(80); // do idle_task time to free heap
+        //delay(80); // do idle_task time to free heap
         lUILog("KillApplicationTask: %p has gone\n", where);
         //FreeSpace();
     }
@@ -142,137 +145,107 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
     LunokIoTApplication *instance = appDescriptor->instance; // get app instance loaded
     bool animation = appDescriptor->animation;
     delete appDescriptor;
-    delay(20); // do a little delay to launch it (usefull to get a bit of 'yeld()') and launcher call task ends
-
-    if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  { // can use LaunchApplication in any thread 
-        LunokIoTApplication * ptrToCurrent = currentApplication;
-
-        if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
-            lUILog("Application: None\n");
-            currentApplication = nullptr;     // no one driving now x'D
-            ttgo->tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is in a dead-end in a "null application"
-            // UI is dead beyond here, no app on foreground, only external events or timed triggers can solve this point :)
-        } else {
-           lUILog("Application: %p '%s' goes to front\n", instance,instance->AppName());
-            FPS=MAXFPS; // reset refresh rate
-            currentApplication = instance; // set as main app
-            uint8_t userBright = NVS.getInt("lBright");
-            if ( userBright != 0 ) { ttgo->setBrightness(userBright); } // reset the user brightness
-            TFT_eSprite *appView = instance->canvas;
-            if ( nullptr != appView ) {
-                if ( animation ) { // Launch new app effect (zoom out)
-                    //taskDISABLE_INTERRUPTS();
-                    //vTaskSuspendAll();
-                    //taskENTER_CRITICAL(NULL);
-                    for(float scale=0.1;scale<0.4;scale+=0.04) {
-                        TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        if ( nullptr != scaledImg ) {
-                            //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                            scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
-                            scaledImg->deleteSprite();
-                            delete scaledImg;
-                        }
-                    }
-                    for(float scale=0.4;scale<0.7;scale+=0.15) {
-                        TFT_eSprite *scaledImg = ScaleSprite(appView,scale);
-                        if ( nullptr != scaledImg ) {
-                            //lEvLog("Application: Splash scale: %f pxsize: %d\n",scale,scaledImg->width());
-                            scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
-                            scaledImg->deleteSprite();
-                            delete scaledImg;
-                        }
-                    }
-
-                    //taskEXIT_CRITICAL(NULL);
-                    //xTaskResumeAll();
-                    //taskENABLE_INTERRUPTS();
-                }
-                // push full image
-                appView->pushSprite(0,0);
+    LunokIoTApplication * ptrToCurrent = currentApplication;
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
+    if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
+        lUILog("Application: None\n");
+        currentApplication = nullptr;     // no one driving now x'D
+        tft->fillScreen(TFT_BLACK); // at this point, only system is working, the UI is in a dead-end in a "null application"
+        // UI is dead beyond here, no app on foreground, only external events or timed triggers can solve this point :)
+    } else {
+        lUILog("Application: %p '%s' goes to front\n", instance,instance->AppName());
+        FPS=MAXFPS; // reset refresh rate
+        currentApplication = instance; // set as main app
+        TFT_eSprite *appView = instance->canvas;
+        if ( ( nullptr != appView ) && (nullptr != ptrToCurrent)) {
+            if ( animation ) {
+                // no datbase use during the transition (speed up)
+                if ( nullptr != systemDatabase ) { systemDatabase->Lock(); }
+                ZoomOutTransition(ptrToCurrent->canvas,appView);
+                if ( nullptr != systemDatabase ) { systemDatabase->UnLock(); }
             }
         }
-        xSemaphoreGive( UISemaphore ); // free
+    }
+    xSemaphoreGive( UISemaphore ); // free
+    /*
+    // take screenshoot for the task switcher
+    if ( nullptr == ptrToCurrent ) { return; }
+    if ( ptrToCurrent->mustShowAsTask() ) {
+        if( xSemaphoreTake( lAppStack, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) == pdTRUE )  {
+            // SEARCH DUPLICATES
+            const char  * name = ptrToCurrent->AppName();
+            int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
+            bool alreadyExists=false;
+            while ( searchOffset > 0 ) {
+                searchOffset--;
+                if ( 0 == lastAppsTimestamp[searchOffset] ) { continue; } // no last seen (probably empty)
+                if ( nullptr == lastAppsName[searchOffset] ) { continue; } // have a name?
+                if ( 0 != strcmp(name,lastAppsName[searchOffset]) ) { continue; } // is the same app?
+                alreadyExists=true;
+                // destroy last screenshoot (if have any)
+                if ( nullptr != lastApps[searchOffset] ) {
+                    lastApps[searchOffset]->deleteSprite();
+                    delete lastApps[searchOffset];
+                    lastApps[searchOffset]=nullptr;
+                    //delay(80); // maybe is supersticious, but, bring idle task a little time to perform the free() is better for us :P
+                }
+                // get updated state screenshoot
+                //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
+                TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
+                if ( nullptr == lastView ) { // uops! must destroy this entry :(
+                    lastAppsName[searchOffset] = nullptr;
+                    lastAppsTimestamp[searchOffset]=0;
+                    continue;
+                }
+                // update current app state
+                lastApps[searchOffset] = lastView;
+                lUILog("%p '%s' already on the apps stack (offset: %d) view updated\n",ptrToCurrent,name,searchOffset);
 
-        // take screenshoot for the task switcher
-        if ( nullptr == ptrToCurrent ) { return; }
-        if ( ptrToCurrent->mustShowAsTask() ) {
-            if( xSemaphoreTake( lAppStack, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) == pdTRUE )  {
-                // SEARCH DUPLICATES
-                const char  * name = ptrToCurrent->AppName();
-                int searchOffset = LUNOKIOT_MAX_LAST_APPS; // must be signed
-                bool alreadyExists=false;
-                while ( searchOffset > 0 ) {
-                    searchOffset--;
-                    if ( 0 == lastAppsTimestamp[searchOffset] ) { continue; } // no last seen (probably empty)
-                    if ( nullptr == lastAppsName[searchOffset] ) { continue; } // have a name?
-                    if ( 0 != strcmp(name,lastAppsName[searchOffset]) ) { continue; } // is the same app?
-                    alreadyExists=true;
-                    // destroy last screenshoot (if have any)
+                // check the timeout
+                if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
+                    lUILog("%p '%s' timeout in app stack (offset: %u)\n",ptrToCurrent,name,searchOffset);
+                    lastAppsName[searchOffset] = nullptr; // free entry due timeout
                     if ( nullptr != lastApps[searchOffset] ) {
                         lastApps[searchOffset]->deleteSprite();
                         delete lastApps[searchOffset];
                         lastApps[searchOffset]=nullptr;
-                        delay(80); // maybe is supersticious, but, bring idle task a little time to perform the free() is better for us :P
                     }
-                    // get updated state screenshoot
-                    //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
-                    TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
-                    if ( nullptr == lastView ) { // uops! must destroy this entry :(
-                        lastAppsName[searchOffset] = nullptr;
-                        lastAppsTimestamp[searchOffset]=0;
-                        continue;
-                    }
-                    // update current app state
-                    lastApps[searchOffset] = lastView;
-                    lUILog("%p '%s' already on the apps stack (offset: %d) view updated\n",ptrToCurrent,name,searchOffset);
-
-                    // check the timeout
-                    if ( millis() > (lastAppsTimestamp[searchOffset]+(LUNOKIOT_RECENT_APPS_TIMEOUT_S*1000))) {
-                        lUILog("%p '%s' timeout in app stack (offset: %u)\n",ptrToCurrent,name,searchOffset);
-                        lastAppsName[searchOffset] = nullptr; // free entry due timeout
-                        if ( nullptr != lastApps[searchOffset] ) {
-                            lastApps[searchOffset]->deleteSprite();
-                            delete lastApps[searchOffset];
-                            lastApps[searchOffset]=nullptr;
-                        }
-                        lastAppsTimestamp[searchOffset]=0;
-                        delay(80);
-                        continue;
-                    }
-                    // otherwise, receive more keepalive time due has been seen now
-                    lastAppsTimestamp[searchOffset] = millis();
-                    lUILog("%p '%s' timeout updated (offset: %u)\n",ptrToCurrent,name,searchOffset);
+                    lastAppsTimestamp[searchOffset]=0;
+                    //delay(80);
+                    continue;
                 }
-
-                if ( false == alreadyExists ) { // is new app
-                    //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
-                    TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
-                    if ( nullptr != lastView ) {
-                        // add to "last apps stack"
-                        lUILog("%p '%s' added to app stack (offset: %u)\n",ptrToCurrent,name,lastAppsOffset);
-                        lastApps[lastAppsOffset] = lastView;
-                        lastAppsName[lastAppsOffset] = name;
-                        lastAppsTimestamp[lastAppsOffset] = millis();
-                    }
-                    lastAppsOffset++;
-                    if ( lastAppsOffset > LUNOKIOT_MAX_LAST_APPS-1) { lastAppsOffset=0; }
-                }
-                xSemaphoreGive( lAppStack );
-                delay(20);
+                // otherwise, receive more keepalive time due has been seen now
+                lastAppsTimestamp[searchOffset] = millis();
+                lUILog("%p '%s' timeout updated (offset: %u)\n",ptrToCurrent,name,searchOffset);
             }
-        }
 
-        if (synched) {
-            KillApplicationTaskSync(ptrToCurrent);
-        } else {
-            // kill app in other thread (some apps takes much time)
-            //xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, uxTaskPriorityGet(NULL), nullptr,0);
-            xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY-3, nullptr,0);
+            if ( false == alreadyExists ) { // is new app
+                //TFT_eSprite *lastView = ScaleSprite(ptrToCurrent->canvas,0.333);
+                TFT_eSprite * lastView = ptrToCurrent->ScreenCapture();
+                if ( nullptr != lastView ) {
+                    // add to "last apps stack"
+                    lUILog("%p '%s' added to app stack (offset: %u)\n",ptrToCurrent,name,lastAppsOffset);
+                    lastApps[lastAppsOffset] = lastView;
+                    lastAppsName[lastAppsOffset] = name;
+                    lastAppsTimestamp[lastAppsOffset] = millis();
+                }
+                lastAppsOffset++;
+                if ( lastAppsOffset > LUNOKIOT_MAX_LAST_APPS-1) { lastAppsOffset=0; }
+            }
+            xSemaphoreGive( lAppStack );
+            //delay(20);
         }
-        delay(80);
-        FreeSpace();
+    }*/
+
+    if (synched) {
+        KillApplicationTaskSync(ptrToCurrent);
+    } else {
+        // kill app in other thread (some apps takes much time)
+        xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,0);
     }
+    FreeSpace();
 }
+
 Ticker LogAppRun;
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced,bool force) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
@@ -298,7 +271,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
         // get a little breath to the system before log (sql is a relative expensive operation) 
         if ( nullptr != currentApplication ) {
                 if ( false == currentApplication->isWatchface() ) { // don't log watchfaces!
-                    LogAppRun.once_ms(100,[]() {
+                    LogAppRun.once_ms(200,[]() {
                         if ( nullptr != currentApplication ) {
                             char logMsg[255] = { 0 }; 
                             sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
@@ -316,7 +289,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
     } else {
         // apps receive the worst priority
         // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
-        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY-1, nullptr,0);
+        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY, nullptr,0);
     }
 
 

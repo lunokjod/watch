@@ -34,12 +34,12 @@
 #include "LogView.hpp"
 
 #include "../system/Network.hpp"
-extern NetworkTaskDescriptor * NetworkNTPTask;
-extern NetworkTaskDescriptor * NetworkWeatherTask;
-extern NetworkTaskDescriptor * NetworkGeoIPTask;
+//extern NetworkTaskDescriptor * NetworkNTPTask;
+//extern NetworkTaskDescriptor * NetworkWeatherTask;
+//extern NetworkTaskDescriptor * NetworkGeoIPTask;
 
-extern void StopBLE();
-extern void StartBLE(bool synched);
+//extern void StopBLE();
+//extern void StartBLE(bool synched);
 
 SettingsApplication::~SettingsApplication() {
     // on destroy
@@ -50,16 +50,16 @@ SettingsApplication::~SettingsApplication() {
     NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
     NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-    if ( nullptr != NetworkNTPTask ) { 
-        NetworkNTPTask->enabled = ntpCheck->switchEnabled;
-    }
+    //if ( nullptr != NetworkNTPTask ) { 
+    //    NetworkNTPTask->enabled = ntpCheck->switchEnabled;
+    //}
     NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-    if ( nullptr != NetworkWeatherTask ) {
-        NetworkWeatherTask->enabled = openweatherCheck->switchEnabled;
-        NetworkGeoIPTask->enabled = openweatherCheck->switchEnabled;
-    }
-    if ( bleCheck->switchEnabled ) { StartBLE(); }
-    else { StopBLE(); }
+    //if ( nullptr != NetworkWeatherTask ) {
+    //    NetworkWeatherTask->enabled = openweatherCheck->switchEnabled;
+    //    NetworkGeoIPTask->enabled = openweatherCheck->switchEnabled;
+    //}
+    //if ( bleCheck->switchEnabled ) { StartBLE(); }
+    //else { StopBLE(); }
     if ( nullptr != ntpCheck) { delete ntpCheck; }
     if ( nullptr != openweatherCheck) { delete openweatherCheck; }
     if ( nullptr != wifiCheck) { delete wifiCheck; }

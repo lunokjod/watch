@@ -21,7 +21,7 @@
 #define ___LUNOKIOT__BLE__HANDLING___
 
 #include <NimBLEDevice.h>
-
+#include "../Datasources/kvo.hpp"
 /*
     Video: https://www.youtube.com/watch?v=oCMOYS71NIU
     Based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleNotify.cpp
@@ -122,5 +122,24 @@ extern bool bleEnabled; // is the service on?
 extern volatile bool bleBeingUsed;   // downloading something
 extern volatile bool bleAdvertising;
 
+
+class LoTBLE {
+    private:
+        SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
+        void _BLELoopTask();
+        TaskHandle_t BLELoopTaskHandler=NULL;
+        bool taskRunning=false;
+        unsigned long UserSettingsCheckMS=10*1000;
+        void _TryLaunchTask();
+        void _TryStopTask();
+        EventKVO * BLEWStartEvent = nullptr; 
+        EventKVO * BLEWStopEvent = nullptr; 
+    public:
+        char BTName[15] = { 0 }; // buffer for build the name like: "lunokIoT_69fa"
+        LoTBLE();
+        ~LoTBLE();
+        void SuspendTasks();
+        void ResumeTasks();
+};
 
 #endif

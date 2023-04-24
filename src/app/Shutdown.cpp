@@ -74,10 +74,6 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
     this->canvas->drawString(stepsString, posX+1, posY+1);
     this->canvas->setTextColor(TFT_WHITE);
     this->canvas->drawString(stepsString, posX, posY);
-    Tick();
-    // dirty screen override x'D
-    directDraw=true;
-    canvas->pushSprite(0,0);
 }
 
 bool ShutdownApplication::Tick() {

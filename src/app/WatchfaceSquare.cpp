@@ -7,8 +7,7 @@
 //----------------------------------------------------------------
 
 #include "WatchfaceSquare.hpp"
-
-#define MINIMUM_BACKLIGHT 10
+#include "../UI/UI.hpp"
 #define MARGIN_TOP 3
 #define MARGIN_LFT 2
 #define WTI_POS_Y 37    // Weather icon
@@ -71,6 +70,7 @@ WatchfaceSquare::WatchfaceSquare() {
         return;
     }
     // Tick(); // OR call this if no splash 
+  SetUserBrightness();
 }
 
 

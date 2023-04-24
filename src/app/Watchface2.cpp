@@ -152,6 +152,8 @@ Watchface2Application::Watchface2Application() {
     innerSphere->DrawTo(colorBuffer->canvas, middleX, middleY, 1.0, false, TFT_BLACK);
 
     colorBuffer->DrawTo(canvas, 0, 0); // for splash
+    SetUserBrightness();
+
     // directDraw=true;
 }
 

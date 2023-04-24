@@ -17,14 +17,27 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__ESP32_NETWORK__SUPPPORT___
-#define __LUNOKIOT__ESP32_NETWORK__SUPPPORT___
 
-#include "../lunokiot_config.hpp"
-#include "Network/WiFi.hpp"
-#include "Network/Tasks/NTP.hpp"
-#include "Network/Tasks/GeoIP.hpp"
-#include "Network/Tasks/Weather.hpp"
-#include "Network/BLE.hpp"
+#ifndef ___LUNOKIOT__GEOIP__WIFI_TASK___
+#define ___LUNOKIOT__GEOIP__WIFI_TASK___
+
+#include "../WiFi.hpp"
+#include <LilyGoWatch.h>
+
+class GeoIPWifiTask: public LoTWiFiTask {
+    private:
+        const unsigned long Every3H = 1000*60*60*3;
+        unsigned long nextShoot = 0;
+        const char *url = "http://www.geoplugin.net/json.gp";
+        char *geoIPReceivedData = nullptr;
+        //char *weatherCity = nullptr;
+        //char *weatherCountry = nullptr;
+    public:
+        GeoIPWifiTask() {};
+        ~GeoIPWifiTask() override {};
+        const char * Name() override { return "GeoIP"; }
+        void Launch() override;
+        bool Check() override;
+};
 
 #endif

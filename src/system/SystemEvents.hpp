@@ -28,6 +28,7 @@
 #include "../app/LogView.hpp"
 #include <freertos/portable.h>
 #include <freertos/task.h>
+#include <esp32/himem.h>
 
 /*
  * Event loop for the system
@@ -92,6 +93,9 @@ static inline void FreeSpace() {
     //uint16_t stackBegin = uxTaskGetStackHighWaterMark2(NULL);
     uint32_t usedHeap = freeHeap-largestHeap;
     float fragmentation=(float(usedHeap)/float(freeHeap))*100.0;
+    // himem
+    //size_t memcnt=esp_himem_get_phys_size();
+    //size_t memfree=esp_himem_get_free_size();
 
     if ( stackMax > (1024*1024) ) { lSysLog("ESP32: Free stack: %.2f MByte\n", float(stackMax/1024.0/1024.0)); }
     else if ( stackMax > 1024 ) { lSysLog("ESP32: Free stack: %.2f Kb\n", float(stackMax/1024.0)); }
@@ -116,13 +120,13 @@ static inline void FreeSpace() {
     else if ( largestHeap > 1024 ) { lSysLog("ESP32: Most allocable data: %.2f Kb (fragmentation: %.1f%%%%)\n", float(largestHeap/1024.0),fragmentation); }
     else { lSysLog("ESP32: Most allocable data: %lu Byte (fragmentation: %.1f%%%%)\n",largestHeap,fragmentation); }
 
+    //lSysLog("ESP32: Himem has %dKiB of memory, %dKiB of which is free.\n", (int)memcnt/1024, (int)memfree/1024);
+
     bool done = heap_caps_check_integrity_all(true);
     lSysLog("ESP32: Heap integrity: %s\n",(done?"good":"WARNING: CORRUPTED!!!"));
 
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
-
-    lSysLog("Watermark Free Stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
 /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();

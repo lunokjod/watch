@@ -26,7 +26,7 @@
 #include "../resources.hpp"
 #include "../system/Network/BLE.hpp"
 #include <WiFi.h>
-
+#include "../system/Datasources/database.hpp"
 extern bool weatherSyncDone;
 extern int weatherId;
 extern double weatherTemp;
@@ -54,6 +54,8 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
     locationBuffer = new CanvasWidget(120,120);
     
     Tick();
+    SetUserBrightness();
+
     UILongTapOverride=true;
     UINextTimeout = millis()+UITimeout; // auto-sleep
 }
@@ -184,6 +186,7 @@ bool WatchfaceDotApplication::Tick() {
                 sprintf(textBuffer,"WiFi");
                 locationBuffer->canvas->drawString(textBuffer,5,5);
             }
+            locationBuffer->canvas->setTextDatum(TL_DATUM);
             if ( bleEnabled ) {
                 sprintf(textBuffer,"BLE");
                 locationBuffer->canvas->drawString(textBuffer,5,15);
@@ -194,6 +197,11 @@ bool WatchfaceDotApplication::Tick() {
                     locationBuffer->canvas->setTextDatum(CC_DATUM);
                     locationBuffer->canvas->drawString(textBuffer,locationBuffer->canvas->width()/2,locationBuffer->canvas->height()/2);
                 }
+            }
+            locationBuffer->canvas->setTextDatum(TL_DATUM);
+            if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
+                sprintf(textBuffer,"SQL (%u)", systemDatabase->Pending() );
+                locationBuffer->canvas->drawString(textBuffer,5,25);
             }
             // 2x2 draw
             for (int y=0;y<locationBuffer->canvas->height();y++) {

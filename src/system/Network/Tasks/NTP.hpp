@@ -17,10 +17,25 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef ___LUNOKIOT__LOCALCLOUD__HEADER__
-#define ___LUNOKIOT__LOCALCLOUD__HEADER__
-//  ./thttpd -p 6969 -d ../site/ -l ../site/log/thttpd.log -D -c **/*.cgi
 
-void StartLocalCloudClient();
+#ifndef ___LUNOKIOT__NTP__WIFI_TASK___
+#define ___LUNOKIOT__NTP__WIFI_TASK___
+
+#include "../WiFi.hpp"
+#include <LilyGoWatch.h>
+
+class NTPWifiTask: public LoTWiFiTask {
+    private:
+        const unsigned long Every24H = 1000*60*60*24;
+        unsigned long nextShoot = 0;
+        PCF8563_Class * rtc = nullptr;
+    public:
+        const static char * ntpServer;
+        NTPWifiTask(PCF8563_Class * rtc=nullptr);
+        ~NTPWifiTask() override;
+        const char * Name() override { return "NTP"; }
+        void Launch() override;
+        bool Check() override;
+};
 
 #endif

@@ -41,7 +41,7 @@
 #include "../../lunokIoT.hpp"
 #include "../SystemEvents.hpp"
 //#include "lunokIoT.hpp"
-#define DATABASE_CORE 1
+#define DATABASE_CORE 0
 Database * systemDatabase=nullptr;
 const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
@@ -133,6 +133,19 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* 
     return rc;
 }
 
+bool Database::Lock() {
+    if( xSemaphoreTake( lock, portMAX_DELAY) == pdTRUE ) { InUse=true; return true; }
+    return false;
+}
+
+void Database::UnLock() {
+    InUse=false;
+    xSemaphoreGive( lock );
+}
+unsigned int Database::Pending() {
+    return uxQueueMessagesWaiting(queue);
+}
+
 void Database::_DatabaseWorkerTaskLoop() {
     taskRunning=true;
     taskEnded=false;
@@ -165,28 +178,29 @@ void Database::_DatabaseWorkerTaskLoop() {
     lLog("Database: %p open\n");
 
     while(taskRunning) {
-        TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) );
         esp_task_wdt_reset();
         SQLQueryData * myData=nullptr;
         BaseType_t res= xQueueReceive(queue, &myData, LUNOKIOT_EVENT_TIME_TICKS);
-        if ( pdTRUE != res ) { continue; }
-        if ( nullptr == myData ) { continue; }
-        //lLog("Database: %p running %p '%s' and callback %p\n",this,myData,myData->query,myData->callback);
+        if ( pdTRUE != res ) {
+            TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+            xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) );
+            continue;
+        }
+        Lock();
         // execute query
         int rc;
-        if( xSemaphoreTake( SqlSemaphore, portMAX_DELAY) == pdTRUE )  {
-            rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
-            xSemaphoreGive( SqlSemaphore ); // free
-        }
-
-        //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
-        //lLog("Database: Watermark Stack: %u\n",highWater);
-        if (SQLITE_OK != rc) {
-
-        }
+        // temporal disable watchdog for me :)
+        esp_err_t susbcribed = esp_task_wdt_status(NULL);
+        if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
+        rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
+        
+        if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
+        UnLock();
+        taskYIELD();
+        //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
+        //lLog("Database: Watermark Stack: %u\n",highWater);
     }
     // close db
     sqlite3_close(databaseDescriptor);
@@ -213,9 +227,7 @@ Database::Database(const char *filename) {
     //register queue consumer on single core
     xTaskCreatePinnedToCore([](void *args) {
         Database * myDatabase=(Database *)args;
-
-        myDatabase->_DatabaseWorkerTaskLoop();
-        
+        myDatabase->_DatabaseWorkerTaskLoop(); // return when delete is called
         lLog("Database: %p Task dies here!\n",myDatabase);
         vTaskDelete(NULL); // kill myself
 
@@ -258,6 +270,7 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
     xQueueSend(queue, &newQuery, portMAX_DELAY);
     if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
+    taskYIELD();
 }
 
 

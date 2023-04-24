@@ -57,7 +57,7 @@ BluetoothApplication::BluetoothApplication() {
         NimBLEDevice::deleteAllBonds();
         StopBLE();
         esp_task_wdt_reset();
-        StartBLE();
+        //StartBLE();
         lAppLog("BLE: Bound devices removed\n");
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     generatedPin = BLEDevice::getSecurityPasskey();

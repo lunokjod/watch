@@ -18,40 +18,33 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
-
+//#include <LilyGoWatch.h>
+//#include "../lunokIoT.hpp"
 #include "Network.hpp"
 
-#include <functional>
-#include <list>
-//#include <NimBLEDevice.h>
+//#include <functional>
+//#include <list>
 
-#include "lunokiot_config.hpp"
-#include "SystemEvents.hpp"
+//#include "lunokiot_config.hpp"
+//#include "SystemEvents.hpp"
 
-#include <ArduinoNvs.h> // persistent values
-#include <WiFi.h>
-#include "UI/UI.hpp" // for rgb unions
-#include <HTTPClient.h>
+//#include <ArduinoNvs.h> // persistent values
+//#include <WiFi.h>
+//#include "UI/UI.hpp" // for rgb unions
+//#include <HTTPClient.h>
 
+
+//#include "Datasources/kvo.hpp"
+//#include "../app/LogView.hpp"
+//#include <esp_task_wdt.h>
+//#include "Datasources/database.hpp"
+#include "Network/WiFi.hpp"
 #include "Network/BLE.hpp"
-
-#ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
-#include "LocalCloud.hpp"
-#endif
-#include "Datasources/kvo.hpp"
-#include "../app/LogView.hpp"
-#include <esp_task_wdt.h>
-#include "Datasources/database.hpp"
 
 // https://stackoverflow.com/questions/44951078/when-how-is-a-ble-gatt-notify-indicate-is-send-on-physical-layer
 extern char * latestBuildFoundString;
-#include "../app/OTAUpdate.hpp"
-#include "Network/OpenWeather.hpp"
-//extern bool screenShootInProgress;
-#include <Ticker.h>
-Ticker BootNetworkTicker; // first shoot
-Ticker NetworkTicker; // loop every 5 minutes
+//#include "../app/OTAUpdate.hpp"
+//#include <Ticker.h>
 extern bool provisioned;
 bool wifiOverride=false; // this var disables the wifi automatic disconnection
 //extern TFT_eSprite *screenShootCanvas;
@@ -69,23 +62,33 @@ extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_server_pem_end")
 extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
 extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 #endif
+extern const PROGMEM uint8_t openweatherPEM_start[] asm("_binary_asset_openweathermap_org_pem_start");
+extern const PROGMEM uint8_t openweatherPEM_end[] asm("_binary_asset_openweathermap_org_pem_end");
+extern const PROGMEM char openWeatherMapApiKey[];
+
+//@TODO convert this to  system event
+extern bool ntpSyncDone;
+extern bool weatherSyncDone;
+
 
 // Network scheduler list
-std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
+//std::list<NetworkTaskDescriptor *> networkPendingTasks = {};
 
 
 /*
  * Stop desired task from network scheduler
  */
+/*
 bool RemoveNetworkTask(NetworkTaskDescriptor *oldTsk) {
     lNetLog("RemoveNetworkTask: Task %p '%s' removed\n", oldTsk,oldTsk->name);
     networkPendingTasks.remove(oldTsk);
     return true;
 }
-
+*/
 /*
  * Add a timed network task to the network scheduler
  */
+/*
 bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     size_t offset = 0;
     for (auto const& tsk : networkPendingTasks) {
@@ -98,11 +101,11 @@ bool AddNetworkTask(NetworkTaskDescriptor *nuTsk) {
     networkPendingTasks.push_back(nuTsk);
     lNetLog("AddNetworkTask: Task %p '%s' added (offset: %d)\n", nuTsk,nuTsk->name, offset);
     return true;
-}
+}*/
 /*
  * Search for update system network task
  */
-
+/*
 void SystemUpdateAvailiable(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     if ( nullptr == latestBuildFoundString) {
         lNetLog("OTA: Version must be checked online before launch\n");
@@ -115,8 +118,8 @@ void SystemUpdateAvailiable(void *handler_args, esp_event_base_t base, int32_t i
         LaunchApplication(new OTAUpdateApplication(),true);
     }
 }
-
-
+*/
+/*
 NetworkTaskDescriptor * SearchUpdateNetworkTask = nullptr;
 void SearchUpdateAsNetworkTask() {
     if ( nullptr == SearchUpdateNetworkTask ) {
@@ -196,12 +199,13 @@ void SearchUpdateAsNetworkTask() {
         AddNetworkTask(SearchUpdateNetworkTask);
     }
 }
-
+*/
 /*
  * The network scheduler loop
  * Check all network tasks and determine if must be launched
  * Note: ReconnectPeriodMs determines minimal period of scheduling (keep it high for battery saving)
  */
+/*
 bool networkTaskRunning = false; // is network task running?
 bool networkTaskResult = false; // result from last
 void NetworkTaskCallTask(void *data) {
@@ -217,7 +221,8 @@ void NetworkTaskCallTask(void *data) {
     networkTaskRunning=false;
     vTaskDelete(NULL);
 }
-
+*/
+/*
 // any task needs to start?
 bool NetworkTaskIsPending() {
     bool mustStart = false;
@@ -233,6 +238,8 @@ bool NetworkTaskIsPending() {
     }
     return mustStart;
 }
+*/
+/*
 void NetworkTaskRun(void *data) {
     // Tasks pending!!!
     lNetLog("Network: Timed Tasks WiFi procedure begin\n");
@@ -334,6 +341,9 @@ void NetworkTaskRun(void *data) {
     StartBLE();
     vTaskDelete(NULL);
 }
+*/
+
+/*
 void NetworkTasksCheck() {
     if ( systemSleep ) { return; }
     if ( wifiOverride ) { liLog("WiFi: override in progress\n"); return; }
@@ -368,7 +378,7 @@ void NetworkTasksCheck() {
         StartBLE();
     }
 }
-
+*/
 /*
  * Create the task for network scheduler
  * How it works?
@@ -380,6 +390,7 @@ void NetworkTasksCheck() {
 
 //StackType_t NetworkTaskStack[ LUNOKIOT_NETWORK_TASK_STACK_SIZE ];
 //StaticTask_t NetworkTaskBuffer;
+/*
 bool NetworkHandler() {
     lNetLog("NetworkHandler\n");
     #ifdef LUNOKIOT_WIFI_ENABLED
@@ -387,7 +398,7 @@ bool NetworkHandler() {
         if ( false == provisioned ) { liLog("WiFi: WARNING: Not provisioned\n"); }
         lNetLog("WiFi: Network tasks handler\n");
         if ( provisioned ) {
-            lNetLog("WiFi: Provisioned :) Task runs in few seconds...\n");
+            lNetLog("WiFi: Provisioned :) Tasks begans in few seconds...\n");
             BootNetworkTicker.once(4,NetworkTasksCheck);
         }
         NetworkTicker.attach(60*5,NetworkTasksCheck); // check for tasks every 5 minutes
@@ -397,7 +408,7 @@ bool NetworkHandler() {
             lSysLog("NetworkHandler: ERROR: Unable register UPDATE manager\n");
         }
 
-        OpenWeatherTaskHandler();
+        //OpenWeatherTaskHandler();
         #ifdef LUNOKIOT_UPDATES_ENABLED
             SearchUpdateAsNetworkTask();
         #endif
@@ -408,13 +419,10 @@ bool NetworkHandler() {
         BLESetupHooks();
     #endif
 
-    #ifdef LUNOKIOT_LOCAL_CLOUD_ENABLED
-        StartLocalCloudClient();
-    #endif
-
     if ( provisioned ) { return true; }
     return false;
 }
+*/
 
 /*
 float ReverseFloat( const float inFloat )
@@ -432,4 +440,47 @@ float ReverseFloat( const float inFloat )
    return retVal;
 }
 */
+
+
+/*
+//@TODO DEBUG TASK
+class FakeWiFiTask: public LoTWiFiTask {
+    private:
+        bool allow=true;
+    public:
+        void Launch() override {
+            lLog("FakeWiFiTask %p LAUNCH EVENT\n");
+            allow=false;
+        }
+        bool Check() override {
+            lLog("FakeWiFiTask %p CHECK EVENT\n");
+            return allow;
+        }
+        ~FakeWiFiTask() override {};
+        const char * Name() override { return "Fake task!"; }
+};*/
+
+extern int weatherId;
+extern char *weatherMain;
+extern char *weatherDescription;
+extern char *weatherIcon;
+extern double weatherTemp;
+// Extra Weather variables
+extern double weatherFeelsTemp;
+extern double weatherTempMin;
+extern double weatherTempMax;
+extern double weatherHumidity;
+extern double weatherPressure;
+extern double weatherWindSpeed;
+
+
+extern char *geoIPReceivedData;
+extern char *weatherReceivedData;
+
+extern char *weatherCity;
+extern char *weatherCountry;
+
+
+//extern PCF8563_Class * rtc;
+
 

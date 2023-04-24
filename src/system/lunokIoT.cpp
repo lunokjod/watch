@@ -43,25 +43,30 @@
 #include "UI/BootSplash.hpp"
 #include "SystemEvents.hpp"
 #include "Datasources/database.hpp"
-#include "Datasources/perceptron.hpp"
+//#include "Datasources/perceptron.hpp"
 #include "PMU/AXP202.hpp"
 #include "system/Network.hpp"
+class NTPWifiTask;
 
 #include "app/Steps.hpp" // Step manager
 #include "app/LogView.hpp" // log
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <esp_console.h>
+
+//#include <esp32/himem.h>
+//#include <esp32/spiram.h>
+
 extern SemaphoreHandle_t I2cMutex;
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
 //TFT_eSPI * tft = new TFT_eSPI();
 TFT_eSPI * tft = nullptr;
+PCF8563_Class * rtc = nullptr;
 
 extern bool ntpSyncDone;
-extern const char *ntpServer;
+//extern const char *ntpServer;
 
 volatile RTC_NOINIT_ATTR int16_t 	lt_sys_reset;//Global var
 RTC_NOINIT_ATTR char lt_sys_tsk_ovf[16];//Global var
@@ -93,36 +98,25 @@ bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 LunokIoT::LunokIoT() {
-    int64_t beginBootTime = esp_timer_get_time(); // stats!!
+    int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
     
     InitLogs(); // need for stdout on usb-uart
 
     // announce myself with build information if serial debug is enabled
     lSysLog("'компаньон' #%d//%s//\n",LUNOKIOT_BUILD_NUMBER,LUNOKIOT_KEY);
-    
-    // report memory
+    // report initial memory
     FreeSpace();
-    
-    //ttgo->setTftExternal(*tft);
     // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
-    tft = ttgo->tft;
-    #ifdef ESP32_DMA
-        lSysLog("DMA Availiable\n");
-        /* crash :(
-        bool DMAReached = tft->initDMA();
-        lUILog("TFT DMA Status: %s\n",(DMAReached?"true":"false"));
-        */
-    #else
-        lAppLog("DMA not availiable\n");
-    #endif
+    tft = ttgo->tft; // set convenient extern
+    rtc = ttgo->rtc; // set convenient extern
+    
     // storage init
-    LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
     NVSReady = NVS.begin(); // need NVS to get the current settings
+    LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
     lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
-
+    // setup tft rotation
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
-    //lUILog("User screen rotation: %d\n", rotation);
     ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
 
     size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
@@ -130,6 +124,7 @@ LunokIoT::LunokIoT() {
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
 
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
+    SplashAnnounceBegin(); // anounce user about boot begins
 
     bool alreadyFormattedLittleFS = NVS.getInt("littleFSReady"); // get special key from NVS
     if ( false == alreadyFormattedLittleFS ) {
@@ -149,15 +144,7 @@ LunokIoT::LunokIoT() {
             NVS.setInt("littleFSReady",true,false); // assume format reached and disable it in next boot
         }
     }
-    // banner storages again
-    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
     ListLittleFS(); // show contents to serial
-    /*
-    esp_err_t taskStatus = esp_task_wdt_status(NULL);
-    if ( ESP_ERR_INVALID_STATE != taskStatus ) {
-        esp_task_wdt_deinit();
-        lEvLog(" TWDT enabled by arduinoFW???\n");
-    }*/
     
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true); // CONFIG_ESP_TASK_WDT_TIMEOUT_S
@@ -167,22 +154,10 @@ LunokIoT::LunokIoT() {
     }
     BootReason(); // announce boot reason and from what partition to serial
 
-    /* useless on arduinofw
-    //#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
-    taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
-    if ( ESP_OK != taskWatchdogResult ) {
-        //  maybe due the ArduinoFW esp-idf sdk see:
-        // '.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/config/sdkconfig.h'
-        lEvLog("WARNING: Unable to start Task Watchdog on PRO_CPU(0)\n");
-    }*/
-    //#endif
-    
-    //#if CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1 && !CONFIG_FREERTOS_UNICORE
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("WARNING: Unable to start Task Watchdog on APP_CPU(1)\n");
     }
-    //#endif
 
     #ifdef LILYGO_WATCH_2020_V3
     ttgo->motor_begin(); // start the motor for haptic notifications
@@ -196,7 +171,8 @@ LunokIoT::LunokIoT() {
     long timezone = NVS.getInt("timezoneTime");
     // announce values to log
     lEvLog("RTC: Config: Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
-    configTime(timezone*3600, daylight*3600, ntpServer); // set ntp server query
+    configTime(timezone*3600, daylight*3600, NTPWifiTask::ntpServer); // set ntp server query
+    
     struct tm timeinfo;
 
     BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
@@ -217,7 +193,6 @@ LunokIoT::LunokIoT() {
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
 
-    SplashAnnounceBegin(); // anounce user about boot begins
 
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
@@ -230,7 +205,12 @@ LunokIoT::LunokIoT() {
     SystemEventsStart();
     // Start the interface with the user via the screen and buttons!!! (born to serve xD)
     UIStart();
-    NetworkHandler();   // already provisioned? start the network timed tasks loop
+#ifdef LUNOKIOT_WIFI_ENABLED
+    if (nullptr == wifi ) { wifi = CreateWiFi(); }
+#endif
+#ifdef LUNOKIOT_BLE_ENABLED
+    if (nullptr == ble ) { ble = CreateBLE(); }
+#endif
     InstallStepManager();
     StartPMUMonitor();
     selectedWatchFace=NVS.getInt("UWatchF");
@@ -384,4 +364,41 @@ bool LunokIoT::CpuSpeed(uint32_t mhz) {
         Serial.begin(LUNOKIOT_SERIAL_SPEED);
     #endif
     return res;
+}
+
+
+void LunokIoT::DestroyBLE() {
+    if ( nullptr != ble ) {
+        delete ble;
+        ble = nullptr;
+    }
+}
+LoTBLE * LunokIoT::CreateBLE() {
+    LoTBLE * response = new LoTBLE();
+    return response;
+}
+
+
+void LunokIoT::DestroyWiFi() {
+    if ( nullptr != wifi ) {
+        delete wifi;
+        wifi = nullptr;
+    }
+}
+
+LoTWiFi * LunokIoT::CreateWiFi() {
+    LoTWiFi * response = new LoTWiFi();
+    response->AddTask(new NTPWifiTask(rtc));
+    response->AddTask(new GeoIPWifiTask());
+    response->AddTask(new WeatherWifiTask());
+    lNetLog("Starting network tasks in %.0f seconds...\n",BootWifiPerformSeconds);
+    BootWifiPerform.once<LoTWiFi*>(BootWifiPerformSeconds,[](LoTWiFi* instance){
+        if ( systemSleep ) { return; } // ignore
+        xTaskCreatePinnedToCore([](void *obj) { // in core 0 please
+            LoTWiFi* instance = (LoTWiFi*)obj;
+            instance->PerformTasks();
+            vTaskDelete(NULL);
+        },"lwifi",LUNOKIOT_TASK_STACK_SIZE,instance,tskIDLE_PRIORITY, NULL,0);
+    },response);
+    return response;
 }
