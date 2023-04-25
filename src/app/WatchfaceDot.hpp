@@ -40,9 +40,6 @@ class WatchfaceDotApplication : public LunokIoTApplication {
         int16_t locY=0;
         bool locXDir=false;
         bool locYDir=false;
-        int16_t circleRadius[20] = { 0 };
-        int16_t circleX[20]= { 0 };
-        int16_t circleY[20]= { 0 };
         bool showDetails=true;
     public:
         const char *AppName() override { return "Watchface Dot"; };

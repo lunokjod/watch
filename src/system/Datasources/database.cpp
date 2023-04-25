@@ -41,12 +41,12 @@
 #include "../../lunokIoT.hpp"
 #include "../SystemEvents.hpp"
 //#include "lunokIoT.hpp"
-#define DATABASE_CORE 0
+#define DATABASE_CORE 1
 Database * systemDatabase=nullptr;
 const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
 int8_t Database::openedDatabases=0;
-//"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT 0, locationGroup INT DEFAULT -1);";
+
 const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
 const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
@@ -58,14 +58,8 @@ const char *BLEInsertQuery=(const char *)"INSERT OR IGNORE INTO bluetooth VALUES
 const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FROM bluetooth WHERE address='%s' ORDER BY id DESC LIMIT 1;";
 
 
-//StaticTask_t SQLTaskHandler;
-//StackType_t SQLStack[LUNOKIOT_TASK_STACK_SIZE];
-
 char *zErrMsg = nullptr;
-//volatile bool sqliteDbProblem=false;
 
-//sqlite3 *lIoTsystemDatabase = nullptr;
-//SemaphoreHandle_t SqlLogSemaphore = xSemaphoreCreateMutex();
 SemaphoreHandle_t SqlSemaphore = xSemaphoreCreateMutex();
 
 // https://www.sqlite.org/syntaxdiagrams.html
@@ -99,7 +93,7 @@ int db_open(const char *filename, sqlite3 **db) {
 }
 
 int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* payload) {
-    //lSysLog("SQL: '%s'\n",sql);
+    lSysLog("EXEC SQL: '%s'\n",sql);
     if ( nullptr == resultCallback ) { resultCallback=SQLiteDumpSerialCallback; }
     esp_task_wdt_reset();
     unsigned long startT = millis();
@@ -150,7 +144,6 @@ void Database::_DatabaseWorkerTaskLoop() {
     taskRunning=true;
     taskEnded=false;
     esp_task_wdt_delete(NULL);
-    //sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
     if ( 0 == Database::openedDatabases ) {
         lSysLog("Database: Sqlite3 initializing...\n");
         int sqlbegin = sqlite3_initialize();
@@ -162,6 +155,7 @@ void Database::_DatabaseWorkerTaskLoop() {
         }
     }
     Database::openedDatabases++; // increment
+    sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
     //create queue
     queue = xQueueCreate( uxQueueLength, sizeof( uxItemSize ) );
 
@@ -375,7 +369,8 @@ void SqlAddBluetoothDevice(const char * mac, double distance, int locationGroup)
 
 void SqlJSONLog(const char * from, const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
-    const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s',unishox1c('%s'));";
+    //const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s',unishox1c('%s'));";
+    const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s','%s');";
     size_t totalsz = strlen(fmtStr)+strlen(from)+strlen(logLine)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {
@@ -403,8 +398,10 @@ void SqlLog(const char * logLine) {
     free(query);
 }
 
-
+/*
 void NotificatioLog(const char * notificationData) {
+    if ( nullptr != systemDatabase ) { return; }
+    lLog("DEBUUUUUG: '%s'\n",notificationData);
     const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
     size_t totalsz = strlen(fmtStr)+strlen(notificationData)+1;
     char * query=(char*)ps_malloc(totalsz);
@@ -420,20 +417,20 @@ void NotificatioLog(const char * notificationData) {
 
 void NotificationLogSQL(const char * sqlQuery) {
     //const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
-    //strlen(fmtStr)+10;
+    //size_t totalsz = strlen(fmtStr)+strlen(sqlQuery)+1;
     size_t totalsz = strlen(sqlQuery)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {
         lSysLog("SQL: Unable to allocate: %u bytes\n", totalsz);
         return;
     }
-    //lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    //sprintf(query,fmtStr,sqlQuery);
     strcpy(query,sqlQuery);
     systemDatabase->SendSQL(query);
     free(query);
     return;
 }
-
+*/
 void StopDatabase() {
     delete systemDatabase;
     systemDatabase=nullptr;
@@ -441,7 +438,7 @@ void StopDatabase() {
 }
 
 void StartDatabase() {
-    // seems be on littleFS must create the file
+    // seems be on littleFS must create the file (SPIFFS not)
     if (!LittleFS.exists(DBFile)){
         File file = LittleFS.open(DBFile, FILE_WRITE);   //  /littlefs is automatically added to the front 
         file.close();

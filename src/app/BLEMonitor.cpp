@@ -29,9 +29,10 @@
 #include "../system/Network/BLE.hpp"
 #include <esp_task_wdt.h>
 #include "../system/Datasources/database.hpp"
+#include "../lunokIoT.hpp"
 
 extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
-extern bool bleEnabled;
+//extern bool bleEnabled;
 unsigned long BLEMonitorTasknextBLEScan = 0;
 TaskHandle_t lunokIoT_BLEMonitorTask = NULL;
 bool lunokIoT_BLEMonitorTaskLoop = false;
@@ -49,10 +50,9 @@ void BLEMonitorTask(void *data) {
     while (lunokIoT_BLEMonitorTaskLoop) {
         delay(67);
         // launch when idle
-        if (millis() > BLEMonitorTasknextBLEScan)
-        {
-            NimBLEScan *pBLEScan = BLEDevice::getScan();
-            if (bleEnabled) {
+        if (millis() > BLEMonitorTasknextBLEScan) {
+            if (LoT().GetBLE()->IsEnabled()) {
+                NimBLEScan *pBLEScan = BLEDevice::getScan();
                 if (pBLEScan->isScanning()) {
                     pBLEScan->stop();
                     lNetLog("BLEMonitorTask: Scan stopped!\n");
@@ -128,7 +128,7 @@ bool BLEMonitorApplication::Tick() {
         canvas->fillCircle(120, 120, 28, TFT_WHITE);
         canvas->fillCircle(120, 120, 24, TFT_BLUE);
         uint16_t iconColor = TFT_WHITE;
-        if ( false == bleEnabled ) { iconColor = TFT_DARKGREY; }
+        if ( false == LoT().GetBLE()->IsEnabled() ) { iconColor = TFT_DARKGREY; }
         canvas->drawXBitmap((TFT_WIDTH - img_bluetooth_32_width) / 2, (TFT_HEIGHT - img_bluetooth_32_height) / 2, img_bluetooth_32_bits, img_bluetooth_32_width, img_bluetooth_32_height, iconColor);
         if (BLEKnowDevices.size() > 0) {
             int elementDegrees = 360 / BLEKnowDevices.size();

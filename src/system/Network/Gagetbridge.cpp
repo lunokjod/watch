@@ -37,26 +37,30 @@ extern SemaphoreHandle_t I2cMutex;
 bool ParseGadgetBridgeJSON(JSONVar &json) {
 
     String jsonString = json.stringify(json);
-    char * myShitbuffer=(char*)ps_malloc(jsonString.length()+1);
-    sprintf(myShitbuffer,"%s",jsonString.c_str());
-    if ( nullptr != systemDatabase ) {
-        systemDatabase->SendSQL(myShitbuffer);
+    const char fmtStr[]="INSERT INTO notifications VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+    size_t totalsz = strlen(fmtStr)+jsonString.length()+1;
+    char * query=(char*)ps_malloc(totalsz);
+    if ( nullptr == query ) {
+        lSysLog("SQL: Unable to allocate: %u bytes\n", totalsz);
+        return false;
     }
-    free(myShitbuffer);
-    //NotificatioLog(myShitbuffer);
-    lSysLog("------AAAAAAAAA------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+    //lSysLog("SQL: Query alloc size: %u\n", totalsz);
+    sprintf(query,fmtStr,jsonString.c_str());
+    systemDatabase->SendSQL(query);
+    free(query);
+    //lSysLog("------AAAAAAAAA------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
     if (json.hasOwnProperty("t")) {
         if ( 0 == strcmp((const char*)json["t"],"notify") ) {
             LaunchApplication(new NotificacionsApplication(),true,false,true); // always push the last
-            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            //lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
             return true;
         } else if ( 0 == strcmp((const char*)json["t"],"musicinfo") ) {
             LaunchApplication(new BLEPlayerApplication(),false);
-            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            //lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
             return true;
         } else if ( 0 == strcmp((const char*)json["t"],"musicstate") ) {
             LaunchApplication(new BLEPlayerApplication(),false);
-            lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
+            //lSysLog("--22222222222-----------------------> DEBUG: used stack: %u\n",uxTaskGetStackHighWaterMark(NULL));
             return true;
         }
     }
@@ -148,19 +152,20 @@ bool ParseGadgetBridgeMessage(char * jsondata) {
         if ( false == parsed ) {
             lNetLog("Gadgetbridge: JSON: WARNING: cannot underestand message\n");
             return false;
-        } else {
-            if (false == ttgo->bl->isOn()) {
-                lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
-                ScreenWake();
-                esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-                /*
-                #ifdef LILYGO_WATCH_2020_V3
-                    ttgo->shake();
-                    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-                    xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
-                #endif
-                */
-            }
+        }
+        // message received
+
+        if (false == ttgo->bl->isOn()) {
+            lEvLog("Gadgetbridge: Notification received while sleep: Bring up system\n");
+            ScreenWake();
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            /*
+            #ifdef LILYGO_WATCH_2020_V3
+                ttgo->shake();
+                TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+                xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit
+            #endif
+            */
         }
     }
     return true;

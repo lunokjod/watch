@@ -35,7 +35,7 @@ class Database {
         TaskHandle_t databaseQueueTask = NULL;
         const UBaseType_t uxQueueLength=16;
         const UBaseType_t uxItemSize=sizeof(SQLQueryData);
-        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY;
+        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY; // configMAX_PRIORITIES - 2;
         sqlite3 *databaseDescriptor;
         const char * filename;
         QueueHandle_t queue;
@@ -66,12 +66,13 @@ void SqlAddBluetoothDevice(const char * mac, double distance=-1, int locationGro
 void SqlRefreshBluetoothDevice(const char * mac);
 //void SqlCleanUnusedBluetoothDevices();
 
+//void NotificatioLog(const char * notificationData);
+
 /*
 void SqlLog(const char * logLine);
 extern sqlite3 *lIoTsystemDatabase;
 extern SemaphoreHandle_t SqlLogSemaphore;
 //int db_exec(sqlite3 *db, const char *sql);
-void NotificatioLog(const char * notificationData);
 void SQLQuery(void *args,sqlite3_callback callback);
 int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback=nullptr);
 */

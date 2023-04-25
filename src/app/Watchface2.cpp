@@ -47,10 +47,6 @@ int currentHour = random(0, 24);
 int currentDay = random(1, 30);
 int currentMonth = random(0, 11);
 
-extern bool bleEnabled;        //@TODO this is a crap!!!
-extern volatile bool bleServiceRunning; //@TODO this is a crap!!!
-extern bool blePeer;
-
 extern float PMUBattDischarge;
 
 extern bool weatherSyncDone;
@@ -261,19 +257,19 @@ bool Watchface2Application::Tick() {
         }
 
         // connectivity notifications
-        if (bleEnabled) {
+        if (LoT().GetBLE()->IsEnabled()) {
             int16_t posX = 36;
             int16_t posY = 171;
             uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-            if (bleServiceRunning) {
+            if (LoT().GetBLE()->IsAdvertising()) {
                 dotColor = ThCol(medium);
             }
-            if (blePeer) {
+            if (LoT().GetBLE()->Clients() > 0 ) {
                 dotColor = ThCol(low);
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
             unsigned char *img = img_bluetooth_24_bits; // bluetooth logo only icon
-            if (blePeer) {
+            if (LoT().GetBLE()->Clients() > 0 ) {
                 img = img_bluetooth_peer_24_bits;
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));

@@ -20,6 +20,7 @@
 #ifndef ___LUNOKIOT__BLE__HANDLING___
 #define ___LUNOKIOT__BLE__HANDLING___
 
+// https://computingforgeeks.com/connect-to-bluetooth-device-from-linux-terminal/
 #include <NimBLEDevice.h>
 #include "../Datasources/kvo.hpp"
 /*
@@ -97,19 +98,6 @@ class lBLEDevice {
 
 extern std::list <lBLEDevice*>BLEKnowDevices;
 
-extern volatile bool bleServiceRunning;
-
-void StartBLE(bool synched=false);
-void StopBLE();
-void SaveBLEDevicesToDB();
-
-void BLESetupHooks();
-void BLEKickAllPeers();
-bool IsBLEEnabled();
-bool IsBLEInUse();
-bool IsBLEPeerConnected();
-bool BLESendUART(const char * data);
-
 extern const char * BLEZoneLocationsHumanReadable[];
 
 extern BLEZoneLocations BLELocationZone;
@@ -117,29 +105,52 @@ extern BLEZoneLocations BLELocationZone;
 extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
 extern std::list <lBLEDevice*>BLEKnowDevices;
 
-extern volatile bool bleWaitStop; // internal flag to wait BLEStop task
-extern bool bleEnabled; // is the service on?
-extern volatile bool bleBeingUsed;   // downloading something
-extern volatile bool bleAdvertising;
+//extern volatile bool bleWaitStop; // internal flag to wait BLEStop task
+//extern bool bleEnabled; // is the service on?
+//extern volatile bool bleBeingUsed;   // downloading something
+//extern volatile bool bleAdvertising;
 
+class LBLEUARTCallbacks;
+class LBLEServerCallbacks;
 
 class LoTBLE {
+    friend LBLEUARTCallbacks;
+    friend LBLEServerCallbacks;
     private:
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
         void _BLELoopTask();
         TaskHandle_t BLELoopTaskHandler=NULL;
-        bool taskRunning=false;
         unsigned long UserSettingsCheckMS=10*1000;
         void _TryLaunchTask();
         void _TryStopTask();
         EventKVO * BLEWStartEvent = nullptr; 
         EventKVO * BLEWStopEvent = nullptr; 
+        bool enabled=true;
+        bool running=false;
+        BLEService *pService = nullptr;
+        BLECharacteristic * pRxCharacteristic = nullptr;
+        NimBLECharacteristic * pTxCharacteristic = nullptr;
+        // gadgetbridge integration
+        // used to nofity when new message is ready for parsing
+        bool BLEGadgetbridgeCommandPending = false;
+        bool BLEBangleJSCommandPending = false;
+        char *gadgetBridgeBuffer=nullptr;
+        size_t gadgetBridgeBufferOffset=0;
+        SemaphoreHandle_t BLEGadgetbridge = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
     public:
         char BTName[15] = { 0 }; // buffer for build the name like: "lunokIoT_69fa"
         LoTBLE();
         ~LoTBLE();
-        void SuspendTasks();
-        void ResumeTasks();
+        void Enable();
+        void Disable();
+        bool IsEnabled();
+        bool IsDisabled() { return (!IsEnabled()); }
+        bool InUse();
+        void StartAdvertising();
+        void StopAdvertising();
+        bool IsAdvertising();
+        size_t Clients();
+        bool BLESendUART(const char * data);
 };
 
 #endif

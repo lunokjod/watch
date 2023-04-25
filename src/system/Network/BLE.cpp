@@ -34,6 +34,8 @@
 #include "Gagetbridge.hpp"
 #include <cstring>
 #include <LilyGoWatch.h>
+#include "../../lunokIoT.hpp"
+
 extern TTGOClass *ttgo;
 
 const char * BLEZoneLocationsHumanReadable[] = {
@@ -50,70 +52,283 @@ const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 // monitors the wake and sleep of BLE
 //EventKVO * BLEWStartEvent = nullptr; 
 //EventKVO * BLEWLightSleepEvent = nullptr;
-EventKVO * BLEWStopEvent = nullptr;
+//EventKVO * BLEWStopEvent = nullptr;
 // monitor the sensors
-EventKVO * battPercentPublish = nullptr; 
-EventKVO * battTempPublish = nullptr; 
-EventKVO * envTempPublish = nullptr; 
+//EventKVO * battPercentPublish = nullptr; 
+//EventKVO * battTempPublish = nullptr; 
+//EventKVO * envTempPublish = nullptr; 
 // service start/stop flag
 //StaticTask_t BLETaskHandler;
 //StackType_t BLEStack[LUNOKIOT_TASK_STACK_SIZE];
-SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
+//SemaphoreHandle_t BLEUpDownStep = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
 
-// used to nofity when new message is ready for parsing
-bool BLEGadgetbridgeCommandPending = false;
-bool BLEBangleJSCommandPending = false;
-SemaphoreHandle_t BLEGadgetbridge = xSemaphoreCreateMutex(); // locked during UP/DOWN BLE service
 
-TaskHandle_t BLEStartHandler;
+//TaskHandle_t BLEStartHandler;
 // monitor devices to publish on GATT
-NimBLECharacteristic * battCharacteristic = nullptr;
-NimBLECharacteristic * lBattTempCharacteristic = nullptr;
-NimBLECharacteristic * lBMATempCharacteristic = nullptr;
+//NimBLECharacteristic * battCharacteristic = nullptr;
+//NimBLECharacteristic * lBattTempCharacteristic = nullptr;
+//NimBLECharacteristic * lBMATempCharacteristic = nullptr;
 // nimble things
-BLEServer *pServer = nullptr;
-BLEService *pService = nullptr;
-BLEService *pLunokIoTService = nullptr;
-BLEService *pBattService = nullptr;
-NimBLECharacteristic * pTxCharacteristic = nullptr;
+//BLEService *pLunokIoTService = nullptr;
+//BLEService *pBattService = nullptr;
 
 // list of know devices
 SemaphoreHandle_t BLEKnowDevicesSemaphore = xSemaphoreCreateMutex();
 std::list <lBLEDevice*>BLEKnowDevices;
-// internal flags
-volatile bool bleWaitStop=false; // internal flag to wait BLEStop task
-bool bleEnabled=false; // is the service on?
-volatile bool bleBeingUsed=false;   // downloading something
-volatile bool bleAdvertising=false;
-//@TODO old style trash must be cleaned
-volatile bool bleServiceRunning=false;
-volatile bool blePeer = false;
-volatile bool deviceConnected = false;
-volatile bool oldDeviceConnected = false;
 uint32_t bleLocationScanCounter=0;
+
+// http://www.espruino.com/Gadgetbridge
+const size_t gadgetBridgeBufferSize=8*1024;
+
 
 const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
 const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
 
+// Server callbacks
+class LBLEServerCallbacks: public NimBLEServerCallbacks {
+    private:
+        LoTBLE *bleHandler=nullptr;
+    public:
+        LBLEServerCallbacks(LoTBLE *handler) : bleHandler(handler) {
+            lNetLog("BLE: %p LBLEServerCallbacks %p\n",bleHandler,this);
+        }
+
+        void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
+            lNetLog("BLE: %p LBLEServerCallbacks: Client connect \n",bleHandler,this);
+            bleHandler->StopAdvertising();
+            if ( nullptr != currentApplication ) {
+                if ( 0 != strcmp(currentApplication->AppName(),"BLE pairing")) {
+                    if ( ttgo->bl->isOn()) {
+                        LaunchApplication(new BluetoothApplication());
+                    }
+                }
+            }
+        }
+        void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
+            lNetLog("BLE: %p LBLEServerCallbacks: Client disconnect \n",bleHandler,this);
+            //deviceConnected = false;
+            bleHandler->StartAdvertising();
+        }
+        void onMTUChange(uint16_t MTU, ble_gap_conn_desc* desc) {
+            lNetLog("BLE: %p LBLEServerCallbacks: MTU changed to: %u\n",bleHandler,this,MTU);
+        }
+        uint32_t onPassKeyRequest() {
+            uint32_t pass = BLEDevice::getSecurityPasskey();
+            lNetLog("BLE: %p LBLEServerCallbacks: Password request: %04u\n",bleHandler,this,pass);
+            return BLEDevice::getSecurityPasskey();
+        }
+        void onAuthenticationComplete(ble_gap_conn_desc* desc) {
+            lNetLog("BLE: %p LBLEServerCallbacks: Authentication complete\n",bleHandler,this);
+            if ( nullptr != currentApplication ) {
+                if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
+                    if ( ttgo->bl->isOn()) {
+                        LaunchWatchface();
+                    }
+                }
+            }
+        }
+        bool onConfirmPIN(uint32_t pin) {
+            uint32_t pass = BLEDevice::getSecurityPasskey();
+            lNetLog("BLE: %p LBLEServerCallbacks: PIN confirmation: %04u ",bleHandler,this,pass);
+            if ( pin == BLEDevice::getSecurityPasskey() ) {
+                lLog("OK\n");
+                return true;
+            }
+            lLog("FAIL\n");
+            return false;
+        }
+};
+
+
+class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
+    
+    bool gadgetbridgeCommandInProgress=false;
+    bool bangleCommandInProgress=false;
+
+    //void onRead(NimBLECharacteristic* pCharacteristic) {
+    //    lNetLog("BLE: UART: onREAD\n");
+    //}
+    void onWrite(BLECharacteristic *pCharacteristic) {
+        std::string rxValue = pCharacteristic->getValue();
+        const char * receivedData = rxValue.c_str();
+        // check for GADGETBRIDGE commands
+        const char GadgetbridgeCommandEND[] = ")\n";
+        const char GadgetbridgeCommandBEGIN[] = "\x10GB(";
+        LoTBLE * myHost = LoT().GetBLE();
+
+        if ( 0 == strncmp(receivedData,GadgetbridgeCommandBEGIN,strlen(GadgetbridgeCommandBEGIN))) {
+            lNetLog("BLE: UART: Begin Gadgetbridge GB command\n");
+            //bleBeingUsed=true;
+            gadgetbridgeCommandInProgress=true;
+            if ( nullptr != myHost->gadgetBridgeBuffer ) { free(myHost->gadgetBridgeBuffer); myHost->gadgetBridgeBuffer=nullptr; }
+            myHost->gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
+            sprintf(myHost->gadgetBridgeBuffer,"%s",receivedData+strlen(GadgetbridgeCommandBEGIN)); // ignore cmd string
+            myHost->gadgetBridgeBufferOffset=strlen(myHost->gadgetBridgeBuffer);
+            return;
+        } else if ( gadgetbridgeCommandInProgress ) {
+            if (nullptr == myHost->gadgetBridgeBuffer) {
+                gadgetbridgeCommandInProgress=false;
+                lNetLog("BLE: UART: memory ERROR! (no buffer space for gadgetbridge)\n");
+                myHost->gadgetBridgeBufferOffset=0;
+                return;
+            }
+            lNetLog("BLE: UART: Continue Gadgetbridge GB command\n");
+            // copy to buffer
+            for (int i = 0; i < rxValue.length(); i++) {
+                myHost->gadgetBridgeBuffer[myHost->gadgetBridgeBufferOffset]=rxValue[i];
+                myHost->gadgetBridgeBufferOffset++;
+
+            }
+            // check if is the end
+            const char *toLast=receivedData;
+            toLast+=strlen(receivedData)-strlen(GadgetbridgeCommandEND);
+            if ( 0 == strcmp(GadgetbridgeCommandEND,toLast)) {
+                myHost->gadgetBridgeBuffer[myHost->gadgetBridgeBufferOffset-2]=0; // correct eol
+                gadgetbridgeCommandInProgress=false;
+                lNetLog("BLE: UART: End Gadgetbridge GB command\n");
+                // Parse outside
+                if( xSemaphoreTake( myHost->BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    myHost->BLEGadgetbridgeCommandPending=true;
+                    myHost->gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( myHost->BLEGadgetbridge );
+                }
+                //bleBeingUsed=false;
+            }
+            return;
+        }
+        // check for BANGLEJS extra commands
+        // setTime
+        const char BangleJSCommandBEGIN[] = "\x10setTime(";
+        const char BangleJSCommandEND[] = "\n";
+
+        if ( 0 == strncmp(receivedData,BangleJSCommandBEGIN,strlen(BangleJSCommandBEGIN))) {
+            lNetLog("BLE: UART: Begin BangleJS command\n");
+            //bleBeingUsed=true;
+            bangleCommandInProgress=true;
+            if ( nullptr != myHost->gadgetBridgeBuffer ) { free(myHost->gadgetBridgeBuffer); myHost->gadgetBridgeBuffer=nullptr; }
+            myHost->gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
+            sprintf(myHost->gadgetBridgeBuffer,"%s",receivedData+1); // bypass \x10
+            myHost->gadgetBridgeBufferOffset=strlen(myHost->gadgetBridgeBuffer);
+            return;
+        } else if ( bangleCommandInProgress ) {
+            if (nullptr == myHost->gadgetBridgeBuffer) {
+                bangleCommandInProgress=false;
+                lNetLog("BLE: UART: memory ERROR! (no buffer size for bangle command)\n");
+                myHost->gadgetBridgeBufferOffset=0;
+                //bleBeingUsed=false;
+                return;
+            }
+            lNetLog("BLE: UART: Continue BangleJS command\n");
+            // copy to buffer
+            for (int i = 0; i < rxValue.length(); i++) {
+                myHost->gadgetBridgeBuffer[myHost->gadgetBridgeBufferOffset]=rxValue[i];
+                myHost->gadgetBridgeBufferOffset++;
+            }
+            // check if is the end
+            const char *toLast=receivedData;
+            toLast+=strlen(receivedData)-strlen(BangleJSCommandEND);
+            if ( 0 == strcmp(BangleJSCommandEND,toLast)) {
+                myHost->gadgetBridgeBuffer[myHost->gadgetBridgeBufferOffset-1]=0; // correct eol
+                bangleCommandInProgress=false;
+                //bleBeingUsed=false;
+                lNetLog("BLE: UART: End BangleJS command\n");
+
+                // Parse outside
+                LoTBLE * myHost = LoT().GetBLE();
+                if( xSemaphoreTake( myHost->BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+                    myHost->BLEBangleJSCommandPending=true;
+                    myHost->gadgetBridgeBufferOffset=0;
+                    // data avaliable on gadgetBridgeBuffer
+                    xSemaphoreGive( myHost->BLEGadgetbridge );
+                }
+            }
+            return;
+        }
+
+        // no know howto parse... show as debug
+        lNetLog("BLE: UART Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) { //ignore \0
+            lLog("%c(0x%02x) ",rxValue[i],rxValue[i]);
+        }
+        lLog("\n");
+    }
+};
+
+bool LoTBLE::IsAdvertising() {
+    NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
+    if ( nullptr == adv ) { return false; }
+    return adv->isAdvertising();
+}
+
+void LoTBLE::StartAdvertising() {
+    NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
+    if ( nullptr == adv ) { return; }
+    lNetLog("BLE: %p Start Advetising...\n",this);
+    adv->start();
+}
+
+void LoTBLE::StopAdvertising() {
+    NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
+    if ( nullptr == adv ) { return; }
+    lNetLog("BLE: %p Stop Advetising...\n",this);
+    adv->stop();
+}
+
+size_t LoTBLE::Clients() {
+    NimBLEServer * pServer = NimBLEDevice::getServer();
+    if ( nullptr == pServer ) { return 0; }
+    std::vector<uint16_t>  clients = pServer->getPeerDevices();
+    return clients.size();
+
+}
 void LoTBLE::_BLELoopTask() {
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    running=true;
+    xSemaphoreGive( taskLock );
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
         systemDatabase->SendSQL(BLECreateTable);
         systemDatabase->SendSQL(BLECleanUnusedQuery);
         delay(50);
     }
-    // Start BLE
-    uint8_t BLEAddress[6];                  // 6 octets are the BLE address
-    esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
-    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
-    lNetLog("BLE: %p Device name: '%s'\n",this,BTName); // notify to log
 
-    //@TODO START BLE
-    lNetLog("BLE: %p Init...\n",this);
-    BLEDevice::init(std::string(BTName)); // hate strings    
+    lNetLog("BLE: %p Init with name: '%s'...\n",this,BTName);
+    BLEDevice::init(std::string(BTName)); // hate strings
 
+    lNetLog("BLE: %p Apply security....\n",this);
+    BLEDevice::setSecurityAuth(true,true,true);
+    uint32_t generatedPin=random(0,999999);
+    lNetLog("BLE: %p generated PIN: %06d\n",this,generatedPin);
+    BLEDevice::setSecurityPasskey(generatedPin);
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
+    NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_ADV);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_SCAN);
+    // create GATT the server
+    BLEServer *pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new LBLEServerCallbacks(this),true); // destroy on finish
+    lNetLog("BLE: %p Server started\n",this);
+
+    if ( nullptr == pService ) { pService = pServer->createService(SERVICE_UART_UUID); }
+
+    // Create the BLE Service UART
+    // UART data come here
+    if ( nullptr == pTxCharacteristic ) { 
+        pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
+        pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
+    }
+    if ( nullptr == pRxCharacteristic ) { 
+        pRxCharacteristic = pService->createCharacteristic(
+                    CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
+        pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
+    }
+    pService->start();
+    pServer->start();
+
+    StartAdvertising();
     unsigned long nextUserSettingCheckMS=0;
-    while ( true ) {
+    while ( running ) {
         TickType_t nextCheck = xTaskGetTickCount();
         xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) );
         if ( millis() > nextUserSettingCheckMS ) {
@@ -121,31 +336,64 @@ void LoTBLE::_BLELoopTask() {
             bool enabled = NVS.getInt("BLEEnabled");
             if ( false == enabled ) { 
                 lNetLog("BLE: %p User settings don't agree\n",this);
-                break;
+                running=false;
             }
             nextUserSettingCheckMS = millis()+UserSettingsCheckMS;
         }
-        SuspendTasks();
-        if ( false == taskRunning ) { ResumeTasks(); break; } // force ble stop
-        ResumeTasks();
-    
-        //lLog("LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOL\n");
-
+        // parse gadgetbridge command
+        char * currentGadgetBridgeBufferPtr = nullptr;
+        char * currentBangleJSBridgeBufferPtr = nullptr;
+        if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+            // bangleJS
+            if ( BLEBangleJSCommandPending ) {
+                currentBangleJSBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEBangleJSCommandPending = false;
+            }
+            // gadgetbridge
+            if ( BLEGadgetbridgeCommandPending ) {
+                currentGadgetBridgeBufferPtr=gadgetBridgeBuffer;
+                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
+                BLEGadgetbridgeCommandPending = false;
+            }
+            // data avaliable on gadgetBridgeBuffer
+            xSemaphoreGive( BLEGadgetbridge );
+        }
+        if ( nullptr != currentBangleJSBridgeBufferPtr ) {
+                bool parsed = ParseBangleJSMessage(currentBangleJSBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: %p Unknown BangleJS message: '%s'\n",this,currentBangleJSBridgeBufferPtr);
+                }
+                free(currentBangleJSBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentBangleJSBridgeBufferPtr=nullptr; // dontcare
+        }
+        if ( nullptr != currentGadgetBridgeBufferPtr ) {
+                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
+                if ( false == parsed ) {
+                    lNetLog("BLE: %p Unknown Gadgetbridge message: '%s'\n",this,currentGadgetBridgeBufferPtr);
+                }
+                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
+                currentGadgetBridgeBufferPtr=nullptr; // dontcare
+        }
     }
+    StopAdvertising();
     // Stop BLE
     lNetLog("BLE: %p Deinit...\n",this);
     BLEDevice::deinit(true);
-
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    running=false;
+    xSemaphoreGive( taskLock );
 }
 
 void LoTBLE::_TryStopTask() {
+    // if user whants BLE, don't do nothing
     bool enabled = NVS.getInt("BLEEnabled");
     if ( true == enabled ) {  return; }
     // stop the task
     if ( NULL != BLELoopTaskHandler ) {
-        SuspendTasks();
-        taskRunning=false;
-        ResumeTasks();
+        xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        running=false;
+        xSemaphoreGive( taskLock );
         while ( NULL != BLELoopTaskHandler ) {
             lNetLog("BLE: %p Waiting for task ends...\n");
             TickType_t nextCheck = xTaskGetTickCount();
@@ -160,15 +408,8 @@ void LoTBLE::_TryLaunchTask() {
     BaseType_t taskOK = xTaskCreatePinnedToCore([](void *obj) {
         LoTBLE * self = (LoTBLE*)obj;
         lNetLog("BLE: %p loop task begin here\n", self);
-        self->SuspendTasks();
-        self->taskRunning=true;
-        self->ResumeTasks();
-
         self->_BLELoopTask();
-
-        self->SuspendTasks();
         self->BLELoopTaskHandler=NULL;
-        self->ResumeTasks();
         lNetLog("BLE: %p loop task die here\n", self);
         vTaskDelete(NULL);
     }, "loTble", LUNOKIOT_TASK_STACK_SIZE, this, tskIDLE_PRIORITY,
@@ -186,8 +427,11 @@ LoTBLE::LoTBLE() {
         lNetLog("BLE: %p User settings don't agree\n",this);
         return;
     }
-    _TryLaunchTask();
-
+    // Set BLE name
+    uint8_t BLEAddress[6];                  // 6 octets are the BLE address
+    esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
+    sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
+    lNetLog("BLE: %p Device name: '%s'\n",this,BTName); // notify to log
 
 }
 
@@ -198,9 +442,9 @@ LoTBLE::~LoTBLE() {
     BLEWStopEvent=nullptr;
     // stop the task
     if ( NULL != BLELoopTaskHandler ) {
-        SuspendTasks();
-        taskRunning=false;
-        ResumeTasks();
+        xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        running=false;
+        xSemaphoreGive( taskLock );
         while ( NULL != BLELoopTaskHandler ) {
             lNetLog("BLE: %p Waiting for task ends...\n");
             TickType_t nextCheck = xTaskGetTickCount();
@@ -210,8 +454,35 @@ LoTBLE::~LoTBLE() {
     lNetLog("BLE: %p die here\n");
 }
 
-void LoTBLE::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); }
-void LoTBLE::ResumeTasks() { xSemaphoreGive( taskLock ); }
+
+void LoTBLE::Enable() {
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled=true;
+    xSemaphoreGive( taskLock );
+}
+
+void LoTBLE::Disable() {
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled=false;
+    xSemaphoreGive( taskLock );
+}
+
+bool LoTBLE::IsEnabled() {
+    bool response;
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    response=enabled;
+    xSemaphoreGive( taskLock );
+    return response;
+}
+
+bool LoTBLE::InUse() {
+    bool response;
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    response=running;
+    xSemaphoreGive( taskLock );
+    return response;
+
+}
 
 
 
@@ -221,15 +492,8 @@ void LoTBLE::ResumeTasks() { xSemaphoreGive( taskLock ); }
 
 
 
-
-
-
-bool IsBLEPeerConnected() { return blePeer; }
-bool IsBLEEnabled() { return bleEnabled; }
-bool IsBLEInUse() { return bleBeingUsed; }
-
-bool BLESendUART(const char * data) {
-    if ( false == IsBLEPeerConnected() ) {
+bool LoTBLE::BLESendUART(const char * data) {
+    if ( 0 == Clients() ) {
         lNetLog("BLE: ERROR: Unable to send UART data, no client connected\n");
         return false;
     }
@@ -238,7 +502,7 @@ bool BLESendUART(const char * data) {
         return false;
     }
 
-    uint16_t MaxDataSize = pServer->getPeerMTU(0)-3;
+    // NEEDED uint16_t MaxDataSize = pServer->getPeerMTU(0)-3;
     size_t currentOffset=0;
     const size_t MaxOffset=strlen(data);
     uint8_t *dataPtr=(uint8_t *)data;
@@ -247,7 +511,7 @@ bool BLESendUART(const char * data) {
         dataPtr=((uint8_t *)data)+currentOffset;
         uint16_t currentChunkSize=strlen((char*)dataPtr);
         if ( 0 == currentChunkSize) { break; }
-        if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
+        // NEEDED if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
         /*
         for(int i=0;i<currentChunkSize;i++) {  lLog("'%c' %02x, ",dataPtr[i],dataPtr[i]); }
         lLog("\n");
@@ -258,46 +522,10 @@ bool BLESendUART(const char * data) {
         delay(40);
     }
     pTxCharacteristic->notify((uint8_t*)"\n",1);
-    lNetLog("BLE: Sended UART message: '%s' %u bytes (MTU: %u)\n",data,strlen(data),MaxDataSize);
+    // NEEDED lNetLog("BLE: Sended UART message: '%s' %u bytes (MTU: %u)\n",data,strlen(data),MaxDataSize);
     return true;
 }
-// Server callbacks
-class LBLEServerCallbacks: public BLEServerCallbacks {
-    void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: Client connect\n");
-        deviceConnected = true;
-    }
-    void onDisconnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: Client disconnect\n");
-        deviceConnected = false;
-    }
-    void onMTUChange(uint16_t MTU, ble_gap_conn_desc* desc) {
-        lNetLog("BLE: MTU changed to: %u\n",MTU);
-    }
-    uint32_t onPassKeyRequest() {
-        lNetLog("BLE: Password request\n");
-        return BLEDevice::getSecurityPasskey();
-    }
-    void onAuthenticationComplete(ble_gap_conn_desc* desc) {
-        lNetLog("BLE: Authentication complete\n");
-        if ( nullptr != currentApplication ) {
-            if ( 0 == strcmp(currentApplication->AppName(),"BLE pairing")) {
-                if ( ttgo->bl->isOn()) {
-                    LaunchWatchface();
-                }
-            }
-        }
-    }
-    bool onConfirmPIN(uint32_t pin) {
-        lNetLog("BLE: PIN confirmation: ");
-        if ( pin == BLEDevice::getSecurityPasskey() ) {
-            lLog("OK\n");
-            return true;
-        }
-        lLog("FAIL\n");
-        return false;
-    }
-};
+
 
 // advertiser callbacks
 class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
@@ -375,125 +603,6 @@ class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     }
 };
 
-// http://www.espruino.com/Gadgetbridge
-const size_t gadgetBridgeBufferSize=8*1024;
-char *gadgetBridgeBuffer=nullptr;
-size_t gadgetBridgeBufferOffset=0;
-
-class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
-    
-    bool gadgetbridgeCommandInProgress=false;
-    bool bangleCommandInProgress=false;
-
-    //void onRead(NimBLECharacteristic* pCharacteristic) {
-    //    lNetLog("BLE: UART: onREAD\n");
-    //}
-
-    void onWrite(BLECharacteristic *pCharacteristic) {
-        std::string rxValue = pCharacteristic->getValue();
-        const char * receivedData = rxValue.c_str();
-        // check for GADGETBRIDGE commands
-        const char GadgetbridgeCommandEND[] = ")\n";
-        const char GadgetbridgeCommandBEGIN[] = "\x10GB(";
-
-        if ( 0 == strncmp(receivedData,GadgetbridgeCommandBEGIN,strlen(GadgetbridgeCommandBEGIN))) {
-            lNetLog("BLE: UART: Begin Gadgetbridge GB command\n");
-            bleBeingUsed=true;
-            gadgetbridgeCommandInProgress=true;
-            if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
-            gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
-            sprintf(gadgetBridgeBuffer,"%s",receivedData+strlen(GadgetbridgeCommandBEGIN)); // ignore cmd string
-            gadgetBridgeBufferOffset=strlen(gadgetBridgeBuffer);
-            return;
-        } else if ( gadgetbridgeCommandInProgress ) {
-            if (nullptr == gadgetBridgeBuffer) {
-                gadgetbridgeCommandInProgress=false;
-                lNetLog("BLE: UART: memory ERROR!\n");
-                gadgetBridgeBufferOffset=0;
-                bleBeingUsed=false;
-                return;
-            }
-            lNetLog("BLE: UART: Continue Gadgetbridge GB command\n");
-            // copy to buffer
-            for (int i = 0; i < rxValue.length(); i++) {
-                gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
-                gadgetBridgeBufferOffset++;
-
-            }
-            // check if is the end
-            const char *toLast=receivedData;
-            toLast+=strlen(receivedData)-strlen(GadgetbridgeCommandEND);
-            if ( 0 == strcmp(GadgetbridgeCommandEND,toLast)) {
-                gadgetBridgeBuffer[gadgetBridgeBufferOffset-2]=0; // correct eol
-                gadgetbridgeCommandInProgress=false;
-                lNetLog("BLE: UART: End Gadgetbridge GB command\n");
-                // Parse outside
-                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-                    BLEGadgetbridgeCommandPending=true;
-                    gadgetBridgeBufferOffset=0;
-                    // data avaliable on gadgetBridgeBuffer
-                    xSemaphoreGive( BLEGadgetbridge );
-                }
-                bleBeingUsed=false;
-            }
-            return;
-        }
-        // check for BANGLEJS extra commands
-        // setTime
-        const char BangleJSCommandBEGIN[] = "\x10setTime(";
-        const char BangleJSCommandEND[] = "\n";
-
-        if ( 0 == strncmp(receivedData,BangleJSCommandBEGIN,strlen(BangleJSCommandBEGIN))) {
-            lNetLog("BLE: UART: Begin BangleJS command\n");
-            bleBeingUsed=true;
-            bangleCommandInProgress=true;
-            if ( nullptr != gadgetBridgeBuffer ) { free(gadgetBridgeBuffer); gadgetBridgeBuffer=nullptr; }
-            gadgetBridgeBuffer = (char*)ps_malloc(gadgetBridgeBufferSize);
-            sprintf(gadgetBridgeBuffer,"%s",receivedData+1); // bypass \x10
-            gadgetBridgeBufferOffset=strlen(gadgetBridgeBuffer);
-            return;
-        } else if ( bangleCommandInProgress ) {
-            if (nullptr == gadgetBridgeBuffer) {
-                bangleCommandInProgress=false;
-                lNetLog("BLE: UART: memory ERROR!\n");
-                gadgetBridgeBufferOffset=0;
-                bleBeingUsed=false;
-                return;
-            }
-            lNetLog("BLE: UART: Continue BangleJS command\n");
-            // copy to buffer
-            for (int i = 0; i < rxValue.length(); i++) {
-                gadgetBridgeBuffer[gadgetBridgeBufferOffset]=rxValue[i];
-                gadgetBridgeBufferOffset++;
-            }
-            // check if is the end
-            const char *toLast=receivedData;
-            toLast+=strlen(receivedData)-strlen(BangleJSCommandEND);
-            if ( 0 == strcmp(BangleJSCommandEND,toLast)) {
-                gadgetBridgeBuffer[gadgetBridgeBufferOffset-1]=0; // correct eol
-                bangleCommandInProgress=false;
-                bleBeingUsed=false;
-                lNetLog("BLE: UART: End BangleJS command\n");
-
-                // Parse outside
-                if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-                    BLEBangleJSCommandPending=true;
-                    gadgetBridgeBufferOffset=0;
-                    // data avaliable on gadgetBridgeBuffer
-                    xSemaphoreGive( BLEGadgetbridge );
-                }
-            }
-            return;
-        }
-
-        // no know howto parse... show as debug
-        lNetLog("BLE: UART Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++) { //ignore \0
-            lLog("%c(0x%02x) ",rxValue[i],rxValue[i]);
-        }
-        lLog("\n");
-    }
-};
 
 lBLEDevice::~lBLEDevice() {
     if ( nullptr != devName ) {
@@ -516,7 +625,7 @@ void SaveBLEDevicesToDB() {
         xSemaphoreGive( BLEKnowDevicesSemaphore );
     }
 }
-
+/*
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
     lNetLog("BLE: Task begin\n");
@@ -621,41 +730,7 @@ void BLELoopTask(void * data) {
 
         
 
-        // parse gadgetbridge command
-        char * currentGadgetBridgeBufferPtr = nullptr;
-        char * currentBangleJSBridgeBufferPtr = nullptr;
-        if( xSemaphoreTake( BLEGadgetbridge, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-            // bangleJS
-            if ( BLEBangleJSCommandPending ) {
-                currentBangleJSBridgeBufferPtr=gadgetBridgeBuffer;
-                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
-                BLEBangleJSCommandPending = false;
-            }
-            // gadgetbridge
-            if ( BLEGadgetbridgeCommandPending ) {
-                currentGadgetBridgeBufferPtr=gadgetBridgeBuffer;
-                gadgetBridgeBuffer=nullptr; // this can seems leak, (but is a capture out of buffer) see parser code down here
-                BLEGadgetbridgeCommandPending = false;
-            }
-            // data avaliable on gadgetBridgeBuffer
-            xSemaphoreGive( BLEGadgetbridge );
-        }
-        if ( nullptr != currentBangleJSBridgeBufferPtr ) {
-                bool parsed = ParseBangleJSMessage(currentBangleJSBridgeBufferPtr);
-                if ( false == parsed ) {
-                    lNetLog("BLE: Unknown BangleJS message: '%s'\n",currentBangleJSBridgeBufferPtr);
-                }
-                free(currentBangleJSBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
-                currentBangleJSBridgeBufferPtr=nullptr; // dontcare
-        }
-        if ( nullptr != currentGadgetBridgeBufferPtr ) {
-                bool parsed = ParseGadgetBridgeMessage(currentGadgetBridgeBufferPtr);
-                if ( false == parsed ) {
-                    lNetLog("BLE: Unknown Gadgetbridge message: '%s'\n",currentGadgetBridgeBufferPtr);
-                }
-                free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
-                currentGadgetBridgeBufferPtr=nullptr; // dontcare
-        }
+
     }
     deviceConnected = false;
     oldDeviceConnected = false;
@@ -665,33 +740,10 @@ void BLELoopTask(void * data) {
     bleEnabled=false;
     vTaskDelete(NULL); // harakiri x'D
 }
-
+*/
+/*
 static void BLEStartTask(void* args) {
 
-
-    lNetLog("BLE: Apply security....\n");
-    BLEDevice::setSecurityAuth(true,true,true);
-    uint32_t generatedPin=random(0,999999);
-    lNetLog("BLE: generated PIN: %06d\n",generatedPin);
-    esp_task_wdt_reset();
-    BLEDevice::setSecurityPasskey(generatedPin);
-    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY);
-    NimBLEDevice::setPower(defaultBLEPowerLevel,ESP_BLE_PWR_TYPE_DEFAULT);
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_ADV);
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9,ESP_BLE_PWR_TYPE_SCAN);
-    // create GATT the server
-    pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new LBLEServerCallbacks(),true); // destroy on finish
-    lNetLog("BLE: Server started\n");
-    // Create the BLE Service UART
-    pService = pServer->createService(SERVICE_UART_UUID);
-    // UART data come here
-    pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
-    pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
-
-    BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
-                    CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
-    pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
 
     // battery services
     // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
@@ -781,16 +833,6 @@ static void BLEStartTask(void* args) {
     pBLEScan->setMaxResults(5); // dont waste memory with cache
     pBLEScan->setDuplicateFilter(false);
     xSemaphoreGive( BLEUpDownStep );
-    /*
-    BaseType_t taskOK = xTaskCreatePinnedToCore(BLELoopTask, "lble",
-                    LUNOKIOT_NETWORK_STACK_SIZE, NULL, tskIDLE_PRIORITY+5,
-                    &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
-    if ( pdPASS != taskOK ) {
-        lNetLog("BLE: ERROR Trying to launch loop BLE Task\n");
-        vTaskDelete(NULL);
-    }
-                    */
-
     esp_task_wdt_reset();
     adv->start();
 
@@ -798,6 +840,7 @@ static void BLEStartTask(void* args) {
     lNetLog("BLE: Started!\n");
     vTaskDelete(NULL);
 }
+*/
 /*
 // call to start
 void StartBLE(bool synced) {
@@ -844,7 +887,7 @@ void StartBLE(bool synced) {
     }
 }
 */
-
+/*
 void BLEKickAllPeers() {
     if ( false == bleEnabled ) { return; }
     if ( nullptr == pServer ) { return; }
@@ -859,7 +902,8 @@ void BLEKickAllPeers() {
         delay(100);
     }
 }
-
+*/
+/*
 static void BLEStopTask(void* args) {
     bool * setFlag=(bool *)args;
     lNetLog("BLE: Shut down...\n");
@@ -915,13 +959,11 @@ void StopBLE() {
     }
     lNetLog("BLE: Powerdown\n");
 }
-
+*/
 // install hooks for events
+
+/*
 void BLESetupHooks() {
-    /*
-    if ( nullptr == BLEWStartEvent ) {
-        BLEWStartEvent = new EventKVO([](){ StartBLE(); },SYSTEM_EVENT_WAKE);
-    }*/
     if ( nullptr == BLEWStopEvent ) {
         lNetLog("BLE: @TODO DISABLED STOP ON EVENT STOP\n");
         //BLEWStopEvent = new EventKVO([](){ StopBLE(); },SYSTEM_EVENT_STOP);
@@ -971,3 +1013,4 @@ void BLESetupHooks() {
         },BMA_EVENT_TEMP);
     }
 }
+*/

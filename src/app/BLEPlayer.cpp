@@ -96,15 +96,9 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
 
 void BLEPlayerApplication::DBRefresh() {
     if ( nullptr != systemDatabase ) {  
-        systemDatabase->SendSQL("SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
-        systemDatabase->SendSQL("SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
+        systemDatabase->SendSQL("SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
+        systemDatabase->SendSQL("SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
     }
-    /*
-    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        db_exec(lIoTsystemDatabase,"SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
-        db_exec(lIoTsystemDatabase,"SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
-        xSemaphoreGive( SqlLogSemaphore ); // free
-    }*/
 }
 const char MusicPlayGadgetbridgeCmd[] =  "{\"t\":\"music\",\"n\":\"play\"}";
 const char MusicPauseGadgetbridgeCmd[] = "{\"t\":\"music\",\"n\":\"pause\"}";
@@ -113,14 +107,14 @@ BLEPlayerApplication::BLEPlayerApplication() {
 
     // BLESendUART("{ t:\"music\", n:\"play/pause/next/previous/volumeup/volumedown\" }");
     playBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
-        BLESendUART(MusicPlayGadgetbridgeCmd);
+        //@TODO BLESendUART(MusicPlayGadgetbridgeCmd);
         lLog("@TODO BLEPLAYER BUTTOn PLAY\n");
         //@TODO send play to android
     },img_play_48_bits,img_play_48_height,img_play_48_width,ThCol(text),Drawable::MASK_COLOR,false);
     playBtn->SetEnabled(false);
     
     pauseBtn = new ButtonImageXBMWidget(120-35,160,70,70,[this](void *unused) {
-        BLESendUART(MusicPauseGadgetbridgeCmd);
+        //@TODO BLESendUART(MusicPauseGadgetbridgeCmd);
         lLog("@TODO BLEPLAYER BUTTOn PAUSE\n");
         //@TODO send play to android
     },img_pause_48_bits,img_pause_48_height,img_pause_48_width,ThCol(text),Drawable::MASK_COLOR,false);

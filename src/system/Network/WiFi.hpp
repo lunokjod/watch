@@ -43,17 +43,22 @@ class LoTWiFi {
         const float HeartBeatTime = 5*60; // time in seconds to check pending tasks
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
         std::list<LoTWiFiTask *> tasks = {};
+        bool enabled=true;
+        bool running=false;
+        void InstallTimer();
     public:
         Ticker NetworkHeartbeatTicker;
-        void InstallTimer();
-        // allow/disallow use of WiFi periodic Tasks (old "wifiOverride" global variable)
-        void SuspendTasks();
-        void ResumeTasks();
+        // allow/disallow wifi tasks
+        void Enable();
+        void Disable();
+        bool IsEnabled();
+        bool IsDisabled() { return (!IsEnabled()); }
+        bool InUse();
+        bool RadioInUse();
         // must be called from core 0 to be functional
         void PerformTasks();
         LoTWiFi();
         ~LoTWiFi();
-
         bool AddTask(LoTWiFiTask * newTask);
         bool RemoveTask(LoTWiFiTask * newTask);
 };

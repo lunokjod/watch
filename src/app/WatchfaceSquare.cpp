@@ -15,10 +15,6 @@
 
 char const *DAY[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
 
-extern bool bleEnabled;        //@TODO this is a crap!!!
-extern volatile bool bleServiceRunning; //@TODO this is a crap!!!
-extern bool blePeer;
-
 extern float PMUBattDischarge;
 
 extern bool weatherSyncDone;
@@ -258,9 +254,9 @@ bool WatchfaceSquare::Tick() {
           }
         }
 
-        if (bleEnabled) {
+        if (LoT().GetBLE()->IsEnabled()) {
           unsigned char *img = img_bluetooth_24_bits;  // bluetooth logo only icon
-          if (blePeer) {
+          if (LoT().GetBLE()->Clients() > 0) {
             img = img_bluetooth_peer_24_bits;
           }  // bluetooth with peer icon
           canvas->drawXBitmap(MARGIN_LFT, 205, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));

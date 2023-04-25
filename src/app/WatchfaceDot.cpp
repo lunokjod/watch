@@ -27,6 +27,13 @@
 #include "../system/Network/BLE.hpp"
 #include <WiFi.h>
 #include "../system/Datasources/database.hpp"
+
+// continue last status in re-launch
+int16_t circleRadius[20] = { 0 };
+int16_t circleX[20]= { 0 };
+int16_t circleY[20]= { 0 };
+
+
 extern bool weatherSyncDone;
 extern int weatherId;
 extern double weatherTemp;
@@ -180,30 +187,42 @@ bool WatchfaceDotApplication::Tick() {
             locationBuffer->canvas->setTextFont(0);
             locationBuffer->canvas->setTextSize(1);
             locationBuffer->canvas->setTextDatum(TL_DATUM);
-            locationBuffer->canvas->setTextColor(TFT_WHITE);
-            wl_status_t whatBoutWifi = WiFi.status();
-            if ( ( WL_NO_SHIELD !=  whatBoutWifi )&&( WL_DISCONNECTED !=  whatBoutWifi )) {
-                sprintf(textBuffer,"WiFi");
-                locationBuffer->canvas->drawString(textBuffer,5,5);
-            }
-            locationBuffer->canvas->setTextDatum(TL_DATUM);
-            if ( bleEnabled ) {
-                sprintf(textBuffer,"BLE");
-                locationBuffer->canvas->drawString(textBuffer,5,15);
+            uint16_t wifiColor = TFT_DARKGREY;
+            if ( LoT().GetWiFi()->RadioInUse() ) { wifiColor = TFT_GREEN; }
+            locationBuffer->canvas->setTextColor(wifiColor);
+            sprintf(textBuffer,"WiFi");            
+            locationBuffer->canvas->drawString(textBuffer,5,5);
+
+
+            uint16_t bleColor = TFT_DARKGREY;
+            char * BLEstate = (char*)"";
+            if ( LoT().GetBLE()->InUse() ) {
+                if ( LoT().GetBLE()->IsAdvertising() ) {
+                    bleColor = TFT_YELLOW;
+                    BLEstate=(char*)"(adv)";
+                } else if ( LoT().GetBLE()->Clients() > 0 ) {
+                    bleColor = TFT_GREEN;
+                    BLEstate=(char*)"(conn)";
+                }
                 // ignore not-set and unset
                 if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
                     //sprintf(textBuffer,"Zone: %d", BLELocationZone);
                     sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
                     locationBuffer->canvas->setTextDatum(CC_DATUM);
+                    locationBuffer->canvas->setTextColor(TFT_WHITE);
                     locationBuffer->canvas->drawString(textBuffer,locationBuffer->canvas->width()/2,locationBuffer->canvas->height()/2);
                 }
             }
-            locationBuffer->canvas->setTextDatum(TL_DATUM);
+            locationBuffer->canvas->setTextColor(bleColor);
+            sprintf(textBuffer,"BLE %s",BLEstate);
+            locationBuffer->canvas->drawString(textBuffer,5,15);
+
             if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
+                locationBuffer->canvas->setTextDatum(TL_DATUM);
                 sprintf(textBuffer,"SQL (%u)", systemDatabase->Pending() );
+                locationBuffer->canvas->setTextColor(TFT_WHITE);
                 locationBuffer->canvas->drawString(textBuffer,5,25);
             }
-            // 2x2 draw
             for (int y=0;y<locationBuffer->canvas->height();y++) {
                 for (int x=0;x<locationBuffer->canvas->width();x++) {
                     uint16_t color = locationBuffer->canvas->readPixel(x,y);

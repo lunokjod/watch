@@ -53,11 +53,17 @@ class LunokIoT {
         // network things
         void DestroyWiFi();
         LoTWiFi * CreateWiFi();
-        LoTWiFi * GetWiFi() { return wifi; }
+        LoTWiFi * GetWiFi() {
+            if ( nullptr == wifi ) {  wifi = CreateWiFi(); }
+            return wifi;
+        }
 
         void DestroyBLE();
         LoTBLE * CreateBLE();
-        LoTBLE * GetBLE() { return ble; }
+        LoTBLE * GetBLE() {
+            if ( nullptr == ble ) {  ble = CreateBLE(); }
+            return ble;
+        }
 
         
         // delete copy and move constructors and assign operators

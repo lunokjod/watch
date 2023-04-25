@@ -26,7 +26,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 #include <esp_task_wdt.h>
-extern bool bleEnabled;
+
 extern SemaphoreHandle_t BLEKnowDevicesSemaphore;
 
 BLEDeviceMonitorApplication::~BLEDeviceMonitorApplication() {

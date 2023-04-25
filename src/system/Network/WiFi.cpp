@@ -29,39 +29,81 @@
 #include <list>
 #include "BLE.hpp"
 
-void LoTWiFi::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); }
-void LoTWiFi::ResumeTasks() { xSemaphoreGive( taskLock ); }
+//void LoTWiFi::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); disabled=true; }
+//void LoTWiFi::ResumeTasks() { xSemaphoreGive( taskLock ); disabled=false; }
+
+void LoTWiFi::Enable() {
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled=true;
+    xSemaphoreGive( taskLock );
+}
+
+void LoTWiFi::Disable() {
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled=false;
+    xSemaphoreGive( taskLock );
+}
+
+bool LoTWiFi::RadioInUse() {
+    wl_status_t current = WiFi.status();
+    if ( ( WL_IDLE_STATUS != current )
+            &&( WL_NO_SHIELD !=  current )
+            &&( WL_DISCONNECTED !=  current ) ) {
+                return true;
+    }
+    return false;
+}
+
+bool LoTWiFi::InUse() {
+    bool response;
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    response=running;
+    xSemaphoreGive( taskLock );
+    return response;
+}
+
+bool LoTWiFi::IsEnabled() {
+    bool response;
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    response=enabled;
+    xSemaphoreGive( taskLock );
+    return response;
+}
 
 bool LoTWiFi::AddTask(LoTWiFiTask * newTask) {
     // @note if change the wait ticks if you want reject by timeout
-    SuspendTasks();
+    Disable();
 
     size_t offset = 0;
     for (auto const& tsk : tasks) {
         if ( tsk == newTask ) {
             lNetLog("WiFi: %p Task %p '%s' already on the list (offset: %d)\n",this,newTask,tsk->Name(), offset);
-            ResumeTasks();
+            Enable();
             return false;
         }
         offset++;
     }
     tasks.push_back(newTask);
     lNetLog("WiFi: %p Task %p '%s' added (offset: %d)\n",this, newTask,newTask->Name(), offset);
-    ResumeTasks();
+    Enable();
     return true;
 }
 
 bool LoTWiFi::RemoveTask(LoTWiFiTask * newTask) {
     lLog("@TODO REMOVETASK NOT IMPLEMENTED\n");
-    return true;
+    return false;
 
 }
 
-void LoTWiFi::PerformTasks(){
+void LoTWiFi::PerformTasks() {
     lNetLog("WiFi: %p Tasks check\n", this);
     // check user permission
     if ( false == NVS.getInt("WifiEnabled") ) {
         lNetLog("WiFi: %p User settings don't agree\n",this);
+        return;
+    }
+    if ( IsDisabled() ) {
+        lNetLog("WiFi: %p Instance disabled\n",this);
         return;
     }
     //check provisioning
@@ -77,26 +119,27 @@ void LoTWiFi::PerformTasks(){
     //taskYIELD();
     //check tasks
     lNetLog("WiFi: %p Checking pending tasks....\n",this);
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     size_t tasksMustRun=0;
     std::list<LoTWiFiTask *> * tasksNeedToRun = new std::list<LoTWiFiTask *>();
-    SuspendTasks();
     for (auto const& tsk : tasks) {
         //launch if need
         if ( false == tsk->Check() ) { continue; }
         tasksNeedToRun->push_back(tsk);
         tasksMustRun++;
     }
-
     if ( 0 == tasksMustRun ) {
-        ResumeTasks();
+        running=false;
+        xSemaphoreGive( taskLock );
         delete tasksNeedToRun;
         //vTaskPrioritySet(NULL,myPriority);
         //taskYIELD();
         // trigger next call
+        xSemaphoreGive( taskLock );
         return;
     }
     lNetLog("WiFi: %p Tasks pending: %u\n",this,tasksMustRun);
-    StopBLE();
+    running=true;
     // perform connection
     wl_status_t currStat;
     lNetLog("WiFi: %p trying to connect to '%s'...\n",this,WSSID.c_str());
@@ -112,10 +155,14 @@ void LoTWiFi::PerformTasks(){
         taskYIELD();
     }
     if (false == connected) {
-        ResumeTasks();
+        xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        running=false;
+        xSemaphoreGive( taskLock );
         WiFi.mode(WIFI_MODE_NULL);
         //vTaskPrioritySet(NULL,myPriority);
         //taskYIELD();
+        running=false;
+        xSemaphoreGive( taskLock );
         return;
     }
 
@@ -127,12 +174,14 @@ void LoTWiFi::PerformTasks(){
         tasksRunned++;
     }
     delete tasksNeedToRun;
-    ResumeTasks();
 
     // disconnect
     WiFi.disconnect(true);
     delay(100);
     WiFi.mode(WIFI_MODE_NULL);
+    running=false;
+    xSemaphoreGive( taskLock );
+
     lNetLog("WiFi: %p Tasks performed: %u/%u\n", this,tasksMustRun,tasksRunned);
     // return to my priority
     //vTaskPrioritySet(NULL,myPriority);
@@ -167,7 +216,7 @@ LoTWiFi::LoTWiFi() {
 }
 
 LoTWiFi::~LoTWiFi() {
-    SuspendTasks();
+    Disable();
     NetworkHeartbeatTicker.detach();
     tasks.remove_if([&](LoTWiFiTask *tsk){
         lNetLog("WiFi: %p Destroy task: '%s'\n", this, tsk->Name());

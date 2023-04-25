@@ -45,6 +45,7 @@
 
 #include "../static/img_wifi_24.xbm"
 
+#include "../lunokIoT.hpp"
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo library shit ;)
 
@@ -59,7 +60,6 @@ extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_server_pem_end")
 extern const PROGMEM uint8_t githubPEM_start[] asm("_binary_asset_raw_githubusercontent_com_pem_start");
 extern const PROGMEM uint8_t githubPEM_end[] asm("_binary_asset_raw_githubusercontent_com_pem_end");
 #endif
-extern bool wifiOverride;
 
 //int OTAbytesPerSecond=0;
 #define OTASTEP_IDLE -1
@@ -153,7 +153,7 @@ OTAUpdateApplication::OTAUpdateApplication() {
         }
         OTAStep=OTASTEP_CONNECTING;
         lAppLog("OTA: Trying to get WiFi...\n");
-        wifiOverride=true;
+        LoT().GetWiFi()->Disable();
         WiFi.begin();
         esp_wifi_set_ps(WIFI_PS_NONE); // disable wifi powersave
         unsigned long timeout = millis()+(25*1000);
@@ -268,7 +268,7 @@ ota_end:
             delay(100);
             WiFi.mode(WIFI_OFF);
             esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
-            wifiOverride=false;
+            LoT().GetWiFi()->Enable();
             lAppLog("OTA: ESP_HTTPS_OTA upgrade successful. Rebooting ...\n");
             LaunchApplication(new ShutdownApplication(true,true));
             return;
@@ -288,7 +288,7 @@ ota_end:
         delay(100);
         WiFi.mode(WIFI_OFF);
         esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
-        wifiOverride=false;
+        LoT().GetWiFi()->Enable();
         updateBtn->SetEnabled(true);
         free(firmwareURL);
         OTAStep=OTASTEP_IDLE;
@@ -331,7 +331,7 @@ OTAUpdateApplication::~OTAUpdateApplication() {
     WiFi.mode(WIFI_OFF);
     esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
     OTAStep=OTASTEP_IDLE;
-    wifiOverride=false;
+    LoT().GetWiFi()->Enable();
 }
 
 

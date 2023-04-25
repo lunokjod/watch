@@ -31,8 +31,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "LogView.hpp"
 #include <esp_task_wdt.h>
-
-extern bool bleEnabled;
+#include "../lunokIoT.hpp"
 
 BluetoothApplication::~BluetoothApplication() {
     if ( nullptr != btnGeneratePIN ) { delete btnGeneratePIN; }
@@ -53,11 +52,7 @@ BluetoothApplication::BluetoothApplication() {
 
     btnRemoveBonding=new ButtonImageXBMWidget(5,5,64,64,[&,this](void *bah){
         lAppLog("BLE: Removing all bounded devices...\n");
-        BLEKickAllPeers();
         NimBLEDevice::deleteAllBonds();
-        StopBLE();
-        esp_task_wdt_reset();
-        //StartBLE();
         lAppLog("BLE: Bound devices removed\n");
     },img_trash_32_bits,img_trash_32_height,img_trash_32_width,ThCol(text),ThCol(high));
     generatedPin = BLEDevice::getSecurityPasskey();
@@ -66,8 +61,8 @@ BluetoothApplication::BluetoothApplication() {
 
 bool BluetoothApplication::Tick() {
     UINextTimeout = millis() + UITimeout; // no sleep in this screen
-    btnRemoveBonding->enabled=bleEnabled;
-    btnGeneratePIN->enabled=bleEnabled;
+    btnRemoveBonding->enabled=LoT().GetBLE()->IsEnabled();
+    btnGeneratePIN->enabled=LoT().GetBLE()->IsEnabled();
     btnBack->Interact(touched,touchX, touchY);
     btnGeneratePIN->Interact(touched,touchX, touchY);
     btnRemoveBonding->Interact(touched,touchX, touchY);
@@ -86,7 +81,7 @@ bool BluetoothApplication::Tick() {
         canvas->drawString("BLE PIN:",TFT_WIDTH/2,TFT_HEIGHT/2);
         canvas->setTextSize(4);
         canvas->setTextDatum(TC_DATUM);
-        if ( bleEnabled ) {
+        if ( LoT().GetBLE()->IsEnabled() ) {
             canvas->drawString(pinAsChar,TFT_WIDTH/2,TFT_HEIGHT/2);
         } else {
             canvas->setTextColor(ThCol(text_alt));

@@ -193,7 +193,6 @@ LunokIoT::LunokIoT() {
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
 
-
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
     
@@ -206,7 +205,7 @@ LunokIoT::LunokIoT() {
     // Start the interface with the user via the screen and buttons!!! (born to serve xD)
     UIStart();
 #ifdef LUNOKIOT_WIFI_ENABLED
-    if (nullptr == wifi ) { wifi = CreateWiFi(); }
+    if (nullptr == wifi ) { wifi = GetWiFi(); }
 #endif
 #ifdef LUNOKIOT_BLE_ENABLED
     if (nullptr == ble ) { ble = CreateBLE(); }
@@ -277,11 +276,13 @@ void shit() {
   }
 }
 */
-extern bool wifiOverride;
+
 bool LunokIoT::IsNetworkInUse() {
-    if ( ( wifiOverride ) || ( IsBLEInUse() ) || ( (WL_NO_SHIELD != WiFi.status()) && (WL_IDLE_STATUS != WiFi.status())) ) { return true; }
+    //@TODO || ( IsBLEInUse() )
+    if ( ( GetWiFi()->InUse() ) ) { return true; }
     return false;
 }
+
 void LunokIoT::ListLittleFS() {
     if ( false == LittleFSReady ) { return; }
     lSysLog("LittleFS: contents:\n");

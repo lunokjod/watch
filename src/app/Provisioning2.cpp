@@ -34,6 +34,7 @@
 #include "../../static/img_bluetooth_32.xbm"
 #include "../../static/img_wifi_32.xbm"
 
+#include "../lunokIoT.hpp"
 #include "WiFiProv.h"
 #include "WiFi.h"
 #include <wifi_provisioning/manager.h>
@@ -70,7 +71,7 @@ const int16_t QRSize = 240;
 #define PIXELSIZE2 QRSize/SIDELEN // with wide black borders
 #define PROV_QR_VERSION         "v1"
 
-extern bool wifiOverride;
+//extern bool wifiOverride;
 bool provisioned=false;
 extern TTGOClass *ttgo;
 
@@ -235,7 +236,7 @@ Provisioning2Application::~Provisioning2Application() {
         free(currentQRData);
         currentQRData = nullptr;
     }
-    wifiOverride=false;
+    LoT().GetWiFi()->Disable();
 }
 
 
@@ -268,7 +269,7 @@ void Provisioning2Application::GenerateCredentials() {
 }
 
 Provisioning2Application::Provisioning2Application() {
-    wifiOverride=true;
+    LoT().GetWiFi()->Disable();
     lastProvisioning2Instance = this;
     WiFi.begin();
     // get my name
@@ -296,9 +297,9 @@ Provisioning2Application::Provisioning2Application() {
             lAppLog("Provisioning: %p: Rejected (already runing)\n",this);
             return;
         }
-        if ( bleServiceRunning ) {
+        if ( LoT().GetBLE()->IsEnabled() ) {
             lNetLog("Network: BLE must be disabled to maximize WiFi effort\n");
-            StopBLE();
+            LoT().GetBLE()->Disable();
         }
         lAppLog("Provisioning: %p: Starting provisioning procedure...\n",this);
         GenerateCredentials();

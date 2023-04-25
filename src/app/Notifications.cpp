@@ -30,7 +30,6 @@
 #include "resources.hpp"
 
 
-extern void NotificationLogSQL(const char * sqlQuery);
 volatile int NotificationDbID=-1;
 char *NotificationDbData=nullptr;
 bool NotificationDbObtained=false;
@@ -63,7 +62,7 @@ NotificacionsApplication::NotificacionsApplication() {
     NotificationDbObtained=false;
     parsedJSON=false;
     if ( nullptr != systemDatabase ) {
-        systemDatabase->SendSQL("SELECT * FROM notifications WHERE data LIKE '{\"t\":\"notify\",%' ORDER BY timestamp DESC LIMIT 1;",NotificacionsApplicationSQLiteCallback);
+        systemDatabase->SendSQL("SELECT * FROM notifications WHERE data LIKE '{\"t\":\"notify\",%%%%' ORDER BY timestamp DESC LIMIT 1;",NotificacionsApplicationSQLiteCallback);
     }
     /*
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
@@ -75,12 +74,11 @@ NotificacionsApplication::NotificacionsApplication() {
     btnMarkRead=new ButtonImageXBMWidget(canvas->width()-48,canvas->height()-48,48,48,[&,this](void *bah){
         if ( -1 != NotificationDbID ) {
             const char SQLDeleteEntry[] = "DELETE FROM notifications WHERE id=%d;";
-            char * buff=(char*)ps_malloc(255);
-            if ( nullptr != buff ) {
-                sprintf(buff,SQLDeleteEntry,NotificationDbID);
-                NotificationLogSQL(buff);
-                free(buff);
-            }
+            char * buff=(char*)ps_malloc(strlen(SQLDeleteEntry)+15);
+            if ( nullptr == buff ) { return; }
+            sprintf(buff,SQLDeleteEntry,NotificationDbID);
+            systemDatabase->SendSQL(buff);
+            free(buff);
             // force relaunch myself
             LaunchApplication(new NotificacionsApplication(),true,false,true);
         }
@@ -91,7 +89,6 @@ NotificacionsApplication::NotificacionsApplication() {
 }
 
 bool NotificacionsApplication::Tick() {
-    //UINextTimeout = millis()+UITimeout;
     TemplateApplication::btnBack->Interact(touched,touchX,touchY);
     btnMarkRead->Interact(touched,touchX,touchY);
     if (millis() > nextRedraw ) {

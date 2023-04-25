@@ -285,7 +285,7 @@ static void DoSleepTask(void *args) {
     doSleepThreads++;
 
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
-    BLEKickAllPeers(); // anounche to others ble peers: I'm 'out of duty'
+    //BLEKickAllPeers(); // anounche to others ble peers: I'm 'out of duty'
     LunokIoTSystemTickerStop();
 
     // destroy the app if isn't the watchface
@@ -337,7 +337,7 @@ static void DoSleepTask(void *args) {
     // bma interrupt gpio_397
 
     uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
-    if ( IsBLEEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
+    if ( LoT().GetBLE()->IsEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
 
@@ -553,9 +553,7 @@ static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t 
 
     TakeAllSamples();
     // if bluetooth is enabled, do a chance to get notifications
-    if ( IsBLEEnabled() ) {
-        //delay(100);
-        //BLEKickAllPeers(); // force clients to reconnect
+    if ( LoT().GetBLE()->IsEnabled() ) {
         lEvLog("BLE: Wait a little bit for connection/notification...\n");
         //delay(100); // let antena wharm
         TimedDoSleep.once(9,[]() { // get sleep in some seconds if no screen is on

@@ -137,9 +137,9 @@ KnowLocationApplication::KnowLocationApplication() {
     scanButton->AddChild(new Text("Scan"));
     scanButton->tapCallback=[&](void * obj){
         lAppLog("Launch BLE passive scan...\n");
-        if ( bleAdvertising ) {
+        if ( LoT().GetBLE()->IsAdvertising() ) {
             NimBLEScan *pBLEScan = BLEDevice::getScan();
-            if (bleEnabled) {
+            if (LoT().GetBLE()->IsEnabled() ) {
                 if (pBLEScan->isScanning()) {
                     pBLEScan->stop();
                     lNetLog("BLE: Location recognition: Last Scan stopped!\n");
