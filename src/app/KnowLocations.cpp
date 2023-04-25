@@ -125,6 +125,7 @@ KnowLocationApplication::KnowLocationApplication() {
             for (auto const& dev : BLEKnowDevices) {
                 lAppLog("UPDATE MAC %s TO ZONE: %d\n",dev->addr.toString().c_str(),self->locationMenu->selectedEntry);
                 dev->locationGroup=self->locationMenu->selectedEntry;
+                dev->dbSync=false;
                 SqlUpdateBluetoothDevice(dev->addr.toString().c_str(),dev->distance,self->locationMenu->selectedEntry);
                 //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
                 //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) ); // wait a ittle bit

@@ -22,6 +22,9 @@
 #include "../UI/AppTemplate.hpp"
 #include "WatchfaceDot.hpp"
 #include "LuIMainMenu.hpp"
+#include "Steps.hpp"
+#include "Battery.hpp"
+#include "Settings.hpp"
 #include "../lunokIoT.hpp"
 #include "../resources.hpp"
 #include "../system/Network/BLE.hpp"
@@ -43,10 +46,12 @@ extern char *weatherIcon;
 extern bool UILongTapOverride; // don't allow long tap for task switcher
 
 WatchfaceDotApplication::WatchfaceDotApplication() {
+    bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });
+    topLeftButton = new ActiveRect(0, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); });
+    topRightButton = new ActiveRect(160, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); });
     bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
-    if ( nullptr == bottomRightButton ) {
-        lAppLog("MEMORY ERROR: Unable to allocate bottomRightButton\n");
-    }
+
+
     displayBuffer = new CanvasWidget(48,48); // fill with status
 
     locX=random(0,displayBuffer->canvas->width());
@@ -68,7 +73,11 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
 }
 
 WatchfaceDotApplication::~WatchfaceDotApplication() {
+    if ( nullptr != topLeftButton ) { delete topLeftButton; }
+    if ( nullptr != topRightButton ) { delete topRightButton; }
     if ( nullptr != bottomRightButton ) { delete bottomRightButton; }
+    if ( nullptr != bottomLeftButton ) { delete bottomLeftButton; }
+    
     if ( nullptr != displayBuffer ) { delete displayBuffer; }
     if ( nullptr != locationBuffer ) { delete locationBuffer; }
     //if ( nullptr != dotSize ) { free(dotSize); }
@@ -76,7 +85,11 @@ WatchfaceDotApplication::~WatchfaceDotApplication() {
 }
 
 bool WatchfaceDotApplication::Tick() {
+    topRightButton->Interact(touched, touchX, touchY); // steps
     bottomRightButton->Interact(touched, touchX, touchY); // menu
+    topLeftButton->Interact(touched, touchX, touchY); // settings
+    bottomLeftButton->Interact(touched, touchX, touchY); // battery
+
     bool launchDrop = touched;
     // create touch circles
     if ( millis() > nextDrop ) {
@@ -187,23 +200,33 @@ bool WatchfaceDotApplication::Tick() {
             locationBuffer->canvas->setTextFont(0);
             locationBuffer->canvas->setTextSize(1);
             locationBuffer->canvas->setTextDatum(TL_DATUM);
-            uint16_t wifiColor = TFT_DARKGREY;
-            if ( LoT().GetWiFi()->RadioInUse() ) { wifiColor = TFT_GREEN; }
-            locationBuffer->canvas->setTextColor(wifiColor);
-            sprintf(textBuffer,"WiFi");            
-            locationBuffer->canvas->drawString(textBuffer,5,5);
 
+            // WiFi
+            if ( LoT().GetWiFi()->RadioInUse() ) {
+                uint16_t wifiColor = TFT_DARKGREY;
+                wifiColor = TFT_GREEN;
+                locationBuffer->canvas->setTextColor(wifiColor);
+                sprintf(textBuffer,"WiFi");            
+                locationBuffer->canvas->drawString(textBuffer,5,5);
+            }
 
+            // BLE
             uint16_t bleColor = TFT_DARKGREY;
             char * BLEstate = (char*)"";
             if ( LoT().GetBLE()->InUse() ) {
                 if ( LoT().GetBLE()->IsAdvertising() ) {
                     bleColor = TFT_YELLOW;
                     BLEstate=(char*)"(adv)";
+                } else if ( LoT().GetBLE()->IsScanning()) {
+                    bleColor = TFT_CYAN;
+                    BLEstate=(char*)"(scan)";
                 } else if ( LoT().GetBLE()->Clients() > 0 ) {
                     bleColor = TFT_GREEN;
                     BLEstate=(char*)"(conn)";
                 }
+                locationBuffer->canvas->setTextColor(bleColor);
+                sprintf(textBuffer,"BLE %s",BLEstate);
+                locationBuffer->canvas->drawString(textBuffer,5,15);
                 // ignore not-set and unset
                 if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
                     //sprintf(textBuffer,"Zone: %d", BLELocationZone);
@@ -213,22 +236,21 @@ bool WatchfaceDotApplication::Tick() {
                     locationBuffer->canvas->drawString(textBuffer,locationBuffer->canvas->width()/2,locationBuffer->canvas->height()/2);
                 }
             }
-            locationBuffer->canvas->setTextColor(bleColor);
-            sprintf(textBuffer,"BLE %s",BLEstate);
-            locationBuffer->canvas->drawString(textBuffer,5,15);
-
+            // SQL
             if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
                 locationBuffer->canvas->setTextDatum(TL_DATUM);
                 sprintf(textBuffer,"SQL (%u)", systemDatabase->Pending() );
                 locationBuffer->canvas->setTextColor(TFT_WHITE);
                 locationBuffer->canvas->drawString(textBuffer,5,25);
             }
-            for (int y=0;y<locationBuffer->canvas->height();y++) {
-                for (int x=0;x<locationBuffer->canvas->width();x++) {
-                    uint16_t color = locationBuffer->canvas->readPixel(x,y);
-                    if ( TFT_PINK == color ) { continue; }
-                    canvas->fillCircle((x*2)+1,(y*2)+1,1,color);
-                }
+        }
+
+        // show raindrops
+        for (int y=0;y<locationBuffer->canvas->height();y++) {
+            for (int x=0;x<locationBuffer->canvas->width();x++) {
+                uint16_t color = locationBuffer->canvas->readPixel(x,y);
+                if ( TFT_PINK == color ) { continue; }
+                canvas->fillCircle((x*2)+1,(y*2)+1,1,color);
             }
         }
         nextRefresh=millis()+(1000/12);

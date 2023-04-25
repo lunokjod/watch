@@ -54,7 +54,7 @@ const esp_power_level_t defaultBLEPowerLevel = ESP_PWR_LVL_N3;
 //EventKVO * BLEWLightSleepEvent = nullptr;
 //EventKVO * BLEWStopEvent = nullptr;
 // monitor the sensors
-//EventKVO * battPercentPublish = nullptr; 
+
 //EventKVO * battTempPublish = nullptr; 
 //EventKVO * envTempPublish = nullptr; 
 // service start/stop flag
@@ -139,6 +139,81 @@ class LBLEServerCallbacks: public NimBLEServerCallbacks {
         }
 };
 
+// advertiser callbacks
+class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice* advertisedDevice) {
+        bool alreadyKnown = false;
+        int FinalZone=-1;
+        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+            for (auto const& dev : BLEKnowDevices) {
+                if ( dev->addr == advertisedDevice->getAddress() ) {
+                    char *finalName = (char*)"";
+                    if ( nullptr != dev->devName ) { finalName = dev->devName; }
+                    lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times) zone: %d\n",
+                                            finalName,dev->addr.toString().c_str(),
+                                            ((millis()-dev->firstSeen)/1000),
+                                            ((millis()-dev->lastSeen)/1000),
+                                            dev->seenCount,dev->locationGroup);
+                    dev->lastSeen = millis();
+                    dev->seenCount++;
+                    if ( advertisedDevice->haveRSSI() ) {
+                        dev->rssi = advertisedDevice->getRSSI();
+                    }
+                    if ( advertisedDevice->haveTXPower() ) {
+                        dev->txPower = advertisedDevice->getTXPower();
+                    }
+                    // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
+                    if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
+                        // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
+                        dev->distance = 10 ^((dev->txPower-dev->rssi)/(10* 2));
+                        //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",dev->distance);
+                    }
+                    if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) { FinalZone=dev->locationGroup; }
+                    alreadyKnown=true;
+                    SqlUpdateBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
+                    break;
+                }
+            }
+            xSemaphoreGive( BLEKnowDevicesSemaphore );
+        }
+        if ( alreadyKnown ) {
+            if ( -1 == FinalZone ) { // not found
+                //lNetLog("BLE zone not found\n");
+                BLELocationZone = BLEZoneLocations::UNKNOWN;
+            } else { // found zone
+                //lNetLog("BLE zone found: %d '%s'\n",FinalZone,BLEZoneLocationsHumanReadable[FinalZone]);
+                BLELocationZone = (BLEZoneLocations)FinalZone;
+            }
+            return;
+        } // nu device
+        lBLEDevice * newDev = new lBLEDevice();
+        newDev->addr =  advertisedDevice->getAddress();
+        newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
+        sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
+        lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
+        if ( advertisedDevice->haveRSSI() ) {
+            newDev->rssi = advertisedDevice->getRSSI();
+        }
+        if ( advertisedDevice->haveTXPower() ) {
+            newDev->txPower = advertisedDevice->getTXPower();
+        }
+        // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
+        if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
+            // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
+            newDev->distance = 10 ^((newDev->txPower-newDev->rssi)/(10* 2));
+            //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",newDev->distance);
+        }
+        newDev->locationGroup=BLEZoneLocations::UNKNOWN;
+        newDev->firstSeen = millis();
+        newDev->lastSeen = newDev->firstSeen;
+        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+            BLEKnowDevices.push_back(newDev);
+            //DONT NEEDED (see BLEDev destroy) SqlAddBluetoothDevice(newDev->addr.toString().c_str(), newDev->distance, newDev->locationGroup);
+            xSemaphoreGive( BLEKnowDevicesSemaphore );
+        }
+        //lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
+    }
+};
 
 class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     
@@ -255,6 +330,12 @@ class LBLEUARTCallbacks: public NimBLECharacteristicCallbacks {
     }
 };
 
+bool LoTBLE::IsScanning() {
+    NimBLEScan * scan = NimBLEDevice::getScan();
+    if ( nullptr == scan ) { return false; }
+    return scan->isScanning();
+}
+
 bool LoTBLE::IsAdvertising() {
     NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
     if ( nullptr == adv ) { return false; }
@@ -282,6 +363,22 @@ size_t LoTBLE::Clients() {
     return clients.size();
 
 }
+
+void SaveBLEDevicesToDB() {
+    if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
+        BLEKnowDevices.remove_if([](lBLEDevice *dev){
+            // if location is set, save to db
+            if ( BLEZoneLocations::UNKNOWN !=  dev->locationGroup ) {
+                SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
+                dev->dbSync=true;
+            }
+            lNetLog("BLE: Free know device: '%s'\n", dev->addr.toString().c_str());
+            return true;
+        });
+        xSemaphoreGive( BLEKnowDevicesSemaphore );
+    }
+}
+
 void LoTBLE::_BLELoopTask() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     running=true;
@@ -310,24 +407,54 @@ void LoTBLE::_BLELoopTask() {
     pServer->setCallbacks(new LBLEServerCallbacks(this),true); // destroy on finish
     lNetLog("BLE: %p Server started\n",this);
 
-    if ( nullptr == pService ) { pService = pServer->createService(SERVICE_UART_UUID); }
+    if ( nullptr == pServiceUART ) { pServiceUART = pServer->createService(SERVICE_UART_UUID); }
 
     // Create the BLE Service UART
     // UART data come here
     if ( nullptr == pTxCharacteristic ) { 
-        pTxCharacteristic = pService->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
+        pTxCharacteristic = pServiceUART->createCharacteristic( CHARACTERISTIC_UUID_TX, NIMBLE_PROPERTY::NOTIFY );
         pTxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
     }
     if ( nullptr == pRxCharacteristic ) { 
-        pRxCharacteristic = pService->createCharacteristic(
+        pRxCharacteristic = pServiceUART->createCharacteristic(
                     CHARACTERISTIC_UUID_RX,NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_AUTHEN);
         pRxCharacteristic->setCallbacks(new LBLEUARTCallbacks());
     }
-    pService->start();
+    pServiceUART->start();
+
+    // battery services
+    // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
+    pServiceBattery = pServer->createService(BLE_SERVICE_BATTERY);
+    BatteryCharacteristic = pServiceBattery->createCharacteristic(BLE_CHARACTERISTIC_BATTERY,
+                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY );
+    uint8_t level = 0;
+    if ( -1 != batteryPercent ) { level = batteryPercent; }
+    BatteryCharacteristic->setValue(level);    
+    // capture sensor events and push to BLE
+    if ( nullptr == battPercentPublish ) {
+        battPercentPublish = new EventKVO([&](){
+            if ( nullptr != BatteryCharacteristic ) {
+                uint8_t level = 0;
+                if ( -1 != batteryPercent ) { level = batteryPercent; }
+                lNetLog("BLE: %p Notify Battery: %d%%\n",this,level); // notify to log
+                BatteryCharacteristic->setValue(level);
+                BatteryCharacteristic->notify();
+            }
+        },PMU_EVENT_BATT_PC);
+    }
+    pServiceBattery->start();
+    
     pServer->start();
+
+    BLEScan * pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(new LBLEAdvertisedDeviceCallbacks(), false);
+
+
 
     StartAdvertising();
     unsigned long nextUserSettingCheckMS=0;
+    unsigned long bleAdvertisingTimeoutMS=millis()+12000; // a little delay from first scan
+
     while ( running ) {
         TickType_t nextCheck = xTaskGetTickCount();
         xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) );
@@ -339,6 +466,62 @@ void LoTBLE::_BLELoopTask() {
                 running=false;
             }
             nextUserSettingCheckMS = millis()+UserSettingsCheckMS;
+        }
+        if ( millis() > bleAdvertisingTimeoutMS ) {
+            StopAdvertising();
+            lNetLog("BLE: %p Perform Location scan...\n");
+            // clean old BLE peers here
+            if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                size_t b4Devs = BLEKnowDevices.size();
+                BLEKnowDevices.remove_if([](lBLEDevice *dev) {
+                    unsigned long seconds = (millis()-dev->lastSeen);
+                    if ( seconds > LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL ) {
+                        // if location is set, save to db
+                        if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
+                            esp_task_wdt_reset();
+                            SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
+                            dev->dbSync=true;
+                        }
+                        char *finalName = (char*)"";
+                        if ( nullptr != dev->devName ) { finalName = dev->devName; }
+                        lNetLog("BLE: Removed expired seen device: '%s' %s\n",finalName,dev->addr.toString().c_str());
+                        delete dev;
+                        dev=nullptr;
+                        return true;
+                    }
+                    return false;
+                });
+                esp_task_wdt_reset();
+                xSemaphoreGive( BLEKnowDevicesSemaphore );
+            }
+            NimBLEScan *pBLEScan = BLEDevice::getScan();
+            if (pBLEScan->isScanning()) {
+                pBLEScan->stop();
+                lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
+                delay(100);
+            }
+            lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
+            //pBLEScan->clearResults();
+            pBLEScan->setMaxResults(3);
+            pBLEScan->setInterval(1000);
+            pBLEScan->setWindow(999);  // less or equal setInterval value
+            pBLEScan->setDuplicateFilter(true);
+            //delay(50);
+            BLEScanResults foundDevices = pBLEScan->start(2);
+            lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
+            //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+            lNetLog("BLE: Refreshing devices from database...\n");
+            if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                for (auto const& dev : BLEKnowDevices) {
+                    if ( false == dev->dbSync ) { SqlRefreshBluetoothDevice(dev->addr.toString().c_str()); }
+                }
+                xSemaphoreGive( BLEKnowDevicesSemaphore );
+            }
+            lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
+            bleLocationScanCounter++;
+            if ( 0 == Clients() ) { StartAdvertising(); }
+
+            bleAdvertisingTimeoutMS=millis()+LocationCheckMS;
         }
         // parse gadgetbridge command
         char * currentGadgetBridgeBufferPtr = nullptr;
@@ -377,6 +560,7 @@ void LoTBLE::_BLELoopTask() {
         }
     }
     StopAdvertising();
+    SaveBLEDevicesToDB();
     // Stop BLE
     lNetLog("BLE: %p Deinit...\n",this);
     BLEDevice::deinit(true);
@@ -403,6 +587,13 @@ void LoTBLE::_TryStopTask() {
 }
 
 void LoTBLE::_TryLaunchTask() {
+    // check if user wants me
+    bool enabled = NVS.getInt("BLEEnabled");
+    if ( false == enabled ) { 
+        lNetLog("BLE: %p User settings don't agree\n",this);
+        return;
+    }
+
     if ( NULL != BLELoopTaskHandler ) { return; }
     // run the task thread
     BaseType_t taskOK = xTaskCreatePinnedToCore([](void *obj) {
@@ -412,7 +603,7 @@ void LoTBLE::_TryLaunchTask() {
         self->BLELoopTaskHandler=NULL;
         lNetLog("BLE: %p loop task die here\n", self);
         vTaskDelete(NULL);
-    }, "loTble", LUNOKIOT_TASK_STACK_SIZE, this, tskIDLE_PRIORITY,
+    }, "loTble", LUNOKIOT_MID_STACK_SIZE, this, tskIDLE_PRIORITY,
                     &BLELoopTaskHandler,CONFIG_BT_NIMBLE_PINNED_TO_CORE);
     if ( pdPASS != taskOK ) {
         lNetLog("BLE: %p ERROR Trying to launch loop BLE Task\n",this);
@@ -501,8 +692,7 @@ bool LoTBLE::BLESendUART(const char * data) {
         lNetLog("BLE: ERROR: No UART TX characteristic loaded\n");
         return false;
     }
-
-    // NEEDED uint16_t MaxDataSize = pServer->getPeerMTU(0)-3;
+    uint16_t MaxDataSize = NimBLEDevice::getServer()->getPeerMTU(0)-3;
     size_t currentOffset=0;
     const size_t MaxOffset=strlen(data);
     uint8_t *dataPtr=(uint8_t *)data;
@@ -511,7 +701,7 @@ bool LoTBLE::BLESendUART(const char * data) {
         dataPtr=((uint8_t *)data)+currentOffset;
         uint16_t currentChunkSize=strlen((char*)dataPtr);
         if ( 0 == currentChunkSize) { break; }
-        // NEEDED if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
+        if ( currentChunkSize > MaxDataSize ) { currentChunkSize=MaxDataSize; }
         /*
         for(int i=0;i<currentChunkSize;i++) {  lLog("'%c' %02x, ",dataPtr[i],dataPtr[i]); }
         lLog("\n");
@@ -522,86 +712,11 @@ bool LoTBLE::BLESendUART(const char * data) {
         delay(40);
     }
     pTxCharacteristic->notify((uint8_t*)"\n",1);
-    // NEEDED lNetLog("BLE: Sended UART message: '%s' %u bytes (MTU: %u)\n",data,strlen(data),MaxDataSize);
+    lNetLog("BLE: %p Sended UART message: '%s' %u bytes (MTU: %u)\n",this,data,strlen(data),MaxDataSize);
     return true;
 }
 
 
-// advertiser callbacks
-class LBLEAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
-    void onResult(BLEAdvertisedDevice* advertisedDevice) {
-        bool alreadyKnown = false;
-        int FinalZone=-1;
-        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-            for (auto const& dev : BLEKnowDevices) {
-                if ( dev->addr == advertisedDevice->getAddress() ) {
-                    char *finalName = (char*)"";
-                    if ( nullptr != dev->devName ) { finalName = dev->devName; }
-                    lNetLog("BLE: Know dev: '%s'(%s) (from: %d secs) last seen: %d secs (%d times) zone: %d\n",
-                                            finalName,dev->addr.toString().c_str(),
-                                            ((millis()-dev->firstSeen)/1000),
-                                            ((millis()-dev->lastSeen)/1000),
-                                            dev->seenCount,dev->locationGroup);
-                    dev->lastSeen = millis();
-                    dev->seenCount++;
-                    if ( advertisedDevice->haveRSSI() ) {
-                        dev->rssi = advertisedDevice->getRSSI();
-                    }
-                    if ( advertisedDevice->haveTXPower() ) {
-                        dev->txPower = advertisedDevice->getTXPower();
-                    }
-                    // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
-                    if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
-                        // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
-                        dev->distance = 10 ^((dev->txPower-dev->rssi)/(10* 2));
-                        //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",dev->distance);
-                    }
-                    if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) { FinalZone=dev->locationGroup; }
-                    alreadyKnown=true;
-                    SqlUpdateBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
-                    break;
-                }
-            }
-            xSemaphoreGive( BLEKnowDevicesSemaphore );
-        }
-        if ( alreadyKnown ) {
-            if ( -1 == FinalZone ) { // not found
-                //lNetLog("BLE zone not found\n");
-                BLELocationZone = BLEZoneLocations::UNKNOWN;
-            } else { // found zone
-                //lNetLog("BLE zone found: %d '%s'\n",FinalZone,BLEZoneLocationsHumanReadable[FinalZone]);
-                BLELocationZone = (BLEZoneLocations)FinalZone;
-            }
-            return;
-        } // nu device
-        lBLEDevice * newDev = new lBLEDevice();
-        newDev->addr =  advertisedDevice->getAddress();
-        newDev->devName = (char *)ps_malloc(advertisedDevice->getName().length()+1);
-        sprintf(newDev->devName,"%s",advertisedDevice->getName().c_str());
-        lNetLog("BLE: New dev: '%s'(%s)\n",newDev->devName, newDev->addr.toString().c_str());
-        if ( advertisedDevice->haveRSSI() ) {
-            newDev->rssi = advertisedDevice->getRSSI();
-        }
-        if ( advertisedDevice->haveTXPower() ) {
-            newDev->txPower = advertisedDevice->getTXPower();
-        }
-        // https://stackoverflow.com/questions/20416218/understanding-ibeacon-distancing/20434019#20434019
-        if (( advertisedDevice->haveRSSI()) && (advertisedDevice->haveTXPower())) {
-            // Distance = 10 ^ ((Measured Power -RSSI)/(10 * N))
-            newDev->distance = 10 ^((newDev->txPower-newDev->rssi)/(10* 2));
-            //lNetLog("BLE: DEBUG Device DISTANCE: %f\n",newDev->distance);
-        }
-        newDev->locationGroup=BLEZoneLocations::UNKNOWN;
-        newDev->firstSeen = millis();
-        newDev->lastSeen = newDev->firstSeen;
-        if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-            BLEKnowDevices.push_back(newDev);
-            //DONT NEEDED (see BLEDev destroy) SqlAddBluetoothDevice(newDev->addr.toString().c_str(), newDev->distance, newDev->locationGroup);
-            xSemaphoreGive( BLEKnowDevicesSemaphore );
-        }
-        //lNetLog("BLE: seen devices: %d\n",BLEKnowDevices.size());
-    }
-};
 
 
 lBLEDevice::~lBLEDevice() {
@@ -612,19 +727,6 @@ lBLEDevice::~lBLEDevice() {
     lNetLog("BLEDevice %p destroyed\n", this);
 }
 
-void SaveBLEDevicesToDB() {
-    if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) == pdTRUE )  {
-        BLEKnowDevices.remove_if([](lBLEDevice *dev){
-            // if location is set, save to db
-            if ( BLEZoneLocations::UNKNOWN !=  dev->locationGroup ) {
-                SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
-            }
-            lNetLog("BLE: Free know device: '%s'\n", dev->addr.toString().c_str());
-            return true;
-        });
-        xSemaphoreGive( BLEKnowDevicesSemaphore );
-    }
-}
 /*
 void BLELoopTask(void * data) {
     bleServiceRunning=true; // notify outside that I'm running
@@ -638,67 +740,10 @@ void BLELoopTask(void * data) {
 
     oldDeviceConnected = false;
     deviceConnected = false;
-    unsigned long bleAdvertisingTimeout=millis()+12000; // a little delay from first scan
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
     while(bleEnabled) {
         esp_task_wdt_reset();
 
-        if ( millis() > bleAdvertisingTimeout ) {
-            NimBLEAdvertising *adv = pServer->getAdvertising();
-            if ( nullptr != adv ) { bleAdvertising = adv->isAdvertising(); }
-            // do a scan trying to harvest BLE devices for Location Triggers
-            if ( bleAdvertising ) {
-                adv->stop();
-                // clean old BLE peers here
-                if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-                    size_t b4Devs = BLEKnowDevices.size();
-                    BLEKnowDevices.remove_if([](lBLEDevice *dev) {
-                        unsigned long seconds = (millis()-dev->lastSeen);
-                        if ( seconds > LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL ) {
-                            // if location is set, save to db
-                            if ( BLEZoneLocations::UNKNOWN != dev->locationGroup ) {
-                                esp_task_wdt_reset();
-                                SqlAddBluetoothDevice(dev->addr.toString().c_str(),dev->distance,dev->locationGroup);
-                            }
-                            char *finalName = (char*)"";
-                            if ( nullptr != dev->devName ) { finalName = dev->devName; }
-                            lNetLog("BLE: Removed expired seen device: '%s' %s\n",finalName,dev->addr.toString().c_str());
-                            delete dev;
-                            dev=nullptr;
-                            return true;
-                        }
-                        return false;
-                    });
-                    esp_task_wdt_reset();
-                    xSemaphoreGive( BLEKnowDevicesSemaphore );
-                }
-                NimBLEScan *pBLEScan = BLEDevice::getScan();
-                if (pBLEScan->isScanning()) {
-                    pBLEScan->stop();
-                    lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
-                    delay(100);
-                }
-                lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
-                //pBLEScan->clearResults();
-                pBLEScan->setMaxResults(3);
-                pBLEScan->setInterval(1000);
-                pBLEScan->setWindow(999);  // less or equal setInterval value
-                pBLEScan->setDuplicateFilter(true);
-                //delay(50);
-                BLEScanResults foundDevices = pBLEScan->start(2);
-                lNetLog("BLE: Devices found: %d\n",foundDevices.getCount());
-                //pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-                lNetLog("BLE: Refreshing devices from database...\n");
-                if( xSemaphoreTake( BLEKnowDevicesSemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-                    for (auto const& dev : BLEKnowDevices) {
-                        if ( false == dev->dbSync ) { SqlRefreshBluetoothDevice(dev->addr.toString().c_str()); }
-                    }
-                    xSemaphoreGive( BLEKnowDevicesSemaphore );
-                }
-                lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
-                adv->start();
-                bleLocationScanCounter++;
-            }
-            bleAdvertisingTimeout=millis()+LUNOKIOT_BLE_SCAN_LOCATION_INTERVAL;
         }
 
         // disconnecting
@@ -745,18 +790,7 @@ void BLELoopTask(void * data) {
 static void BLEStartTask(void* args) {
 
 
-    // battery services
-    // https://circuitdigest.com/microcontroller-projects/esp32-ble-server-how-to-use-gatt-services-for-battery-level-indication
-    pBattService = pServer->createService(BLE_SERVICE_BATTERY);
-    battCharacteristic = pBattService->createCharacteristic(BLE_CHARACTERISTIC_BATTERY,
-                            NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::NOTIFY );
-    uint8_t level = 0;
-    if ( -1 != batteryPercent ) { level = batteryPercent; }
-    battCharacteristic->setValue(level);    
-#ifdef LUNOKIOT_DEBUG_NETWORK
-    NimBLEDescriptor * battDescriptor = battCharacteristic->createDescriptor(BLE_DESCRIPTOR_HUMAN_DESC,NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ_AUTHEN);
-    battDescriptor->setValue("Percentage 0 - 100");
-#endif
+
 
     // lunokiot services
     pLunokIoTService = pServer->createService(BLE_SERVICE_LUNOKIOT);
@@ -973,18 +1007,7 @@ void BLESetupHooks() {
     //}
     
 
-    // capture sensor events and push to BLE
-    if ( nullptr == battPercentPublish ) {
-        battPercentPublish = new EventKVO([&](){
-            if ( nullptr != battCharacteristic ) {
-                uint8_t level = 0;
-                if ( -1 != batteryPercent ) { level = batteryPercent; }
-                //lNetLog("BLE: Notify Battery: %d%%\n",level); // notify to log
-                battCharacteristic->setValue(level);
-                battCharacteristic->notify();
-            }
-        },PMU_EVENT_BATT_PC);
-    }
+
     if ( nullptr == battTempPublish ) {
         battTempPublish = new EventKVO([&](){
             if ( nullptr != lBattTempCharacteristic ) {

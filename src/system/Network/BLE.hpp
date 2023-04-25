@@ -120,16 +120,22 @@ class LoTBLE {
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
         void _BLELoopTask();
         TaskHandle_t BLELoopTaskHandler=NULL;
-        unsigned long UserSettingsCheckMS=10*1000;
+        const unsigned long UserSettingsCheckMS=10*1000;
+        const unsigned long LocationCheckMS=80*1000;
+
         void _TryLaunchTask();
         void _TryStopTask();
         EventKVO * BLEWStartEvent = nullptr; 
         EventKVO * BLEWStopEvent = nullptr; 
         bool enabled=true;
         bool running=false;
-        BLEService *pService = nullptr;
-        BLECharacteristic * pRxCharacteristic = nullptr;
+        BLEService *pServiceUART = nullptr;
+        NimBLECharacteristic * pRxCharacteristic = nullptr;
         NimBLECharacteristic * pTxCharacteristic = nullptr;
+
+        EventKVO * battPercentPublish = nullptr; 
+        BLEService *pServiceBattery = nullptr;
+        NimBLECharacteristic * BatteryCharacteristic = nullptr;
         // gadgetbridge integration
         // used to nofity when new message is ready for parsing
         bool BLEGadgetbridgeCommandPending = false;
@@ -146,6 +152,7 @@ class LoTBLE {
         bool IsEnabled();
         bool IsDisabled() { return (!IsEnabled()); }
         bool InUse();
+        bool IsScanning();
         void StartAdvertising();
         void StopAdvertising();
         bool IsAdvertising();

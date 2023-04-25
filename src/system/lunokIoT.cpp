@@ -97,9 +97,20 @@ Do not use ESP_LOGI functions inside.
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
+#include "esp_console.h"
+
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
-    
+    /*
+    // start console
+    esp_console_repl_t *repl = NULL;
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+    repl_config.prompt = "lunokIoT>";
+    repl_config.max_cmdline_length = 80;
+    esp_console_register_help_command();
+    esp_console_dev_uart_config_t hw_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_uart(&hw_config, &repl_config, &repl));
+    */
     InitLogs(); // need for stdout on usb-uart
 
     // announce myself with build information if serial debug is enabled
