@@ -89,6 +89,7 @@ templateData = templateFile.read()
 templateFile.close()
 buildCount = 0
 openweatherKey = "PLEASE_SET_OPENWEATHER_KEY"
+omdbKey = "PLEASE_SET_OMDB_KEY"
 
 if "debug" == build_type:
     print(" -> Debug build increment buildcount")
