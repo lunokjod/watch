@@ -102,7 +102,7 @@ void SplashFanfare() {
 void SplashMeanWhile(void *data) { // task to do boot animation
     bootLoop=true;
     lUILog("Splash loop begin\n");
-    TFT_eSprite *splashLoadingBar = new TFT_eSprite(ttgo->tft);
+    TFT_eSprite *splashLoadingBar = new TFT_eSprite(tft);
     if ( nullptr == splashLoadingBar ) {
         lUILog("SplashMeanWhile: Unable to alloc new sprite!\n");
         bootLoopEnds=true;
@@ -141,33 +141,33 @@ void SplashMeanWhile(void *data) { // task to do boot animation
 }
 
 void SplashFormatSPIFFSAnnounce() { // announce the SPIFFS format to user
-    ttgo->tft->setTextDatum(BC_DATUM);
-    ttgo->tft->drawString("LittleFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
+    tft->setTextDatum(BC_DATUM);
+    tft->drawString("LittleFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
 }
 
 void SplashAnnounce() {
     bootLoop=true;
     
     ttgo->setBrightness(0); // low brightness
-    ttgo->tft->fillScreen(ThCol(boot_splash_background));
+    tft->fillScreen(ThCol(boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
-    ttgo->tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
+    tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
     xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), NULL);
 
 #ifdef LUNOKIOT_DEBUG
     // text stuff
-    ttgo->tft->setTextSize(1);
-    ttgo->tft->setFreeFont(&FreeMonoBold9pt7b);
-    ttgo->tft->setTextDatum(TR_DATUM);
-    ttgo->tft->setTextWrap(false,false);
+    tft->setTextSize(1);
+    tft->setFreeFont(&FreeMonoBold9pt7b);
+    tft->setTextDatum(TR_DATUM);
+    tft->setTextWrap(false,false);
     int32_t posX = TFT_WIDTH-10;
     int32_t posY = 10;
     // more than needed buffer (in stack for guarantee their destruction)
     char buildNumberAsString[10] = { 0 };
     // dump my shit string buffer
     sprintf(buildNumberAsString,"#%u", LUNOKIOT_BUILD_NUMBER );
-    ttgo->tft->setTextColor(TFT_DARKGREY);
-    ttgo->tft->drawString(buildNumberAsString, posX, posY);
+    tft->setTextColor(TFT_DARKGREY);
+    tft->drawString(buildNumberAsString, posX, posY);
 #endif
 
     ttgo->setBrightness(0);

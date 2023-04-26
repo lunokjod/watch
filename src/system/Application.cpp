@@ -85,7 +85,7 @@ TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canva
 LunokIoTApplication::LunokIoTApplication() {
     directDraw=false;
     UILongTapOverride=false;
-    canvas = new TFT_eSprite(ttgo->tft);
+    canvas = new TFT_eSprite(tft);
     if ( nullptr == canvas ) { 
         lUILog("LunokIoTApplication: %p ERROR: unable to create their own canvas!!!\n", this);
         //LaunchWatchface(false);
@@ -664,7 +664,7 @@ bool SoftwareFreehandKeyboard::Tick() {
     if ( touched ) {
         // draw on freehand canvas
         freeHandCanvas->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // to the buffer (ram operation is fast)
-        ttgo->tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
+        tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
         const float ratioFromScreen = canvas->width()/PerceptronMatrixSize; 
         perceptronCanvas->drawPixel(touchX/ratioFromScreen,touchY/ratioFromScreen,1);
         if ( touchX < boxX ) { boxX = touchX; }

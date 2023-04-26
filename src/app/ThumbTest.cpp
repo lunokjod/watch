@@ -110,7 +110,7 @@ bool ThumbTest::Tick() {
                     return true;
                 }
                 // crop the data and simplify colors
-                TFT_eSprite * cropImage = new TFT_eSprite(ttgo->tft);
+                TFT_eSprite * cropImage = new TFT_eSprite(tft);
                 if ( nullptr == cropImage ) {
                     lAppLog("ERROR: Unable to crop the image!\n");
                     RedrawMe();

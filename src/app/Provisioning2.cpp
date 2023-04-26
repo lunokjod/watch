@@ -170,7 +170,7 @@ void Provisioning2Application::GenerateQRCode() {
         currentQRRendered = nullptr;
     }
     //@TODO  must be use canvasWidget instead of tft sprites!! 
-    currentQRRendered = new TFT_eSprite(ttgo->tft);
+    currentQRRendered = new TFT_eSprite(tft);
     currentQRRendered->setColorDepth(16);
     currentQRRendered->createSprite(QRSize, QRSize);
     currentQRRendered->fillSprite(TFT_BLACK);
@@ -331,7 +331,7 @@ bool Provisioning2Application::Tick() {
         }
         if ( touched ) {
             TTGOClass *ttgo = TTGOClass::getWatch();
-            uint8_t bright = (255/ttgo->tft->width())*touchX;
+            uint8_t bright = (255/tft->width())*touchX;
             //lAppLog("BRIGHT: %u\n",bright);
             ttgo->setBrightness(bright);
         }

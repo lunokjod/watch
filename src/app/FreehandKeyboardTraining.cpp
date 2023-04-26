@@ -100,12 +100,12 @@ FreehandKeyboardTraining::FreehandKeyboardTraining() {
     btnBack->tapActivityCallback = [](void *unused) {
         LaunchApplication(new FreeHandKeyboardSetupApplication());
     };
-    freeHandCanvas = new TFT_eSprite(ttgo->tft);
+    freeHandCanvas = new TFT_eSprite(tft);
     freeHandCanvas->setColorDepth(16);
     freeHandCanvas->createSprite(canvas->width(),canvas->height());
     freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
 
-    perceptronCanvas = new TFT_eSprite(ttgo->tft);
+    perceptronCanvas = new TFT_eSprite(tft);
     perceptronCanvas->setColorDepth(1);
     perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
     perceptronCanvas->fillSprite(0);
@@ -222,7 +222,7 @@ bool FreehandKeyboardTraining::Tick() {
     if ( touched ) {
         // draw on freehand canvas
         freeHandCanvas->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // to the buffer (ram operation is fast)
-        ttgo->tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
+        tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
         const float ratioFromScreen = canvas->width()/PerceptronMatrixSize; 
         perceptronCanvas->drawPixel(touchX/ratioFromScreen,touchY/ratioFromScreen,1);
         if ( touchX < boxX ) { boxX = touchX; }
@@ -256,7 +256,7 @@ bool FreehandKeyboardTraining::Tick() {
                 if ( ( boxW-boxX > MINIMALDRAWSIZE ) || ( boxH-boxY > MINIMALDRAWSIZE)) { valid=true; }
                 if ( false == valid ) {
                     lAppLog("Discarded (too small draw<%dpx)\n",MINIMALDRAWSIZE);
-                    ttgo->tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
+                    tft->fillCircle(TFT_WIDTH/2,TFT_HEIGHT/2,100,TFT_RED);
                     Cleanup();
                     return false;
                 }
@@ -298,12 +298,12 @@ bool FreehandKeyboardTraining::Tick() {
                 bool needTraining=false;
                 // Announche if match
                 if ( 1 == pResponse0 ) {
-                    ttgo->tft->fillScreen(TFT_GREEN);
+                    tft->fillScreen(TFT_GREEN);
                     isGood=true;
                     needTraining=true; // TEST
                 } else {
                     needTraining=true;
-                    ttgo->tft->fillScreen(TFT_RED);
+                    tft->fillScreen(TFT_RED);
                 }
                 if ( needTraining ) {
                     lAppLog("Training...\n");

@@ -596,7 +596,9 @@ void LoTBLE::_TryStopTask() {
 
 void LoTBLE::_TryLaunchTask() {
     // check if user wants me
-    bool enabled = NVS.getInt("BLEEnabled");
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled = NVS.getInt("BLEEnabled");
+    xSemaphoreGive( taskLock );
     if ( false == enabled ) { 
         lNetLog("BLE: %p User settings don't agree\n",this);
         return;
@@ -621,7 +623,9 @@ void LoTBLE::_TryLaunchTask() {
 LoTBLE::LoTBLE() {
     BLEWStartEvent = new EventKVO([&](){ _TryLaunchTask(); },SYSTEM_EVENT_WAKE);
     BLEWStopEvent = new EventKVO([&](){ _TryStopTask(); },SYSTEM_EVENT_STOP);
-    bool enabled = NVS.getInt("BLEEnabled");
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    enabled = NVS.getInt("BLEEnabled");
+    xSemaphoreGive( taskLock );
     if ( false == enabled ) { 
         lNetLog("BLE: %p User settings don't agree\n",this);
         return;

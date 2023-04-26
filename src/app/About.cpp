@@ -268,7 +268,7 @@ AboutApplication::AboutApplication() {
     colorBuffer = new CanvasWidget(perspectiveTextBuffer->canvas->height(),perspectiveTextBuffer->canvas->width());
 
     // here goes text (color/nocolor)
-    textBuffer = new TFT_eSprite(ttgo->tft);
+    textBuffer = new TFT_eSprite(tft);
     textBuffer->setColorDepth(1);
     textBuffer->createSprite((colorBuffer->canvas->width()*TEXTZOOM),(colorBuffer->canvas->height()*TEXTZOOM)+32); // buffer to print/draw
     textBuffer->fillSprite(TFT_BLACK);

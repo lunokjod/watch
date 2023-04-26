@@ -801,7 +801,7 @@ void TakeBMPSample() {
     bmaTemp = nowBMATemp; // set value
 
     if (nowRotation != bmaRotation) {
-        // Serial.printf("BMA423: Direction: Current: %u Obtained: %u Last: %u\n", ttgo->tft->getRotation(), rotation, prevRotation);
+        // Serial.printf("BMA423: Direction: Current: %u Obtained: %u Last: %u\n", tft->getRotation(), rotation, prevRotation);
         bmaRotation = nowRotation;
         if (UIRunning) {
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DIRECTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);

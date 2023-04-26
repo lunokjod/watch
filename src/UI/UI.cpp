@@ -131,7 +131,7 @@ void ScreenWake() {
         //delay(1); // get time to queue digest ;)
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
-        ttgo->tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
+        tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
         FPS = MAXFPS;
     }
     xSemaphoreGive(ScreenSemaphore);
@@ -276,7 +276,7 @@ bool isInside( int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
 
 TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform) {
     // https://www.mathsisfun.com/algebra/matrix-transform.html
-    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    TFT_eSprite * canvas = new TFT_eSprite(tft); // build new sprite
     if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());
     if ( nullptr == canvas->createSprite(view->width()*transform.a, view->height()*transform.d) ) {
@@ -327,7 +327,7 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
-    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    TFT_eSprite * canvas = new TFT_eSprite(tft); // build new sprite
     if ( nullptr == canvas ) { return nullptr; }
     canvas->setColorDepth(view->getColorDepth());
     if ( nullptr == canvas->createSprite(nw, nh) ) {
@@ -361,7 +361,7 @@ uint16_t ColorSwap(uint16_t colorToSwap) {
     uint8_t rC=255*r;
     uint8_t gC=255*g;
     uint8_t bC=255*b;
-    return ttgo->tft->color565(rC,gC,bC);
+    return tft->color565(rC,gC,bC);
 }
 
 uint16_t ByteSwap(uint16_t colorToSwap) {
@@ -375,7 +375,7 @@ TFT_eSprite * ScaleSpriteMAX(TFT_eSprite *view, float divisor, int16_t maxW, int
     int16_t nh = view->height()*divisor; // calculate new size
     int16_t nw = view->width()*divisor;
 
-    TFT_eSprite * canvas = new TFT_eSprite(ttgo->tft); // build new sprite
+    TFT_eSprite * canvas = new TFT_eSprite(tft); // build new sprite
     canvas->setColorDepth(view->getColorDepth());
     canvas->createSprite(nw, nh);
     canvas->fillSprite(TFT_RED);//CanvasWidget::MASK_COLOR);
@@ -403,12 +403,12 @@ TFT_eSprite *TakeScreenShoot() {
     if ( nullptr == appView ) { return nullptr; }
     TFT_eSprite *myCopy = DuplicateSprite(appView);
     ttgo->setBrightness(0);
-    ttgo->tft->fillScreen(TFT_WHITE);
+    tft->fillScreen(TFT_WHITE);
     ttgo->setBrightness(255);
-    ttgo->tft->fillScreen(TFT_BLACK);
+    tft->fillScreen(TFT_BLACK);
     ttgo->setBrightness(0);
     delay(10);
-    ttgo->tft->fillScreen(TFT_WHITE);
+    tft->fillScreen(TFT_WHITE);
     ttgo->setBrightness(255);
     // show thumbnail centered on screen
     TFT_eSprite *scaledImg = ScaleSprite(appView,0.8);
@@ -428,7 +428,7 @@ TFT_eSprite *TakeScreenShoot() {
 }
 */
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
-    screenShootCanvas = new TFT_eSprite(ttgo->tft);
+    screenShootCanvas = new TFT_eSprite(tft);
     if ( nullptr == screenShootCanvas ) { return nullptr; }
     screenShootCanvas->setColorDepth(view->getColorDepth());
     screenShootCanvas->createSprite(view->width(),view->height());

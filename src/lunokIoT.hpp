@@ -43,7 +43,7 @@ class LunokIoT {
             static LunokIoT _myInstance;
             return _myInstance;
         }
-        void ListLittleFS();
+        void ListLittleFS(const char *path="/");
         bool IsLittleFSEnabled();
         bool IsNVSEnabled();
         void BootReason();

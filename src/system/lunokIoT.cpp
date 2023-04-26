@@ -97,20 +97,10 @@ Do not use ESP_LOGI functions inside.
 bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
-#include "esp_console.h"
+//#include "esp_console.h"
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
-    /*
-    // start console
-    esp_console_repl_t *repl = NULL;
-    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
-    repl_config.prompt = "lunokIoT>";
-    repl_config.max_cmdline_length = 80;
-    esp_console_register_help_command();
-    esp_console_dev_uart_config_t hw_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_console_new_repl_uart(&hw_config, &repl_config, &repl));
-    */
     InitLogs(); // need for stdout on usb-uart
 
     // announce myself with build information if serial debug is enabled
@@ -121,14 +111,14 @@ LunokIoT::LunokIoT() {
     ttgo->begin();
     tft = ttgo->tft; // set convenient extern
     rtc = ttgo->rtc; // set convenient extern
-    
+
     // storage init
     NVSReady = NVS.begin(); // need NVS to get the current settings
     LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
     lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
     // setup tft rotation
     uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
-    ttgo->tft->setRotation(rotation); // user selected rotation (0 by default)
+    tft->setRotation(rotation); // user selected rotation (0 by default)
 
     size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
@@ -246,6 +236,16 @@ static int free_mem(int argc, char **argv)
 void LunokIoT::InitLogs() {
     // Get serial comms with you
     #ifdef LUNOKIOT_SERIAL
+    /*
+    // start console
+    esp_console_repl_t *repl = NULL;
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+    repl_config.prompt = "lunokIoT>";
+    repl_config.max_cmdline_length = 80;
+    esp_console_register_help_command();
+    esp_console_dev_uart_config_t hw_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_uart(&hw_config, &repl_config, &repl));
+    */
         /*
         // start command line
         esp_console_repl_t *repl = NULL;
@@ -296,10 +296,10 @@ bool LunokIoT::IsNetworkInUse() {
     return false;
 }
 
-void LunokIoT::ListLittleFS() {
+void LunokIoT::ListLittleFS(const char *path) {
     if ( false == LittleFSReady ) { return; }
     lSysLog("LittleFS: contents:\n");
-    File root = LittleFS.open("/");
+    File root = LittleFS.open(path);
     if (!root) {
         lLog("LittleFS: ERROR: Failed to open directory\n");
         return;
@@ -312,6 +312,7 @@ void LunokIoT::ListLittleFS() {
     while (file) {
         if (file.isDirectory()) {
             lSysLog("<DIR> '%s'\n",file.name());
+            //ListLittleFS(file.name());
         } else {
             lSysLog("      '%s' (%u byte)\n",file.name(),file.size());
         }

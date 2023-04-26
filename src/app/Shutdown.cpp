@@ -84,7 +84,7 @@ bool ShutdownApplication::Tick() {
     if ( milisFromBegin > 2200 ) {
         systemStatsRebootCounter++;
         ttgo->setBrightness(0);
-        ttgo->tft->fillScreen(TFT_BLACK);
+        tft->fillScreen(TFT_BLACK);
         if ( restart ) {
             lEvLog("ESP32: System restart NOW!\n");
             uart_wait_tx_idle_polling(UART_NUM_0);

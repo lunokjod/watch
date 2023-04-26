@@ -36,12 +36,12 @@ FreehandKeyboardQuery::FreehandKeyboardQuery() {
     btnBack->tapActivityCallback = [](void *unused) {
         LaunchApplication(new FreeHandKeyboardSetupApplication());
     };
-    freeHandCanvas = new TFT_eSprite(ttgo->tft);
+    freeHandCanvas = new TFT_eSprite(tft);
     freeHandCanvas->setColorDepth(16);
     freeHandCanvas->createSprite(canvas->width(),canvas->height());
     freeHandCanvas->fillSprite(Drawable::MASK_COLOR);
 
-    perceptronCanvas = new TFT_eSprite(ttgo->tft);
+    perceptronCanvas = new TFT_eSprite(tft);
     perceptronCanvas->setColorDepth(1);
     perceptronCanvas->createSprite(PerceptronMatrixSize,PerceptronMatrixSize);
     perceptronCanvas->fillSprite(0);
@@ -140,7 +140,7 @@ bool FreehandKeyboardQuery::Tick() {
     if ( touched ) {
         // draw on freehand canvas
         freeHandCanvas->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // to the buffer (ram operation is fast)
-        ttgo->tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
+        tft->fillCircle(touchX,touchY,RADIUS, ThCol(text)); // hardware direct
         const float ratioFromScreen = canvas->width()/PerceptronMatrixSize; 
         perceptronCanvas->drawPixel(touchX/ratioFromScreen,touchY/ratioFromScreen,1);
         if ( touchX < boxX ) { boxX = touchX; }

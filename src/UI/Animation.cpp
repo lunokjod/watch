@@ -53,5 +53,5 @@ void AnimationDescriptor::Step() {
 }
 
 void AnimationDescriptor::Draw() {
-    ttgo->tft->fillRoundRect(currentX,currentY,35,35,5,0x5DFC);
+    tft->fillRoundRect(currentX,currentY,35,35,5,0x5DFC);
 }

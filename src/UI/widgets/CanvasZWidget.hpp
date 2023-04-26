@@ -42,7 +42,7 @@ class CanvasZWidget : public CanvasWidget {
     protected:
         float z=1; // don't touch this value direcly, only for read (@TODO getter and private)
     /*
-        static const uint32_t MASK_COLOR=0x100; // ttgo->tft->color565(0x01,0x20,0x00)
+        static const uint32_t MASK_COLOR=0x100; // tft->color565(0x01,0x20,0x00)
         TFT_eSprite *canvas = nullptr;
         unsigned long lastRefresh=0;
         // BRG
