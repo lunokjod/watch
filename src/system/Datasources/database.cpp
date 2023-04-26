@@ -30,8 +30,6 @@
 #include <LittleFS.h>
 
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <sqlite3.h>
 #include <LilyGoWatch.h>
 
@@ -93,7 +91,7 @@ int db_open(const char *filename, sqlite3 **db) {
 }
 
 int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* payload) {
-    lSysLog("EXEC SQL: '%s'\n",sql);
+    //lSysLog("EXEC SQL: '%s'\n",sql);
     if ( nullptr == resultCallback ) { resultCallback=SQLiteDumpSerialCallback; }
     esp_task_wdt_reset();
     unsigned long startT = millis();
@@ -103,13 +101,14 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* 
         lSysLog("SQL: ERROR: '%s' extended: %d (%d)\n", zErrMsg, extErrorCode, rc);
         lSysLog("SQL: ERROR QUERY: '%s'\n", sql);
         sqlite3_free(zErrMsg);
+        /*
         if ( SQLITE_IOERR == rc ) {
             lSysLog("SQL: ERROR: I/O ERROR!\n");
             if (SQLITE_IOERR_WRITE == extErrorCode) {
 
             }
 
-        }
+        }*/
 
 //SQLITE_IOERR_WRITE
         /*
@@ -255,7 +254,8 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     }
     SQLQueryData * newQuery = (SQLQueryData *)ps_malloc(sizeof(SQLQueryData));
     char * queryCopy = (char*)ps_malloc(strlen(sqlQuery)+1);
-    sprintf(queryCopy,sqlQuery);
+    strcpy(queryCopy,sqlQuery);
+    //sprintf(queryCopy,sqlQuery);
     newQuery->query=queryCopy;
     newQuery->callback=callback;
     newQuery->payload=payload;

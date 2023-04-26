@@ -18,14 +18,23 @@
 //
 
 #include <Arduino.h>
-#include "LogView.hpp" // log capabilities
-#include "../UI/AppTemplate.hpp"
-#include "../system/Datasources/database.hpp"
 #include <Arduino_JSON.h>
+#include <HTTPClient.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <SPI.h>
+#include <FS.h>
+#include <LittleFS.h>
 #include "BLEPlayer.hpp"
+
+#include "LogView.hpp" // log capabilities
+//#include "../UI/AppTemplate.hpp"
+#include "../system/Datasources/database.hpp"
 #include "../system/SystemEvents.hpp"
-#include "../resources.hpp"
 #include "../system/Network/BLE.hpp"
+#include "../lunokIoT.hpp"
+#include "../resources.hpp"
+
 char *MusicState=nullptr;
 bool MusicStateDbObtained=false;
 char *MusicInfo=nullptr;
@@ -97,7 +106,7 @@ static int MusicinfoBLEPlayerApplicationSQLiteCallback(void *data, int argc, cha
 void BLEPlayerApplication::DBRefresh() {
     if ( nullptr != systemDatabase ) {  
         systemDatabase->SendSQL("SELECT id,data FROM notifications WHERE data LIKE '{\"t\":\"musicinfo\",%%' ORDER BY timestamp DESC LIMIT 1;",MusicinfoBLEPlayerApplicationSQLiteCallback);
-        systemDatabase->SendSQL("SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
+        systemDatabase->SendSQL("SELECT strftime('%s', 'now') AS nowDb ,strftime('%s', timestamp) AS timestampDB,id,data FROM notifications WHERE data LIKE '{\"t\":\"musicstate\",%' ORDER BY timestamp DESC LIMIT 1;",MusicstateBLEPlayerApplicationSQLiteCallback);
     }
 }
 const char MusicPlayGadgetbridgeCmd[] =  "{\"t\":\"music\",\"n\":\"play\"}";
@@ -140,6 +149,119 @@ BLEPlayerApplication::~BLEPlayerApplication() {
     delete pauseBtn;
     parsedStateJSON=false;
     parsedInfoJSON=false;
+    if ( nullptr != receivedCoverBuffer ) { free(receivedCoverBuffer); receivedCoverBuffer=nullptr; }
+    if ( nullptr != lastTitle ) { free(lastTitle); lastTitle=nullptr; }
+    if ( nullptr != title ) { free(title); title=nullptr; }
+}
+
+void BLEPlayerApplication::TryGetCoverOfTite() {
+        xTaskCreatePinnedToCore([](void *obj) { // in core 0 please
+            BLEPlayerApplication* instance = (BLEPlayerApplication*)obj;
+
+            if ( pdFALSE == xSemaphoreTake( instance->GetCoverLock, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
+            if ((nullptr != instance->lastTitle)&&( 0 == strcmp(instance->lastTitle,instance->title))) {
+                instance->CoverObtained=true;
+                xSemaphoreGive( instance->GetCoverLock );
+                return;
+            }
+            LoT().GetWiFi()->Disable();
+            // clean old buffer
+            if (nullptr != instance->lastTitle) { free(instance->lastTitle); instance->lastTitle=nullptr; }
+            if ( nullptr != instance->receivedCoverBuffer ) { free(instance->receivedCoverBuffer); instance->receivedCoverBuffer=nullptr; }
+            instance->lastTitle = (char*)ps_malloc(strlen(instance->title)+1);
+            strcpy(instance->lastTitle,instance->title);
+            char * urlBuffer= (char*)ps_malloc(strlen(instance->CoverURL)+strlen(instance->title)+strlen(OMDB_API_KEY)+1);
+            sprintf(urlBuffer,instance->CoverURL,OMDB_API_KEY,instance->title);
+            wl_status_t currStat = WiFi.begin();
+            bool connected=false;
+            unsigned long timeout = millis()+10000;
+            while(timeout>millis()) {
+                currStat = WiFi.status();
+                lNetLog("WiFi: %p Trying to connect (status: %d)...\n",instance,currStat);
+                if ( WL_CONNECTED == currStat) { connected=true; break; }
+                delay(1000);
+                taskYIELD();
+            }
+            if (false == connected) {
+                instance->CoverObtained=false;
+                WiFi.mode(WIFI_MODE_NULL);
+                LoT().GetWiFi()->Enable();
+                free(urlBuffer);
+                xSemaphoreGive( instance->GetCoverLock );
+                return;
+            }
+
+            //CoverURL
+            HTTPClient coverClient;
+            lLog("Trying to get: '%s'\n",urlBuffer);
+            coverClient.begin(urlBuffer);
+            int httpResponseCode = coverClient.GET();
+            if (httpResponseCode < 1) {
+                coverClient.end();
+                instance->CoverObtained=false;
+                free(urlBuffer);
+                WiFi.mode(WIFI_MODE_NULL);
+                LoT().GetWiFi()->Enable();
+                xSemaphoreGive( instance->GetCoverLock );
+                return;
+            }
+            String payload = coverClient.getString(); // fuck strings
+            instance->receivedCoverBuffer = (char*)ps_malloc(payload.length()+1);
+            strcpy(instance->receivedCoverBuffer, payload.c_str());
+            lLog("Free http client with %d response\n",httpResponseCode);
+            coverClient.end();
+            free(urlBuffer);
+            JSONVar myObject = JSON.parse(instance->receivedCoverBuffer);
+            if (JSON.typeof(myObject) == "undefined") {
+                instance->CoverObtained=false;
+                WiFi.disconnect();
+                delay(100);
+                WiFi.mode(WIFI_MODE_NULL);
+                LoT().GetWiFi()->Enable();
+                xSemaphoreGive( instance->GetCoverLock );
+                return;
+            }
+            lLog("\n%s\n\n",instance->receivedCoverBuffer);
+            if (false == myObject.hasOwnProperty("Poster")) {
+                instance->CoverObtained=false;
+                WiFi.disconnect();
+                delay(100);
+                WiFi.mode(WIFI_MODE_NULL);
+                LoT().GetWiFi()->Enable();
+                xSemaphoreGive( instance->GetCoverLock );
+                return;
+            }
+            const char * PosterURL = (const char*)myObject["Poster"];
+
+            lLog("Poster URL location: '%s'\n",PosterURL);
+            const char * TrackPath = "/track";
+            const char * FileNameFmtStr = "%s/%s.img";
+            char * fileName = (char*)ps_malloc(strlen(TrackPath)+strlen(FileNameFmtStr)+strlen(instance->title)+1);
+            sprintf(fileName,FileNameFmtStr,TrackPath,instance->title);
+            lLog("VFS File: '%s'\n",fileName);
+            if ( false == LittleFS.exists(TrackPath) ) {
+                bool created = LittleFS.mkdir(TrackPath);
+                lLog("LittleFS MKDIR? %s\n",(created?"true":"false"));
+            }
+            File fileD = LittleFS.open(fileName, FILE_WRITE);   // littlefs is automatically added to the front 
+            coverClient.begin(PosterURL);
+            int httpCode = coverClient.GET(); // Make the request
+            if (httpCode == HTTP_CODE_OK) { // Check for the returning code
+                coverClient.writeToStream(&fileD);
+                lLog("Writing to file....\n");
+            } 
+            coverClient.end();
+            fileD.close();
+            lLog("Writing to file end\n");
+            free(fileName);
+            instance->CoverObtained=true;
+            WiFi.disconnect();
+            delay(100);
+            WiFi.mode(WIFI_MODE_NULL);
+            LoT().GetWiFi()->Enable();
+            xSemaphoreGive( instance->GetCoverLock );
+            vTaskDelete(NULL);
+        },"getCover",LUNOKIOT_APP_STACK_SIZE,this,tskIDLE_PRIORITY, NULL,0);
 }
 
 bool BLEPlayerApplication::Tick() {
@@ -202,20 +324,38 @@ bool BLEPlayerApplication::Tick() {
             }
 
             if (lastPlayerInfoEntry.hasOwnProperty("track")) {
-                const char * track = (const char *)lastPlayerInfoEntry["track"];
-                if ( nullptr != track) {
+                if ( nullptr != title ) {
+                    free(title);
+                    title=nullptr;
+                }
+
+                //lLog("@DEBUG FAKE TRACK NAME TO 'tron'\n");
+                //const char * trackData = "Tron";
+                const char * trackData = (const char *)lastPlayerInfoEntry["track"]; 
+                title = (char*)ps_malloc(strlen(trackData)+1);
+                strcpy(title,trackData);
+                if ( nullptr != title) {
                     canvas->setTextDatum(TL_DATUM);
                     canvas->setTextSize(1);
                     canvas->setTextColor(ThCol(text));
                     canvas->drawString("Track:", 30, 40);
                     canvas->setTextSize(3);
-                    if ( 14 < strlen(track) ) {
+                    if ( 14 < strlen(title) ) {
                         //lAppLog("Reduced Who font due doesn't fit\n");
                         canvas->setTextSize(2);
                     }
                     canvas->setTextDatum(TL_DATUM);
-                    if ( strlen(track) > 0 ) {
-                        canvas->drawString(track, 20, 50);
+
+                    if ( strlen(title) > 0 ) {
+                        /*
+                        if( xSemaphoreTake( GetCoverLock, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                            if ( false == CoverObtained ) {
+                                lAppLog("Search on network for '%s'\n", title);
+                                xSemaphoreGive( GetCoverLock );
+                                TryGetCoverOfTite();
+                            } else { xSemaphoreGive( GetCoverLock ); }
+                        } */                       
+                        canvas->drawString(title, 20, 50);
                     }
                 }
 

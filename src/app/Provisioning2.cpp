@@ -244,28 +244,24 @@ void Provisioning2Application::GenerateCredentials() {
     const size_t maxLenPOP=8;
     const char letters[] = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+    // generate new one
     if (nullptr != pop ) { free(pop); pop=nullptr; }
-    char * popBack = nullptr;
-    // generate new one
-    if ( nullptr == pop ) { popBack = (char *)ps_malloc(maxLenPOP+1); }
+    pop = (char *)ps_malloc(maxLenPOP+1);
     for(size_t currentCharPOP=0; currentCharPOP <maxLenPOP;currentCharPOP++) {
-        popBack[currentCharPOP] = letters[random(0, strlen(letters)-1)];
+        pop[currentCharPOP] = letters[random(0, strlen(letters)-1)];
     }
-    popBack[maxLenPOP] = '\0'; // EOL
-    pop = popBack;
+    pop[maxLenPOP] = '\0'; // EOL
+    //pop = popBack;
 
 
-    if (nullptr != service_key ) { free(service_key); service_key=nullptr; }
-    char * service_keyBack = nullptr;
     // generate new one
-    if ( nullptr == service_key ) { service_keyBack = (char *)ps_malloc(maxLenPOP+1); }
+    if (nullptr != service_key ) { free(service_key); service_key=nullptr; }
+    service_key = (char *)ps_malloc(maxLenPOP+1);
     
     for(size_t currentCharPOP=0; currentCharPOP <maxLenPOP;currentCharPOP++) {
-        service_keyBack[currentCharPOP] = letters[random(0, strlen(letters)-1)];
+        service_key[currentCharPOP] = letters[random(0, strlen(letters)-1)];
     }
-    service_keyBack[maxLenPOP] = '\0'; // EOL
-    service_key = service_keyBack;
-
+    service_key[maxLenPOP] = '\0'; // EOL
 }
 
 Provisioning2Application::Provisioning2Application() {

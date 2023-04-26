@@ -59,7 +59,7 @@ namespace LuI {
             void SetGlobalScale(IN Vertex3D globScale );
             void SetGlobalRotation(INOUT Angle3D globRotation );
 
-            Mesh3D * mesh[MAX_MESHES] = { nullptr };
+            Mesh3D * mesh[MAX_MESHES+1] = { nullptr };
             void AddMesh3D(INOUT Mesh3D * meshObject);
             void Refresh(bool direct=false) override;
             void Render();

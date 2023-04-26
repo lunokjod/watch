@@ -345,15 +345,19 @@ bool LoTBLE::IsAdvertising() {
 void LoTBLE::StartAdvertising() {
     NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
     if ( nullptr == adv ) { return; }
-    lNetLog("BLE: %p Start Advetising...\n",this);
-    adv->start();
+    if ( false == adv->isAdvertising() ) {
+        lNetLog("BLE: %p Start Advetising...\n",this);
+        adv->start();
+    }
 }
 
 void LoTBLE::StopAdvertising() {
     NimBLEAdvertising * adv = NimBLEDevice::getAdvertising();
     if ( nullptr == adv ) { return; }
-    lNetLog("BLE: %p Stop Advetising...\n",this);
-    adv->stop();
+    if ( adv->isAdvertising() ) {
+        lNetLog("BLE: %p Stop Advetising...\n",this);
+        adv->stop();
+    }
 }
 
 size_t LoTBLE::Clients() {
@@ -380,6 +384,7 @@ void SaveBLEDevicesToDB() {
 }
 
 void LoTBLE::_BLELoopTask() {
+    esp_task_wdt_delete(NULL);
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     running=true;
     xSemaphoreGive( taskLock );
@@ -500,6 +505,7 @@ void LoTBLE::_BLELoopTask() {
                 lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
                 delay(100);
             }
+            Disable();
             lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
             //pBLEScan->clearResults();
             pBLEScan->setMaxResults(3);
@@ -520,9 +526,10 @@ void LoTBLE::_BLELoopTask() {
             lNetLog("BLE: Location recognition: Pasive scan %d end\n", bleLocationScanCounter);
             bleLocationScanCounter++;
             if ( 0 == Clients() ) { StartAdvertising(); }
-
+            Enable();
             bleAdvertisingTimeoutMS=millis()+LocationCheckMS;
         }
+        Disable();
         // parse gadgetbridge command
         char * currentGadgetBridgeBufferPtr = nullptr;
         char * currentBangleJSBridgeBufferPtr = nullptr;
@@ -558,6 +565,7 @@ void LoTBLE::_BLELoopTask() {
                 free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
                 currentGadgetBridgeBufferPtr=nullptr; // dontcare
         }
+        Enable();
     }
     StopAdvertising();
     SaveBLEDevicesToDB();

@@ -386,8 +386,11 @@ SoftwareNumericKeyboard::SoftwareNumericKeyboard(void * destinationWidget) {
             if ( true == this->dotAdded ) { return; } // the number already have a dot, maintain until reset
             this->dotAdded =true;
         }
+        char * textEntryBack = (char*)malloc(256); // buffer
+        strcpy(textEntryBack,textEntry);
         //lLog("VALUE ADDED: '%s'\n",pushedBtn->label);
-        sprintf(textEntry,"%s%s",textEntry,pushedBtn->label);
+        sprintf(textEntry,"%s%s",textEntryBack,pushedBtn->label);
+        free(textEntryBack);
     };
 
     seven = new ButtonTextWidget(XOffset,ButtonsOffset,ButtonsHeightSize,ButtonsWidthSize,numberButtonCallback,"7",TFT_WHITE,CanvasWidget::MASK_COLOR,false);
@@ -738,7 +741,11 @@ bool SoftwareFreehandKeyboard::Tick() {
                     }
                 }
                 if ( 0 != seeChar ) {
-                    sprintf(textEntry,"%s%c",textEntry,seeChar);
+                    char * textEntryBack = (char*)malloc(256); // buffer
+                    strcpy(textEntryBack,textEntry);
+                    //lLog("VALUE ADDED: '%s'\n",pushedBtn->label);
+                    sprintf(textEntry,"%s%c",textEntryBack,seeChar);
+                    free(textEntryBack);
                 }
                 seeChar=0;
 

@@ -62,7 +62,9 @@ CalculatorApplication::CalculatorApplication() {
             sprintf(displayText,errMsg);
             return;
         }
-        sprintf(displayText,"%s%s",displayText,pushedBtn->label);
+        char lastdisplayText[32];
+        strcpy(lastdisplayText,displayText);
+        sprintf(displayText,"%s%s",lastdisplayText,pushedBtn->label);
     };
 
     seven = new ButtonTextWidget(0,ButtonsOffset,ButtonsSize,ButtonsSize,numberButtonCallback,"7");
@@ -93,7 +95,9 @@ CalculatorApplication::CalculatorApplication() {
         if ( containDecimalNumber ) {
             return;
         }
-        sprintf(displayText,"%s.",displayText);
+        char lastdisplayText[32];
+        strcpy(lastdisplayText,displayText);
+        sprintf(displayText,"%s.",lastdisplayText);
         containDecimalNumber=true;
     },".",ThCol(text),ThCol(background_alt));
     

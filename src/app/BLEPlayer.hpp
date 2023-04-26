@@ -41,7 +41,14 @@ class BLEPlayerApplication : public TemplateApplication {
         ButtonImageXBMWidget * pauseBtn = nullptr;
         unsigned long nextDBRefresh=0;
         void DBRefresh();
+        void TryGetCoverOfTite();
     public:
+        SemaphoreHandle_t GetCoverLock = xSemaphoreCreateMutex();
+        bool CoverObtained=false;
+        char *lastTitle=nullptr;
+        char *title=nullptr;
+        char *receivedCoverBuffer = nullptr;
+        const char * CoverURL = "http://www.omdbapi.com/?apikey=%s&t=%s";
         const char *AppName() override { return "BLE Player"; };
         BLEPlayerApplication();
         ~BLEPlayerApplication();

@@ -106,6 +106,10 @@ SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
 
 void SetUserBrightness() {
     uint8_t userBright = NVS.getInt("lBright");
+    if ( 0 == userBright ) {
+        userBright=BaseBackLightBrightness;
+        NVS.setInt("lBright",userBright,false);
+    }
     ttgo->setBrightness(userBright);
 }
 

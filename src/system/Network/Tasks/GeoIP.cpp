@@ -50,7 +50,7 @@ void GeoIPWifiTask::Launch() {
     }
     String payload = geoIPClient.getString(); // fuck strings
     
-    lNetLog("Task: %p '%s' free http client\n",this,Name(),httpResponseCode);
+    lNetLog("Task: %p '%s' free http client\n",this,Name());
     geoIPClient.end();
 
     // Generate the received data buffer

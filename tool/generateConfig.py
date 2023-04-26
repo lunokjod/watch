@@ -68,6 +68,7 @@ templateFilename = basePath + "/tool/lunokiot.hpp.template"
 
 counterFile = basePath + "/tool/.buildCount.txt"
 openWeatherFile = basePath + "/openWeatherKey.txt"
+omdbFile = basePath + "/omdbKey.txt"
 
 # check files
 template_exists = exists(templateFilename)
@@ -99,8 +100,10 @@ if "debug" == build_type:
         buildCount+=1 
     with open(counterFile,'w') as f:
         f.write(str(buildCount))
-    with open(openWeatherFile,'r') as f: # @TODO must be controlled error!!!
+    with open(openWeatherFile,'r') as f:
         openweatherKey = f.read()
+    with open(omdbFile,'r') as f:
+        omdbKey = f.read()
     print("ADVICE: build in debug mode can leak personal information inside the flash image, like the OpenWeather key or your IP on LAN better don't share your debug builds")
 elif "release" == build_type:
     print(" -> Release build don't increment the buildcont, and removes OpenWeatherKey")
@@ -113,9 +116,11 @@ outputData = outputData.replace("@@BUILD_NUMBER@@", str(buildCount))
 outputData = outputData.replace("@@LUNOKIOT_KEY@@", str(buildKey))
 if "debug" == build_type:
     outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", str(openweatherKey))
+    outputData = outputData.replace("@@OMDB_APIKEY@@", str(omdbKey))
     outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", str(get_ip()))
 else: # clover the openweather key and localcloud node
     outputData = outputData.replace("@@OPENWEATHER_APIKEY@@", "")
+    outputData = outputData.replace("@@OMDB_APIKEY@@", "")
     outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD@@", "127.0.0.1")
 outputData = outputData.replace("@@LUNOKIOT_LOCAL_CLOUD_PORT@@", str("6969"))
 

@@ -231,6 +231,8 @@ LunokIoT::LunokIoT() {
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
     
+    SetUserBrightness();
+
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };

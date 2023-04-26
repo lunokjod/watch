@@ -118,7 +118,7 @@ void LoTWiFi::PerformTasks() {
     //vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
     //taskYIELD();
     //check tasks
-    lNetLog("WiFi: %p Checking pending tasks....\n",this);
+    //lNetLog("WiFi: %p Checking pending tasks....\n",this);
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     size_t tasksMustRun=0;
     std::list<LoTWiFiTask *> * tasksNeedToRun = new std::list<LoTWiFiTask *>();
