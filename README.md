@@ -74,7 +74,6 @@ $ pio run -e Release-twatch2020_V3 -t upload
 * Long button push for poweroff
 
 ## What does:
-
 * WiFi time sync once every 24h (using network time protocol NTP)
 * WiFi weather sync every 30 minutes, needs online account (set your openWeather key in "openWeatherKey.txt" at same level as platformio.ini before build) more info: https://openweathermap.org/
 * Wake up every 15 minutes to monitor the user pose (future sleep monitor)
@@ -91,6 +90,8 @@ $ pio run -e Release-twatch2020_V3 -t upload
  * Gadgetbridge compatibility (BangleJS-esprunio) for android/iOS notifications
  * Media player
  * Handwritting trainable keyboard
+ * BLE zone location
+ * omdb Posters api
 
 ## Full application list:
 
