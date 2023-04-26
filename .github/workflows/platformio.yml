@@ -30,8 +30,11 @@ jobs:
       - name: Testing build for Release-twatch2020_V3
         run: |
           touch openWeatherKey.txt
+          touch omdbKey.txt
           pio run -e Release-twatch2020_V3
       - name: Testing build for Debug-twatch2020_V3
         run: |
+          touch openWeatherKey.txt
+          touch omdbKey.txt
           pio run -e Debug-twatch2020_V3
  
