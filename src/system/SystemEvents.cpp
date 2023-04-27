@@ -193,7 +193,6 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         //irqBMA = true; // faked
 
         continueSleep=false; // don't want to sleep more
-
     } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {    // ESP_SLEEP_WAKEUP_BT
         lLog("Interrupt triggered on ext1 <-- ");
         //!< Wakeup caused by external signal using RTC_CNTL

@@ -140,9 +140,10 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     vTaskDelete(NULL);
 }
 
-void SplashFormatSPIFFSAnnounce() { // announce the SPIFFS format to user
+void SplashAnnounce(const char * what) {
+    tft->setTextColor(ThCol(boot_splash_foreground),ThCol(boot_splash_background));
     tft->setTextDatum(BC_DATUM);
-    tft->drawString("LittleFS format",TFT_WIDTH/2,TFT_HEIGHT-30);
+    tft->drawString(what,TFT_WIDTH/2,TFT_HEIGHT-30);
 }
 
 void SplashAnnounce() {
@@ -152,7 +153,7 @@ void SplashAnnounce() {
     tft->fillScreen(ThCol(boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
     tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
-    xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), NULL);
+    //xTaskCreate(SplashMeanWhile, "lsplash", LUNOKIOT_TINY_STACK_SIZE, nullptr, uxTaskPriorityGet(NULL), NULL);
 
 #ifdef LUNOKIOT_DEBUG
     // text stuff
@@ -182,6 +183,7 @@ void SplashAnnounce() {
 
 void SplashAnnounceEnd() {
     bootLoop=false;
+    bootLoopEnds=true; //@TODO TEST
     while(false == bootLoopEnds) {
         lUILog("Waiting splash ends...\n");
         //esp_task_wdt_reset();

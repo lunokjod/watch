@@ -21,6 +21,7 @@
 #define __LUNOKIOT__BOOT_SCREEN__
 
 void SplashAnnounce();
+void SplashAnnounce(const char * what);
 void SplashAnnounceBegin();
 void SplashAnnounceEnd();
 void SplashFormatSPIFFSAnnounce();

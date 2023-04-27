@@ -100,6 +100,11 @@ bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 //#include "esp_console.h"
 
+const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
+const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
+const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
+
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
     InitLogs(); // need for stdout on usb-uart
@@ -111,10 +116,9 @@ LunokIoT::LunokIoT() {
     // Initialize lilygo lib (mandatory at this time)
     ttgo->begin();
     tft = ttgo->tft; // set convenient extern
+    
     rtc = ttgo->rtc; // set convenient extern
     settings=new SystemSettings();
-    LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
-    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (settings->IsNVSEnabled()?"yes":"NO"), (LittleFSReady?"yes":"NO"));
 
     // setup the tft orientation
     uint8_t rotation = settings->GetInt(SystemSettings::SettingKey::ScreenRotation);
@@ -126,6 +130,11 @@ LunokIoT::LunokIoT() {
 
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
     SplashAnnounceBegin(); // anounce user about boot begins
+    SplashAnnounce("    Storage    ");
+
+    LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
+    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (settings->IsNVSEnabled()?"yes":"NO"), (LittleFSReady?"yes":"NO"));
+
 
     bool alreadyFormattedLittleFS = settings->GetInt(SystemSettings::SettingKey::LittleFSFormat);
     if ( false == alreadyFormattedLittleFS ) {
@@ -134,8 +143,8 @@ LunokIoT::LunokIoT() {
     }
     // format LittleFS if needed
     if ( false == LittleFSReady ) {
-        lSysLog("LittleFS: Format LittleFS....\n");        
-        SplashFormatSPIFFSAnnounce();
+        lSysLog("LittleFS: Format LittleFS....\n");
+        SplashAnnounce("LittleFS format");
         LittleFSReady = LittleFS.format();
         if ( false == LittleFSReady ) {
             lSysLog("LittleFS: ERROR: Unable to format!!!\n");
@@ -146,26 +155,29 @@ LunokIoT::LunokIoT() {
         }
     }
     ListLittleFS(); // show contents to serial
-    
+    SplashAnnounce("   freeRTOS   ");
+
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
     esp_err_t taskWatchdogResult = esp_task_wdt_init(CONFIG_ESP_TASK_WDT_TIMEOUT_S, true); // CONFIG_ESP_TASK_WDT_TIMEOUT_S
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("ERROR: Unable to start Task Watchdog\n");
         FreeSpace();
     }
-    BootReason(); // announce boot reason and from what partition to serial
 
     taskWatchdogResult = esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("WARNING: Unable to start Task Watchdog on APP_CPU(1)\n");
     }
+    SplashAnnounce("   Boot check  ");
+    BootReason(); // announce boot reason and from what partition to serial
+
 
     #ifdef LILYGO_WATCH_2020_V3
     ttgo->motor_begin(); // start the motor for haptic notifications
     #endif
-
+    SplashAnnounce("    System    ");
     lSysLog("System initializing...\n");
-
+    SplashAnnounce("  System (RTC) ");
     // get if are in summertime
     int daylight = NVS.getInt("summerTime");
     // get the GMT timezone
@@ -188,40 +200,68 @@ LunokIoT::LunokIoT() {
                 lEvLog("ESP32: Sync Time: %02d:%02d:%02d date: %02d-%02d-%04d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec,timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
                 ntpSyncDone=true; // RTC says "I'm ok", bypass NTP as time font
             }
+            SplashAnnounce("    RTC OK    ");
         }
         xSemaphoreGive(I2cMutex);
     }
+    SplashAnnounce("   Database   ");
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
+    systemDatabase->SendSQL(queryCreateRAWLog);
+    systemDatabase->SendSQL(queryCreateJSONLog);
+    systemDatabase->SendSQL(queryCreateNotifications);
+    systemDatabase->SendSQL(BLECreateTable);
+    systemDatabase->Commit();
 
+    SplashAnnounce("  User prefs  ");
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
     
     userMaleFemale = NVS.getInt("UserSex");  // maybe is better use "hip type A/B" due to no offend any gender
     if ( true == userMaleFemale ) { stepDistanceCm = userTall * WOMAN_STEP_PROPORTION; }
     else { stepDistanceCm = userTall * MAN_STEP_PROPORTION; }
+    SplashAnnounce("    Events     ");
 
     // Build the lunokiot message bus
     SystemEventsStart();
     // Start the interface with the user via the screen and buttons!!! (born to serve xD)
-    UIStart();
+    SplashAnnounce("     Network    ");
 #ifdef LUNOKIOT_WIFI_ENABLED
     if (nullptr == wifi ) { wifi = GetWiFi(); }
 #endif
 #ifdef LUNOKIOT_BLE_ENABLED
     if (nullptr == ble ) { ble = CreateBLE(); }
 #endif
+    SplashAnnounce("   StepCounter  ");
     InstallStepManager();
     StartPMUMonitor();
     selectedWatchFace=NVS.getInt("UWatchF");
     if ( selectedWatchFace >= WatchFacesAvailiable() ) {
         selectedWatchFace=0; // reset to defaults if out of range
     }
+    SplashAnnounce("       UI       ");
+    UIStart();
+
+    SplashAnnounce("  Cleanup...  ");
+
+    if ( nullptr != systemDatabase ) {
+        // Create tables and clean SQL old devices
+        const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
+        const char *jsonLogCleanUnusedQuery=(const char *)"DELETE FROM jsonlog WHERE (timestamp <= datetime('now', '-8 days'));";
+        const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
+        const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
+        systemDatabase->SendSQL(rawLogCleanUnusedQuery);
+        systemDatabase->SendSQL(jsonLogCleanUnusedQuery);
+        systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
+        systemDatabase->SendSQL(BLECleanUnusedQuery);
+    }
+
+    systemDatabase->Commit();
     SplashAnnounceEnd();
+    SetUserBrightness();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
     
-    SetUserBrightness();
 
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);

@@ -80,10 +80,6 @@ uint32_t bleLocationScanCounter=0;
 // http://www.espruino.com/Gadgetbridge
 const size_t gadgetBridgeBufferSize=8*1024;
 
-
-const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
-const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
-
 // Server callbacks
 class LBLEServerCallbacks: public NimBLEServerCallbacks {
     private:
@@ -388,12 +384,6 @@ void LoTBLE::_BLELoopTask() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     running=true;
     xSemaphoreGive( taskLock );
-    if ( nullptr != systemDatabase ) {
-        // Create tables and clean SQL old devices
-        systemDatabase->SendSQL(BLECreateTable);
-        systemDatabase->SendSQL(BLECleanUnusedQuery);
-        delay(50);
-    }
 
     lNetLog("BLE: %p Init with name: '%s'...\n",this,BTName);
     BLEDevice::init(std::string(BTName)); // hate strings
@@ -869,7 +859,6 @@ static void BLEStartTask(void* args) {
     // generate the table if isnt created before
     esp_task_wdt_reset();
     if ( nullptr != systemDatabase ) {
-        systemDatabase->SendSQL(BLECreateTable);
         systemDatabase->SendSQL(BLECleanUnusedQuery);
         delay(50);
     }

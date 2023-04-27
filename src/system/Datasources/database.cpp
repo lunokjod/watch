@@ -45,9 +45,6 @@ const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
 int8_t Database::openedDatabases=0;
 
-const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
-const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
-const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
 
 // address text as PRIMARY KEY can be better :) @TODO
 const char *BLEDeleteQuery=(const char *)"DELETE FROM bluetooth WHERE address = '%s';";
@@ -451,9 +448,6 @@ void StartDatabase() {
         file.close();
     }
     systemDatabase = new Database("/littlefs/lwatch.db");
-    systemDatabase->SendSQL(queryCreateRAWLog);
-    systemDatabase->SendSQL(queryCreateJSONLog);
-    systemDatabase->SendSQL(queryCreateNotifications);
 }
 
 void Database::Commit() {
