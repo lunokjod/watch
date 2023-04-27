@@ -207,12 +207,13 @@ LunokIoT::LunokIoT() {
     SplashAnnounce("   Database   ");
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
-    systemDatabase->SendSQL(queryCreateRAWLog);
-    systemDatabase->SendSQL(queryCreateJSONLog);
-    systemDatabase->SendSQL(queryCreateNotifications);
-    systemDatabase->SendSQL(BLECreateTable);
-    systemDatabase->Commit();
-
+    if ( nullptr != systemDatabase ) {
+        systemDatabase->SendSQL(queryCreateRAWLog);
+        systemDatabase->SendSQL(queryCreateJSONLog);
+        systemDatabase->SendSQL(queryCreateNotifications);
+        systemDatabase->SendSQL(BLECreateTable);
+        systemDatabase->Commit();
+    }
     SplashAnnounce("  User prefs  ");
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
@@ -224,26 +225,28 @@ LunokIoT::LunokIoT() {
 
     // Build the lunokiot message bus
     SystemEventsStart();
-    // Start the interface with the user via the screen and buttons!!! (born to serve xD)
+/*
+    // initialize network devices
     SplashAnnounce("     Network    ");
 #ifdef LUNOKIOT_WIFI_ENABLED
-    if (nullptr == wifi ) { wifi = GetWiFi(); }
+    GetWiFi();
 #endif
 #ifdef LUNOKIOT_BLE_ENABLED
-    if (nullptr == ble ) { ble = CreateBLE(); }
+    GetBLE();
 #endif
-    SplashAnnounce("   StepCounter  ");
+*/
+
+    // hooks for activities
+    SplashAnnounce("   Activities   ");
     InstallStepManager();
     StartPMUMonitor();
     selectedWatchFace=NVS.getInt("UWatchF");
     if ( selectedWatchFace >= WatchFacesAvailiable() ) {
         selectedWatchFace=0; // reset to defaults if out of range
     }
-    SplashAnnounce("       UI       ");
-    UIStart();
 
+    // databas cleanup
     SplashAnnounce("  Cleanup...  ");
-
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
         const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
@@ -255,14 +258,17 @@ LunokIoT::LunokIoT() {
         systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
         systemDatabase->SendSQL(BLECleanUnusedQuery);
     }
-
     systemDatabase->Commit();
+
+    SplashAnnounce("     Launch GUI      ");
+    UIStart();
+
+
     SplashAnnounceEnd();
     SetUserBrightness();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
     FreeSpace();
     
-
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };
