@@ -44,22 +44,20 @@
 SettingsApplication::~SettingsApplication() {
     // on destroy
     // set the switch values
-    NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
-    NVS.setInt("NTPBLEEnabled",ntpBLECheck->switchEnabled,false);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::BLE,bleCheck->switchEnabled);
+    //NVS.setInt("BLEEnabled",bleCheck->switchEnabled,false);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::NTPBLE,ntpBLECheck->switchEnabled);
+    //NVS.setInt("NTPBLEEnabled",ntpBLECheck->switchEnabled,false);
 
-    NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFi,wifiCheck->switchEnabled);
+    //NVS.setInt("WifiEnabled",wifiCheck->switchEnabled,false);
 
-    NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
-    //if ( nullptr != NetworkNTPTask ) { 
-    //    NetworkNTPTask->enabled = ntpCheck->switchEnabled;
-    //}
-    NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
-    //if ( nullptr != NetworkWeatherTask ) {
-    //    NetworkWeatherTask->enabled = openweatherCheck->switchEnabled;
-    //    NetworkGeoIPTask->enabled = openweatherCheck->switchEnabled;
-    //}
-    //if ( bleCheck->switchEnabled ) { StartBLE(); }
-    //else { StopBLE(); }
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::NTPWiFi,ntpCheck->switchEnabled);
+    //NVS.setInt("NTPEnabled",ntpCheck->switchEnabled,false);
+
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::OpenWeather,openweatherCheck->switchEnabled);
+    //NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
+
     if ( nullptr != ntpCheck) { delete ntpCheck; }
     if ( nullptr != openweatherCheck) { delete openweatherCheck; }
     if ( nullptr != wifiCheck) { delete wifiCheck; }
@@ -88,17 +86,17 @@ SettingsApplication::SettingsApplication() {
         ntpCheck->InternalRedraw();
         openweatherCheck->InternalRedraw();
     });
-    wifiCheck->switchEnabled=(bool)NVS.getInt("WifiEnabled");
+    wifiCheck->switchEnabled=(bool)LoT().GetSettings()->GetInt(SystemSettings::SettingKey::WiFi);
     wifiCheck->InternalRedraw();
 
     ntpCheck=new SwitchWidget(10,35);
-    ntpCheck->switchEnabled= (wifiCheck->switchEnabled?NVS.getInt("NTPEnabled"):false);
-    ntpCheck->enabled=wifiCheck->switchEnabled;
+    ntpCheck->switchEnabled= (wifiCheck->switchEnabled?(bool)LoT().GetSettings()->GetInt(SystemSettings::SettingKey::NTPWiFi):false);
+    ntpCheck->SetEnabled(wifiCheck->switchEnabled);
     ntpCheck->InternalRedraw();
 
     openweatherCheck=new SwitchWidget(10,80);
-    openweatherCheck->switchEnabled=(wifiCheck->switchEnabled?NVS.getInt("OWeatherEnabled"):false);
-    openweatherCheck->enabled=wifiCheck->switchEnabled;
+    openweatherCheck->switchEnabled=(wifiCheck->switchEnabled?(bool)LoT().GetSettings()->GetInt(SystemSettings::SettingKey::OpenWeather):false);
+    openweatherCheck->SetEnabled(wifiCheck->switchEnabled);
     if ( 0 == strlen(openWeatherMapApiKey)) {
         openweatherCheck->SetEnabled(false);
     }
@@ -111,12 +109,12 @@ SettingsApplication::SettingsApplication() {
         }
         ntpBLECheck->InternalRedraw();
     });
-    bleCheck->switchEnabled=NVS.getInt("BLEEnabled");
+    bleCheck->switchEnabled=(bool)LoT().GetSettings()->GetInt(SystemSettings::SettingKey::BLE);
     bleCheck->InternalRedraw();
 
     ntpBLECheck=new SwitchWidget(20,160);
-    ntpBLECheck->switchEnabled= (bleCheck->switchEnabled?NVS.getInt("NTPBLEEnabled"):false);
-    ntpBLECheck->enabled=bleCheck->switchEnabled;
+    ntpBLECheck->switchEnabled= (bleCheck->switchEnabled?(bool)LoT().GetSettings()->GetInt(SystemSettings::SettingKey::NTPBLE):false);
+    ntpBLECheck->SetEnabled(bleCheck->switchEnabled);
     ntpBLECheck->InternalRedraw();
 
     Tick();
@@ -125,14 +123,15 @@ SettingsApplication::SettingsApplication() {
 bool SettingsApplication::Tick() {
     
     TemplateApplication::Tick();
+    bool mustRedraw=false;
     //TemplateApplication::btnBack->Interact(touched,touchX, touchY);
     //btnHelp->Interact(touched,touchX, touchY);
-    wifiCheck->Interact(touched,touchX, touchY);    
-    ntpCheck->Interact(touched,touchX, touchY);
-    openweatherCheck->Interact(touched,touchX, touchY);
+    if ( wifiCheck->Interact(touched,touchX, touchY) ) { mustRedraw=true; }
+    if ( ntpCheck->Interact(touched,touchX, touchY) ) { mustRedraw=true; }
+    if ( openweatherCheck->Interact(touched,touchX, touchY) ) { mustRedraw=true; }
 
-    bleCheck->Interact(touched,touchX, touchY);
-    ntpBLECheck->Interact(touched,touchX, touchY);
+    if ( bleCheck->Interact(touched,touchX, touchY)) { mustRedraw=true; }
+    if ( ntpBLECheck->Interact(touched,touchX, touchY)) { mustRedraw=true; }
 
 
     if (millis() > nextRefresh ) {
@@ -174,5 +173,5 @@ bool SettingsApplication::Tick() {
         nextRefresh=millis()+(1000/6);
         return true;
     }
-    return false;
+    return mustRedraw;
 }

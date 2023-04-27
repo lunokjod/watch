@@ -18,7 +18,6 @@
 //
 
 #include <Arduino.h>
-#include <ArduinoNvs.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "GestureSettings.hpp"
@@ -30,12 +29,12 @@ extern TTGOClass *ttgo;
 extern SemaphoreHandle_t I2cMutex;
 
 GestureSettings::GestureSettings() {
-    UseDoubleTapSwitch = new SwitchWidget(10,10);
-    bool doubleTapSetting=NVS.getInt("doubleTap");
+    UseDoubleTapSwitch = new SwitchWidget(10,10);    
+    bool doubleTapSetting=LoT().GetSettings()->GetInt(SystemSettings::SettingKey::DoubleTap);
     UseDoubleTapSwitch->switchEnabled=doubleTapSetting;
     UseDoubleTapSwitch->InternalRedraw();
-    UseLampSwitch = new SwitchWidget(10,72);
-    bool lampGestureSetting= NVS.getInt("lampGesture");
+    UseLampSwitch = new SwitchWidget(10,72);    
+    bool lampGestureSetting= LoT().GetSettings()->GetInt(SystemSettings::SettingKey::LampGesture);
     UseLampSwitch->switchEnabled=lampGestureSetting;
     UseLampSwitch->InternalRedraw();
     Tick(); 
@@ -44,7 +43,8 @@ GestureSettings::GestureSettings() {
 GestureSettings::~GestureSettings() {
     if ( nullptr != UseDoubleTapSwitch ) {
         bool doubleTapSetting = UseDoubleTapSwitch->switchEnabled;
-        NVS.setInt("doubleTap",doubleTapSetting,false);
+        //NVS.setInt("doubleTap",doubleTapSetting,false);
+        LoT().GetSettings()->SetInt(SystemSettings::SettingKey::DoubleTap,doubleTapSetting);
         delete UseDoubleTapSwitch;
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         if ( doubleTapSetting ) {
@@ -58,7 +58,9 @@ GestureSettings::~GestureSettings() {
     }
     if ( nullptr != UseLampSwitch ) {
         bool lampGestureSetting = UseLampSwitch->switchEnabled;
-        NVS.setInt("lampGesture",lampGestureSetting,false);
+        //NVS.setInt("lampGesture",lampGestureSetting,false);
+        LoT().GetSettings()->SetInt(SystemSettings::SettingKey::LampGesture,lampGestureSetting);
+
         delete UseLampSwitch;
     }
 }

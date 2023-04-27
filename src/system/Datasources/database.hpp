@@ -33,7 +33,7 @@ typedef struct {
 class Database {
     protected:
         TaskHandle_t databaseQueueTask = NULL;
-        const UBaseType_t uxQueueLength=16;
+        const UBaseType_t uxQueueLength=8;
         const UBaseType_t uxItemSize=sizeof(SQLQueryData);
         UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY; // configMAX_PRIORITIES - 2;
         sqlite3 *databaseDescriptor;

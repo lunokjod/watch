@@ -552,22 +552,29 @@ static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t 
     if (false == ttgo->bl->isOn()) { LoT().CpuSpeed(80); }
 
     TakeAllSamples();
+    float timeToWait=1;
     // if bluetooth is enabled, do a chance to get notifications
     if ( LoT().GetBLE()->IsEnabled() ) {
         lEvLog("BLE: Wait a little bit for connection/notification...\n");
-        //delay(100); // let antena wharm
-        TimedDoSleep.once(9,[]() { // get sleep in some seconds if no screen is on
-            if (false == ttgo->bl->isOn()) {
-                lEvLog("Timer triggered without screen... (going to sleep again)\n")
-                DoSleep();
-            }
-        });
-    } else { // no bluetooth, sleep now
+        timeToWait+=LoT().GetBLE()->GraceTime();
+    }
+    // if wifi task is running, add some time to reach the results
+    if ( LoT().GetWiFi()->InUse() ) {
+        lEvLog("WiFi: Wait a little bit for connection...\n");
+        timeToWait+=LoT().GetWiFi()->GraceTime();
+    }
+    lEvLog("Waiting %g seconds to try sleep\n",timeToWait);
+    /*
+    if (false == ttgo->bl->isOn()) {
+        lEvLog("Timer triggered without screen... (going to sleep again)\n")
+        timeToWait=0;
+    }*/
+    TimedDoSleep.once(timeToWait,[]() { // get sleep in some seconds if no screen is on
         if (false == ttgo->bl->isOn()) {
             lEvLog("Timer triggered without screen... (going to sleep again)\n")
             DoSleep();
         }
-    }
+    });
 }
 
 static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -680,9 +687,7 @@ void SaveDataBeforeShutdown() {
     LoT().LittleFSReady=false; // mark as unused
     LittleFS.end();
     lEvLog("LittleFS: Closed\n");
-
-    NVS.close();
-    lEvLog("NVS: Closed\n");
+    LoT().DestroySettings();
 }
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {

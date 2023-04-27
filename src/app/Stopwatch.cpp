@@ -38,7 +38,6 @@ StopwatchApplication::~StopwatchApplication() {
 }
 
 StopwatchApplication::StopwatchApplication() {
-    //TemplateApplication();
     canvas->setTextFont(0);
     canvas->setTextSize(3);
     canvas->setTextColor(TFT_WHITE);

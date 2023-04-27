@@ -17,28 +17,35 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
+#ifndef __LUNOKIOT__SETTINGS_STORAGE__H__
+#define __LUNOKIOT__SETTINGS_STORAGE__H__
 
-#ifndef ___LUNOKIOT__WEATHER__WIFI_TASK___
-#define ___LUNOKIOT__WEATHER__WIFI_TASK___
-
-#include "../WiFi.hpp"
-#include <LilyGoWatch.h>
-
-
-class WeatherWifiTask: public LoTWiFiTask {
-    private:
-        String jsonBuffer;
-        const unsigned long Every30M = 1000*60*30;
-        unsigned long nextShoot = 0;
-        String NetworkHTTPGETRequest(const char* serverName);
-        bool NetworkGetSecureWeather();
-        bool NetworkParseWeatherData();
-
+class SystemSettings {
     public:
-        void Launch() override;
-        bool Check() override;
-        ~WeatherWifiTask() override {};
-        const char * Name() override { return "Weather"; }
+        static const char KeysAsString[][20];
+        typedef enum {
+            ScreenRotation,
+            Theme,
+            LittleFSFormat,
+            DoubleTap,
+            LampGesture,
+            Daylight,
+            TimeZone,
+            WiFi,
+            NTPWiFi,
+            OpenWeather,
+            BLE,
+            NTPBLE
+        } SettingKey;
+        SystemSettings();
+        ~SystemSettings();
+        bool IsNVSEnabled() { return NVSReady; }
+        int64_t GetInt(SettingKey what);
+        bool SetInt(SettingKey what, uint8_t value);
+        bool SetInt(SettingKey what, int32_t value);
+
+    private:
+        bool NVSReady = false;
 };
 
 #endif

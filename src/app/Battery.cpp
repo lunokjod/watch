@@ -38,7 +38,6 @@ BatteryApplication::~BatteryApplication() {
 }
 
 BatteryApplication::BatteryApplication() {
-    TemplateApplication();
     // this KVO launch callback every time PMU_EVENT_BATT_PC differs from last (change detection)
     BattPCEvent = new EventKVO([&, this](){
         this->dirtyFrame = true; // mark as dirty for full redraw the next Tick

@@ -61,6 +61,7 @@ struct LaunchDescriptor {
 };
 
 void ActiveRect::Trigger() {
+    if ( nullptr == tapActivityCallback ) { return; }
     LaunchDescriptor * comm = new LaunchDescriptor();
     if ( nullptr == comm ) {
         lUILog("%s: %p ERROR: Unable to create launch descriptor!\n",__PRETTY_FUNCTION__,this);
@@ -91,7 +92,7 @@ void ActiveRect::_LaunchCallbackTask(void * callbackData) {
     vTaskDelete(NULL);
 }
 
-bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
+bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty, bool trigger) {
     if ( false == enabled ) { return false; } // no sensitive
     if ( touch ) {
         pushed = ActiveRect::InRect(tx,ty,x,y,h,w); // inside?
@@ -112,7 +113,7 @@ bool ActiveRect::Interact(bool touch, int16_t tx,int16_t ty) {
         if ( nullptr != tapActivityCallback ) {
             // launch the callback!
             pushed = ActiveRect::InRect(tx,ty,x,y,h,w); // inside?
-            if ( pushed ) { Trigger(); }
+            if ( ( trigger ) && ( pushed )) { Trigger(); }
         }
     }
     lastInteraction=false;

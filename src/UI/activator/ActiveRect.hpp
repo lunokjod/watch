@@ -56,7 +56,7 @@ class ActiveRect {
         // events
         ActiveRect(int16_t x=0,int16_t y=0, int16_t h=0, int16_t w=0,
                                         UICallback tapCallback=nullptr);
-        bool Interact(bool touch, int16_t tx,int16_t ty); // t for "tap"
+        bool Interact(bool touch, int16_t tx,int16_t ty, bool trigger=true); // t for "tap"
 
         // callbacks
         UICallback tapActivityCallback;

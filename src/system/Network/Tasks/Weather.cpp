@@ -199,7 +199,7 @@ void WeatherWifiTask::Launch() {
 
 bool WeatherWifiTask::Check() {
     if ( nextShoot > millis() ) { return false; }
-    nextShoot=millis()+Every15M;
+    nextShoot=millis()+Every30M;
     if (false == (bool)NVS.getInt("OWeatherEnabled")) { return false; }
     return true;
 }

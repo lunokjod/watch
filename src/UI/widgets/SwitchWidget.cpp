@@ -85,12 +85,15 @@ void SwitchWidget::SetEnabled(bool enabled) {
 
 bool SwitchWidget::Interact(bool touch, int16_t tx,int16_t ty) {
     lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
-    bool interact = ActiveRect::Interact(touch,tx, ty);
+    bool interact = ActiveRect::Interact(touch,tx, ty,false);
     if (interact != lastInteract ) {
-        if ( lastInteract ) { switchEnabled = (!switchEnabled); }
+        if ( lastInteract ) {
+            switchEnabled = (!switchEnabled);
+        }
         lastInteract = interact;
         InternalRedraw();
         DirectDraw();
+        Trigger();
     }
     return interact;
 }

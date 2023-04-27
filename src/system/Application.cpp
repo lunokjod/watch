@@ -118,13 +118,13 @@ bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the f
 // This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTaskSync(LunokIoTApplication *instance) {
     if ( nullptr != instance ) {
-        if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
+        //if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
         lUILog("KillApplicationTask: %p '%s' closing...\n", instance,instance->AppName());
         delete instance;
         //delay(80); // do idle_task time to free heap
         lUILog("KillApplicationTask: %p has gone\n", instance);
         //FreeSpace();
-        xSemaphoreGive( UISemaphore ); // free
+        //xSemaphoreGive( UISemaphore ); // free
     }
 
 }
@@ -237,12 +237,13 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
             //delay(20);
         }
     }*/
-
-    if (synched) {
-        KillApplicationTaskSync(ptrToCurrent);
-    } else {
-        // kill app in other thread (some apps takes much time)
-        xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,0);
+    if ( nullptr != ptrToCurrent ) {
+        if (synched) {
+            KillApplicationTaskSync(ptrToCurrent);
+        } else {
+            // kill app in other thread (some apps takes much time)
+            xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,1);
+        }
     }
     FreeSpace();
 }

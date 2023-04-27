@@ -46,6 +46,8 @@
 //#include "Datasources/perceptron.hpp"
 #include "PMU/AXP202.hpp"
 #include "system/Network.hpp"
+#include "system/Storage/Settings.hpp"
+
 class NTPWifiTask;
 
 #include "app/Steps.hpp" // Step manager
@@ -94,7 +96,6 @@ Do not use ESP_LOGI functions inside.
     ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
 }
 
-bool LunokIoT::IsNVSEnabled() { return NVSReady; }
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 //#include "esp_console.h"
@@ -111,23 +112,22 @@ LunokIoT::LunokIoT() {
     ttgo->begin();
     tft = ttgo->tft; // set convenient extern
     rtc = ttgo->rtc; // set convenient extern
-
-    // storage init
-    NVSReady = NVS.begin(); // need NVS to get the current settings
+    settings=new SystemSettings();
     LittleFSReady = LittleFS.begin(); // needed for SQLite activity database and other blobs
-    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (NVSReady?"yes":"NO"), (LittleFSReady?"yes":"NO"));
-    // setup tft rotation
-    uint8_t rotation = NVS.getInt("ScreenRot"); // get screen rotation user select from NVS
+    lSysLog("Storage: NVS: %s, LittleFS: %s\n", (settings->IsNVSEnabled()?"yes":"NO"), (LittleFSReady?"yes":"NO"));
+
+    // setup the tft orientation
+    uint8_t rotation = settings->GetInt(SystemSettings::SettingKey::ScreenRotation);
     tft->setRotation(rotation); // user selected rotation (0 by default)
 
-    size_t themeOffset = NVS.getInt("lWTheme"); // load current theme offset
+    size_t themeOffset = settings->GetInt(SystemSettings::SettingKey::Theme);
     currentColorPalette = &AllColorPaletes[themeOffset]; // set the color palette (informative)
     currentThemeScheme = &AllThemes[themeOffset]; // set the GUI colors
 
     SplashAnnounce(); // simple eyecandy meanwhile boot (themed)
     SplashAnnounceBegin(); // anounce user about boot begins
 
-    bool alreadyFormattedLittleFS = NVS.getInt("littleFSReady"); // get special key from NVS
+    bool alreadyFormattedLittleFS = settings->GetInt(SystemSettings::SettingKey::LittleFSFormat);
     if ( false == alreadyFormattedLittleFS ) {
         lSysLog("LittleFS: user wants format disk\n");
         LittleFSReady=false; // mark as clean forced
@@ -381,6 +381,13 @@ bool LunokIoT::CpuSpeed(uint32_t mhz) {
     return res;
 }
 
+void LunokIoT::DestroySettings() {
+    if ( nullptr != settings ) {
+        delete settings;
+        settings = nullptr;
+    }
+}
+
 
 void LunokIoT::DestroyBLE() {
     if ( nullptr != ble ) {
@@ -388,6 +395,7 @@ void LunokIoT::DestroyBLE() {
         ble = nullptr;
     }
 }
+
 LoTBLE * LunokIoT::CreateBLE() {
     LoTBLE * response = new LoTBLE();
     return response;

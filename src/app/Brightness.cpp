@@ -41,7 +41,6 @@ BrightnessApplication::~BrightnessApplication() {
 }
 
 BrightnessApplication::BrightnessApplication() {
-    TemplateApplication();
     brightGauge = new GaugeWidget(10,10,220);
 
     uint8_t userBright = ttgo->bl->getLevel();

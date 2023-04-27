@@ -134,6 +134,7 @@ KnowLocationApplication::KnowLocationApplication() {
             xSemaphoreGive( BLEKnowDevicesSemaphore );
         }
     };
+    /*
     Button * scanButton = new Button(LuI_Vertical_Layout,1);
     scanButton->AddChild(new Text("Scan"));
     scanButton->tapCallback=[&](void * obj){
@@ -157,8 +158,9 @@ KnowLocationApplication::KnowLocationApplication() {
             }
         }
     };
-
     bottomButtonContainer->AddChild(scanButton,1.0);
+    */
+    bottomButtonContainer->AddChild(nullptr,1.0);
     bottomButtonContainer->AddChild(setButton,1.55);
 
     locationMenu = new IconMenu(LuI_Horizontal_Layout,KnowLocationsIconsNumber,KnowLocationsIcons);

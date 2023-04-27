@@ -80,7 +80,6 @@ WatchfaceDotApplication::~WatchfaceDotApplication() {
     
     if ( nullptr != displayBuffer ) { delete displayBuffer; }
     if ( nullptr != locationBuffer ) { delete locationBuffer; }
-    //if ( nullptr != dotSize ) { free(dotSize); }
     UILongTapOverride=false;
 }
 

@@ -56,6 +56,10 @@ extern const unsigned char img_pause_48_bits[];
 #define img_back_16_height 18
 extern const unsigned char img_back_16_bits[];
 
+#define img_mainmenu_zone_width 120
+#define img_mainmenu_zone_height 114
+extern const unsigned char img_mainmenu_zone_bits[];
+
 #define img_mainmenu_back_width 120
 #define img_mainmenu_back_height 97
 extern const unsigned char img_mainmenu_back_bits[];

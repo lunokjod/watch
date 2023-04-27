@@ -117,6 +117,7 @@ class LoTBLE {
     friend LBLEUARTCallbacks;
     friend LBLEServerCallbacks;
     private:
+        const float GraceTimeSeconds = 9;
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
         void _BLELoopTask();
         TaskHandle_t BLELoopTaskHandler=NULL;
@@ -147,6 +148,7 @@ class LoTBLE {
         char BTName[15] = { 0 }; // buffer for build the name like: "lunokIoT_69fa"
         LoTBLE();
         ~LoTBLE();
+        const float GraceTime() { return GraceTimeSeconds; }
         void Enable();
         void Disable();
         bool IsEnabled();

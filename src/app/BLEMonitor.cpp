@@ -110,8 +110,6 @@ BLEMonitorApplication::BLEMonitorApplication() {
         xSemaphoreGive( SqlLogSemaphore ); // free
     }
     */
-    //bool enabled = NVS.getInt("BLEEnabled");
-    //if ( enabled ) { StartBLE(); }
 
     lunokIoT_BLEMonitorTaskLoop = true;
     xTaskCreatePinnedToCore(BLEMonitorTask, "bMonTA", LUNOKIOT_APP_STACK_SIZE, NULL, tskIDLE_PRIORITY, &lunokIoT_BLEMonitorTask,1);

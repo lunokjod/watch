@@ -39,6 +39,7 @@ class LoTWiFiTask {
 // define wifi hanlder
 class LoTWiFi {
     private:
+        const float GraceTimeSeconds=5;
         const unsigned long ConnectionTimeoutMs = 20*1000;
         const float HeartBeatTime = 5*60; // time in seconds to check pending tasks
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
@@ -47,6 +48,7 @@ class LoTWiFi {
         bool running=false;
         void InstallTimer();
     public:
+        const float GraceTime() { return GraceTimeSeconds; }
         Ticker NetworkHeartbeatTicker;
         // allow/disallow wifi tasks
         void Enable();

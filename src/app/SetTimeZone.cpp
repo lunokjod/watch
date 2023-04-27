@@ -24,12 +24,15 @@
 #include "../static/img_timezone_32.xbm"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
-#include <ArduinoNvs.h>
+//#include <ArduinoNvs.h>
 #include "LogView.hpp"
+#include "../lunokIoT.hpp"
 
 SetTimeZoneApplication::~SetTimeZoneApplication() {
-    NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
-    NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::Daylight,switchDaylight->switchEnabled);
+    //NVS.setInt("summerTime",switchDaylight->switchEnabled, false);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::TimeZone,timezoneGMTSelector->selectedValue);
+    //NVS.setInt("timezoneTime",timezoneGMTSelector->selectedValue, false);
     if ( nullptr != btnBack ) { delete btnBack; }
     if ( nullptr != switchDaylight ) { delete switchDaylight; }
     if ( nullptr != timezoneGMTSelector ) { delete timezoneGMTSelector; }
@@ -49,12 +52,12 @@ SetTimeZoneApplication::SetTimeZoneApplication() {
 
     timezoneGMTSelector = new ValueSelector(120,60,100,115,-12,12,
     canvas->color24to16(0x212121),true);
-
-    int daylight = NVS.getInt("summerTime");
-    long timezone = NVS.getInt("timezoneTime");
+    bool daylight = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::Daylight);
+    long timezone = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::TimeZone);
     lAppLog("Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
     timezoneGMTSelector->selectedValue=timezone;
     switchDaylight->switchEnabled=daylight;
+    switchDaylight->InternalRedraw();
     timezoneGMTSelector->InternalRedraw();
     Tick();
 }

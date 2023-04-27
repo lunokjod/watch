@@ -24,6 +24,7 @@
 #include "system/Network/BLE.hpp"
 #include "system/Network/WiFi.hpp"
 #include "system/Network.hpp"
+#include "system/Storage/Settings.hpp"
 
 // almost empty defines to clarify the paramethers direction (see declarations below)
 #define IN const // clarify to developer if the data is input or output
@@ -45,11 +46,14 @@ class LunokIoT {
         }
         void ListLittleFS(const char *path="/");
         bool IsLittleFSEnabled();
-        bool IsNVSEnabled();
         void BootReason();
         bool IsNetworkInUse();
         bool CpuSpeed(IN uint32_t mhz);
 
+        SystemSettings * GetSettings() {
+            if ( nullptr == settings ) {  settings = new SystemSettings(); }
+            return settings;
+        }
         // network things
         void DestroyWiFi();
         LoTWiFi * CreateWiFi();
@@ -64,7 +68,7 @@ class LunokIoT {
             if ( nullptr == ble ) {  ble = CreateBLE(); }
             return ble;
         }
-
+        void DestroySettings();
         
         // delete copy and move constructors and assign operators
         LunokIoT(LunokIoT const&) = delete;             // Copy construct
@@ -81,8 +85,9 @@ class LunokIoT {
         Ticker BootWifiPerform; // used to launch tasks on first boot faster than "one cycle"
         LoTWiFi * wifi=nullptr; // used internally
         LoTBLE * ble=nullptr;
+        SystemSettings * settings=nullptr;
         bool normalBoot=true;
-        bool NVSReady=false;
+        //bool NVSReady=false;
         void InitLogs();
 };
 
