@@ -90,6 +90,8 @@ struct TemplateThemeScheme {
 extern const TemplateColorPalette * currentColorPalette;
 extern const TemplateThemeScheme * currentThemeScheme;
 
+// color utilities
+void GetRGBFrom16Bit(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 uint16_t ColorSwap(uint16_t colorToSwap);
 uint16_t ByteSwap(uint16_t colorToSwap);
 

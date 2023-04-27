@@ -353,6 +353,15 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     return canvas;
 }
 
+void GetRGBFrom16Bit(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b) {
+    double pr = ((color >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0
+    double pg = ((color >> 5) & 0x3F) / 63.0;  // green 0.0 .. 1.0
+    double pb = (color & 0x1F) / 31.0;         // blue  0.0 .. 1.0
+    r=255*pr;
+    g=255*pg;
+    b=255*pb;
+}
+
 uint16_t ColorSwap(uint16_t colorToSwap) {
     // twist color from RGB to BRG for draw on canvas under certain circumstances
     double r = ((colorToSwap >> 11) & 0x1F) / 31.0; // red   0.0 .. 1.0

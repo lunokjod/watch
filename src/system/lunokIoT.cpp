@@ -225,16 +225,6 @@ LunokIoT::LunokIoT() {
 
     // Build the lunokiot message bus
     SystemEventsStart();
-/*
-    // initialize network devices
-    SplashAnnounce("     Network    ");
-#ifdef LUNOKIOT_WIFI_ENABLED
-    GetWiFi();
-#endif
-#ifdef LUNOKIOT_BLE_ENABLED
-    GetBLE();
-#endif
-*/
 
     // hooks for activities
     SplashAnnounce("   Activities   ");
@@ -460,9 +450,13 @@ LoTWiFi * LunokIoT::CreateWiFi() {
     response->AddTask(new NTPWifiTask(rtc));
     response->AddTask(new GeoIPWifiTask());
     response->AddTask(new WeatherWifiTask());
+    if ( false == NVS.getInt("WifiEnabled") ) {
+        lNetLog("WiFi: %p User settings don't agree\n",this);
+        return response;
+    }
+    // force first launch soon
     lNetLog("Starting network tasks in %.0f seconds...\n",BootWifiPerformSeconds);
     BootWifiPerform.once<LoTWiFi*>(BootWifiPerformSeconds,[](LoTWiFi* instance){
-        if ( systemSleep ) { return; } // ignore
         xTaskCreatePinnedToCore([](void *obj) { // in core 0 please
             LoTWiFi* instance = (LoTWiFi*)obj;
             instance->PerformTasks();
