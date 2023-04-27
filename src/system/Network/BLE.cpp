@@ -463,6 +463,7 @@ void LoTBLE::_BLELoopTask() {
     while ( running ) {
         TickType_t nextCheck = xTaskGetTickCount();
         xTaskDelayUntil( &nextCheck, (500 / portTICK_PERIOD_MS) );
+
         if ( millis() > nextUserSettingCheckMS ) {
             // check if user wants me
             bool enabled = NVS.getInt("BLEEnabled");
@@ -505,6 +506,8 @@ void LoTBLE::_BLELoopTask() {
                 lNetLog("BLE: Location recognition: Last Scan %d stopped!\n",bleLocationScanCounter-1);
                 delay(100);
             }
+            if (systemSleep) { continue; }
+
             Disable();
             lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
             //pBLEScan->clearResults();

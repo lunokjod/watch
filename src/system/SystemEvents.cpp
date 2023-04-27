@@ -319,6 +319,8 @@ static void DoSleepTask(void *args) {
 
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
+    systemDatabase->Commit();
+
     int64_t howMuchTime = esp_timer_get_next_alarm();
     int64_t nowTime = esp_timer_get_time();
     uint32_t diffTime_secs = (howMuchTime-nowTime)/uS_TO_S_FACTOR;
@@ -511,24 +513,7 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             sprintf(query,fmtStr,BMAMessages[activity]);
             if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
             free(query);
-            delay(100);
         }
-            /*
-            lSysLog("Activity: holding activity and data %d on offset: %u\n",activity,BMAActivitesOffset);
-            BMAActivitesBuffer[BMAActivitesOffset]=activity;
-            //RTC_Date r = ttgo->rtc->getDateTime();
-            if (pdTRUE == xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS)) {
-                BMAActivitesTimes[BMAActivitesOffset] = ttgo->rtc->getDateTime();
-                xSemaphoreGive(I2cMutex);
-            }
-            //void * ptrShit=BMAActivitesTimes+(BMAActivitesOffset*sizeof(RTC_Date));
-            //memcpy(ptrShit,&r,sizeof(RTC_Date));
-            BMAActivitesOffset++;
-            if ( BMAActivitesOffset >= BMAActivitesBufferMaxEntries ) {
-                SystemBMARestitution();
-                BMAActivitesOffset=0;
-            }
-        }*/
         FreeSpace();
 
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);

@@ -235,6 +235,7 @@ Database::Database(const char *filename) {
 }
 
 Database::~Database() {
+    Commit();
     // kill thread
     lLog("Database: %p Killing thread %p...\n",this,databaseQueueTask);
     taskRunning=false;
@@ -453,4 +454,21 @@ void StartDatabase() {
     systemDatabase->SendSQL(queryCreateRAWLog);
     systemDatabase->SendSQL(queryCreateJSONLog);
     systemDatabase->SendSQL(queryCreateNotifications);
+}
+
+void Database::Commit() {
+    unsigned int remainDBQueries = Pending();
+    if ( remainDBQueries > 0 ) {
+        lLog("Database: %p Commit begin\n",this,remainDBQueries);
+        unsigned long nextWarn=millis()+1000;
+        while(0 != remainDBQueries ) {
+            if ( millis() > nextWarn ) {
+                lLog("Database: %p Commit pending (%u tasks)\n",this,remainDBQueries);
+                nextWarn=millis()+1000;
+            }
+            delay(100);
+            remainDBQueries = Pending();
+        }
+        lLog("Database: %p Commit end\n",this,remainDBQueries);
+    }
 }

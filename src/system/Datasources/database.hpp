@@ -52,6 +52,7 @@ class Database {
         unsigned int Pending();
         ~Database();
         bool InUse=false;
+        void Commit();
         void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr);
 };
 extern Database * systemDatabase;
