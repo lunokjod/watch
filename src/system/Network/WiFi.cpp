@@ -28,6 +28,7 @@
 #include <functional>
 #include <list>
 #include "BLE.hpp"
+#include <esp_task_wdt.h>
 
 //void LoTWiFi::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); disabled=true; }
 //void LoTWiFi::ResumeTasks() { xSemaphoreGive( taskLock ); disabled=false; }
@@ -117,7 +118,7 @@ void LoTWiFi::PerformTasks() {
     //taskYIELD();
     //check tasks
     //lNetLog("WiFi: %p Checking pending tasks....\n",this);
-    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    if ( pdFALSE == xSemaphoreTake( taskLock, LUNOKIOT_EVENT_TIME_TICKS) ) { return; }
     size_t tasksMustRun=0;
     std::list<LoTWiFiTask *> * tasksNeedToRun = new std::list<LoTWiFiTask *>();
     for (auto const& tsk : tasks) {
@@ -153,9 +154,12 @@ void LoTWiFi::PerformTasks() {
         taskYIELD();
     }
     if (false == connected) {
+        esp_task_wdt_reset();
         xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        running=false;
-        xSemaphoreGive( taskLock );
+        esp_task_wdt_reset();
+        WiFi.disconnect(true);
+        delete tasksNeedToRun;
+        delay(100);
         WiFi.mode(WIFI_MODE_NULL);
         //vTaskPrioritySet(NULL,myPriority);
         //taskYIELD();
@@ -171,10 +175,9 @@ void LoTWiFi::PerformTasks() {
         tsk->Launch();
         tasksRunned++;
     }
-    delete tasksNeedToRun;
-
     // disconnect
     WiFi.disconnect(true);
+    delete tasksNeedToRun;
     delay(100);
     WiFi.mode(WIFI_MODE_NULL);
     running=false;

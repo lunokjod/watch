@@ -923,7 +923,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
     }
 }
 
-
+// https://zingl.github.io/bresenham.html
 void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback, void *payload) {
     int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
     int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1; 
@@ -935,3 +935,43 @@ void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback,
         if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
     }
 }
+
+/* https://zingl.github.io/blurring.html
+  void blur(int radius) { // first degree approximation 
+    int buffer[radius]; // pixel buffer 
+    
+    for (int x = x_start; x < x_end; ++x) { // vertical blur
+      long dif = 0, sum = 0;
+      for (int y = y_start-2*radius; y < y_end; ++y) {
+        sum += dif;            // accumulate pixel blur
+        dif += getPixel(x, y+radius);   // next pixel
+        if (y >= y_start) {
+          dif += buffer[y%radius];  // sum up differences: +1, -2, +1
+          setPixel(x, y, sum/(radius*radius)); // set blurred pixel
+        } 
+        if (y+radius >= y_start) {
+          int p = getPixel(x,y);
+          buffer[y%radius] = p;    // buffer pixel
+          dif -= 2*p;
+        }
+      } // y
+    } // x
+
+    for (y = y_start; y < y_end; ++y) { // horizontal blur...
+      dif = 0; sum = 0;
+      for (x = x_start-2*radius; x < x_end; ++x) {
+        sum += dif;              // accumulate pixel blur
+        dif += getPixel(x+radius, y);  // next pixel
+        if (x >= x_start) {
+          dif += buffer[x%radius];  // sum up differences: +1, -2, +1
+          setPixel(x, y, sum/(radius*radius)); // set blurred pixel
+        } 
+        if (x+radius >= x_start) {
+          p = getPixel(x,y);
+          buffer[x%radius] = p;    // buffer pixel
+          dif -= 2*p;
+        }
+      } // x
+    } // y
+  } // blur
+  */
