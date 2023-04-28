@@ -71,21 +71,19 @@ bool LoTWiFi::IsEnabled() {
 }
 
 bool LoTWiFi::AddTask(LoTWiFiTask * newTask) {
-    // @note if change the wait ticks if you want reject by timeout
-    Disable();
-
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     size_t offset = 0;
     for (auto const& tsk : tasks) {
         if ( tsk == newTask ) {
             lNetLog("WiFi: %p Task %p '%s' already on the list (offset: %d)\n",this,newTask,tsk->Name(), offset);
-            Enable();
+            xSemaphoreGive( taskLock );
             return false;
         }
         offset++;
     }
     tasks.push_back(newTask);
     lNetLog("WiFi: %p Task %p '%s' added (offset: %d)\n",this, newTask,newTask->Name(), offset);
-    Enable();
+    xSemaphoreGive( taskLock );
     return true;
 }
 
@@ -100,7 +98,7 @@ void LoTWiFi::PerformTasks() {
     // check user permission
     if ( false == NVS.getInt("WifiEnabled") ) {
         lNetLog("WiFi: %p User settings don't agree\n",this);
-        return;
+        Disable();
     }
     if ( IsDisabled() ) {
         lNetLog("WiFi: %p Instance disabled\n",this);
@@ -191,6 +189,8 @@ void LoTWiFi::PerformTasks() {
 
 void LoTWiFi::InstallTimer() {
     NetworkHeartbeatTicker.attach<LoTWiFi*>(HeartBeatTime,[](LoTWiFi* instance){
+        if ( systemSleep ) { return; }
+        /*
         // wait until system brings up
         unsigned long timeOut=millis()+30000; // 30 secs
         while ( systemSleep ) {
@@ -198,7 +198,7 @@ void LoTWiFi::InstallTimer() {
             if ( millis() > timeOut ) { return; }
             TickType_t nextCheck = xTaskGetTickCount();
             xTaskDelayUntil( &nextCheck, (2000 / portTICK_PERIOD_MS) );
-        }
+        }*/
         xTaskCreatePinnedToCore([](void *obj) { // in core 0 please
             LoTWiFi* instance = (LoTWiFi*)obj;
             //instance->NetworkHeartbeatTicker.detach(); // stop the timer
@@ -211,6 +211,9 @@ void LoTWiFi::InstallTimer() {
 
 LoTWiFi::LoTWiFi() {
     lNetLog("WiFi: %p start\n", this);
+    bool canUse = NVS.getInt("WifiEnabled");
+    if ( canUse ) { Enable(); }
+    else { Disable(); }
     // @TODO warn if NVS user preference don't allow
     InstallTimer();
 }

@@ -654,7 +654,7 @@ void SaveDataBeforeShutdown() {
     if (false == saved) {
         lLog("NVS: Unable to commit!! (data lost!?)\n");
     }
-    char * usageStatics=(char *)ps_malloc(200);
+    char * usageStatics=(char *)ps_malloc(255);
     if ( nullptr != usageStatics ) {
         sprintf(usageStatics,"Usage stats: Sleep: %u secs, in use: %lu secs (usage ratio: %.2f%%%%)",
                 deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
@@ -811,7 +811,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    //SqlLog("stop");
+    SqlLog("stop");
     lSysLog("System event: Stop\n");
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
@@ -874,7 +874,7 @@ void SystemBMARestitution() {
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
-    //SqlLog("wake");
+    SqlLog("wake");
 
     TakeAllSamples(); // get current pose
     

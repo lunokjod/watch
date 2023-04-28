@@ -223,7 +223,7 @@ Database::Database(const char *filename) {
 
     }, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASE_CORE);
 
-    lLog("Database: %p Wake thread %p...\n",this,databaseQueueTask);
+    lLog("Database: %p Waiting thread %p...\n",this,databaseQueueTask);
     while(false == taskRunning) {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
         xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
@@ -300,6 +300,11 @@ static int BLESqlGetDeviceCallback(void *data, int argc, char **argv, char **azC
                 lNetLog("BLE: Updated device '%s' (zone: %d)\n",address,dev->locationGroup);
                 //SqlUpdateBluetoothDevice(dev->addr.toString().c_str(),dev->distance, dev->locationGroup);
                 if ( BLEZoneLocations::UNKNOWN != dev->locationGroup) {
+                    if ( BLELocationZone != (BLEZoneLocations)dev->locationGroup ) {
+                        char logMsg[30] = { 0 }; 
+                        sprintf(logMsg,"BLELocation: %d",dev->locationGroup);
+                        SqlLog(logMsg);
+                    }
                     BLELocationZone = (BLEZoneLocations)dev->locationGroup;
                 }
                 dev->dbSync=false;

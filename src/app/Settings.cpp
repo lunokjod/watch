@@ -82,6 +82,9 @@ SettingsApplication::SettingsApplication() {
         if ( false == wifiCheck->switchEnabled ) {
             ntpCheck->switchEnabled=false;
             openweatherCheck->switchEnabled=false;
+            LoT().GetWiFi()->Disable();
+        } else {
+            LoT().GetWiFi()->Enable();
         }
         ntpCheck->InternalRedraw();
         openweatherCheck->InternalRedraw();
@@ -106,6 +109,9 @@ SettingsApplication::SettingsApplication() {
         ntpBLECheck->SetEnabled(bleCheck->switchEnabled);
         if ( false == bleCheck->switchEnabled ) {
             ntpBLECheck->switchEnabled=false;
+            LoT().GetBLE()->Disable();
+        } else {
+            LoT().GetBLE()->Enable();
         }
         ntpBLECheck->InternalRedraw();
     });

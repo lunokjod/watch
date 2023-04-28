@@ -252,7 +252,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
 Ticker LogAppRun;
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced,bool force) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
-
+    //@TODO MUTEX APP CHANGE
     if ( false == force ) {
         if ( nullptr != instance ) {
             if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
@@ -273,15 +273,16 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
     if ( nullptr != instance ) {
         // get a little breath to the system before log (sql is a relative expensive operation) 
         if ( nullptr != currentApplication ) {
-                if ( false == currentApplication->isWatchface() ) { // don't log watchfaces!
-                    LogAppRun.once_ms(200,[]() {
-                        if ( nullptr != currentApplication ) {
-                            char logMsg[255] = { 0 }; 
-                            sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
-                            SqlLog(logMsg);
-                        }
-                    });
-                }
+            if ( false == currentApplication->isWatchface() ) { // don't log watchfaces!
+                LogAppRun.once_ms(200,[]() {
+                    //@TODO MUTEX THISs
+                    if ( nullptr != currentApplication ) {
+                        char logMsg[255] = { 0 }; 
+                        sprintf(logMsg,"Application: %p:%s",currentApplication,currentApplication->AppName());
+                        SqlLog(logMsg);
+                    }
+                });
+            }
         }
     }
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();

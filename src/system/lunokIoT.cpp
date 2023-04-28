@@ -204,7 +204,7 @@ LunokIoT::LunokIoT() {
         }
         xSemaphoreGive(I2cMutex);
     }
-    SplashAnnounce("   Database   ");
+    SplashAnnounce("    Database    ");
 
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
@@ -214,7 +214,7 @@ LunokIoT::LunokIoT() {
         systemDatabase->SendSQL(BLECreateTable);
         systemDatabase->Commit();
     }
-    SplashAnnounce("  User prefs  ");
+    SplashAnnounce("   User prefs   ");
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value
     
@@ -236,7 +236,7 @@ LunokIoT::LunokIoT() {
     }
 
     // databas cleanup
-    SplashAnnounce("  Cleanup...  ");
+    SplashAnnounce("    Cleanup    ");
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
         const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";

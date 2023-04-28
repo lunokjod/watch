@@ -128,7 +128,7 @@ class LoTBLE {
         void _TryStopTask();
         EventKVO * BLEWStartEvent = nullptr; 
         EventKVO * BLEWStopEvent = nullptr; 
-        bool enabled=true;
+        bool enabled=false;
         bool running=false;
         BLEService *pServiceUART = nullptr;
         NimBLECharacteristic * pRxCharacteristic = nullptr;

@@ -44,7 +44,7 @@ class LoTWiFi {
         const float HeartBeatTime = 5*60; // time in seconds to check pending tasks
         SemaphoreHandle_t taskLock = xSemaphoreCreateMutex();
         std::list<LoTWiFiTask *> tasks = {};
-        bool enabled=true;
+        bool enabled=false;
         bool running=false;
         void InstallTimer();
     public:

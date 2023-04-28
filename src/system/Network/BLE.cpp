@@ -592,6 +592,7 @@ void LoTBLE::_TryLaunchTask() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     enabled = NVS.getInt("BLEEnabled");
     xSemaphoreGive( taskLock );
+
     if ( false == enabled ) { 
         lNetLog("BLE: %p User settings don't agree\n",this);
         return;
@@ -619,15 +620,19 @@ LoTBLE::LoTBLE() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     enabled = NVS.getInt("BLEEnabled");
     xSemaphoreGive( taskLock );
-    if ( false == enabled ) { 
-        lNetLog("BLE: %p User settings don't agree\n",this);
-        return;
-    }
+
     // Set BLE name
     uint8_t BLEAddress[6];                  // 6 octets are the BLE address
     esp_read_mac(BLEAddress,ESP_MAC_BT);    // get from esp-idf :-*
     sprintf(BTName,"lunokIoT_%02x%02x", BLEAddress[4], BLEAddress[5]); // add last MAC bytes as name
     lNetLog("BLE: %p Device name: '%s'\n",this,BTName); // notify to log
+
+    if ( false == enabled ) { 
+        Disable();
+        lNetLog("BLE: %p User settings don't agree\n",this);
+        return;
+    }
+    Enable();
 
 }
 
