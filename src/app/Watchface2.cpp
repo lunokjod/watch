@@ -26,8 +26,10 @@ extern TTGOClass *ttgo;
 
 #include "../app/LogView.hpp" // for lLog functions
 #include "../system/SystemEvents.hpp"
-//#include "LuITransition.hpp"
 #include "LuIMainMenu.hpp"
+#include "Steps.hpp"
+#include "Battery.hpp"
+#include "Settings.hpp"
 
 #include "../static/img_hours_hand.c"
 #include "../static/img_minutes_hand.c"
@@ -37,9 +39,11 @@ extern TTGOClass *ttgo;
 #include "../static/img_bluetooth_24.xbm"
 #include "../static/img_bluetooth_peer_24.xbm"
 #include "../static/img_usb_24.xbm"
+#include "../static/img_database_24.xbm"
 
 #include "Stopwatch.hpp"
 #include "resources.hpp"
+#include "../system/Datasources/database.hpp"
 
 int currentSec = random(0, 60);
 int currentMin = random(0, 60);
@@ -57,7 +61,11 @@ extern char *weatherDescription;
 extern char *weatherIcon;
 
 Watchface2Application::~Watchface2Application() {
-    delete bottomRightButton;
+    if ( nullptr != topLeftButton ) { delete topLeftButton; }
+    if ( nullptr != topRightButton ) { delete topRightButton; }
+    if ( nullptr != bottomRightButton ) { delete bottomRightButton; }
+    if ( nullptr != bottomLeftButton ) { delete bottomLeftButton; }
+
     delete hourHandCanvas;
     delete minuteHandCanvas;
     delete innerSphere;
@@ -73,12 +81,10 @@ Watchface2Application::Watchface2Application() {
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
-    //bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuITransitionApplication(new LuIMainMenuApplication()),false); });
+    bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });
+    topLeftButton = new ActiveRect(0, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); });
+    topRightButton = new ActiveRect(160, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); });
     bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
-    if ( nullptr == bottomRightButton ) {
-        lAppLog("Unable to allocate bottomRightButton\n");
-        return;
-    }
 
     colorBuffer = new CanvasZWidget(canvas->width(), canvas->height());
     if ( nullptr == colorBuffer ) {
@@ -154,7 +160,10 @@ Watchface2Application::Watchface2Application() {
 }
 
 bool Watchface2Application::Tick() {
-    bottomRightButton->Interact(touched, touchX, touchY);
+    topRightButton->Interact(touched, touchX, touchY); // steps
+    bottomRightButton->Interact(touched, touchX, touchY); // menu
+    topLeftButton->Interact(touched, touchX, touchY); // settings
+    bottomLeftButton->Interact(touched, touchX, touchY); // battery
 
     if (millis() > nextRefresh) {
         // hourHandCanvas->DrawTo(canvas,middleX,middleY);
@@ -187,6 +196,15 @@ bool Watchface2Application::Tick() {
         currentMonth = timeinfo->tm_mon;
 
         // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
+        if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
+            sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
+            canvas->setTextDatum(CC_DATUM);
+            canvas->setTextFont(1);
+            canvas->setTextSize(2);
+            canvas->setTextColor(ThCol(text));
+            canvas->drawString(textBuffer,canvas->width()/2,(canvas->height()/2)+20);
+        }
+
 
         if (weatherSyncDone) {
             // weather icon
@@ -222,6 +240,7 @@ bool Watchface2Application::Tick() {
                     canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
                 }
             }
+
             // temperature
             if (-1000 != weatherTemp)
             {
@@ -261,10 +280,11 @@ bool Watchface2Application::Tick() {
             int16_t posX = 36;
             int16_t posY = 171;
             uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-            if (LoT().GetBLE()->IsAdvertising()) {
+            if (LoT().GetBLE()->IsScanning()) {
+                dotColor = ThCol(high);
+            } else if (LoT().GetBLE()->IsAdvertising()) {
                 dotColor = ThCol(medium);
-            }
-            if (LoT().GetBLE()->Clients() > 0 ) {
+            } else if (LoT().GetBLE()->Clients() > 0 ) {
                 dotColor = ThCol(low);
             }
             canvas->fillCircle(posX, posY, 5, dotColor);
@@ -274,16 +294,35 @@ bool Watchface2Application::Tick() {
             } // bluetooth with peer icon
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
-        wl_status_t whatBoutWifi = WiFi.status();
-        if ( (WL_NO_SHIELD != whatBoutWifi) && (WL_IDLE_STATUS != whatBoutWifi) ) {
-            //lNetLog("WiFi in use, status: %d\n", whatBoutWifi);
+        if ( LoT().GetWiFi()->IsEnabled() ) {
+            wl_status_t whatBoutWifi = WiFi.status();
             int16_t posX = 51;
             int16_t posY = 189;
-            uint32_t dotColor = ThCol(background);
-            if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }
-            else if ( WL_CONNECT_FAILED == whatBoutWifi ) { dotColor = ThCol(high); }
+            uint32_t dotColor = ThCol(low);
+            //if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }
+            //else
+            if ( WL_CONNECT_FAILED == whatBoutWifi ) { dotColor = ThCol(high); }
+            else if ( WL_NO_SHIELD == whatBoutWifi ) { dotColor = ThCol(background); }
             canvas->fillCircle(posX, posY, 5, dotColor);
             canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
+        }
+        // SQLite
+        if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
+            int16_t posX = 48;
+            int16_t posY = 62;
+            unsigned int pend = systemDatabase->Pending();
+            uint32_t dotColor = ThCol(background);
+            if ( pend > 4 ) { dotColor = ThCol(high); }
+            if ( pend > 2 ) { dotColor = ThCol(medium); }
+            else if ( pend > 0 ) { dotColor = ThCol(low); }
+            canvas->fillCircle(posX, posY, 5, dotColor);
+            canvas->drawXBitmap(posX + 10, posY - 12, img_database_24_bits, img_database_24_width, img_database_24_height, ThCol(text));
+            sprintf(textBuffer,"%d",pend);
+            canvas->setTextFont(0);
+            canvas->setTextSize(2);
+            canvas->setTextDatum(TL_DATUM);
+            canvas->setTextColor(ThCol(text));
+            canvas->drawString(textBuffer,posX+10+24,posY-6);
         }
 
         // seconds hand

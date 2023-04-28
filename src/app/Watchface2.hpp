@@ -34,7 +34,10 @@ class Watchface2Application: public LunokIoTApplication {
         CanvasZWidget * innerSphere = nullptr;
         CanvasZWidget * hourHandCanvas = nullptr;
         CanvasZWidget * minuteHandCanvas = nullptr;
+        ActiveRect * topLeftButton = nullptr;    
+        ActiveRect * topRightButton = nullptr;
         ActiveRect * bottomRightButton = nullptr;
+        ActiveRect * bottomLeftButton = nullptr;
         int16_t middleX;
         int16_t middleY;
         int16_t radius;
