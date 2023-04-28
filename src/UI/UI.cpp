@@ -928,9 +928,7 @@ void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback,
     int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
     int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1; 
     int err = dx+dy, e2; /* error value e_xy */
-    while(true) {
-        bool stop = callback(x0, y0, payload);
-        if ( false == stop ) { return; }
+    while(callback(x0, y0, payload)) {
         if (x0==x1 && y0==y1) break;
         e2 = 2*err;
         if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
