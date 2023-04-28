@@ -295,14 +295,10 @@ bool Watchface2Application::Tick() {
             canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
         }
         if ( LoT().GetWiFi()->IsEnabled() ) {
-            wl_status_t whatBoutWifi = WiFi.status();
             int16_t posX = 51;
             int16_t posY = 189;
-            uint32_t dotColor = ThCol(low);
-            //if ( WL_CONNECTED == whatBoutWifi ) { dotColor = ThCol(low); }
-            //else
-            if ( WL_CONNECT_FAILED == whatBoutWifi ) { dotColor = ThCol(high); }
-            else if ( WL_NO_SHIELD == whatBoutWifi ) { dotColor = ThCol(background); }
+            uint32_t dotColor = ThCol(background);
+            if ( LoT().GetWiFi()->RadioInUse() ) { dotColor = ThCol(low); }
             canvas->fillCircle(posX, posY, 5, dotColor);
             canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
         }
@@ -328,16 +324,19 @@ bool Watchface2Application::Tick() {
         // seconds hand
         float secAngle = (timeinfo->tm_sec * 6);
         DescribeCircle(middleX, middleY, 110,
-                       [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload)
-                       {
-                           if (int(secAngle) == angle)
-                           {
-                               canvas->fillCircle(x, y, 5, TFT_BLACK);
-                               canvas->drawLine(x, y, cx, cy, ThCol(clock_hands_second));
-                               canvas->fillCircle(x, y, 4, ThCol(clock_hands_second));
-                               return false;
-                           }
-                           return true;
+                       [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+                            if (int(secAngle) == angle) {
+                                canvas->fillCircle(x, y, 5, TFT_BLACK);
+                                DescribeLine(x,y,cx,cy,[](int x, int y, void * obj) {
+                                    TFT_eSprite *view =(TFT_eSprite *)obj;
+                                    view->fillCircle(x,y,2,ThCol(clock_hands_second));
+                                    return true;
+                                },canvas);
+                                //canvas->drawLine(x, y, cx, cy, ThCol(clock_hands_second));
+                                canvas->fillCircle(x, y, 4, ThCol(clock_hands_second));
+                                return false;
+                            }
+                            return true;
                        });
 
         float minuteAngle = (timeinfo->tm_min * 6);
@@ -346,12 +345,17 @@ bool Watchface2Application::Tick() {
         float correctedHoureAngle = hourAngle + (minuteAngle / 12.0);
         // lAppLog("hourAngle: %f\n",correctedHoureAngle);
         DescribeCircle(middleX, middleY, 90,
-                       [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload)
-                       {
+                       [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
                            if (int(correctedHoureAngle) == angle)
                            {
                                canvas->fillCircle(x, y, 9, TFT_BLACK);
-                               canvas->drawLine(x, y, cx, cy, ThCol(highlight));
+                                DescribeLine(x,y,cx,cy,[](int x, int y, void * obj) {
+                                    TFT_eSprite *view =(TFT_eSprite *)obj;
+                                    view->fillCircle(x,y,6,ThCol(highlight));
+                                    return true;
+                                },canvas);
+
+                               //canvas->drawLine(x, y, cx, cy, ThCol(highlight));
                                canvas->fillCircle(x, y, 8, ThCol(highlight));
                                // canvas->drawLine(x,y,cx,cy,tft->color24to16(0xa0a8c0));
                                // canvas->fillCircle(x,y,8,tft->color24to16(0xa0a8c0));
@@ -368,7 +372,13 @@ bool Watchface2Application::Tick() {
                            if (int(correctedMinuteAngle) == angle)
                            {
                                canvas->fillCircle(x, y, 7, TFT_BLACK);
-                               canvas->drawLine(x, y, cx, cy, tft->color24to16(0x787ca0));
+                                DescribeLine(x,y,cx,cy,[](int x, int y, void * obj) {
+                                    TFT_eSprite *view =(TFT_eSprite *)obj;
+                                    view->fillCircle(x,y,4,tft->color24to16(0x787ca0));
+                                    return true;
+                                },canvas);
+
+                               //canvas->drawLine(x, y, cx, cy, tft->color24to16(0x787ca0));
                                canvas->fillCircle(x, y, 6, tft->color24to16(0x787ca0));
                                return false;
                            }

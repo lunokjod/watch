@@ -165,8 +165,11 @@ void UIStart();
 
 // bool DescribeCircleCallbackExample(int x, int y, int cx, int cy, int angle, int step, void * payload)
 typedef std::function<bool(int, int, int, int, int, int, void *)> DescribeCircleCallback;
+typedef std::function<bool(int, int, void *)> DescribeLineCallback;
 // Implementing Mid-Point Circle Drawing Algorithm
+// https://zingl.github.io/bresenham.html <== awesome!
 void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload = nullptr);
+void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback, void *payload=nullptr);
 
 void ScreenSleep();
 void ScreenWake();
