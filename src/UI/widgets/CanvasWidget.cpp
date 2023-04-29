@@ -68,7 +68,31 @@ void CanvasWidget::DirectDraw(int16_t x,int16_t y) {
     }
 }
 
-void CanvasWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, int32_t maskColor) {
+void CanvasWidget::DumpAlphaTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, uint8_t alpha, uint16_t maskColor) {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
+    for (int cy=0;cy<canvas->height();cy++) {
+        for (int cx=0;cx<canvas->width();cx++) {
+            uint16_t color = canvas->readPixel(cx,cy);
+            if ( maskColor == color ) { continue; }
+            uint16_t color2 = endCanvas->readPixel(cx+x,cy+y);
+            uint16_t mColor = tft->alphaBlend(alpha,color,color2);
+            endCanvas->drawPixel(cx+x,cy+y,mColor);
+        }
+    }
+}
+
+void CanvasWidget::DumpTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, uint16_t maskColor) {
+    lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
+    for (int cy=0;cy<canvas->height();cy++) {
+        for (int cx=0;cx<canvas->width();cx++) {
+            uint16_t color = canvas->readPixel(cx,cy);
+            if ( maskColor == color ) { continue; }
+            endCanvas->drawPixel(cx+x,cy+y,color);
+        }
+    }
+}
+
+void CanvasWidget::DrawTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, uint16_t maskColor) {
     lUIDeepLog("%s %p\n",__PRETTY_FUNCTION__,this);
     if ( nullptr == endCanvas) { return; }
     if ( nullptr == canvas ) { return; }

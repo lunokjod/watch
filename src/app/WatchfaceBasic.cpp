@@ -36,7 +36,6 @@ WatchfaceBasic::WatchfaceBasic() {
 
     //displayBuffer = new CanvasWidget((TFT_WIDTH-dotSize)/dotSize,(TFT_HEIGHT-dotSize)/dotSize);
     displayBuffer = new CanvasWidget((TFT_WIDTH)/dotSize,(TFT_HEIGHT)/dotSize);
-    UINextTimeout = millis()+UITimeout; // auto-sleep
     displayBuffer->canvas->fillSprite(TFT_BLACK);
     Tick();
 }

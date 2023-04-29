@@ -35,7 +35,6 @@ LampApplication::LampApplication() {
 //}
 
 bool LampApplication::Tick() {
-    UINextTimeout = millis()+UITimeout;
     if (  255 > ttgo->bl->getLevel() ) {
         ttgo->setBrightness(ttgo->bl->getLevel()+1);
     }

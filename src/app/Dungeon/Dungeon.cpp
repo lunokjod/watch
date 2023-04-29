@@ -98,7 +98,6 @@ DungeonGameApplication::DungeonGameApplication() {
     //lavaBackground->canvas->pushImage(0,0,16,16,(uint16_t *)img_lava.pixel_data);
 }
 void DungeonGameApplication::ManageSplashScreen() {
-    UINextTimeout = millis()+UITimeout; // no sleep if user is actively use
 
     if (false == currentLevel.valid ) {
         if ( 0 == waitGeneratorTimeout ) {
@@ -174,7 +173,6 @@ bool DungeonGameApplication::Tick() {
     }
     if ( touched ) {
         animationTimeout=millis()+renderTime; // don't redraw meanwhile drag
-        UINextTimeout = millis()+UITimeout; // no sleep if user is actively use
         
         if ( false == lastThumb) {
             lastThumb=true;

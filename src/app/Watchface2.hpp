@@ -29,11 +29,10 @@
 class Watchface2Application: public LunokIoTApplication {
     protected:
         unsigned long nextRefresh=0;
-        CanvasZWidget * colorBuffer = nullptr;
-        CanvasZWidget * outherSphere = nullptr;
-        CanvasZWidget * innerSphere = nullptr;
-        CanvasZWidget * hourHandCanvas = nullptr;
-        CanvasZWidget * minuteHandCanvas = nullptr;
+        //CanvasZWidget * colorBuffer = nullptr;
+        CanvasWidget * SphereBackground = nullptr;
+        CanvasWidget * SphereForeground = nullptr;
+
         ActiveRect * topLeftButton = nullptr;    
         ActiveRect * topRightButton = nullptr;
         ActiveRect * bottomRightButton = nullptr;
@@ -46,14 +45,32 @@ class Watchface2Application: public LunokIoTApplication {
         int markAngle=0;
     public:
         const char *AppName() override { return "Analogic watchface"; };
-        //bool GetSecureNetworkWeather();
-        //bool ParseWeatherData();
         Watchface2Application();
         virtual ~Watchface2Application();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
+    tunable:
+        // hourt numbers on watchface (12/3/6/9)
+        const int16_t NumberMargin = 20; // distance inner border of sphere
+        const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font
+        const uint8_t NumberSize = 1; // size
+        const uint16_t NumberColorBright=tft->color24to16(0x546084); // bright
+        const uint16_t NumberColor=tft->color24to16(0x1f2d56); // color
+        const uint16_t NumberColorShadow=tft->color24to16(0x071232); // shadow
+        const uint8_t OverSphereAlpha=128;
+        // hands values
+        const int32_t SecondsTickness = 2;
+        const uint16_t SecondsColor=ThCol(clock_hands_second);
+        const uint8_t MaxSecondsLen = 10; // define the lenght of hand
 
+        const int32_t MinutesTickness = 3;
+        const uint16_t MinutesColor=tft->color24to16(0x787ca0);
+        const uint8_t MaxMinutesLen = 100; // define the lenght of hand
+
+        const int32_t HoursTickness = 5;
+        const uint16_t HoursColor=ThCol(highlight);
+        const uint8_t MaxHourLen = 60; // define the lenght of hand
 };
 
 #endif

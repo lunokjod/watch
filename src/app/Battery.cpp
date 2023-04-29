@@ -60,9 +60,11 @@ BatteryApplication::BatteryApplication() {
 }
 bool BatteryApplication::Tick() {
     TemplateApplication::btnBack->Interact(touched, touchX, touchY);
+    /*
     if ( vbusPresent ) {
         UINextTimeout = millis()+UITimeout; // if plugged in, don't turn off screen
     }
+    */
     //if ( millis() > scaleTempRedraw ) { // reescale graph every...
     if ( false == normalRange ) {
         //lAppLog("Graph reescaled\n");

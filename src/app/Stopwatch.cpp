@@ -73,9 +73,8 @@ bool StopwatchApplication::Tick() {
     startBtn->Interact(touched,touchX,touchY);
     resetBtn->Interact(touched,touchX,touchY);
     pauseBtn->Interact(touched,touchX,touchY);
-    if ( 0 != starTime ) { // dont sleep when is in use
-        UINextTimeout = millis()+UITimeout;
-    }
+     // dont sleep when is in use
+    if ( 0 != starTime ) { UINextTimeout = millis()+UITimeout; }
     if (millis() > nextRedraw ) {
         canvas->fillSprite(ThCol(background));
         char displayText[16] = { 0 };

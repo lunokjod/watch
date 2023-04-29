@@ -69,7 +69,6 @@ WatchfaceDotApplication::WatchfaceDotApplication() {
     SetUserBrightness();
 
     UILongTapOverride=true;
-    UINextTimeout = millis()+UITimeout; // auto-sleep
 }
 
 WatchfaceDotApplication::~WatchfaceDotApplication() {

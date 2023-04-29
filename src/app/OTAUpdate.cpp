@@ -311,7 +311,6 @@ ota_end:
     #endif
     imageSize=0;
     imageDownloaded=0;
-    UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
 
     Tick();
 }
@@ -411,7 +410,6 @@ bool OTAUpdateApplication::Tick() {
             canvas->setTextDatum(TC_DATUM);
             canvas->setTextColor(ThCol(text));
             canvas->drawString(whatAreYouDoing,canvas->width()/2,20); // canvas->height()-20);
-            //UINextTimeout = millis()+UITimeout;  // dont allow screen sleep          
         }
 
         if ( updateBtn->GetEnabled() ) {

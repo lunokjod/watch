@@ -27,7 +27,7 @@
 #include <LilyGoWatch.h>
 #include <functional>
 #include "../system/Datasources/perceptron.hpp"
-
+#define tunable public // all settings accesable from outside
 /*
  * Basic application with UI
  */

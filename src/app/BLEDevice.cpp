@@ -83,8 +83,8 @@ BLEDeviceMonitorApplication::BLEDeviceMonitorApplication(uint16_t baseColor,char
     },"Pair");
     pairBtn->SetEnabled(false);
     Tick();
-    UINextTimeout = millis() + UITimeout; // disable screen timeout on this app
 }
+
 bool BLEDeviceMonitorApplication::Tick() {
     UINextTimeout = millis() + UITimeout; // disable screen timeout on this app
     TemplateApplication::btnBack->Interact(touched,touchX,touchY); // force check (speedup response)

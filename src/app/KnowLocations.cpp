@@ -186,7 +186,6 @@ KnowLocationApplication::~KnowLocationApplication() {
 }
 
 bool KnowLocationApplication::Tick() {
-    UINextTimeout = millis()+UITimeout; // disable screen timeout for this app
     if ( millis() > lastCheck) {
         char devicesFndStr[60];
         size_t devicesInRange = BLEKnowDevices.size();
