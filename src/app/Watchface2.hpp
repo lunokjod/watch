@@ -31,8 +31,15 @@ class Watchface2Application: public LunokIoTApplication {
         unsigned long nextRefresh=0;
         //CanvasZWidget * colorBuffer = nullptr;
         CanvasWidget * SphereBackground = nullptr;
+        CanvasWidget * SphereHands = nullptr;
         CanvasWidget * SphereForeground = nullptr;
-
+        CanvasWidget * StateDisplay = nullptr;
+        TFT_eSprite * lastCanvas=nullptr;
+        //bool taskRunning=false;
+        esp_event_handler_instance_t ListenerUI;
+        //unsigned long pushLetter=0;
+        uint8_t bannerSpace=0;
+        static int16_t bannerOffset;
         ActiveRect * topLeftButton = nullptr;    
         ActiveRect * topRightButton = nullptr;
         ActiveRect * bottomRightButton = nullptr;
@@ -43,14 +50,25 @@ class Watchface2Application: public LunokIoTApplication {
         const int16_t margin = 5;
         const float DEGREE_HRS = (360/24);
         int markAngle=0;
+        const uint8_t CleanupFPS=3;
+        const uint8_t DesiredFPS=8;
     public:
+        bool markForDestroy=false;
+        void DestroyDoubleBuffer();
         const char *AppName() override { return "Analogic watchface"; };
         Watchface2Application();
         virtual ~Watchface2Application();
+        void RedrawDisplay();
+        void RedrawHands(struct tm *timeinfo);
+        void Redraw();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
+        int lastMin = -1;
+        const int DisplayFontWidth=19;
     tunable:
+        const int8_t DotSize=3;
+        const bool ShowNumbers=false;
         // hourt numbers on watchface (12/3/6/9)
         const int16_t NumberMargin = 20; // distance inner border of sphere
         const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font
@@ -62,15 +80,19 @@ class Watchface2Application: public LunokIoTApplication {
         // hands values
         const int32_t SecondsTickness = 2;
         const uint16_t SecondsColor=ThCol(clock_hands_second);
-        const uint8_t MaxSecondsLen = 10; // define the lenght of hand
+        const uint16_t SecondsBrightColor=tft->alphaBlend(128,SecondsColor,TFT_WHITE);
+        const uint8_t MaxSecondsLen = 98; // define the lenght of hand (from up)
 
-        const int32_t MinutesTickness = 3;
+        const int32_t MinutesTickness = 4;
         const uint16_t MinutesColor=tft->color24to16(0x787ca0);
-        const uint8_t MaxMinutesLen = 100; // define the lenght of hand
+        const uint16_t MinutesBrightColor=tft->alphaBlend(128,MinutesColor,TFT_WHITE);
+        const uint8_t MinMinutesLen = 30;
+        const uint8_t MaxMinutesLen = 60; // define the lenght of hand
 
         const int32_t HoursTickness = 5;
         const uint16_t HoursColor=ThCol(highlight);
-        const uint8_t MaxHourLen = 60; // define the lenght of hand
+        const uint16_t HoursBrightColor=tft->alphaBlend(128,HoursColor,TFT_WHITE);
+        const uint8_t MaxHourLen = 45; // define the lenght of hand
 };
 
 #endif

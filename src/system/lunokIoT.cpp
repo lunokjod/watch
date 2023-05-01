@@ -168,7 +168,7 @@ LunokIoT::LunokIoT() {
     if ( ESP_OK != taskWatchdogResult ) {
         lEvLog("WARNING: Unable to start Task Watchdog on APP_CPU(1)\n");
     }
-    SplashAnnounce("   Boot check  ");
+    SplashAnnounce("    Boot check    ");
     BootReason(); // announce boot reason and from what partition to serial
 
 

@@ -47,12 +47,8 @@ void LoTWiFi::Disable() {
 
 bool LoTWiFi::RadioInUse() {
     wl_status_t current = WiFi.status();
-    if ( ( WL_IDLE_STATUS != current )
-            &&( WL_NO_SHIELD !=  current )
-            &&( WL_DISCONNECTED !=  current ) ) {
-                return true;
-    }
-    return false;
+    if ((WL_NO_SHIELD == current)||(WL_IDLE_STATUS == current)) { return false; }
+    return true;
 }
 
 bool LoTWiFi::InUse() {
@@ -95,14 +91,15 @@ bool LoTWiFi::RemoveTask(LoTWiFiTask * newTask) {
 }
 
 void LoTWiFi::PerformTasks() {
-    lNetLog("WiFi: %p Tasks check\n", this);
     // check user permission
     if ( false == NVS.getInt("WifiEnabled") ) {
-        lNetLog("WiFi: %p User settings don't agree\n",this);
-        Disable();
+        //lNetLog("WiFi: %p User settings don't agree\n",this);
+        if ( IsEnabled() ) { Disable(); }
+        return;
     }
+    lNetLog("WiFi: %p Tasks check\n", this);
     if ( IsDisabled() ) {
-        lNetLog("WiFi: %p Instance disabled\n",this);
+        lNetLog("WiFi: %p WARNING: Instance disabled\n",this);
         return;
     }
     //check provisioning
@@ -134,11 +131,11 @@ void LoTWiFi::PerformTasks() {
         //vTaskPrioritySet(NULL,myPriority);
         //taskYIELD();
         // trigger next call
-        xSemaphoreGive( taskLock );
         return;
     }
     lNetLog("WiFi: %p Tasks pending: %u\n",this,tasksMustRun);
     running=true;
+    xSemaphoreGive( taskLock );
     // perform connection
     wl_status_t currStat;
     lNetLog("WiFi: %p trying to connect to '%s'...\n",this,WSSID.c_str());
@@ -154,7 +151,6 @@ void LoTWiFi::PerformTasks() {
         taskYIELD();
     }
     if (false == connected) {
-        esp_task_wdt_reset();
         xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         esp_task_wdt_reset();
         WiFi.disconnect(true);
@@ -175,6 +171,7 @@ void LoTWiFi::PerformTasks() {
         tsk->Launch();
         tasksRunned++;
     }
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     // disconnect
     WiFi.disconnect(true);
     delete tasksNeedToRun;

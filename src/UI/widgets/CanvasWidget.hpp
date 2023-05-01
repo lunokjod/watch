@@ -35,8 +35,8 @@ class CanvasWidget : public Drawable {
         bool RebuildCanvas(int16_t h=0, int16_t w=0, int8_t colorDepth=16);
         void DirectDraw(int16_t x,int16_t y) override;
         void DrawTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0,uint16_t maskColor=MASK_COLOR) override;
-        void DumpTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, uint16_t maskColor=MASK_COLOR);
-        void DumpAlphaTo(TFT_eSprite * endCanvas, int16_t x, int16_t y, uint8_t alpha=128, uint16_t maskColor=MASK_COLOR);
+        void DumpTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0, uint16_t maskColor=MASK_COLOR);
+        void DumpAlphaTo(TFT_eSprite * endCanvas, int16_t x=0, int16_t y=0, uint8_t alpha=128, uint16_t maskColor=MASK_COLOR);
         virtual ~CanvasWidget();
 };
 

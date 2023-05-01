@@ -522,7 +522,6 @@ void LoTBLE::_BLELoopTask() {
             Enable();
             bleAdvertisingTimeoutMS=millis()+LocationCheckMS;
         }
-        Disable();
         // parse gadgetbridge command
         char * currentGadgetBridgeBufferPtr = nullptr;
         char * currentBangleJSBridgeBufferPtr = nullptr;
@@ -558,7 +557,6 @@ void LoTBLE::_BLELoopTask() {
                 free(currentGadgetBridgeBufferPtr); // here is freed original gadgetBridgeBuffer (closing the leak)
                 currentGadgetBridgeBufferPtr=nullptr; // dontcare
         }
-        Enable();
     }
     StopAdvertising();
     SaveBLEDevicesToDB();

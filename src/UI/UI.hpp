@@ -169,7 +169,10 @@ typedef std::function<bool(int, int, void *)> DescribeLineCallback;
 // Implementing Mid-Point Circle Drawing Algorithm
 // https://zingl.github.io/bresenham.html <== awesome!
 void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload = nullptr);
+void DescribeCircle2(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload=nullptr);
 void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback, void *payload=nullptr);
+// https://zingl.github.io/blurring.html
+void BlurSprite(TFT_eSprite *view, int radius);
 
 void ScreenSleep();
 void ScreenWake();

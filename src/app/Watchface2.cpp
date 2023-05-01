@@ -30,16 +30,12 @@ extern TTGOClass *ttgo;
 #include "Steps.hpp"
 #include "Battery.hpp"
 #include "Settings.hpp"
-/*
-#include "../static/img_hours_hand.c"
-#include "../static/img_minutes_hand.c"
-#include "../static/img_seconds_hand.c"
-*/
-#include "../static/img_wifi_24.xbm"
-#include "../static/img_bluetooth_24.xbm"
-#include "../static/img_bluetooth_peer_24.xbm"
-#include "../static/img_usb_24.xbm"
-#include "../static/img_database_24.xbm"
+
+#include "../static/img_wifi_16.xbm"
+#include "../static/img_bluetooth_16.xbm"
+#include "../static/img_bluetooth_peer_16.xbm"
+#include "../static/img_usb_16.xbm"
+#include "../static/img_database_16.xbm"
 
 #include "Stopwatch.hpp"
 #include "resources.hpp"
@@ -60,7 +56,11 @@ extern char *weatherMain;
 extern char *weatherDescription;
 extern char *weatherIcon;
 
+int16_t Watchface2Application::bannerOffset=0;
+
 Watchface2Application::~Watchface2Application() {
+    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUI);
+    //taskRunning=false; // send "signal" to draw thread
     delete topLeftButton;
     delete topRightButton;
     delete bottomRightButton;
@@ -68,7 +68,124 @@ Watchface2Application::~Watchface2Application() {
 
     delete SphereBackground;
     delete SphereForeground;
+    DestroyDoubleBuffer();
+    delete StateDisplay;
+    delete SphereHands;
     lAppLog("Watchface is gone\n");
+}
+
+void Watchface2Application::RedrawHands(struct tm *timeinfo) {
+
+    // this draws directly to canvas (small change)
+    // seconds hand
+    int secAngle = (timeinfo->tm_sec * 6);
+    DescribeCircle(middleX, middleY, 110,
+    [&, this](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
+        if (secAngle == angle) {
+            DescribeLine(cx,cy,x,y,[&, this](int x, int y, IGNORE_PARAM) {
+                // obtain distance between two points
+                int16_t vectorX=(x-cx);
+                int16_t vectorY=(y-cy);
+                double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
+                if ( currentDistance <= MaxSecondsLen) { return true; } // ignore
+                canvas->fillCircle(x,y,SecondsTickness,ThCol(clock_hands_second));
+                return true;
+            });
+            canvas->fillCircle(x, y, SecondsTickness+2, SecondsColor);
+            canvas->fillCircle(x, y, SecondsTickness, SecondsBrightColor);
+            canvas->drawCircle(x, y, SecondsTickness+3, TFT_BLACK);
+            return false;
+        }
+        return true;
+    });
+
+    // continue only if minute change or pass 15 seconds
+    //static long int lastRefresh=0;
+    int newMin = timeinfo->tm_min;
+    //if ( (millis() < lastRefresh) || ( lastMin == newMin ) )  { return; }
+    if ( lastMin == newMin )  { return; }
+    lastMin=newMin;
+    //lastRefresh=millis()+15000;
+
+    // clean
+    SphereHands->canvas->fillSprite(Drawable::MASK_COLOR);
+    const int cCenterX=SphereHands->canvas->width()/2;
+    const int cCenterY=SphereHands->canvas->height()/2;
+
+    float hourAngle = ((timeinfo->tm_hour) % 12) * 30;
+    float minuteAngle = (timeinfo->tm_min * 6);
+
+
+    // hour hand
+    float correctedHoureAngle = hourAngle + (minuteAngle / 12.0);
+    // lAppLog("hourAngle: %f\n",correctedHoureAngle);
+    DescribeCircle(cCenterX, cCenterY, 100, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+        if (int(correctedHoureAngle) == angle) {
+            DescribeLine(cx,cy,x,y,[&, this](int x, int y, IGNORE_PARAM) {
+                // obtain distance between two points
+                int16_t vectorX=(x-cx);
+                int16_t vectorY=(y-cy);
+                double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
+                if ( currentDistance >= 60) {
+                    SphereHands->canvas->fillCircle(x, y, HoursTickness+2, HoursColor);
+                    SphereHands->canvas->fillCircle(x, y, HoursTickness-2, HoursBrightColor);
+                    SphereHands->canvas->drawCircle(x, y, HoursTickness+3, TFT_BLACK);
+                    return false;
+                } // stop the draw
+                if ( currentDistance >= MaxHourLen) { return true; } // dont draw more
+                SphereHands->canvas->fillCircle(x,y,HoursTickness,HoursColor);
+                return true;
+            });
+            return false;
+        }
+        return true;
+    });
+
+    // minutes hand
+    float correctedMinuteAngle = minuteAngle + (secAngle / 60.0);
+    DescribeCircle(cCenterX, cCenterY, 100, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+        if (int(correctedMinuteAngle) == angle) {
+            DescribeLine(cx,cy,x,y,[&, this](int x, int y, void * obj) {
+                // obtain distance between two points
+                int16_t vectorX=(x-cx);
+                int16_t vectorY=(y-cy);
+                double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
+
+                if ( currentDistance >= 80-(MinutesTickness+3)) {
+                    SphereHands->canvas->fillCircle(x, y, MinutesTickness+2, MinutesColor);
+                    SphereHands->canvas->fillCircle(x, y, MinutesTickness-2, MinutesBrightColor);
+                    SphereHands->canvas->drawCircle(x, y, MinutesTickness+3, TFT_BLACK);
+                    return false;
+                }
+
+                if ( currentDistance <= MinMinutesLen) {
+                    SphereHands->canvas->fillCircle(x,y,MinutesTickness/2,MinutesColor);
+                    return true;
+                }
+                if ( currentDistance >= MaxMinutesLen) { return true; }
+                SphereHands->canvas->fillCircle(x,y,MinutesTickness,MinutesColor);
+                return true;
+            });
+            return false;
+        }
+        return true;
+    });
+    SphereHands->canvas->drawCircle(cCenterX, cCenterY, 10, SecondsColor); // second cap
+    SphereHands->canvas->drawCircle(cCenterX, cCenterY, 9, TFT_BLACK);
+    SphereHands->canvas->fillCircle(cCenterX, cCenterY, 8, MinutesColor); // minute cap
+    SphereHands->canvas->drawCircle(cCenterX, cCenterY, 4, TFT_BLACK);
+    SphereHands->canvas->fillCircle(cCenterX, cCenterY, 3, HoursColor); // hour cap
+    // SphereHands updated
+}
+
+void Watchface2Application::DestroyDoubleBuffer() {
+    lAppLog("DESTROY DOUBLE BUFFER\n");
+    if ( nullptr != lastCanvas ) {
+        TFT_eSprite * bkp = lastCanvas;
+        lastCanvas=nullptr;
+        bkp->deleteSprite();
+        delete bkp;
+    }
 }
 
 Watchface2Application::Watchface2Application() {
@@ -76,6 +193,11 @@ Watchface2Application::Watchface2Application() {
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
+
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, [](void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+        Watchface2Application * self = (Watchface2Application*)handler_args;
+        self->markForDestroy=true;
+    }, this, &ListenerUI);
 
     // initialize corner buttons
     bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });
@@ -92,6 +214,11 @@ Watchface2Application::Watchface2Application() {
     //
     CanvasWidget * outherSphere = new CanvasWidget(canvas->height(),canvas->width());
     outherSphere->canvas->fillSprite(TFT_PINK);
+
+    // led display
+    StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth); // space for one letter
+    StateDisplay->canvas->fillSprite(TFT_BLACK);
+    
     // Buttons
     outherSphere->canvas->fillRect(0, 0, middleX, middleY, tft->color24to16(0x000408));
     outherSphere->canvas->fillRect(middleX, 0, middleX, middleY, tft->color24to16(0x000408));
@@ -111,7 +238,15 @@ Watchface2Application::Watchface2Application() {
     });
     DescribeCircle(middleX, middleY, radius - (margin * 2), [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
         if (0 == (angle % 30)) { // blue 5mins bumps
-            outherSphere->canvas->fillCircle(x, y, 5, tft->color24to16(0x384058));
+            uint16_t color = tft->color24to16(0x384058);
+            int heightLine=0;
+            DescribeLine(x,y,cx,cy,[&,this](int x, int y, IGNORE_PARAM) {
+                heightLine++;
+                if (heightLine > 15 ) { return false; }
+                outherSphere->canvas->drawPixel(x,y,color);
+                return true;
+            });
+            outherSphere->canvas->fillCircle(x, y, 5, color);
         }
         return true;
     });
@@ -166,7 +301,329 @@ Watchface2Application::Watchface2Application() {
         SphereForeground->canvas->setTextColor(NumberColor);
         SphereForeground->canvas->drawString("9", NumberMargin, TFT_HEIGHT / 2);
     }
-    Tick();
+
+    // time mark
+    DescribeCircle(middleX, middleY, radius - 1, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
+        int angleEnd = (markAngle + 90) % 360;
+        if ((angle > markAngle) && (angle < angleEnd)) { SphereBackground->canvas->fillCircle(x, y, 1, tft->color24to16(0x5890e8)); }
+        return true;
+    });
+    // little bit more small
+    SphereHands = new CanvasWidget(160,160);
+    Redraw();
+}
+
+void Watchface2Application::RedrawDisplay() {
+    // led display
+    const uint8_t lowPoint=50;
+    const uint8_t highPoint=90;
+    // horizontal (x coord)
+    DescribeCircle2(middleX, middleY, 100, [&, this](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
+        if ( angle <= 90 ) { return true; }
+        if ( angle >= 180 ) { return true; }
+        // vertical (y coord)
+        DescribeLine(cx,cy,x,y,[&,this](int x, int y, IGNORE_PARAM) {
+            int16_t vectorX=(x-cx);
+            int16_t vectorY=(y-cy);
+            // obtain distance between two points
+            double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
+            if ( currentDistance < lowPoint ) { return true; } // ignore, too low
+            if ( currentDistance > highPoint ) { return false; } // stop, too high
+            int32_t dx = (StateDisplay->canvas->width()-DisplayFontWidth)-(angle-90);
+            int32_t dy = currentDistance-lowPoint;
+            // check image bounds
+            if ( dx < 0 ) { return true; }
+            if ( dx >= StateDisplay->canvas->width() ) { return true; }
+            if ( dy < 0 ) { return true; }
+            if ( dy >= StateDisplay->canvas->height() ) { return true; }
+            uint16_t newColor = StateDisplay->canvas->readPixel(dx,dy);
+            canvas->drawPixel(x,y,newColor);
+            return true;
+        });
+        return true;
+    });
+    //StateDisplay->DumpTo(canvas,0,0);
+    StateDisplay->canvas->scroll(-6,0);
+    bannerSpace+=6;
+    if ( bannerSpace >= DisplayFontWidth  ) {
+        const char whatToSay[] = "lunokWatch ready! (: ";
+        // const char whatToSay[] = "Shinoa Fores rules!!! Never gonna give you up, Never gonna let you down, Never gonna run around and desert you, Never gonna make you cry ";
+        StateDisplay->canvas->setTextColor(tft->color24to16(0x437aff));
+        StateDisplay->canvas->setTextFont(1);
+        StateDisplay->canvas->setTextSize(4);
+        StateDisplay->canvas->drawChar(whatToSay[bannerOffset],StateDisplay->canvas->width()-19,4);
+        bannerOffset++;
+        if (bannerOffset > strlen(whatToSay)) { bannerOffset=0; }
+        bannerSpace=0;
+        //pushLetter=millis()+1400;
+    }
+}
+
+void Watchface2Application::Redraw() {
+    unsigned long bFrame=millis();
+    // push the background
+    canvas->fillSprite(TFT_BLACK);
+    SphereBackground->DumpTo(canvas, 0, 0,TFT_BLACK);
+    RedrawDisplay();
+
+
+    time_t now;
+    struct tm *timeinfo;
+    time(&now);
+    timeinfo = localtime(&now);
+
+    char *textBuffer = (char *)ps_malloc(255);
+    
+    currentSec = timeinfo->tm_sec;
+    currentMin = timeinfo->tm_min;
+    currentHour = timeinfo->tm_hour;
+    currentDay = timeinfo->tm_mday;
+    currentMonth = timeinfo->tm_mon;
+
+    // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
+    if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
+        sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
+        canvas->setTextDatum(CC_DATUM);
+        canvas->setTextFont(1);
+        canvas->setTextSize(2);
+        canvas->setTextColor(ThCol(text));
+        canvas->drawString(textBuffer,canvas->width()/2,(canvas->height()/2)+20);
+    }
+
+
+    if (weatherSyncDone) {
+        // weather icon
+        canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
+        // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
+        if (-1 != weatherId) {
+            if ((200 <= weatherId) && (300 > weatherId)) {
+                canvas->pushImage(120 - (img_weather_200.width / 2), 52, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
+            } else if ((300 <= weatherId) && (400 > weatherId)) {
+                canvas->pushImage(120 - (img_weather_300.width / 2), 52, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
+            } else if ((500 <= weatherId) && (600 > weatherId)) {
+                canvas->pushImage(120 - (img_weather_500.width / 2), 52, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
+            } else if ((600 <= weatherId) && (700 > weatherId)) {
+                canvas->pushImage(120 - (img_weather_600.width / 2), 52, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+            } else if ((700 <= weatherId) && (800 > weatherId)) {
+                //lAppLog("@TODO Watchface: openweather 700 condition code\n");
+                // watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+                canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+                // watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
+            } else if ((800 <= weatherId) && (900 > weatherId)) {
+                canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+            }
+        }
+
+        // temperature
+        if (-1000 != weatherTemp) {
+            sprintf(textBuffer, "%2.1f C", weatherTemp);
+            int16_t posX = 150;
+            int16_t posY = 74;
+            canvas->setTextFont(0);
+            canvas->setTextSize(2);
+            canvas->setTextColor(TFT_WHITE);
+            canvas->setTextDatum(TL_DATUM);
+            canvas->drawString(textBuffer, posX, posY); //, 185, 96);
+        }
+
+        if (nullptr != weatherMain) {
+            canvas->setTextFont(0);
+            canvas->setTextSize(2);
+            canvas->setTextDatum(CC_DATUM);
+            canvas->setTextWrap(false, false);
+            canvas->setTextColor(TFT_WHITE);
+            canvas->drawString(weatherMain, 120, 40);
+        }
+
+        if (nullptr != weatherDescription) {
+            canvas->setTextFont(0);
+            canvas->setTextSize(1);
+            canvas->setTextDatum(CC_DATUM);
+            canvas->setTextWrap(false, false);
+            canvas->setTextColor(TFT_BLACK);
+            canvas->drawString(weatherDescription, 122, 62);
+            canvas->setTextColor(TFT_WHITE);
+            canvas->drawString(weatherDescription, 120, 60);
+        }
+    }
+
+    // connectivity notifications
+    if (LoT().GetBLE()->IsEnabled()) {
+        int16_t posX = 36;
+        int16_t posY = 171;
+        uint32_t dotColor = ThCol(background); // enabled but service isn't up yet
+        if (LoT().GetBLE()->IsScanning()) {
+            dotColor = ThCol(high);
+        } else if (LoT().GetBLE()->IsAdvertising()) {
+            dotColor = ThCol(medium);
+        } else if (LoT().GetBLE()->Clients() > 0 ) {
+            dotColor = ThCol(low);
+        }
+        canvas->fillCircle(posX, posY, DotSize, dotColor);
+        unsigned char *img = img_bluetooth_16_bits; // bluetooth logo only icon
+        if (LoT().GetBLE()->Clients() > 0 ) {
+            img = img_bluetooth_peer_16_bits;
+        } // bluetooth with peer icon
+        canvas->drawXBitmap(posX + DotSize+5, posY - (img_bluetooth_16_height/2), img, img_bluetooth_16_width, img_bluetooth_16_height, ThCol(text));
+    }
+    if ( LoT().GetWiFi()->IsEnabled() ) {
+        int16_t posX = 51;
+        int16_t posY = 189;
+        uint32_t dotColor = ThCol(background);
+        if ( LoT().GetWiFi()->InUse() ) { dotColor = ThCol(low); }
+        canvas->fillCircle(posX, posY, DotSize, dotColor);
+        canvas->drawXBitmap(posX + DotSize+5, posY - (img_wifi_16_height/2), img_wifi_16_bits, img_wifi_16_width, img_wifi_16_height, ThCol(text));
+    }
+    // SQLite
+    if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
+        int16_t posX = 48;
+        int16_t posY = 62;
+        unsigned int pend = systemDatabase->Pending();
+        uint32_t dotColor = ThCol(background);
+        if ( pend > 4 ) { dotColor = ThCol(high); }
+        if ( pend > 2 ) { dotColor = ThCol(medium); }
+        else if ( pend > 0 ) { dotColor = ThCol(low); }
+        canvas->fillCircle(posX, posY, DotSize, dotColor);
+        canvas->drawXBitmap(posX + DotSize+5, posY - (img_database_16_height/2), img_database_16_bits, img_database_16_width, img_database_16_height, ThCol(text));
+        sprintf(textBuffer,"%d",pend);
+        canvas->setTextFont(1);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(CL_DATUM);
+        canvas->setTextColor(ThCol(text));
+        canvas->drawString(textBuffer,posX+DotSize+10+img_database_16_width,posY);
+    }
+    // USB
+    if (vbusPresent) {
+        int16_t posX = 69;  // 60;
+        int16_t posY = 203; // 190;
+        uint32_t color = ThCol(background);
+        if (ttgo->power->isChargeing()) { color = ThCol(low); }
+        canvas->fillCircle(posX, posY, DotSize, color);
+        canvas->drawXBitmap(posX + DotSize+5, posY - (img_usb_16_height/2), img_usb_16_bits, img_usb_16_width, img_usb_16_height, TFT_WHITE);
+    }
+
+    RedrawHands(timeinfo);
+    const int16_t pushX = (canvas->width()-SphereHands->canvas->width())/2;
+    const int16_t pushY = (canvas->height()-SphereHands->canvas->height())/2;
+    SphereHands->DumpTo(canvas,pushX,pushY,Drawable::MASK_COLOR);
+    /*
+    for(int y=0;y<canvas->height();y++) {
+        for(int x=0;x<canvas->width();x++) {
+            uint16_t newColor = SphereHands->canvas->readPixel(x,y);
+            if ( Drawable::MASK_COLOR != newColor ) {
+                canvas->drawPixel(x,y,newColor);
+            }
+        }
+    }*/
+
+    // steps
+    uint32_t activityColor = TFT_WHITE;
+    bool doingSomething = false;
+    int16_t posX = 40;
+    int16_t posY = 74;
+    if (vbusPresent) {
+        activityColor = TFT_DARKGREY;
+    }
+    else if (nullptr != currentActivity) {
+        if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
+            activityColor = TFT_GREEN;
+            doingSomething = true;
+        } else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
+            activityColor = TFT_YELLOW;
+            doingSomething = true;
+        }
+        if (doingSomething) {
+            canvas->fillCircle(posX - 10, posY + 6, DotSize, activityColor);
+        }
+    }
+    // steps
+    canvas->setTextColor(activityColor);
+    canvas->setTextFont(0);
+    canvas->setTextSize(2);
+    canvas->setTextDatum(TL_DATUM);
+    sprintf(textBuffer, "%d", stepCount);
+    canvas->drawString(textBuffer, posX, posY);
+
+
+    canvas->setTextFont(0);
+    canvas->setTextSize(2);
+    canvas->setTextDatum(TL_DATUM);
+    canvas->setTextWrap(false, false);
+
+    // batt pc
+    if (batteryPercent > -1) {
+        uint32_t battColor = TFT_DARKGREY;
+        posX = 26;
+        posY = 149;
+        bool battActivity = false;
+        if (vbusPresent) {
+            battColor = TFT_GREEN;
+            battActivity = true;
+        } else if (batteryPercent < 10) {
+            battActivity = true;
+            battColor = ThCol(high);
+        } else if (batteryPercent < 35) { battColor = TFT_YELLOW; }
+        // else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
+        canvas->setTextColor(battColor);
+        int battFiltered = batteryPercent;
+        if (battFiltered > 99) { battFiltered = 99; }
+        sprintf(textBuffer, "%2d%%", battFiltered);
+        canvas->setTextDatum(CL_DATUM);
+        canvas->drawString(textBuffer, posX + 10, posY + 1);
+        canvas->fillCircle(posX, posY, DotSize, battColor); // Alarm: red dot
+    } /*else {
+        uint32_t battColor = TFT_DARKGREY;
+        posX = 26;
+        posY = 149;
+        canvas->setTextFont(0);
+        canvas->setTextSize(2);
+        canvas->setTextColor(battColor);
+        canvas->setTextDatum(CL_DATUM);
+        canvas->drawString("No batt", posX + 10, posY + 1);
+        canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
+    }*/
+    if ( 0 != StopwatchApplication::starTime ) {
+        unsigned long diff= millis()-StopwatchApplication::starTime;
+        int seconds = diff / 1000;
+        diff %= 1000;
+        int minutes = seconds / 60;
+        seconds %= 60;
+        int hours = minutes / 60;
+        minutes %= 60;
+        canvas->setTextFont(0);
+        canvas->setTextSize(1);
+        canvas->setTextColor(ThCol(text));
+        canvas->setTextDatum(CR_DATUM);
+        sprintf(textBuffer,"%02d:%02d:%02d.%03d",hours,minutes,seconds,diff);
+        canvas->drawString(textBuffer, middleX - 15, middleY-14);
+    }
+
+    // push over with alpha
+    if ( ShowNumbers ) { SphereForeground->DumpAlphaTo(canvas,0,0,OverSphereAlpha,TFT_PINK); }
+
+
+
+    // alway on top
+
+    // time
+    canvas->setTextFont(1);
+    canvas->setTextSize(2);
+    canvas->setTextWrap(false, false);
+    sprintf(textBuffer, "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
+    canvas->setTextColor(TFT_WHITE);
+    canvas->setTextDatum(CR_DATUM);
+    canvas->drawString(textBuffer, middleX - 20, middleY);
+
+    // date
+    sprintf(textBuffer, "%02d/%02d", timeinfo->tm_mday, timeinfo->tm_mon + 1);
+    canvas->setTextDatum(BL_DATUM);
+    canvas->setTextColor(TFT_WHITE);
+    canvas->drawString(textBuffer, middleX + 35, middleY - 15);
+
+    free(textBuffer);
+
+    unsigned long eFrame=millis();
+    //lAppLog("Frame time: %lu\n",eFrame-bFrame);
 }
 
 bool Watchface2Application::Tick() {
@@ -177,318 +634,40 @@ bool Watchface2Application::Tick() {
     bottomLeftButton->Interact(touched, touchX, touchY); // battery
 
     if (millis() > nextRefresh) {
-        // push the background
-        SphereBackground->DumpTo(canvas, 0, 0);
-        // time mark
-        DescribeCircle(middleX, middleY, radius - 1, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
-            int angleDisplaced = (markAngle + 90) % 360;
-            if ((angle > markAngle) && (angle < angleDisplaced)) { canvas->fillCircle(x, y, 1, tft->color24to16(0x5890e8)); }
-            return true;
-        });
-
-        time_t now;
-        struct tm *timeinfo;
-        time(&now);
-        timeinfo = localtime(&now);
-        char *textBuffer = (char *)ps_malloc(255);
-
-        currentSec = timeinfo->tm_sec;
-        currentMin = timeinfo->tm_min;
-        currentHour = timeinfo->tm_hour;
-        currentDay = timeinfo->tm_mday;
-        currentMonth = timeinfo->tm_mon;
-
-        // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
-        if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
-            sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
-            canvas->setTextDatum(CC_DATUM);
-            canvas->setTextFont(1);
-            canvas->setTextSize(2);
-            canvas->setTextColor(ThCol(text));
-            canvas->drawString(textBuffer,canvas->width()/2,(canvas->height()/2)+20);
+        Redraw();
+        if ( markForDestroy ) {
+            DestroyDoubleBuffer();
+            markForDestroy=false;
+            nextRefresh = millis() + (1000 / CleanupFPS);
+            return true; // full screen push (doublebuffer destroyed)
+        }
+        if ( nullptr == lastCanvas ) {
+            // clone the canvas
+            lastCanvas = ScaleSprite(canvas,1.0);
+            nextRefresh = millis() + (1000 / CleanupFPS);
+            return true; // full screen push (doublebuffer restored)
         }
 
-
-        if (weatherSyncDone) {
-            // weather icon
-            canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
-            // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
-            if (-1 != weatherId) {
-                if ((200 <= weatherId) && (300 > weatherId)) {
-                    canvas->pushImage(120 - (img_weather_200.width / 2), 52, img_weather_200.width, img_weather_200.height, (uint16_t *)img_weather_200.pixel_data);
-                } else if ((300 <= weatherId) && (400 > weatherId)) {
-                    canvas->pushImage(120 - (img_weather_300.width / 2), 52, img_weather_300.width, img_weather_300.height, (uint16_t *)img_weather_300.pixel_data);
-                } else if ((500 <= weatherId) && (600 > weatherId)) {
-                    canvas->pushImage(120 - (img_weather_500.width / 2), 52, img_weather_500.width, img_weather_500.height, (uint16_t *)img_weather_500.pixel_data);
-                } else if ((600 <= weatherId) && (700 > weatherId)) {
-                    canvas->pushImage(120 - (img_weather_600.width / 2), 52, img_weather_600.width, img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-                } else if ((700 <= weatherId) && (800 > weatherId)) {
-                    //lAppLog("@TODO Watchface: openweather 700 condition code\n");
-                    // watchFaceCanvas->canvas->pushImage(120 - (img_weather_800.width/2) ,52,img_weather_800.width,img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-                    canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
-                    // watchFaceCanvas->canvas->pushImage(144,52,img_weather_600.width,img_weather_600.height, (uint16_t *)img_weather_600.pixel_data);
-                } else if ((800 <= weatherId) && (900 > weatherId)) {
-                    canvas->pushImage(120 - (img_weather_800.width / 2), 52, img_weather_800.width, img_weather_800.height, (uint16_t *)img_weather_800.pixel_data);
+        //uint32_t drawPixels=0;
+        for(int y=0;y<canvas->height();y++) {
+            for(int x=0;x<canvas->width();x++) {
+                uint16_t newColor = canvas->readPixel(x,y);
+                uint16_t oldColor = lastCanvas->readPixel(x,y);
+                if ( oldColor != newColor ) {
+                    tft->drawPixel(x,y,newColor);
+                    lastCanvas->drawPixel(x,y,newColor); // and write the doublebuffer here :)
+                    //drawPixels++;
                 }
             }
-
-            // temperature
-            if (-1000 != weatherTemp) {
-                sprintf(textBuffer, "%2.1f C", weatherTemp);
-                int16_t posX = 150;
-                int16_t posY = 74;
-                canvas->setTextFont(0);
-                canvas->setTextSize(2);
-                canvas->setTextColor(TFT_WHITE);
-                canvas->setTextDatum(TL_DATUM);
-                canvas->drawString(textBuffer, posX, posY); //, 185, 96);
-            }
-
-            if (nullptr != weatherMain) {
-                canvas->setTextFont(0);
-                canvas->setTextSize(2);
-                canvas->setTextDatum(CC_DATUM);
-                canvas->setTextWrap(false, false);
-                canvas->setTextColor(TFT_WHITE);
-                canvas->drawString(weatherMain, 120, 40);
-            }
-
-            if (nullptr != weatherDescription) {
-                canvas->setTextFont(0);
-                canvas->setTextSize(1);
-                canvas->setTextDatum(CC_DATUM);
-                canvas->setTextWrap(false, false);
-                canvas->setTextColor(TFT_BLACK);
-                canvas->drawString(weatherDescription, 122, 62);
-                canvas->setTextColor(TFT_WHITE);
-                canvas->drawString(weatherDescription, 120, 60);
-            }
+            //if ( drawPixels > 5000 ) { break; }
         }
+        /*
+        lastCanvas->deleteSprite();
+        delete lastCanvas;
+        lastCanvas=ScaleSprite(canvas,1.0);
+        */
+        nextRefresh = millis() + (1000 / DesiredFPS);
 
-        // connectivity notifications
-        if (LoT().GetBLE()->IsEnabled()) {
-            int16_t posX = 36;
-            int16_t posY = 171;
-            uint32_t dotColor = TFT_DARKGREY; // enabled but service isn't up yet
-            if (LoT().GetBLE()->IsScanning()) {
-                dotColor = ThCol(high);
-            } else if (LoT().GetBLE()->IsAdvertising()) {
-                dotColor = ThCol(medium);
-            } else if (LoT().GetBLE()->Clients() > 0 ) {
-                dotColor = ThCol(low);
-            }
-            canvas->fillCircle(posX, posY, 5, dotColor);
-            unsigned char *img = img_bluetooth_24_bits; // bluetooth logo only icon
-            if (LoT().GetBLE()->Clients() > 0 ) {
-                img = img_bluetooth_peer_24_bits;
-            } // bluetooth with peer icon
-            canvas->drawXBitmap(posX + 10, posY - 12, img, img_bluetooth_24_width, img_bluetooth_24_height, ThCol(text));
-        }
-        if ( LoT().GetWiFi()->IsEnabled() ) {
-            int16_t posX = 51;
-            int16_t posY = 189;
-            uint32_t dotColor = ThCol(background);
-            if ( LoT().GetWiFi()->RadioInUse() ) { dotColor = ThCol(low); }
-            canvas->fillCircle(posX, posY, 5, dotColor);
-            canvas->drawXBitmap(posX + 10, posY - 12, img_wifi_24_bits, img_wifi_24_width, img_wifi_24_height, ThCol(text));
-        }
-        // SQLite
-        if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
-            int16_t posX = 48;
-            int16_t posY = 62;
-            unsigned int pend = systemDatabase->Pending();
-            uint32_t dotColor = ThCol(background);
-            if ( pend > 4 ) { dotColor = ThCol(high); }
-            if ( pend > 2 ) { dotColor = ThCol(medium); }
-            else if ( pend > 0 ) { dotColor = ThCol(low); }
-            canvas->fillCircle(posX, posY, 5, dotColor);
-            canvas->drawXBitmap(posX + 10, posY - 12, img_database_24_bits, img_database_24_width, img_database_24_height, ThCol(text));
-            sprintf(textBuffer,"%d",pend);
-            canvas->setTextFont(0);
-            canvas->setTextSize(2);
-            canvas->setTextDatum(TL_DATUM);
-            canvas->setTextColor(ThCol(text));
-            canvas->drawString(textBuffer,posX+10+24,posY-6);
-        }
-        // USB
-        if (vbusPresent) {
-            int16_t posX = 69;  // 60;
-            int16_t posY = 203; // 190;
-            uint32_t color = ThCol(background);
-            if (ttgo->power->isChargeing()) { color = ThCol(low); }
-            canvas->fillCircle(posX, posY, 5, color);
-            canvas->drawXBitmap(posX + 10, posY - 12, img_usb_24_bits, img_usb_24_width, img_usb_24_height, TFT_WHITE);
-        }
-
-
-
-        // seconds hand
-        float secAngle = (timeinfo->tm_sec * 6);
-        DescribeCircle(middleX, middleY, 110,
-                       [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
-                            if (int(secAngle) == angle) {
-                                uint8_t currLen=0;
-                                DescribeLine(x,y,cx,cy,[&,this](int x, int y, void * obj) {
-                                    TFT_eSprite *view =(TFT_eSprite *)obj;
-                                    view->fillCircle(x,y,SecondsTickness,ThCol(clock_hands_second));
-                                    currLen++;
-                                    if ( currLen >= MaxSecondsLen) { return false; } // stop the draw
-                                    return true;
-                                },canvas);
-                                canvas->fillCircle(x, y, SecondsTickness+2, SecondsColor);
-                                return false;
-                            }
-                            return true;
-                       });
-
-        float minuteAngle = (timeinfo->tm_min * 6);
-
-        // hour hand
-        float hourAngle = ((timeinfo->tm_hour) % 12) * 30;
-        float correctedHoureAngle = hourAngle + (minuteAngle / 12.0);
-        // lAppLog("hourAngle: %f\n",correctedHoureAngle);
-        DescribeCircle(middleX, middleY, 90, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
-            if (int(correctedHoureAngle) == angle) {
-                canvas->fillCircle(x, y, 9, TFT_BLACK);
-                uint8_t currLen=0;
-                DescribeLine(cx,cy,x,y,[&, this](int x, int y, void * obj) {
-                    TFT_eSprite *view =(TFT_eSprite *)obj;
-                    view->fillCircle(x,y,HoursTickness,HoursColor);
-                    currLen++;
-                    if ( currLen >= MaxHourLen) { return false; } // stop the draw
-                    return true;
-                },canvas);
-                canvas->fillCircle(x, y, HoursTickness+2, HoursColor);
-                return false;
-            }
-            return true;
-        });
-
-        // minutes hand
-        float correctedMinuteAngle = minuteAngle + (secAngle / 60.0);
-        DescribeCircle(middleX, middleY, 100, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
-            if (int(correctedMinuteAngle) == angle) {
-                canvas->fillCircle(x, y, 7, TFT_BLACK);
-                DescribeLine(x,y,cx,cy,[&, this](int x, int y, void * obj) {
-                    TFT_eSprite *view =(TFT_eSprite *)obj;
-                    view->fillCircle(x,y,MinutesTickness,MinutesColor);
-                    return true;
-                },canvas);
-                //canvas->drawLine(x, y, cx, cy, tft->color24to16(0x787ca0));
-                canvas->fillCircle(x, y, MinutesTickness+2, MinutesColor);
-                return false;
-            }
-            return true;
-        });
-        canvas->fillCircle(middleX, middleY, 10, SecondsColor); // second cap
-        canvas->fillCircle(middleX, middleY, 9, TFT_BLACK);
-        canvas->fillCircle(middleX, middleY, 8, MinutesColor); // minute cap
-        canvas->fillCircle(middleX, middleY, 4, TFT_BLACK);
-        canvas->fillCircle(middleX, middleY, 3, HoursColor); // hour cap
-
-        // steps
-        uint32_t activityColor = TFT_WHITE;
-        bool doingSomething = false;
-        int16_t posX = 40;
-        int16_t posY = 74;
-        if (vbusPresent) {
-            activityColor = TFT_DARKGREY;
-        }
-        else if (nullptr != currentActivity) {
-            if (0 == strcmp("BMA423_USER_WALKING", currentActivity)) {
-                activityColor = TFT_GREEN;
-                doingSomething = true;
-            } else if (0 == strcmp("BMA423_USER_RUNNING", currentActivity)) {
-                activityColor = TFT_YELLOW;
-                doingSomething = true;
-            }
-            if (doingSomething) {
-                canvas->fillCircle(posX - 10, posY + 6, 5, activityColor);
-            }
-        }
-        // steps
-        canvas->setTextColor(activityColor);
-        canvas->setTextFont(0);
-        canvas->setTextSize(2);
-        canvas->setTextDatum(TL_DATUM);
-        sprintf(textBuffer, "%d", stepCount);
-        canvas->drawString(textBuffer, posX, posY);
-
-
-        canvas->setTextFont(0);
-        canvas->setTextSize(2);
-        canvas->setTextDatum(TL_DATUM);
-        canvas->setTextWrap(false, false);
-
-        // batt pc
-        if (batteryPercent > -1) {
-            uint32_t battColor = TFT_DARKGREY;
-            posX = 26;
-            posY = 149;
-            bool battActivity = false;
-            if (vbusPresent) {
-                battColor = TFT_GREEN;
-                battActivity = true;
-            } else if (batteryPercent < 10) {
-                battActivity = true;
-                battColor = ThCol(high);
-            } else if (batteryPercent < 35) { battColor = TFT_YELLOW; }
-            // else if ( batteryPercent > 70 ) { battColor = TFT_GREEN; }
-            canvas->setTextColor(battColor);
-            int battFiltered = batteryPercent;
-            if (battFiltered > 99) { battFiltered = 99; }
-            sprintf(textBuffer, "%2d%%", battFiltered);
-            canvas->setTextDatum(CL_DATUM);
-            canvas->drawString(textBuffer, posX + 10, posY + 1);
-            canvas->fillCircle(posX, posY, 5, battColor); // Alarm: red dot
-        } else {
-            uint32_t battColor = TFT_DARKGREY;
-            posX = 26;
-            posY = 149;
-            canvas->setTextFont(0);
-            canvas->setTextSize(2);
-            canvas->setTextColor(battColor);
-            canvas->setTextDatum(CL_DATUM);
-            canvas->drawString("No batt", posX + 10, posY + 1);
-            canvas->fillCircle(posX, posY, 5, ThCol(high)); // Alarm: red dot
-        }
-        if ( 0 != StopwatchApplication::starTime ) {
-            unsigned long diff= millis()-StopwatchApplication::starTime;
-            int seconds = diff / 1000;
-            diff %= 1000;
-            int minutes = seconds / 60;
-            seconds %= 60;
-            int hours = minutes / 60;
-            minutes %= 60;
-            canvas->setTextFont(0);
-            canvas->setTextSize(1);
-            canvas->setTextColor(ThCol(text));
-            canvas->setTextDatum(CR_DATUM);
-            sprintf(textBuffer,"%02d:%02d:%02d.%03d",hours,minutes,seconds,diff);
-            canvas->drawString(textBuffer, middleX - 15, middleY-14);
-        }
-        SphereForeground->DumpAlphaTo(canvas,0,0,OverSphereAlpha,TFT_PINK);
-
-        // alway on top
-        // time
-        canvas->setTextFont(0);
-        canvas->setTextSize(2);
-        canvas->setTextWrap(false, false);
-        sprintf(textBuffer, "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
-        canvas->setTextColor(TFT_WHITE);
-        canvas->setTextDatum(CR_DATUM);
-        canvas->drawString(textBuffer, middleX - 20, middleY);
-
-        // date
-        sprintf(textBuffer, "%02d/%02d", timeinfo->tm_mday, timeinfo->tm_mon + 1);
-        canvas->setTextDatum(BL_DATUM);
-        canvas->setTextColor(TFT_WHITE);
-        canvas->drawString(textBuffer, middleX + 35, middleY - 15);
-
-        free(textBuffer);
-
-        nextRefresh = millis() + (1000 / 4);
-        return true;
     }
-    return false;
+    return false; // no UI refresh
 }

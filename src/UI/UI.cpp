@@ -102,7 +102,7 @@ TFT_eSprite *screenShootCanvas = nullptr;
 bool screenShootInProgress = false; // @TODO watchface must show it
 
 
-SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
+//SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
 
 void SetUserBrightness() {
     uint8_t userBright = NVS.getInt("lBright");
@@ -114,7 +114,8 @@ void SetUserBrightness() {
 }
 
 void ScreenWake() {
-    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
@@ -127,18 +128,20 @@ void ScreenWake() {
         #if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
         ttgo->touchWakup();
         #endif
-        //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         //delay(1); // get time to queue digest ;)
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
         tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         FPS = MAXFPS;
     }
-    xSemaphoreGive(ScreenSemaphore);
+    //xSemaphoreGive(ScreenSemaphore);
+    xSemaphoreGive(UISemaphore);
 }
 
 void ScreenSleep() {
-    bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
@@ -150,10 +153,12 @@ void ScreenSleep() {
         delay(1);
         ttgo->touchToSleep();
         //Serial.flush();
-        //esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         LoT().CpuSpeed(80);
     }
-    xSemaphoreGive(ScreenSemaphore);
+    //xSemaphoreGive(ScreenSemaphore);
+    xSemaphoreGive(UISemaphore);
+    
 }
 
 /*
@@ -482,7 +487,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         touchDragDistance = sqrt(pow(touchDragVectorX, 2) + pow(touchDragVectorY, 2) * 1.0);
         // Obtain the angle from vector in degrees
         double radAngle = atan2(touchDragVectorY, touchDragVectorX);
-        touchDragAngle = radAngle * (180/3.14);
+        touchDragAngle = radAngle * (180/M_PI);
     } else {
         touchDownTimeMS=0;
         updateCoords=false;
@@ -547,17 +552,7 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         changes = keyboardInstance->Tick();
     } else {
         if ( false == UIlongTap ) { // only if no long tap in progress
-            if ( directDraw ) {
-                changes = currentApplication->Tick();
-            } else {
-                // set lower priority
-                //UBaseType_t myPriority = uxTaskPriorityGet(NULL);
-                //vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
-                // perform the call to the app logic
-                changes = currentApplication->Tick();
-                // return to my priority
-                //vTaskPrioritySet(NULL,myPriority);
-            }
+            changes = currentApplication->Tick();
         }
     }
     esp_task_wdt_reset();
@@ -728,7 +723,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
         double radAngle = atan2(fromCenterX, fromCenterY);
-        double dangle = radAngle * (180/3.14);
+        double dangle = radAngle * (180/M_PI);
         int angle = int(180-dangle) % 360;
         stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
         if ( false == stop ) { return; }
@@ -745,7 +740,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; }
@@ -760,7 +755,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; }
@@ -775,7 +770,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; }
@@ -815,7 +810,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; } // end angle serch
@@ -828,7 +823,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; } // end angle serch
@@ -841,7 +836,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; } // end angle serch
@@ -854,7 +849,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
             double radAngle = atan2(fromCenterX, fromCenterY);
-            double dangle = radAngle * (180/3.14);
+            double dangle = radAngle * (180/M_PI);
             int angle = int(180-dangle) % 360;
             stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
             if ( false == stop ) { return; } // end angle serch
@@ -872,7 +867,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
                 double radAngle = atan2(fromCenterX, fromCenterY);
-                double dangle = radAngle * (180/3.14);
+                double dangle = radAngle * (180/M_PI);
                 int angle = int(180-dangle) % 360;
                 stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
                 if ( false == stop ) { return; } // end angle serch
@@ -886,7 +881,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterY = (cury-y_centre);
 
                 double radAngle = atan2(fromCenterX, fromCenterY);
-                double dangle = radAngle * (180/3.14);
+                double dangle = radAngle * (180/M_PI);
                 int angle = int(180-dangle) % 360;
                 stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
                 if ( false == stop ) { return; } // end angle serch
@@ -899,7 +894,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
                 double radAngle = atan2(fromCenterX, fromCenterY);
-                double dangle = radAngle * (180/3.14);
+                double dangle = radAngle * (180/M_PI);
                 int angle = int(180-dangle) % 360;
                 stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
                 if ( false == stop ) { return; } // end angle serch
@@ -912,7 +907,7 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
         int fromCenterX = (curx-x_centre);
         int fromCenterY = (cury-y_centre);
                 double radAngle = atan2(fromCenterX, fromCenterY);
-                double dangle = radAngle * (180/3.14);
+                double dangle = radAngle * (180/M_PI);
                 int angle = int(180-dangle) % 360;
                 stop = callback(curx, cury, x_centre, y_centre, angle, step, payload);
                 if ( false == stop ) { return; } // end angle serch
@@ -921,6 +916,69 @@ void DescribeCircle(int x_centre, int y_centre, int r, DescribeCircleCallback ca
             //printf("(%d, %d)\n", -y + x_centre, -x + y_centre);
         }
     }
+}
+
+int GetAngleFromVector(int vX, int vY) {
+
+    double radAngle = atan2(vX, vY);
+    double dangle = radAngle * (180/M_PI);
+    int angle = int(180-dangle) % 360;
+
+    /*
+    double radAngle = atan2(vY, vX);
+    int angle = radAngle * (180/M_PI);
+    */
+    //lLog("Angle: %d\n", angle);
+    return angle;
+}
+
+void DescribeCircle2(int x_centre, int y_centre, int r, DescribeCircleCallback callback, void *payload) {
+    int x = -r, y = 0, err = 2-2*r; /* II. Quadrant */ 
+    bool stop;
+    int step = 0;
+    int angle,px,py;
+    int fromCenterX,fromCenterY;
+    do {
+        //setPixel(xm-x, ym+y); /*   I. Quadrant */
+        px=(x_centre-x);
+        py=(y_centre+y);
+        fromCenterX = (px-x_centre);
+        fromCenterY = (py-y_centre);
+        angle = GetAngleFromVector(fromCenterX,fromCenterY);
+        callback(px, py, x_centre, y_centre, angle, step, payload);
+        step++;
+
+        //setPixel(xm-y, ym-x); /*  II. Quadrant */
+        px=(x_centre-y);
+        py=(y_centre-x);
+        fromCenterX = (px-x_centre);
+        fromCenterY = (py-y_centre);
+        angle = GetAngleFromVector(fromCenterX,fromCenterY);
+        callback(px, py, x_centre, y_centre, angle, step, payload);
+        step++;
+
+        //setPixel(xm+x, ym-y); /* III. Quadrant */
+        px=(x_centre+x);
+        py=(y_centre-y);
+        fromCenterX = (px-x_centre);
+        fromCenterY = (py-y_centre);
+        angle = GetAngleFromVector(fromCenterX,fromCenterY);
+        callback(px, py, x_centre, y_centre, angle, step, payload);
+        step++;
+
+        //setPixel(xm+y, ym+x); /*  IV. Quadrant */
+        px=(x_centre+y);
+        py=(y_centre+x);
+        fromCenterX = (px-x_centre);
+        fromCenterY = (py-y_centre);
+        angle = GetAngleFromVector(fromCenterX,fromCenterY);
+        callback(px, py, x_centre, y_centre, angle, step, payload);
+        step++;
+
+        r = err;
+        if (r <= y) err += ++y*2+1;           /* e_xy+e_y < 0 */
+        if (r > x || err > y) err += ++x*2+1; /* e_xy+e_x > 0 or no 2nd y-step */
+    } while (x < 0);
 }
 
 // https://zingl.github.io/bresenham.html
@@ -936,42 +994,41 @@ void DescribeLine(int x0, int y0, int x1, int y1, DescribeLineCallback callback,
     }
 }
 
-/* https://zingl.github.io/blurring.html
-  void blur(int radius) { // first degree approximation 
-    int buffer[radius]; // pixel buffer 
-    
-    for (int x = x_start; x < x_end; ++x) { // vertical blur
-      long dif = 0, sum = 0;
-      for (int y = y_start-2*radius; y < y_end; ++y) {
-        sum += dif;            // accumulate pixel blur
-        dif += getPixel(x, y+radius);   // next pixel
-        if (y >= y_start) {
-          dif += buffer[y%radius];  // sum up differences: +1, -2, +1
-          setPixel(x, y, sum/(radius*radius)); // set blurred pixel
-        } 
-        if (y+radius >= y_start) {
-          int p = getPixel(x,y);
-          buffer[y%radius] = p;    // buffer pixel
-          dif -= 2*p;
-        }
-      } // y
+// https://zingl.github.io/blurring.html
+void BlurSprite(TFT_eSprite *view, int radius) { // first degree approximation
+    lLog("@TODO BlurSprite isn't functional!\n");
+    return;
+    uint16_t buffer[radius]; // pixel buffer 
+    for (int x = 0; x < view->width(); ++x) { // vertical blur
+        long dif = 0, sum = 0;
+        for (int y = 0-2*radius; y < view->height(); ++y) {
+            sum += dif;            // accumulate pixel blur
+            dif += view->readPixel(x, y+radius);   // next pixel
+            if (y >= 0) {
+                dif += buffer[y%radius];  // sum up differences: +1, -2, +1
+                view->drawPixel(x, y, sum/(radius*radius)); // set blurred pixel
+            }
+            if (y+radius >= 0) {
+                uint16_t p = view->readPixel(x,y);
+                buffer[y%radius] = p;    // buffer pixel
+                dif -= 2*p;
+            }
+        } // y
     } // x
-
-    for (y = y_start; y < y_end; ++y) { // horizontal blur...
-      dif = 0; sum = 0;
-      for (x = x_start-2*radius; x < x_end; ++x) {
-        sum += dif;              // accumulate pixel blur
-        dif += getPixel(x+radius, y);  // next pixel
-        if (x >= x_start) {
-          dif += buffer[x%radius];  // sum up differences: +1, -2, +1
-          setPixel(x, y, sum/(radius*radius)); // set blurred pixel
-        } 
-        if (x+radius >= x_start) {
-          p = getPixel(x,y);
-          buffer[x%radius] = p;    // buffer pixel
-          dif -= 2*p;
-        }
-      } // x
+    for (int y = 0; y < view->height(); ++y) { // horizontal blur...
+        long dif = 0, sum = 0;
+        for (int x = 0-2*radius; x < view->width(); ++x) {
+            sum += dif;              // accumulate pixel blur
+            dif += view->readPixel(x+radius, y);  // next pixel
+            if (x >= 0) {
+                dif += buffer[x%radius];  // sum up differences: +1, -2, +1
+                view->drawPixel(x, y, sum/(radius*radius)); // set blurred pixel
+            } 
+            if (x+radius >= 0) {
+                uint16_t p = view->readPixel(x,y);
+                buffer[x%radius] = p;    // buffer pixel
+                dif -= 2*p;
+            }
+        } // x
     } // y
-  } // blur
-  */
+} // blur

@@ -338,6 +338,8 @@ static void DoSleepTask(void *args) {
     // bma interrupt gpio_397
 
     uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
+    //bool bleEn = LoT().GetBLE()->IsEnabled();
+    //lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa %s\n",(bleEn?"true":"false"));
     if ( LoT().GetBLE()->IsEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
@@ -1120,7 +1122,7 @@ static void AXPInterruptController(void *args) {
     while(true) {   
         BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        if (pdTRUE != done) { continue; }
+        if (pdTRUE != done) { delay(30); continue; }
 
         if ( false == irqAxp ) { xSemaphoreGive(I2cMutex); continue; }
         lEvLog("AXP202: INT received\n");
