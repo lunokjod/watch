@@ -55,8 +55,9 @@ extern double weatherTemp;
 extern char *weatherMain;
 extern char *weatherDescription;
 extern char *weatherIcon;
-
+// for led display
 int16_t Watchface2Application::bannerOffset=0;
+CanvasWidget * Watchface2Application::StateDisplay = nullptr;
 
 Watchface2Application::~Watchface2Application() {
     esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUI);
@@ -69,7 +70,7 @@ Watchface2Application::~Watchface2Application() {
     delete SphereBackground;
     delete SphereForeground;
     DestroyDoubleBuffer();
-    delete StateDisplay;
+    //delete StateDisplay;
     delete SphereHands;
     lAppLog("Watchface is gone\n");
 }
@@ -216,8 +217,10 @@ Watchface2Application::Watchface2Application() {
     outherSphere->canvas->fillSprite(TFT_PINK);
 
     // led display
-    StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth); // space for one letter
-    StateDisplay->canvas->fillSprite(TFT_BLACK);
+    if ( nullptr == StateDisplay ) {
+        StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth); // space for one letter
+        StateDisplay->canvas->fillSprite(TFT_BLACK);
+    }
     
     // Buttons
     outherSphere->canvas->fillRect(0, 0, middleX, middleY, tft->color24to16(0x000408));
@@ -667,7 +670,6 @@ bool Watchface2Application::Tick() {
         lastCanvas=ScaleSprite(canvas,1.0);
         */
         nextRefresh = millis() + (1000 / DesiredFPS);
-
     }
     return false; // no UI refresh
 }

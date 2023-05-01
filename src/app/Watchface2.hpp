@@ -33,7 +33,7 @@ class Watchface2Application: public LunokIoTApplication {
         CanvasWidget * SphereBackground = nullptr;
         CanvasWidget * SphereHands = nullptr;
         CanvasWidget * SphereForeground = nullptr;
-        CanvasWidget * StateDisplay = nullptr;
+        static CanvasWidget * StateDisplay;
         TFT_eSprite * lastCanvas=nullptr;
         //bool taskRunning=false;
         esp_event_handler_instance_t ListenerUI;
