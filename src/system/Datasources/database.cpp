@@ -133,6 +133,7 @@ void Database::UnLock() {
     xSemaphoreGive( lock );
 }
 unsigned int Database::Pending() {
+    if ( NULL == queue ) { return 0; }
     return uxQueueMessagesWaiting(queue);
 }
 

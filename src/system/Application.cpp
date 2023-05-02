@@ -118,13 +118,13 @@ bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the f
 
 // This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTaskSync(LunokIoTApplication *instance) {
-    //if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
     if ( nullptr != instance ) {
         lUILog("KillApplicationTask: %p '%s' closing...\n", instance,instance->AppName());
         delete instance;
         lUILog("KillApplicationTask: %p has gone\n", instance);
     }
-    //xSemaphoreGive( UISemaphore ); // free
+    xSemaphoreGive( UISemaphore ); // free
 }
 
 void KillApplicationTask(void * data) {

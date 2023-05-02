@@ -72,7 +72,16 @@ Watchface2Application::~Watchface2Application() {
     DestroyDoubleBuffer();
     //delete StateDisplay;
     delete SphereHands;
+    free(textBuffer);
+    textBuffer=nullptr;
     lAppLog("Watchface is gone\n");
+}
+
+void Watchface2Application::DrawDot(TFT_eSprite * view, int32_t x, int32_t y, int32_t r, uint16_t color, uint16_t capColor) {
+    view->fillCircle(x, y, r+2, color);
+    view->fillCircle(x, y, r, capColor);
+    view->drawCircle(x, y, r+3, TFT_BLACK);
+
 }
 
 void Watchface2Application::RedrawHands(struct tm *timeinfo) {
@@ -92,9 +101,7 @@ void Watchface2Application::RedrawHands(struct tm *timeinfo) {
                 canvas->fillCircle(x,y,SecondsTickness,ThCol(clock_hands_second));
                 return true;
             });
-            canvas->fillCircle(x, y, SecondsTickness+2, SecondsColor);
-            canvas->fillCircle(x, y, SecondsTickness, SecondsBrightColor);
-            canvas->drawCircle(x, y, SecondsTickness+3, TFT_BLACK);
+            DrawDot(canvas,x,y,SecondsTickness,SecondsColor,SecondsBrightColor);
             return false;
         }
         return true;
@@ -128,11 +135,13 @@ void Watchface2Application::RedrawHands(struct tm *timeinfo) {
                 int16_t vectorY=(y-cy);
                 double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
                 if ( currentDistance >= 60) {
-                    SphereHands->canvas->fillCircle(x, y, HoursTickness+2, HoursColor);
-                    SphereHands->canvas->fillCircle(x, y, HoursTickness-2, HoursBrightColor);
-                    SphereHands->canvas->drawCircle(x, y, HoursTickness+3, TFT_BLACK);
+                    DrawDot(SphereHands->canvas,x,y,HoursTickness,HoursColor,HoursBrightColor);
                     return false;
                 } // stop the draw
+                if ( currentDistance <= MinHourLen) {
+                    SphereHands->canvas->fillCircle(x,y,HoursTickness/2,HoursColor);
+                    return true;
+                }
                 if ( currentDistance >= MaxHourLen) { return true; } // dont draw more
                 SphereHands->canvas->fillCircle(x,y,HoursTickness,HoursColor);
                 return true;
@@ -153,18 +162,16 @@ void Watchface2Application::RedrawHands(struct tm *timeinfo) {
                 double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
 
                 if ( currentDistance >= 80-(MinutesTickness+3)) {
-                    SphereHands->canvas->fillCircle(x, y, MinutesTickness+2, MinutesColor);
-                    SphereHands->canvas->fillCircle(x, y, MinutesTickness-2, MinutesBrightColor);
-                    SphereHands->canvas->drawCircle(x, y, MinutesTickness+3, TFT_BLACK);
+                    DrawDot(SphereHands->canvas,x,y,MinutesTickness,MinutesColor,MinutesBrightColor);
                     return false;
                 }
 
                 if ( currentDistance <= MinMinutesLen) {
-                    SphereHands->canvas->fillCircle(x,y,MinutesTickness/2,MinutesColor);
+                    SphereHands->canvas->fillCircle(x,y,MinutesTickness,MinutesColor);
                     return true;
                 }
                 if ( currentDistance >= MaxMinutesLen) { return true; }
-                SphereHands->canvas->fillCircle(x,y,MinutesTickness,MinutesColor);
+                SphereHands->canvas->fillCircle(x,y,MinutesTickness/2,MinutesColor);
                 return true;
             });
             return false;
@@ -180,7 +187,7 @@ void Watchface2Application::RedrawHands(struct tm *timeinfo) {
 }
 
 void Watchface2Application::DestroyDoubleBuffer() {
-    lAppLog("DESTROY DOUBLE BUFFER\n");
+    lAppLog("Double buffer clean\n");
     if ( nullptr != lastCanvas ) {
         TFT_eSprite * bkp = lastCanvas;
         lastCanvas=nullptr;
@@ -311,6 +318,7 @@ Watchface2Application::Watchface2Application() {
         if ((angle > markAngle) && (angle < angleEnd)) { SphereBackground->canvas->fillCircle(x, y, 1, tft->color24to16(0x5890e8)); }
         return true;
     });
+    textBuffer = (char *)ps_malloc(255);
     // little bit more small
     SphereHands = new CanvasWidget(160,160);
     Redraw();
@@ -345,9 +353,11 @@ void Watchface2Application::RedrawDisplay() {
         });
         return true;
     });
-    //StateDisplay->DumpTo(canvas,0,0);
-    StateDisplay->canvas->scroll(-6,0);
-    bannerSpace+=6;
+    if ( 0 == systemDatabase->Pending() ) {
+        //StateDisplay->DumpTo(canvas,0,0);
+        StateDisplay->canvas->scroll(-6,0);
+        bannerSpace+=6;
+    }
     if ( bannerSpace >= DisplayFontWidth  ) {
         const char whatToSay[] = "lunokWatch ready! (: ";
         // const char whatToSay[] = "Shinoa Fores rules!!! Never gonna give you up, Never gonna let you down, Never gonna run around and desert you, Never gonna make you cry ";
@@ -359,6 +369,18 @@ void Watchface2Application::RedrawDisplay() {
         if (bannerOffset > strlen(whatToSay)) { bannerOffset=0; }
         bannerSpace=0;
         //pushLetter=millis()+1400;
+    }
+}
+
+void Watchface2Application::RedrawBLE() {
+    // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
+    if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
+        sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
+        canvas->setTextDatum(CC_DATUM);
+        canvas->setTextFont(1);
+        canvas->setTextSize(2);
+        canvas->setTextColor(ThCol(text));
+        canvas->drawString(textBuffer,canvas->width()/2,(canvas->height()/2)+20);
     }
 }
 
@@ -375,25 +397,14 @@ void Watchface2Application::Redraw() {
     time(&now);
     timeinfo = localtime(&now);
 
-    char *textBuffer = (char *)ps_malloc(255);
-    
     currentSec = timeinfo->tm_sec;
     currentMin = timeinfo->tm_min;
     currentHour = timeinfo->tm_hour;
     currentDay = timeinfo->tm_mday;
     currentMonth = timeinfo->tm_mon;
 
-    // lAppLog("TIMEINFO: %02d:%02d:%02d\n",timeinfo->tm_hour,timeinfo->tm_min,timeinfo->tm_sec);
-    if ( BLELocationZone != BLEZoneLocations::UNKNOWN ) {
-        sprintf(textBuffer,"%s", BLEZoneLocationsHumanReadable[BLELocationZone]);
-        canvas->setTextDatum(CC_DATUM);
-        canvas->setTextFont(1);
-        canvas->setTextSize(2);
-        canvas->setTextColor(ThCol(text));
-        canvas->drawString(textBuffer,canvas->width()/2,(canvas->height()/2)+20);
-    }
-
-
+    RedrawBLE();
+    
     if (weatherSyncDone) {
         // weather icon
         canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
@@ -623,8 +634,6 @@ void Watchface2Application::Redraw() {
     canvas->setTextColor(TFT_WHITE);
     canvas->drawString(textBuffer, middleX + 35, middleY - 15);
 
-    free(textBuffer);
-
     unsigned long eFrame=millis();
     //lAppLog("Frame time: %lu\n",eFrame-bFrame);
 }
@@ -636,22 +645,17 @@ bool Watchface2Application::Tick() {
     topLeftButton->Interact(touched, touchX, touchY); // settings
     bottomLeftButton->Interact(touched, touchX, touchY); // battery
 
+    // real image refresh to buffer
     if (millis() > nextRefresh) {
         Redraw();
-        if ( markForDestroy ) {
-            DestroyDoubleBuffer();
+        if ( ( nullptr == lastCanvas ) || ( markForDestroy )) {
+            // clone the canvas
+            lastCanvas = ScaleSprite(canvas,1.0);
             markForDestroy=false;
             nextRefresh = millis() + (1000 / CleanupFPS);
             return true; // full screen push (doublebuffer destroyed)
         }
-        if ( nullptr == lastCanvas ) {
-            // clone the canvas
-            lastCanvas = ScaleSprite(canvas,1.0);
-            nextRefresh = millis() + (1000 / CleanupFPS);
-            return true; // full screen push (doublebuffer restored)
-        }
-
-        //uint32_t drawPixels=0;
+        uint32_t drawPixels=0;
         for(int y=0;y<canvas->height();y++) {
             for(int x=0;x<canvas->width();x++) {
                 uint16_t newColor = canvas->readPixel(x,y);
@@ -659,16 +663,11 @@ bool Watchface2Application::Tick() {
                 if ( oldColor != newColor ) {
                     tft->drawPixel(x,y,newColor);
                     lastCanvas->drawPixel(x,y,newColor); // and write the doublebuffer here :)
-                    //drawPixels++;
+                    drawPixels++;
                 }
             }
             //if ( drawPixels > 5000 ) { break; }
         }
-        /*
-        lastCanvas->deleteSprite();
-        delete lastCanvas;
-        lastCanvas=ScaleSprite(canvas,1.0);
-        */
         nextRefresh = millis() + (1000 / DesiredFPS);
     }
     return false; // no UI refresh

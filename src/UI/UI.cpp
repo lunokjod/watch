@@ -645,15 +645,19 @@ void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
                                                 1);
 
         //BaseType_t res = xTaskCreatePinnedToCore(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler,1);
-        lUILog("Tick enabled\n");
+        lUILog("Tick started\n");
+        return;
     }
+    vTaskResume(UITickTaskHandler);
+    lUILog("Tick resume\nn");
 }
 
 void UITickEnd() { // @TODO this can be replaced by a Ticker stop
     if ( NULL != UITickTaskHandler ) {
-        vTaskDelete(UITickTaskHandler);
-        UITickTaskHandler=NULL;
-        lUILog("Tick disabled (app loses Tick now)\n");
+        vTaskSuspend(UITickTaskHandler);
+        //vTaskDelete(UITickTaskHandler);
+        //UITickTaskHandler=NULL;
+        lUILog("Tick suspended\n");
     }
 }
 

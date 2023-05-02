@@ -51,13 +51,16 @@ class Watchface2Application: public LunokIoTApplication {
         const float DEGREE_HRS = (360/24);
         int markAngle=0;
         const uint8_t CleanupFPS=3;
-        const uint8_t DesiredFPS=8;
+        const uint8_t DesiredFPS=16;
+        char *textBuffer = nullptr;
+        void DrawDot(TFT_eSprite * view, int32_t x, int32_t y, int32_t r, uint16_t color, uint16_t capColor);
     public:
         bool markForDestroy=false;
         void DestroyDoubleBuffer();
         const char *AppName() override { return "Analogic watchface"; };
         Watchface2Application();
         virtual ~Watchface2Application();
+        void RedrawBLE();
         void RedrawDisplay();
         void RedrawHands(struct tm *timeinfo);
         void Redraw();
@@ -92,6 +95,7 @@ class Watchface2Application: public LunokIoTApplication {
         const int32_t HoursTickness = 5;
         const uint16_t HoursColor=ThCol(highlight);
         const uint16_t HoursBrightColor=tft->alphaBlend(128,HoursColor,TFT_WHITE);
+        const uint8_t MinHourLen = 30;
         const uint8_t MaxHourLen = 45; // define the lenght of hand
 };
 
