@@ -489,22 +489,24 @@ void Watchface2Application::Redraw() {
         canvas->drawXBitmap(posX + DotSize+5, posY - (img_wifi_16_height/2), img_wifi_16_bits, img_wifi_16_width, img_wifi_16_height, ThCol(text));
     }
     // SQLite
-    if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
-        int16_t posX = 48;
-        int16_t posY = 62;
+    if ( nullptr != systemDatabase ) {
         unsigned int pend = systemDatabase->Pending();
-        uint32_t dotColor = ThCol(background);
-        if ( pend > 4 ) { dotColor = ThCol(high); }
-        if ( pend > 2 ) { dotColor = ThCol(medium); }
-        else if ( pend > 0 ) { dotColor = ThCol(low); }
-        canvas->fillCircle(posX, posY, DotSize, dotColor);
-        canvas->drawXBitmap(posX + DotSize+5, posY - (img_database_16_height/2), img_database_16_bits, img_database_16_width, img_database_16_height, ThCol(text));
-        sprintf(textBuffer,"%d",pend);
-        canvas->setTextFont(1);
-        canvas->setTextSize(1);
-        canvas->setTextDatum(CL_DATUM);
-        canvas->setTextColor(ThCol(text));
-        canvas->drawString(textBuffer,posX+DotSize+10+img_database_16_width,posY);
+        if ( pend > 0 ) {
+            int16_t posX = 48;
+            int16_t posY = 62;
+            uint32_t dotColor = ThCol(background);
+            if ( pend > 4 ) { dotColor = ThCol(high); }
+            if ( pend > 2 ) { dotColor = ThCol(medium); }
+            else if ( pend > 0 ) { dotColor = ThCol(low); }
+            canvas->fillCircle(posX, posY, DotSize, dotColor);
+            canvas->drawXBitmap(posX + DotSize+5, posY - (img_database_16_height/2), img_database_16_bits, img_database_16_width, img_database_16_height, ThCol(text));
+            sprintf(textBuffer,"%d",pend);
+            canvas->setTextFont(1);
+            canvas->setTextSize(1);
+            canvas->setTextDatum(CL_DATUM);
+            canvas->setTextColor(ThCol(text));
+            canvas->drawString(textBuffer,posX+DotSize+10+img_database_16_width,posY);
+        }
     }
     // USB
     if (vbusPresent) {

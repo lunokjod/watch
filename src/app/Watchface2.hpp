@@ -51,7 +51,7 @@ class Watchface2Application: public LunokIoTApplication {
         const float DEGREE_HRS = (360/24);
         int markAngle=0;
         const uint8_t CleanupFPS=3;
-        const uint8_t DesiredFPS=16;
+        const uint8_t DesiredFPS=12;
         char *textBuffer = nullptr;
         void DrawDot(TFT_eSprite * view, int32_t x, int32_t y, int32_t r, uint16_t color, uint16_t capColor);
     public:
@@ -71,7 +71,7 @@ class Watchface2Application: public LunokIoTApplication {
         const int DisplayFontWidth=19;
     tunable:
         const int8_t DotSize=3;
-        const bool ShowNumbers=false;
+        const bool ShowNumbers=true;
         // hourt numbers on watchface (12/3/6/9)
         const int16_t NumberMargin = 20; // distance inner border of sphere
         const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font

@@ -118,13 +118,13 @@ bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the f
 
 // This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTaskSync(LunokIoTApplication *instance) {
-    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
+    //if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
     if ( nullptr != instance ) {
         lUILog("KillApplicationTask: %p '%s' closing...\n", instance,instance->AppName());
         delete instance;
         lUILog("KillApplicationTask: %p has gone\n", instance);
     }
-    xSemaphoreGive( UISemaphore ); // free
+    //xSemaphoreGive( UISemaphore ); // free
 }
 
 void KillApplicationTask(void * data) {
@@ -146,7 +146,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
     bool animation = appDescriptor->animation;
     delete appDescriptor;
     LunokIoTApplication * ptrToCurrent = currentApplication;
-    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
+    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
         lUILog("Application: None\n");
         currentApplication = nullptr;     // no one driving now x'D
@@ -237,12 +237,12 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         }
     }*/
     if ( nullptr != ptrToCurrent ) {
-        if (synched) {
-            KillApplicationTaskSync(ptrToCurrent);
-        } else {
+        //if (synched) {
+        //    KillApplicationTaskSync(ptrToCurrent);
+        //} else {
             // kill app in other thread (some apps takes much time)
-            xTaskCreatePinnedToCore(KillApplicationTask, "", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,1);
-        }
+            xTaskCreatePinnedToCore(KillApplicationTask, "lkillApp", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,1);
+        //}
     }
     FreeSpace();
 }

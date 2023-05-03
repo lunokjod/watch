@@ -31,7 +31,7 @@
 #include <LilyGoWatch.h>
 
 #include "../resources.hpp"
-#include "SettingsMenu.hpp"
+//#include "SettingsMenu.hpp"
 #include "Battery.hpp"
 #include "Notifications.hpp"
 #include "About.hpp"
@@ -40,16 +40,17 @@
 #include "Activities.hpp"
 #include "Calculator.hpp"
 #include "Stopwatch.hpp"
-#include "Settings.hpp"
+#include "LuISettingsMenu.hpp"
 #include "Calendar.hpp"
 #include "LuiExperiment.hpp"
 //#include "LuITest.hpp"
 //#include "LuIDemoRubiks.hpp"
 //#include "ScreenTest.hpp"
 #include "KnowLocations.hpp"
+#include "LuiGamesMenu.hpp"
 
 using namespace LuI;
-const IconMenuEntry LuIMainMenuItems[] = {
+const IconMenuEntry LuIMenuItems[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
 //    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
@@ -59,39 +60,38 @@ const IconMenuEntry LuIMainMenuItems[] = {
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); } },
     {"Stopwatch",img_mainmenu_stopwatch_bits, img_mainmenu_stopwatch_height, img_mainmenu_stopwatch_width, [](IGNORE_PARAM) { LaunchApplication(new StopwatchApplication()); } },
-    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](IGNORE_PARAM) { LaunchApplication(new SettingsMenuApplication()); } },
+    {"Settings",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](IGNORE_PARAM) { LaunchApplication(new LuISettingsMenuApplication()); } },
     {"Locations",img_mainmenu_zone_bits, img_mainmenu_zone_height, img_mainmenu_zone_width, [](IGNORE_PARAM) { LaunchApplication(new KnowLocationApplication()); } },
     {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](IGNORE_PARAM) { LaunchApplication(new CalendarApplication()); } },
     {"Calculator",img_mainmenu_calculator_bits, img_mainmenu_calculator_height, img_mainmenu_calculator_width, [](IGNORE_PARAM) { LaunchApplication(new CalculatorApplication()); } },
+    {"Games",img_mainmenu_games_bits, img_mainmenu_games_height, img_mainmenu_games_width, [](IGNORE_PARAM) { LaunchApplication(new LuIGamesMenuApplication()); } },
     {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) { LaunchApplication(new AboutApplication()); } },
 };
-int LuIMainMenuItemsNumber = sizeof(LuIMainMenuItems) / sizeof(LuIMainMenuItems[0])-1;
+int LuIMenuItemsNumber = sizeof(LuIMenuItems) / sizeof(LuIMenuItems[0])-1;
 
 
 LuIMainMenuApplication::LuIMainMenuApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
     canvas->fillSprite(TFT_BLACK);
     Container * screen = new Container(LuI_Horizontal_Layout,3); // up pager, center icon, bottom text
-    paginator=new Paginator(LuIMainMenuItemsNumber);
+    paginator=new Paginator(LuIMenuItemsNumber);
     paginator->border=40;
     paginator->SetBackgroundColor(TFT_BLACK);
     screen->AddChild(paginator,0.5);
-    mainMenu = new IconMenu(LuI_Horizontal_Layout,LuIMainMenuItemsNumber,LuIMainMenuItems);
+    mainMenu = new IconMenu(LuI_Horizontal_Layout,LuIMenuItemsNumber,LuIMenuItems);
     screen->AddChild(mainMenu,2.0);
     entryText=new Text((char*)"",TFT_WHITE,false,1,&FreeMonoBold18pt7b);
     entryText->SetBackgroundColor(TFT_BLACK);
     screen->AddChild(entryText,0.5);
-    mainMenu->pageCallbackParam=this;
-    mainMenu->pageCallback = [](void * obj){
-        LuIMainMenuApplication * self = (LuIMainMenuApplication *)obj;
-        self->paginator->SetCurrent(self->mainMenu->selectedEntry); // update paginator
-        self->entryText->SetText((char*)(LuIMainMenuItems[self->mainMenu->selectedEntry].name)); // update text
+    mainMenu->pageCallback = [&,this](IGNORE_PARAM){
+        paginator->SetCurrent(mainMenu->selectedEntry); // update paginator
+        entryText->SetText((char*)(LuIMenuItems[mainMenu->selectedEntry].name)); // update text
     };
     // update position later to clarify code
     const int firstOffset=1;
     mainMenu->selectedEntry=firstOffset; // don't show "back" as first option
-    paginator->current=firstOffset;
-    entryText->SetText((char*)LuIMainMenuItems[firstOffset].name);
+    paginator->SetCurrent(firstOffset);
+    entryText->SetText((char*)LuIMenuItems[firstOffset].name);
     AddChild(screen);
 
     directDraw=true; // allow controls to sync itself with the screen

@@ -27,8 +27,9 @@ Paginator::Paginator(IN uint8_t pages): pages(pages) {
 }
 
 void Paginator::Refresh(bool direct) {
-    //lLog("Paginator %p Refresh swap: %s\n",this,(swap?"true":"false"));
-    Control::Refresh(direct);
+    if ( false == dirty ) { return; }
+    lLog("Paginator %p refresh dirty: %s direct: %s\n",this,(dirty?"true":"false"),(direct?"true":"false"));
+    Control::Refresh();
     uint16_t backColor = Drawable::MASK_COLOR;
     if ( useBackground ) { backColor=backgroundColor; }
     canvas->fillSprite(backColor);
@@ -39,5 +40,7 @@ void Paginator::Refresh(bool direct) {
         else if ( pn >= current ) { canvas->fillCircle(border+(pn*separator),height/2,dotRad,TFT_DARKGREY); }
     }
     canvas->fillCircle(border+(current*separator),height/2,dotRad,TFT_WHITE);
-
+    if ( direct ) {
+        canvas->pushSprite(clipX,clipY,Drawable::MASK_COLOR);
+    }
 }

@@ -28,7 +28,8 @@
 class WeatherWifiTask: public LoTWiFiTask {
     private:
         String jsonBuffer;
-        const unsigned long Every30M = 1000*60*30;
+        //const unsigned long Every30M = 1000*60*30;
+        const unsigned long Every60M = 1000*60*60;
         unsigned long nextShoot = 0;
         String NetworkHTTPGETRequest(const char* serverName);
         bool NetworkGetSecureWeather();

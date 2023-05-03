@@ -136,10 +136,21 @@ unsigned long timeBMAActivityInvalid = 0;
 uint32_t stepsBMAActivityNone = 0;
 unsigned long timeBMAActivityNone = 0;
 
-portMUX_TYPE AXPMux = portMUX_INITIALIZER_UNLOCKED;
-volatile static bool irqAxp = false;
-portMUX_TYPE BMAMux = portMUX_INITIALIZER_UNLOCKED;
-volatile static bool irqBMA = false;
+TaskHandle_t AXPInterruptControllerHandle = NULL;
+//SemaphoreHandle_t AXPInterruptSemaphore = xSemaphoreCreateMutex();
+TaskHandle_t BMAInterruptControllerHandle = NULL;
+//SemaphoreHandle_t BMAInterruptSemaphore = xSemaphoreCreateMutex();
+TaskHandle_t RTCInterruptControllerHandle = NULL;
+//SemaphoreHandle_t RTCInterruptSemaphore = xSemaphoreCreateMutex();
+
+#define LONG_TIME 0xffff
+#define TICKS_TO_WAIT  10
+
+//portMUX_TYPE AXPMux = portMUX_INITIALIZER_UNLOCKED;
+//volatile static bool irqAxp = false;
+//portMUX_TYPE BMAMux = portMUX_INITIALIZER_UNLOCKED;
+//volatile static bool irqBMA = false;
+//@TODO PORT
 portMUX_TYPE RTCMux = portMUX_INITIALIZER_UNLOCKED;
 volatile static bool irqRTC = false;
 
@@ -160,10 +171,12 @@ void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callbac
 }
 
 void LunokIoTSystemTickerStop() {
+    if ( false == LunokIoTSystemTicker.active() ) { return; }
     LunokIoTSystemTicker.detach();
 }
 
 void LunokIoTSystemTickerStart() {
+    if ( LunokIoTSystemTicker.active() ) { return; }
     // Start the tick loop
     LunokIoTSystemTicker.attach_ms(LUNOKIOT_SYSTEM_HEARTBEAT_TIME,LunokIoTSystemTickerCallback);
 }
@@ -190,13 +203,11 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
     } else if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason) {
         //!< Wakeup caused by external signal using RTC_IO
         lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
+        /*
         taskENTER_CRITICAL(&AXPMux);
         irqAxp = true;
         taskEXIT_CRITICAL(&AXPMux);
-
-        //lLog("Interrupt triggered on ext0 <-- (IMU) BMA423\n");
-        //irqBMA = true; // faked
-
+        */
         continueSleep=false; // don't want to sleep more
     } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {    // ESP_SLEEP_WAKEUP_BT
         lLog("Interrupt triggered on ext1 <-- ");
@@ -210,23 +221,32 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 
         if (GPIO_SEL_35 == GPIO_reason) {
             lLog("(PMU) AXP202\n");
+            vTaskResume(AXPInterruptControllerHandle);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = true;
             taskEXIT_CRITICAL(&AXPMux);
+            */
         } else if (GPIO_SEL_37 == GPIO_reason) {
-            lLog("(RTC) PCF8563\n");
+            lLog("(RTC) PCF8563 @TODOOOO\n");
             //continueSleep=false; // wait to get the int
+            /*
             taskENTER_CRITICAL(&RTCMux);
             irqRTC=true;
             taskEXIT_CRITICAL(&RTCMux);
+            */
         } else if (GPIO_SEL_38 == GPIO_reason) {
             lLog("(TOUCH) FocalTech\n");
             //continueSleep=false; // wait to get the int
         } else if (GPIO_SEL_39 == GPIO_reason) {
             lLog("(IMU) BMA423\n");
+            vTaskResume(BMAInterruptControllerHandle);
+
+            /*
             taskENTER_CRITICAL(&BMAMux);
             irqBMA = true; // faked
             taskEXIT_CRITICAL(&BMAMux);
+            */
             //continueSleep=false; // wait to get the int
         } else {
             lLog("WARNING: Unexpected: GPIO %llu\n",GPIO_reason);
@@ -349,8 +369,6 @@ static void DoSleepTask(void *args) {
     // bma interrupt gpio_397
 
     uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
-    //bool bleEn = LoT().GetBLE()->IsEnabled();
-    //lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa %s\n",(bleEn?"true":"false"));
     if ( LoT().GetBLE()->IsEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
@@ -409,10 +427,10 @@ static void DoSleepTask(void *args) {
     stepCount = lastBootStepCount+ttgo->bma->getCounter();
     xSemaphoreGive(I2cMutex);
 
-    lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     systemSleep = false;
     xSemaphoreGive(DoSleepTaskSemaphore);
     WakeUpReason();
+    lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     vTaskDelete(NULL);
 }
 
@@ -1107,8 +1125,10 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
         lLog("@TODO lunokIoT: unamanged FreeRTOS event:'%s' id: '%d' \n", base, id);
     }
 }
-TaskHandle_t AXPInterruptControllerHandle = NULL;
+
 static void AXPInterruptController(void *args) {
+    // https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/system/freertos.html?highlight=queue#queue-api
+
     lSysLog("AXP interrupt handler \n");
     // ADC monitoring must be enabled to use the AXP202 monitoring function
     ttgo->power->adc1Enable(
@@ -1118,9 +1138,28 @@ static void AXPInterruptController(void *args) {
             AXP202_BATT_VOL_ADC1,
         true);
     ttgo->powerAttachInterrupt([](){
-        UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        irqAxp = true;
+        xTaskResumeFromISR(AXPInterruptControllerHandle);
+        //UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
+        /*
+        static uint8_t ucLocalTickCount = 0;
+        static BaseType_t xHigherPriorityTaskWoken;
+        xHigherPriorityTaskWoken = pdFALSE;
+        ucLocalTickCount++;
+        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
+            // Unblock the task by releasing the semaphore.
+            xSemaphoreGiveFromISR( AXPInterruptSemaphore, &xHigherPriorityTaskWoken );
+            // Reset the count so we release the semaphore again in 10 ticks time.
+            ucLocalTickCount = 0;
+        }
+
+        if( xHigherPriorityTaskWoken != pdFALSE )
+        {
+            // We can force a context switch here.  Context switching from an
+            // ISR uses port specific syntax.  Check the demo task for your port
+            // to find the syntax required.
+        }
         taskEXIT_CRITICAL_FROM_ISR(myLock);
+        */
     });
 
     ttgo->power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ | AXP202_PEK_LONGPRESS_IRQ |
@@ -1133,91 +1172,114 @@ static void AXPInterruptController(void *args) {
 
 
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-    while(true) {   
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+    while(true) {
+        vTaskSuspend(NULL); // pause myself
+        //if (pdFALSE == xSemaphoreTake( AXPInterruptSemaphore, LONG_TIME )) { continue; }
+        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
         //portENTER_CRITICAL
+        /*
         taskENTER_CRITICAL(&AXPMux);
         if ( false == irqAxp ) {
             taskEXIT_CRITICAL(&AXPMux);
             continue;
         }
         taskEXIT_CRITICAL(&AXPMux);
-        BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        if (pdTRUE != done) { delay(30); continue; }
-
+        */
         lEvLog("AXP202: INT received\n");
+        xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         int readed = ttgo->power->readIRQ();
-        if ( AXP_PASS != readed ) { xSemaphoreGive(I2cMutex); continue; }
-        if (ttgo->power->isChargingIRQ()) {
+
+        if ( AXP_PASS != readed ) { 
             ttgo->power->clearIRQ();
-            lEvLog("AXP202: Battery charging\n");
             xSemaphoreGive(I2cMutex);
+            lLog("AXP202 UNABLE TO READ INT!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
             taskEXIT_CRITICAL(&AXPMux);
+            */
+            continue;
+        }
+        if (ttgo->power->isChargingIRQ()) {
+            lEvLog("AXP202: Battery charging\n");
+            ttgo->power->clearIRQ();
+            xSemaphoreGive(I2cMutex);
+            /*
+            taskENTER_CRITICAL(&AXPMux);
+            irqAxp = false;
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_CHARGING, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isChargingDoneIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery fully charged\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
             taskEXIT_CRITICAL(&AXPMux);
+            */
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FULL, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattEnterActivateIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery active\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_ACTIVE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattExitActivateIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery free\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_FREE, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattPlugInIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery present\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_PRESENT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattRemoveIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery removed\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
             taskEXIT_CRITICAL(&AXPMux);
+            */
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_REMOVED, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattTempLowIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery temperature low\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_LOW, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
         } else if (ttgo->power->isBattTempHighIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Battery temperature high\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_BATT_TEMP_HIGH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
         } else if (ttgo->power->isVbusPlugInIRQ()) {
@@ -1225,9 +1287,11 @@ static void AXPInterruptController(void *args) {
             vbusPresent = true;
             lEvLog("AXP202: Power source\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
             taskEXIT_CRITICAL(&AXPMux);
+            */
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_POWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isVbusRemoveIRQ()) {
@@ -1235,52 +1299,59 @@ static void AXPInterruptController(void *args) {
             vbusPresent = false;
             lEvLog("AXP202: No power\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_NOPOWER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
             continue;
         } else if (ttgo->power->isPEKShortPressIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Event PEK Button short press\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
         } else if (ttgo->power->isPEKLongtPressIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Event PEK Button long press\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
-            taskEXIT_CRITICAL(&AXPMux);
+            taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_LONG, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
         } else if (ttgo->power->isTimerTimeoutIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Event Timer timeout\n");
             xSemaphoreGive(I2cMutex);
+            /*
             taskENTER_CRITICAL(&AXPMux);
             irqAxp = false;
             taskEXIT_CRITICAL(&AXPMux);
+            */
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_TIMER_TIMEOUT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
         }
         ttgo->power->clearIRQ();
         lSysLog("@TODO unknown unprocessed interrupt call from AXP202!\n");
         xSemaphoreGive(I2cMutex);
+        /*
         taskENTER_CRITICAL(&AXPMux);
         irqAxp = false;
         taskEXIT_CRITICAL(&AXPMux);
+        */
     }
     lEvLog("AXPInterruptController is dead!\n");
     vTaskDelete(NULL);
 }
 
-TaskHandle_t BMAInterruptControllerHandle = NULL;
 static void BMAInterruptController(void *args) {
+    // https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/system/freertos.html?highlight=queue#queue-api
     lSysLog("BMA interrupt handler\n"); // BMA423
 
     lEvLog("NVS: Loading last session values...\n");
@@ -1388,12 +1459,7 @@ static void BMAInterruptController(void *args) {
     */
     cfg.perf_mode = BMA4_CONTINUOUS_MODE;
 
-    BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    if (pdTRUE != done) {
-        lSysLog("BMA: ERROR: Unable to get i2c mutex!\n");
-        return;
-    }
-
+    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     // Configure the BMA423 accelerometer
     bool isConfigured = ttgo->bma->accelConfig(cfg);
     if ( true != isConfigured ) {
@@ -1412,9 +1478,31 @@ static void BMAInterruptController(void *args) {
         return;
     }
     ttgo->bma423AttachInterrupt([](){
+        xTaskResumeFromISR(BMAInterruptControllerHandle);
+        /*
         UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        irqBMA = true;
+        static uint8_t ucLocalTickCount = 0;
+        static BaseType_t xHigherPriorityTaskWoken;
+        //xTaskResumeFromISR(RTCInterruptControllerHandle);
+        xHigherPriorityTaskWoken = pdFALSE;
+        ucLocalTickCount++;
+        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
+            // Unblock the task by releasing the semaphore.
+            xSemaphoreGiveFromISR( BMAInterruptSemaphore, &xHigherPriorityTaskWoken );
+
+            // Reset the count so we release the semaphore again in 10 ticks time.
+            ucLocalTickCount = 0;
+        }
+
+        if( xHigherPriorityTaskWoken != pdFALSE )
+        {
+            // We can force a context switch here.  Context switching from an
+            // ISR uses port specific syntax.  Check the demo task for your port
+            // to find the syntax required.
+        }
         taskEXIT_CRITICAL_FROM_ISR(myLock);
+        */
+
     });
 
     bool featureOK = ttgo->bma->enableFeature(BMA423_STEP_CNTR, true);
@@ -1452,20 +1540,25 @@ static void BMAInterruptController(void *args) {
 
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {
+        //if (pdFALSE == xSemaphoreTake( BMAInterruptSemaphore, LONG_TIME )) { continue; }
+        vTaskSuspend(NULL);
         //delay(LUNOKIOT_SYSTEM_INTERRUPTS_TIME);
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
         // check the BMA int's
-        BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        if (pdTRUE != done) { continue; }
-
+        /*
         taskENTER_CRITICAL(&BMAMux);
         bool currirqBMA = irqBMA;
-        taskEXIT_CRITICAL(&BMAMux);
+        taskEXIT_CRITICAL(&BMAMux);*/
+        //lLog("TRYING TO AQUIRE MUTEX i2C on BMAInterruptController\n");
+        //xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
-        if (currirqBMA) {
+        //if (currirqBMA) {
             lEvLog("BMA423: INT received\n");
             int readed = ttgo->bma->readInterrupt();
-            if ( false == readed ) { xSemaphoreGive(I2cMutex); continue; } // wait a bit
+            if ( false == readed ) {
+                xSemaphoreGive(I2cMutex);
+                continue;
+            } // wait a bit
            /*
             bool rlst;
             do {
@@ -1480,46 +1573,54 @@ static void BMAInterruptController(void *args) {
             // Check if it is a step interrupt
             if (ttgo->bma->isStepCounter()) {
                 xSemaphoreGive(I2cMutex);
+                /*
                 taskENTER_CRITICAL(&BMAMux);
                 irqBMA = false;
                 taskEXIT_CRITICAL(&BMAMux);
+                */
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_STEPCOUNTER, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
             } else if (ttgo->bma->isTilt()) {
                 xSemaphoreGive(I2cMutex);
+                /*
                 taskENTER_CRITICAL(&BMAMux);
                 irqBMA = false;
                 taskEXIT_CRITICAL(&BMAMux);
+                */
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_TILT, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
             } else if (ttgo->bma->isActivity()) {
                 xSemaphoreGive(I2cMutex);
+                /*
                 taskENTER_CRITICAL(&BMAMux);
                 irqBMA = false;
-                taskEXIT_CRITICAL(&BMAMux);
+                taskEXIT_CRITICAL(&BMAMux);*/
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_ACTIVITY, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
             } else if (ttgo->bma->isAnyNoMotion()) {
                 xSemaphoreGive(I2cMutex);
+                /*
                 taskENTER_CRITICAL(&BMAMux);
                 irqBMA = false;
                 taskEXIT_CRITICAL(&BMAMux);
+                */
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_NOMOTION, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
             } else if (ttgo->bma->isDoubleClick()) {
                 xSemaphoreGive(I2cMutex);
+                /*
                 taskENTER_CRITICAL(&BMAMux);
                 irqBMA = false;
-                taskEXIT_CRITICAL(&BMAMux);
+                taskEXIT_CRITICAL(&BMAMux);*/
                 esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
                 continue;
             }
-            
+            /*
             taskENTER_CRITICAL(&BMAMux);
             irqBMA = false;
-            taskEXIT_CRITICAL(&BMAMux);
+            taskEXIT_CRITICAL(&BMAMux);*/
             lLog("@TODO unknown unprocessed interrupt call from BMA423!\n");
-        }
+        //}
         xSemaphoreGive(I2cMutex);
     }
     //lEvLog("BMAInterruptController is dead!\n");
@@ -1530,15 +1631,35 @@ static void BMAInterruptController(void *args) {
 
 
 
-
-TaskHandle_t RTCInterruptControllerHandle = NULL;
 static void RTCInterruptController(void *args) {
+    // https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/system/freertos.html?highlight=queue#queue-api
     lSysLog("RTC interrupt handler \n");
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     ttgo->rtcAttachInterrupt([](){
+        xTaskResumeFromISR(RTCInterruptControllerHandle);
+        /*
         UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        irqRTC = true;
+        static uint8_t ucLocalTickCount = 0;
+        static BaseType_t xHigherPriorityTaskWoken;
+        xHigherPriorityTaskWoken = pdFALSE;
+        ucLocalTickCount++;
+        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
+            // Unblock the task by releasing the semaphore.
+            xSemaphoreGiveFromISR( RTCInterruptSemaphore, &xHigherPriorityTaskWoken );
+
+            // Reset the count so we release the semaphore again in 10 ticks time.
+            ucLocalTickCount = 0;
+        }
+
+        if( xHigherPriorityTaskWoken != pdFALSE )
+        {
+            // We can force a context switch here.  Context switching from an
+            // ISR uses port specific syntax.  Check the demo task for your port
+            // to find the syntax required.
+        }
         taskEXIT_CRITICAL_FROM_ISR(myLock);
+        */
+
     });
     
     if ( ttgo->rtc->alarmActive() ) { 
@@ -1566,7 +1687,9 @@ static void RTCInterruptController(void *args) {
     xSemaphoreGive(I2cMutex);
     TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {   
-        BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+        //if (pdFALSE == xSemaphoreTake( RTCInterruptSemaphore, LONG_TIME )) { continue; }
+        vTaskSuspend(NULL);
+        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
 
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
         if (pdTRUE != done) { continue; }
@@ -1710,7 +1833,7 @@ void SystemEventsStart() {
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
         .queue_size = 32,                             // maybe so big?
         .task_name = "lEvTask",                      // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+6,         // a little bit faster?
+        .task_priority = tskIDLE_PRIORITY+5,         // a little bit faster?
         .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
         .task_core_id = 1                            // to core 1
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t

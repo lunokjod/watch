@@ -12,6 +12,18 @@
 #include "../static/img_mainmenu_notifications.xbm"
 #include "../static/img_mainmenu_about.xbm"
 #include "../static/img_mainmenu_zone.xbm"
+#include "../static/img_mainmenu_games.xbm"
+#include "../static/img_mainmenu_watchface.xbm"
+#include "../static/img_mainmenu_gesture.xbm"
+#include "../static/img_mainmenu_themes.xbm"
+#include "../static/img_mainmenu_bluetooth.xbm"
+#include "../static/img_mainmenu_cpu.xbm"
+#include "../static/img_mainmenu_keyboard.xbm"
+#include "../static/img_mainmenu_settime.xbm"
+#include "../static/img_timezone_120.xbm"
+#include "../static/img_mainmenu_provisioning.xbm"
+#include "../static/img_rotate_120.xbm"
+
 #include "../static/img_log_32.xbm"
 
 #include "../static/img_check_32.xbm"

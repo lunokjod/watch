@@ -235,7 +235,7 @@ bool WatchfaceDotApplication::Tick() {
                 }
             }
             // SQL
-            if ( ( nullptr != systemDatabase ) && ( systemDatabase->InUse )) {
+            if ( nullptr != systemDatabase ) {
                 locationBuffer->canvas->setTextDatum(TL_DATUM);
                 sprintf(textBuffer,"SQL (%u)", systemDatabase->Pending() );
                 locationBuffer->canvas->setTextColor(TFT_WHITE);

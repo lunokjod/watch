@@ -60,9 +60,46 @@ extern const unsigned char img_back_16_bits[];
 #define img_mainmenu_zone_height 114
 extern const unsigned char img_mainmenu_zone_bits[];
 
+#define img_mainmenu_games_width 116
+#define img_mainmenu_games_height 120
+extern const unsigned char img_mainmenu_games_bits[];
+
+
 #define img_mainmenu_back_width 120
 #define img_mainmenu_back_height 97
 extern const unsigned char img_mainmenu_back_bits[];
+
+#define img_mainmenu_gesture_width 120
+#define img_mainmenu_gesture_height 120
+extern const unsigned char img_mainmenu_gesture_bits[];
+
+#define img_mainmenu_themes_width 120
+#define img_mainmenu_themes_height 120
+extern const unsigned char img_mainmenu_themes_bits[];
+
+#define img_mainmenu_bluetooth_width 110
+#define img_mainmenu_bluetooth_height 120
+extern const unsigned char img_mainmenu_bluetooth_bits[];
+
+#define img_mainmenu_cpu_width 120
+#define img_mainmenu_cpu_height 120
+extern const unsigned char img_mainmenu_cpu_bits[];
+
+#define img_mainmenu_keyboard_width 120
+#define img_mainmenu_keyboard_height 96
+extern const unsigned char img_mainmenu_keyboard_bits[];
+
+#define img_mainmenu_settime_width 120
+#define img_mainmenu_settime_height 120
+extern const unsigned char img_mainmenu_settime_bits[];
+
+#define img_timezone_120_width 120
+#define img_timezone_120_height 120
+extern const unsigned char img_timezone_120_bits[];
+
+#define img_mainmenu_provisioning_width 117
+#define img_mainmenu_provisioning_height 117
+extern const unsigned char img_mainmenu_provisioning_bits[];
 
 #define img_mainmenu_debug_width 120
 #define img_mainmenu_debug_height 118
@@ -75,6 +112,10 @@ extern const unsigned char img_mainmenu_bright_bits[];
 #define img_mainmenu_notifications_width 120
 #define img_mainmenu_notifications_height 113
 extern const unsigned char img_mainmenu_notifications_bits[];
+
+#define img_rotate_120_width 120
+#define img_rotate_120_height 120
+extern const unsigned char img_rotate_120_bits[];
 
 #define img_mainmenu_steps_width 89
 #define img_mainmenu_steps_height 120
@@ -108,6 +149,10 @@ extern const unsigned char img_mainmenu_about_bits[];
 #define img_mainmenu_lamp_height 120
 extern const unsigned char img_mainmenu_lamp_bits[];
 
+#define img_mainmenu_watchface_width 120
+#define img_mainmenu_watchface_height 120
+extern const unsigned char img_mainmenu_watchface_bits[];
+
 #define img_xbm_32_width 28
 #define img_xbm_32_height 32
 extern const unsigned char img_xbm_32_bits[];
@@ -115,8 +160,6 @@ extern const unsigned char img_xbm_32_bits[];
 #define img_check_32_width 32
 #define img_check_32_height 32
 extern const unsigned char img_check_32_bits[];
-
-
 
 #define img_home_64_width 64
 #define img_home_64_height 58

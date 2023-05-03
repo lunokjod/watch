@@ -552,7 +552,11 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         changes = keyboardInstance->Tick();
     } else {
         if ( false == UIlongTap ) { // only if no long tap in progress
+            esp_task_wdt_reset();
+            // Remove temporal watchdog here
+            esp_task_wdt_delete(NULL);
             changes = currentApplication->Tick();
+            esp_task_wdt_add(NULL);
         }
     }
     esp_task_wdt_reset();
@@ -649,7 +653,7 @@ void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
         return;
     }
     vTaskResume(UITickTaskHandler);
-    lUILog("Tick resume\nn");
+    lUILog("Tick resume\n");
 }
 
 void UITickEnd() { // @TODO this can be replaced by a Ticker stop

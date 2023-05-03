@@ -47,11 +47,11 @@ class Database {
         // dont call directly! used by a callback
         void _DatabaseWorkerTaskLoop();
         Database(const char *filename);
-        bool Lock();
+        void Lock();
         void UnLock();
         unsigned int Pending();
         ~Database();
-        bool InUse=false;
+        //bool InUse=false;
         void Commit();
         void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr);
 };

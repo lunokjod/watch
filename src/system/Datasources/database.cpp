@@ -123,18 +123,15 @@ int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* 
     return rc;
 }
 
-bool Database::Lock() {
-    if( xSemaphoreTake( lock, portMAX_DELAY) == pdTRUE ) { InUse=true; return true; }
-    return false;
-}
+void Database::Lock() { xSemaphoreTake( lock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); }
+void Database::UnLock() { xSemaphoreGive( lock ); }
 
-void Database::UnLock() {
-    InUse=false;
-    xSemaphoreGive( lock );
-}
 unsigned int Database::Pending() {
     if ( NULL == queue ) { return 0; }
-    return uxQueueMessagesWaiting(queue);
+    //Lock();
+    unsigned int val =  uxQueueMessagesWaiting(queue);
+    //UnLock();
+    return val;
 }
 
 void Database::_DatabaseWorkerTaskLoop() {
@@ -174,10 +171,10 @@ void Database::_DatabaseWorkerTaskLoop() {
         BaseType_t res= xQueueReceive(queue, &myData, LUNOKIOT_EVENT_TIME_TICKS);
         if ( pdTRUE != res ) {
             TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-            xTaskDelayUntil( &nextCheck, (100 / portTICK_PERIOD_MS) );
+            xTaskDelayUntil( &nextCheck, (1 / portTICK_PERIOD_MS) );
             continue;
         }
-        Lock();
+        //Lock();
         // execute query
         int rc;
         // temporal disable watchdog for me :)
@@ -188,7 +185,7 @@ void Database::_DatabaseWorkerTaskLoop() {
         if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
-        UnLock();
+        //UnLock();
         taskYIELD();
         //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
         //lLog("Database: Watermark Stack: %u\n",highWater);

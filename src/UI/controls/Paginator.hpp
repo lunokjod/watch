@@ -23,7 +23,7 @@
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
 #include <LilyGoWatch.h>
-
+#include "../../app/LogView.hpp"
 namespace LuI {
 
     // defines root of any screen element
