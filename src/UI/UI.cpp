@@ -460,15 +460,15 @@ extern SemaphoreHandle_t I2cMutex;
  * Update touch and screen 
  */
 static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    if ( systemSleep ) { return; }
     // touch data handling
     static bool oldTouchState = false;
 
     int16_t newTouchX,newTouchY;
     bool newTouch=false;
-    if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE )  {
-        newTouch = ttgo->getTouch(newTouchX,newTouchY);
-        xSemaphoreGive( I2cMutex );
-    } else { return; } // don't mess me 
+    if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdFALSE )  { return; }
+    newTouch = ttgo->getTouch(newTouchX,newTouchY);
+    xSemaphoreGive( I2cMutex );
     bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
         touchDragAngle = 0;
@@ -574,16 +574,19 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         }
     }
     xSemaphoreGive( UISemaphore );
-    esp_task_wdt_reset();
 }
 
 static void UIEventStop(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("UIEventStop\n");
+    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     UIRunning = false;
+    xSemaphoreGive( UISemaphore );
 }
 static void UIEventContinue(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("UIEventContinue\n");
+    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     UIRunning = true;
+    xSemaphoreGive( UISemaphore );
 }
 
 static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -646,22 +649,28 @@ void UITickStart() { // @TODO THIS CAN BE REPLACED BY A Ticker.attach_ms
                                                 tskIDLE_PRIORITY,
                                                 UITickStack,
                                                 &UITickBuffer,
-                                                1);
+                                                UICORE);
 
         //BaseType_t res = xTaskCreatePinnedToCore(UITickTask, "lUITick", LUNOKIOT_APP_STACK_SIZE, NULL,uxTaskPriorityGet(NULL), &UITickTaskHandler,1);
         lUILog("Tick started\n");
         return;
     }
-    vTaskResume(UITickTaskHandler);
-    lUILog("Tick resume\n");
+    eTaskState currStat = eTaskGetState(UITickTaskHandler);
+    if ( eSuspended == currStat ) {
+        vTaskResume(UITickTaskHandler);
+        lUILog("Tick resume\n");
+    }
 }
 
 void UITickEnd() { // @TODO this can be replaced by a Ticker stop
     if ( NULL != UITickTaskHandler ) {
-        vTaskSuspend(UITickTaskHandler);
+        eTaskState currStat = eTaskGetState(UITickTaskHandler);
+        if ( eRunning == currStat ) {
+            vTaskSuspend(UITickTaskHandler);
+            lUILog("Tick suspended\n");
+        }
         //vTaskDelete(UITickTaskHandler);
         //UITickTaskHandler=NULL;
-        lUILog("Tick suspended\n");
     }
 }
 
@@ -681,9 +690,9 @@ void UIStart() {
     esp_event_loop_args_t uiEventloopConfig = {
         .queue_size = 24,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
-        .task_priority = tskIDLE_PRIORITY+5, // priorize UI over rest of system (responsive UI)
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // normal arduinofw setup task stack
-        .task_core_id = 1, //tskNO_AFFINITY // PRO_CPU // APP_CPU
+        .task_priority = UIPRIORITY, // priorize UI over rest of system (responsive UI)
+        .task_stack_size = LUNOKIOT_NETWORK_STACK_SIZE, // normal arduinofw setup task stack
+        .task_core_id = UICORE, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 
     UINextTimeout = millis()+UITimeout; // poweroff the screen when no activity timeout
@@ -712,6 +721,8 @@ void UIStart() {
     uiLoopRc = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, UITickStopCallback, nullptr, NULL);
     // enable ticks
     uiLoopRc = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, UITickStartCallback, nullptr, NULL);
+
+
     //esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_READY, UITickStartCallback, nullptr, NULL);
 
     uiLoopRc = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);

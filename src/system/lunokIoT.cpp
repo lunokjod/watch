@@ -61,6 +61,15 @@ class NTPWifiTask;
 
 extern SemaphoreHandle_t I2cMutex;
 
+/* monkey patch x'D
+// build_flags = -Wl,--wrap=ps_malloc
+void ARDUINO_ISR_ATTR *__real_ps_malloc(size_t size);
+void ARDUINO_ISR_ATTR *__wrap_ps_malloc(size_t size) {
+    void * address = __real_ps_malloc(size);
+    lLog("PSRAM: malloc(%u) = %p\n", size, address);
+    return address;
+}*/
+
 TTGOClass *ttgo = TTGOClass::getWatch();
 //TFT_eSPI * tft = nullptr;
 //TFT_eSPI * tft = new TFT_eSPI();
@@ -100,10 +109,17 @@ bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 //#include "esp_console.h"
 
-const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
-const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
-const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
-const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications ( id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
+const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
+const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+const char *queryDumpSessionLog=(const char *)"INSERT INTO rawlog SELECT timestamp,message FROM rawlogSession;";
+const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog (  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
+const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
+const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
+const char *jsonLogCleanUnusedQuery=(const char *)"DELETE FROM jsonlog WHERE (timestamp <= datetime('now', '-8 days'));";
+const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
+const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
+const char *DropSessionTable=(const char *)"DROP TABLE rawlogSession;";
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
@@ -205,7 +221,6 @@ LunokIoT::LunokIoT() {
         xSemaphoreGive(I2cMutex);
     }
     SplashAnnounce("    Database    ");
-
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
         systemDatabase->SendSQL(queryCreateRAWLog);
@@ -239,14 +254,13 @@ LunokIoT::LunokIoT() {
     SplashAnnounce("    Cleanup    ");
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
-        const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
-        const char *jsonLogCleanUnusedQuery=(const char *)"DELETE FROM jsonlog WHERE (timestamp <= datetime('now', '-8 days'));";
-        const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
-        const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
         systemDatabase->SendSQL(rawLogCleanUnusedQuery);
         systemDatabase->SendSQL(jsonLogCleanUnusedQuery);
         systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
         systemDatabase->SendSQL(BLECleanUnusedQuery);
+        systemDatabase->SendSQL(queryDumpSessionLog);
+        systemDatabase->SendSQL(DropSessionTable);
+        systemDatabase->SendSQL(queryCreateSessionRAWLog);
     }
     systemDatabase->Commit();
 
@@ -461,7 +475,7 @@ LoTWiFi * LunokIoT::CreateWiFi() {
             LoTWiFi* instance = (LoTWiFi*)obj;
             instance->PerformTasks();
             vTaskDelete(NULL);
-        },"lwifi",LUNOKIOT_TASK_STACK_SIZE,instance,tskIDLE_PRIORITY, NULL,0);
+        },"lwifi",LUNOKIOT_TASK_STACK_SIZE,instance,tskIDLE_PRIORITY, NULL,WIFICORE);
     },response);
     return response;
 }

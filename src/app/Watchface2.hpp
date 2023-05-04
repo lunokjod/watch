@@ -54,6 +54,7 @@ class Watchface2Application: public LunokIoTApplication {
         const uint8_t DesiredFPS=12;
         char *textBuffer = nullptr;
         void DrawDot(TFT_eSprite * view, int32_t x, int32_t y, int32_t r, uint16_t color, uint16_t capColor);
+        char * whatToSay =nullptr;
     public:
         bool markForDestroy=false;
         void DestroyDoubleBuffer();
@@ -69,9 +70,16 @@ class Watchface2Application: public LunokIoTApplication {
         const bool mustShowAsTask() override { return false; }
         int lastMin = -1;
         const int DisplayFontWidth=19;
+        void SetStatus(char*what);
+        void SetStatus(const char*what);
+        SemaphoreHandle_t StatusSemaphore = xSemaphoreCreateMutex();
+        bool wifiStatus=false;
+        bool weatherStatus=false;
     tunable:
+        const uint16_t DisplayColor=tft->color24to16(0x437aff);
+        const int16_t DisplaySpeed=12;
         const int8_t DotSize=3;
-        const bool ShowNumbers=true;
+        const bool ShowNumbers=false;
         // hourt numbers on watchface (12/3/6/9)
         const int16_t NumberMargin = 20; // distance inner border of sphere
         const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font

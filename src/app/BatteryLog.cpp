@@ -29,7 +29,7 @@ BatteryLogApplication::BatteryLogApplication() {
     //char *zErrMsg;
     //if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
     //    sqlite3_exec(lIoTsystemDatabase, "SELECT message FROM rawlog ORDER BY id DESC LIMIT 220;", [](void *data, int argc, char **argv, char **azColName) {
-    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY id DESC LIMIT 220;", [](void *data, int argc, char **argv, char **azColName) {
+    systemDatabase->SendSQL("SELECT message FROM rawlog,rawlogSession ORDER BY timestamp DESC LIMIT 220;", [](void *data, int argc, char **argv, char **azColName) {
         GraphWidget *batteryGraph = (GraphWidget*)data;
         int i;
         const char BatteryLine[]="Battery:";

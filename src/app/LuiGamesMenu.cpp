@@ -24,6 +24,7 @@
 #include "../UI/controls/Paginator.hpp"
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
+#include "LuIGameOfLife.hpp"
 
 //#include "../system/Datasources/kvo.hpp"
 //#include "../system/SystemEvents.hpp"
@@ -37,6 +38,7 @@ using namespace LuI;
 const IconMenuEntry LuIGamesMenuItems[] = {
     {"Watchface", img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); } },
+    {"GofLife",img_mainmenu_glider_bits, img_mainmenu_glider_height, img_mainmenu_glider_width, [&](IGNORE_PARAM) { LaunchApplication(new LuIDemoGameOfLifeApplication()); } },
 
 
 //    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },

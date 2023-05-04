@@ -25,6 +25,10 @@
 #include <esp_event_base.h>
 #include <functional> // callbacks 
 
+const uint8_t UICORE = 1;
+const UBaseType_t UIPRIORITY = tskIDLE_PRIORITY+6;
+const UBaseType_t UITRANSITIONPRIORITY = UIPRIORITY+6;
+
 typedef std::function<void (void* payload)> UICallback; // repeated declaration
 typedef std::function<void (void* payload,void* payload2)> UICallback2;
 typedef std::function<void (void* payload,void* payload2,void* payload3)> UICallback3;

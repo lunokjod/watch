@@ -150,9 +150,8 @@ TaskHandle_t RTCInterruptControllerHandle = NULL;
 //volatile static bool irqAxp = false;
 //portMUX_TYPE BMAMux = portMUX_INITIALIZER_UNLOCKED;
 //volatile static bool irqBMA = false;
-//@TODO PORT
-portMUX_TYPE RTCMux = portMUX_INITIALIZER_UNLOCKED;
-volatile static bool irqRTC = false;
+//portMUX_TYPE RTCMux = portMUX_INITIALIZER_UNLOCKED;
+//volatile static bool irqRTC = false;
 
 
 extern NimBLECharacteristic *battCharacteristic;
@@ -202,12 +201,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         lLog("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
     } else if ( ESP_SLEEP_WAKEUP_EXT0 == wakeup_reason) {
         //!< Wakeup caused by external signal using RTC_IO
-        lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
-        /*
-        taskENTER_CRITICAL(&AXPMux);
-        irqAxp = true;
-        taskEXIT_CRITICAL(&AXPMux);
-        */
+        //lLog("Interrupt triggered on ext0 <-- (PMU) AXP202\n");
         continueSleep=false; // don't want to sleep more
     } else if ( ESP_SLEEP_WAKEUP_EXT1 == wakeup_reason) {    // ESP_SLEEP_WAKEUP_BT
         lLog("Interrupt triggered on ext1 <-- ");
@@ -222,43 +216,19 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
         if (GPIO_SEL_35 == GPIO_reason) {
             lLog("(PMU) AXP202\n");
             vTaskResume(AXPInterruptControllerHandle);
-            /*
-            taskENTER_CRITICAL(&AXPMux);
-            irqAxp = true;
-            taskEXIT_CRITICAL(&AXPMux);
-            */
         } else if (GPIO_SEL_37 == GPIO_reason) {
-            lLog("(RTC) PCF8563 @TODOOOO\n");
-            //continueSleep=false; // wait to get the int
-            /*
-            taskENTER_CRITICAL(&RTCMux);
-            irqRTC=true;
-            taskEXIT_CRITICAL(&RTCMux);
-            */
+            lLog("(RTC) PCF8563\n");
+            vTaskResume(RTCInterruptControllerHandle);
         } else if (GPIO_SEL_38 == GPIO_reason) {
             lLog("(TOUCH) FocalTech\n");
-            //continueSleep=false; // wait to get the int
         } else if (GPIO_SEL_39 == GPIO_reason) {
             lLog("(IMU) BMA423\n");
             vTaskResume(BMAInterruptControllerHandle);
-
-            /*
-            taskENTER_CRITICAL(&BMAMux);
-            irqBMA = true; // faked
-            taskEXIT_CRITICAL(&BMAMux);
-            */
-            //continueSleep=false; // wait to get the int
         } else {
             lLog("WARNING: Unexpected: GPIO %llu\n",GPIO_reason);
             //Serial.print((log(GPIO_reason))/log(2), 0); 
         }
         /*
-        if (GPIO_SEL_37 == GPIO_reason) {
-            lLog("(RTC) PCF8563\n");
-        } else if (GPIO_SEL_38 == GPIO_reason) {
-            lLog("(TOUCH) FocalTech\n");
-        } else if (GPIO_SEL_39 == GPIO_reason) {
-            lLog("(BMA) BMA423\n");
         } else if (0 == GPIO_reason) {
             lLog("@TODO Wakeup in ext1 ins't a GPIO event?\n");
         } else {
@@ -319,7 +289,7 @@ static void DoSleepTask(void *args) {
     LunokIoTSystemTickerStop();
 
     // destroy the app if isn't the watchface
-    if ( ( nullptr != currentApplication) && ( true != currentApplication->isWatchface() ) ) {
+    if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
         // the current app isn't a watchface... get out!
         LaunchApplication(nullptr,false,true); // Synched App Stop
         delay(100);
@@ -366,38 +336,33 @@ static void DoSleepTask(void *args) {
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
-    // bma interrupt gpio_397
+    // bma interrupt gpio_39
 
     uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
-    if ( LoT().GetBLE()->IsEnabled() ) { newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S; } // time for notifications
+    if ( LoT().GetBLE()->IsEnabled() ) {
+        lLog("@TODO BLE WAKEUP AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+        esp_err_t bleSleep = esp_bt_sleep_enable();     //CONFIG_CTRL_BTDM_MODEM_SLEEP
+        if ( ESP_OK != bleSleep ) { lSysLog("ERROR: Unable to set BLE wakeup\n"); }
+        newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S;
+    } // time for notifications
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
 
     esp_err_t wakeAXP = esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, LOW);
     if ( ESP_OK != wakeAXP ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
-    /*
-    esp_err_t wakeBMA = esp_sleep_enable_ext0_wakeup((gpio_num_t)BMA423_INT1, HIGH);
-    if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
-    */
     // the only good ones :(
     esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
-
-    //esp_err_t wakeAXP_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_35 | GPIO_SEL_37) , ESP_EXT1_WAKEUP_ANY_HIGH);
-    //esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
+    //esp_err_t wakeAXP_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_35 + GPIO_SEL_37) , ESP_EXT1_WAKEUP_ALL_LOW);
+    //esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_37 + GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
     //if ( ESP_OK != wakeBMA_RTC ) { lSysLog("ERROR: Unable to set ext1 (IMU+RTC) wakeup\n"); }
-
     /*
     esp_err_t uartEnabled=esp_sleep_enable_uart_wakeup(UART_NUM_0);
     if ( ESP_OK != uartEnabled ) {
         lEvLog("ESP32: WARNING: Unable to wake up from UART\n");
-    }
-    */
+    }*/
 
-   /*
-   // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/sleep_modes.html#_CPPv426esp_sleep_enable_bt_wakeupv
-   esp_err_t esp_sleep_enable_bt_wakeup(void)
-   */
+
 
     FreeSpace();
     lEvLog("ESP32: -- ZZz --\n");
@@ -437,7 +402,7 @@ static void DoSleepTask(void *args) {
 void DoSleep() {
     if (systemSleep) { return; }
     systemSleep = true;
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY+2, NULL,1);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY+1, NULL,SYSTEMCORE);
     if ( pdPASS == intTaskOk ) { return; }
     systemSleep = false;
     lSysLog("ERROR: cannot launch DoSleep!!!\n");
@@ -537,12 +502,15 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
             //SqlLog("Activity: None");
         }
         if ( -1 != activity ) {
-            const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
-            size_t totalsz = strlen(fmtStr)+80;
+            SqlLog(BMAMessages[activity]);
+            /*
+            const char fmtStr[]="INSERT INTO rawlogSession VALUES (CURRENT_TIMESTAMP,'%s');";
+            size_t totalsz = strlen(fmtStr)+strlen(BMAMessages[activity])+8;
             char * query=(char*)ps_malloc(totalsz);
             sprintf(query,fmtStr,BMAMessages[activity]);
             if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
             free(query);
+            */
         }
         FreeSpace();
 
@@ -559,7 +527,10 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
         beginStepsBMAActivity = stepCount;
         currentActivity = nowActivity;
     }
-    if (false == ttgo->bl->isOn()) { DoSleep(); }
+    if (false == ttgo->bl->isOn()) {
+        if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
+        DoSleep();
+    }
 }
 
 static void SystemEventTimer(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
@@ -626,7 +597,8 @@ static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t
         if ( useAlwaysOn ) {
             LaunchApplication(new WatchfaceAlwaysOn());
         } else {
-            LaunchWatchface();
+            lLog("@DEBUG DISABLED LAUNCH OF WATCHFACE THIS MAYBE BREAK THE ALWAYSON WATCHFACE??\n");
+            //LaunchWatchface();
         }
     }
 }
@@ -842,7 +814,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    SqlLog("stop");
+    //SqlLog("stop");
     lSysLog("System event: Stop\n");
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
@@ -905,7 +877,7 @@ void SystemBMARestitution() {
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
-    SqlLog("wake");
+    //SqlLog("wake");
 
     TakeAllSamples(); // get current pose
     
@@ -1126,6 +1098,12 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
     }
 }
 
+void IRAM_ATTR RTCIntCallback() { xTaskResumeFromISR(RTCInterruptControllerHandle); }
+
+void IRAM_ATTR BMAIntCallback() { xTaskResumeFromISR(BMAInterruptControllerHandle); }
+
+void IRAM_ATTR AXPIntCallback() { xTaskResumeFromISR(AXPInterruptControllerHandle); }
+
 static void AXPInterruptController(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/system/freertos.html?highlight=queue#queue-api
 
@@ -1137,30 +1115,7 @@ static void AXPInterruptController(void *args) {
             AXP202_BATT_CUR_ADC1 |
             AXP202_BATT_VOL_ADC1,
         true);
-    ttgo->powerAttachInterrupt([](){
-        xTaskResumeFromISR(AXPInterruptControllerHandle);
-        //UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        /*
-        static uint8_t ucLocalTickCount = 0;
-        static BaseType_t xHigherPriorityTaskWoken;
-        xHigherPriorityTaskWoken = pdFALSE;
-        ucLocalTickCount++;
-        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
-            // Unblock the task by releasing the semaphore.
-            xSemaphoreGiveFromISR( AXPInterruptSemaphore, &xHigherPriorityTaskWoken );
-            // Reset the count so we release the semaphore again in 10 ticks time.
-            ucLocalTickCount = 0;
-        }
-
-        if( xHigherPriorityTaskWoken != pdFALSE )
-        {
-            // We can force a context switch here.  Context switching from an
-            // ISR uses port specific syntax.  Check the demo task for your port
-            // to find the syntax required.
-        }
-        taskEXIT_CRITICAL_FROM_ISR(myLock);
-        */
-    });
+    ttgo->powerAttachInterrupt(AXPIntCallback);
 
     ttgo->power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ | AXP202_PEK_LONGPRESS_IRQ |
                                AXP202_BATT_LOW_TEMP_IRQ | AXP202_BATT_OVER_TEMP_IRQ |
@@ -1477,33 +1432,7 @@ static void BMAInterruptController(void *args) {
         xSemaphoreGive(I2cMutex);
         return;
     }
-    ttgo->bma423AttachInterrupt([](){
-        xTaskResumeFromISR(BMAInterruptControllerHandle);
-        /*
-        UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        static uint8_t ucLocalTickCount = 0;
-        static BaseType_t xHigherPriorityTaskWoken;
-        //xTaskResumeFromISR(RTCInterruptControllerHandle);
-        xHigherPriorityTaskWoken = pdFALSE;
-        ucLocalTickCount++;
-        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
-            // Unblock the task by releasing the semaphore.
-            xSemaphoreGiveFromISR( BMAInterruptSemaphore, &xHigherPriorityTaskWoken );
-
-            // Reset the count so we release the semaphore again in 10 ticks time.
-            ucLocalTickCount = 0;
-        }
-
-        if( xHigherPriorityTaskWoken != pdFALSE )
-        {
-            // We can force a context switch here.  Context switching from an
-            // ISR uses port specific syntax.  Check the demo task for your port
-            // to find the syntax required.
-        }
-        taskEXIT_CRITICAL_FROM_ISR(myLock);
-        */
-
-    });
+    ttgo->bma423AttachInterrupt(BMAIntCallback);
 
     bool featureOK = ttgo->bma->enableFeature(BMA423_STEP_CNTR, true);
     if ( false == featureOK ) { lEvLog("BMA: Enable feature 'Step counter' failed\n"); xSemaphoreGive(I2cMutex); vTaskDelete(NULL); }
@@ -1634,49 +1563,24 @@ static void BMAInterruptController(void *args) {
 static void RTCInterruptController(void *args) {
     // https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/system/freertos.html?highlight=queue#queue-api
     lSysLog("RTC interrupt handler \n");
-    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    ttgo->rtcAttachInterrupt([](){
-        xTaskResumeFromISR(RTCInterruptControllerHandle);
-        /*
-        UBaseType_t myLock = taskENTER_CRITICAL_FROM_ISR();
-        static uint8_t ucLocalTickCount = 0;
-        static BaseType_t xHigherPriorityTaskWoken;
-        xHigherPriorityTaskWoken = pdFALSE;
-        ucLocalTickCount++;
-        if( ucLocalTickCount >= TICKS_TO_WAIT ) {
-            // Unblock the task by releasing the semaphore.
-            xSemaphoreGiveFromISR( RTCInterruptSemaphore, &xHigherPriorityTaskWoken );
+    ttgo->rtcAttachInterrupt(RTCIntCallback);
 
-            // Reset the count so we release the semaphore again in 10 ticks time.
-            ucLocalTickCount = 0;
-        }
-
-        if( xHigherPriorityTaskWoken != pdFALSE )
-        {
-            // We can force a context switch here.  Context switching from an
-            // ISR uses port specific syntax.  Check the demo task for your port
-            // to find the syntax required.
-        }
-        taskEXIT_CRITICAL_FROM_ISR(myLock);
-        */
-
-    });
-    
+    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);    
     if ( ttgo->rtc->alarmActive() ) { 
-        //ttgo->rtc->disableAlarm();
-        lEvLog("RTC: Alarm is active\n");
+        ttgo->rtc->disableAlarm();
+        //lEvLog("RTC: Alarm is active\n");
     }
     if ( ttgo->rtc->isTimerEnable() ) {
-        //ttgo->rtc->disableTimer();
-        lEvLog("RTC: Timer is active\n");
+        ttgo->rtc->disableTimer();
+        //lEvLog("RTC: Timer is active\n");
     }
     
     //ttgo->rtc->resetAlarm();
-    ttgo->rtc->disableAlarm();
+    //ttgo->rtc->disableAlarm();
 
-    ttgo->rtc->setAlarmByMinutes(1);
-    ttgo->rtc->enableAlarm();
-    lLog("PCF8563: TEST @@@@@@@@@@@@@@@@@@@@@@@@@@DEBUG alarm set by 1 minute\n");
+//    ttgo->rtc->setAlarmByMinutes(3);
+//    ttgo->rtc->enableAlarm();
+//    lLog("PCF8563: TEST @@@@@@@@@@@@@@@@@@@@@@@@@@DEBUG alarm set by 1 minute\n");
 
 /*
     ttgo->rtc->disableTimer();
@@ -1685,72 +1589,59 @@ static void RTCInterruptController(void *args) {
     //lLog("PCF8563: @DEBUG timer set by 5 times\n");
     */
     xSemaphoreGive(I2cMutex);
-    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+
     while(true) {   
-        //if (pdFALSE == xSemaphoreTake( RTCInterruptSemaphore, LONG_TIME )) { continue; }
         vTaskSuspend(NULL);
-        //BaseType_t isDelayed = xTaskDelayUntil( &nextCheck, LUNOKIOT_SYSTEM_INTERRUPTS_TIME ); // wait a ittle bit
+        lEvLog("PCF8563: INT received\n");
+        xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        if ( ttgo->rtc->alarmActive() ) { 
+            //ttgo->rtc->resetAlarm();
+            ttgo->rtc->disableAlarm();
+            lEvLog("RTC: Alarm is active\n");
+        }
+        if ( ttgo->rtc->isTimerEnable() ) {
+            lEvLog("RTC: Timer is active\n");
+            ttgo->rtc->disableTimer();
+        }
 
-        BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
-        if (pdTRUE != done) { continue; }
-        // check the RTC int
-        taskENTER_CRITICAL(&RTCMux);
-        bool currentirqRTC=irqRTC;
-        taskEXIT_CRITICAL(&RTCMux);
-       if (currentirqRTC) {
-            taskENTER_CRITICAL(&RTCMux);
-            irqRTC=false;
-            taskEXIT_CRITICAL(&RTCMux);
-            lEvLog("PCF8563: INT received\n");
-            if ( ttgo->rtc->alarmActive() ) { 
-                //ttgo->rtc->resetAlarm();
-                ttgo->rtc->disableAlarm();
-                lEvLog("RTC: Alarm is active\n");
-            }
-            if ( ttgo->rtc->isTimerEnable() ) {
-                lEvLog("RTC: Timer is active\n");
-                ttgo->rtc->disableTimer();
-            }
+        /*
+        ttgo->rtc->setAlarmByMinutes(3);
+        ttgo->rtc->enableAlarm();
 
+        lLog("PCF8563: TEST AGAIN ---------------------> alarm set by 3 minute\n");
+        */
+        xSemaphoreGive(I2cMutex);
 
-            /**
-            ttgo->rtc->setAlarmByMinutes(1);
-            ttgo->rtc->enableAlarm();
-            lLog("PCF8563: TEST AGAIN ---------------------> alarm set by 1 minute\n");
-            */
-            xSemaphoreGive(I2cMutex);
-            continue;
+        continue;
 
-            //detachInterrupt(RTC_INT_PIN);
-            //detachInterrupt(RTC_INT_PIN);
-            bool isAlarm = ttgo->rtc->alarmActive();
-            lEvLog("PCF8563: Event: Alarm active: %s\n",(isAlarm?"true":"false"));
-            if ( true == isAlarm ) {
-                ttgo->rtc->resetAlarm();
-                //ttgo->rtc->resetAlarm(); */
-                lEvLog("PCF8563: Event: Alarm\n");
-                //ttgo->rtc->disableAlarm();
-                //ttgo->rtc->setDateTime(2019, 8, 12, 15, 0, 53);
-                //ttgo->rtc->setAlarmByMinutes(3);
-                //ttgo->rtc->enableAlarm();
-                //lLog("@TODO @DEBUG RE-ENABLE ALARM... wakeup BUG pending...");
-                ttgo->rtc->disableAlarm();
-                //ttgo->rtc->setAlarmByMinutes(1);
-                //ttgo->rtc->enableAlarm();
-                //lLog("@@@@@@@@@@@@@@@ AGAIN alarm set by 1 minute\n");
-            }
-            bool isTimer = ttgo->rtc->isTimerActive();
-            bool isTimerEnabled = ttgo->rtc->isTimerEnable();
-            lEvLog("PCF8563: Event: Timer active: %s enabled: %s\n",(isTimer?"true":"false"),(isTimerEnabled?"true":"false"));
-            if ( true == isTimer ) {
-                ttgo->rtc->clearTimer();
-                lEvLog("PCF8563: Event: Timer\n");
-                ttgo->rtc->disableTimer();
-                ttgo->rtc->setTimer(10,5,true);
-                ttgo->rtc->enableTimer();
-                lLog("@@@@@@@@@@@@@@@ AGAIN set timer\n");
-            }
-
+        //detachInterrupt(RTC_INT_PIN);
+        //detachInterrupt(RTC_INT_PIN);
+        bool isAlarm = ttgo->rtc->alarmActive();
+        lEvLog("PCF8563: Event: Alarm active: %s\n",(isAlarm?"true":"false"));
+        if ( true == isAlarm ) {
+            ttgo->rtc->resetAlarm();
+            //ttgo->rtc->resetAlarm(); */
+            lEvLog("PCF8563: Event: Alarm\n");
+            //ttgo->rtc->disableAlarm();
+            //ttgo->rtc->setDateTime(2019, 8, 12, 15, 0, 53);
+            //ttgo->rtc->setAlarmByMinutes(3);
+            //ttgo->rtc->enableAlarm();
+            //lLog("@TODO @DEBUG RE-ENABLE ALARM... wakeup BUG pending...");
+            ttgo->rtc->disableAlarm();
+            //ttgo->rtc->setAlarmByMinutes(1);
+            //ttgo->rtc->enableAlarm();
+            //lLog("@@@@@@@@@@@@@@@ AGAIN alarm set by 1 minute\n");
+        }
+        bool isTimer = ttgo->rtc->isTimerActive();
+        bool isTimerEnabled = ttgo->rtc->isTimerEnable();
+        lEvLog("PCF8563: Event: Timer active: %s enabled: %s\n",(isTimer?"true":"false"),(isTimerEnabled?"true":"false"));
+        if ( true == isTimer ) {
+            ttgo->rtc->clearTimer();
+            lEvLog("PCF8563: Event: Timer\n");
+            ttgo->rtc->disableTimer();
+            ttgo->rtc->setTimer(10,5,true);
+            ttgo->rtc->enableTimer();
+            lLog("@@@@@@@@@@@@@@@ AGAIN set timer\n");
         }
         xSemaphoreGive(I2cMutex);        
     }
@@ -1831,11 +1722,11 @@ void SystemEventsStart() {
     lSysLog("System event loop\n");
     // configure system event loop (send and receive messages from other parts of code)
     esp_event_loop_args_t lunokIoTSystemEventloopConfig = {
-        .queue_size = 32,                             // maybe so big?
+        .queue_size = 32,                            // maybe so big?
         .task_name = "lEvTask",                      // lunokIoT Event Task
-        .task_priority = tskIDLE_PRIORITY+5,         // a little bit faster?
-        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // don't need so much
-        .task_core_id = 1                            // to core 1
+        .task_priority = SYSTEMPRIORITY,
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE,  // don't need so much
+        .task_core_id = SYSTEMCORE                   // to core 1
     };                                               // details: https://docs.espressif.com/projects/esp-idf/en/v4.2.2/esp32/api-reference/system/esp_event.html#_CPPv421esp_event_loop_args_t
     //delay(50);
 
@@ -1930,19 +1821,19 @@ void SystemEventsStart() {
 
     lSysLog("PMU interrupts\n");
     // Start the AXP interrupt controller loop
-    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TASK_STACK_SIZE, nullptr, tskIDLE_PRIORITY+12, &AXPInterruptControllerHandle,0);
+    BaseType_t intTaskOk = xTaskCreatePinnedToCore(AXPInterruptController, "intAXP", LUNOKIOT_TASK_STACK_SIZE, nullptr, INTHANDLERPRIORITY, &AXPInterruptControllerHandle,INTHANDLERSCORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch AXP int handler!\n"); }
     //delay(150);
 
     lSysLog("IMU interrupts\n");
     // Start the BMA interrupt controller loop
-    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+12, &BMAInterruptControllerHandle,0);
+    intTaskOk = xTaskCreatePinnedToCore(BMAInterruptController, "intBMA", LUNOKIOT_TINY_STACK_SIZE, nullptr, INTHANDLERPRIORITY, &BMAInterruptControllerHandle,INTHANDLERSCORE);
     if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch BMA int handler!\n"); }
 
-    lSysLog("RTC interrupts @DEBUG @TODO DISABLED\n");
+    lSysLog("RTC interrupts\n");
     // Start the RTC interrupt controller loop
-    //intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, tskIDLE_PRIORITY+5, &RTCInterruptControllerHandle,0);
-    //if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
+    intTaskOk = xTaskCreatePinnedToCore(RTCInterruptController, "intRTC", LUNOKIOT_TINY_STACK_SIZE, nullptr, INTHANDLERPRIORITY, &RTCInterruptControllerHandle,INTHANDLERSCORE);
+    if ( pdPASS != intTaskOk ) { lSysLog("ERROR: cannot launch RTC int handler!\n"); }
 
     LunokIoTSystemTickerStart();
     //delay(50);

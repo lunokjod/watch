@@ -24,6 +24,9 @@
 #include <freertos/queue.h>
 #include <freertos/task.h>
 
+const uint8_t DATABASECORE = 1;
+const UBaseType_t DATABASEPRIORITY = tskIDLE_PRIORITY;
+
 typedef struct {
     char * query;
     sqlite3_callback callback;
@@ -35,7 +38,7 @@ class Database {
         TaskHandle_t databaseQueueTask = NULL;
         const UBaseType_t uxQueueLength=8;
         const UBaseType_t uxItemSize=sizeof(SQLQueryData);
-        UBaseType_t sqlWorkerPriority = tskIDLE_PRIORITY; // configMAX_PRIORITIES - 2;
+        UBaseType_t sqlWorkerPriority = DATABASEPRIORITY;
         sqlite3 *databaseDescriptor;
         const char * filename;
         QueueHandle_t queue;

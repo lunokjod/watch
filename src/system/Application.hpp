@@ -19,7 +19,9 @@
 
 #ifndef __LUNOKIOT__APPLICATION__SUPPORT__
 #define __LUNOKIOT__APPLICATION__SUPPORT__
-
+#include <Arduino.h>
+#include "../UI/UI.hpp"
+const uint8_t APPLICATIONCORE=UICORE;
 //#include <Arduino.h>
 //#include <TTGO.h>
 

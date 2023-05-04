@@ -153,6 +153,10 @@ extern const unsigned char img_mainmenu_lamp_bits[];
 #define img_mainmenu_watchface_height 120
 extern const unsigned char img_mainmenu_watchface_bits[];
 
+#define img_mainmenu_glider_width 120
+#define img_mainmenu_glider_height 120
+extern const unsigned char img_mainmenu_glider_bits[];
+
 #define img_xbm_32_width 28
 #define img_xbm_32_height 32
 extern const unsigned char img_xbm_32_bits[];

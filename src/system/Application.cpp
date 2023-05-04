@@ -136,7 +136,7 @@ void KillApplicationTask(void * data) {
 }
 void LaunchApplicationTask(void * data) {
     LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
-    LaunchApplicationTaskSync(dataDesc,false);
+    LaunchApplicationTaskSync(dataDesc,true);
     vTaskDelete(NULL); // get out of my cicken!!!
 }
 void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched) {
@@ -241,7 +241,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         //    KillApplicationTaskSync(ptrToCurrent);
         //} else {
             // kill app in other thread (some apps takes much time)
-            xTaskCreatePinnedToCore(KillApplicationTask, "lkillApp", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,1);
+            xTaskCreatePinnedToCore(KillApplicationTask, "lkillApp", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,SYSTEMCORE);
         //}
     }
     FreeSpace();
@@ -291,7 +291,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
     } else {
         // apps receive the worst priority
         // launch a task guarantee free the PC (program counter CPU register) of caller object, and made possible a object in "this" context to destroy itself :)
-        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY, nullptr,0);
+        xTaskCreatePinnedToCore(LaunchApplicationTask, "", LUNOKIOT_TASK_STACK_SIZE,(void*)thisLaunch, tskIDLE_PRIORITY, nullptr,APPLICATIONCORE);
     }
 
 

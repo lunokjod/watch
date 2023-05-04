@@ -23,6 +23,7 @@
 #include "../static/img_timezone_120.xbm"
 #include "../static/img_mainmenu_provisioning.xbm"
 #include "../static/img_rotate_120.xbm"
+#include "../static/img_mainmenu_glider.xbm"
 
 #include "../static/img_log_32.xbm"
 

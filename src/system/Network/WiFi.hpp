@@ -27,6 +27,8 @@
 #include <functional>
 #include <list>
 
+const uint8_t WIFICORE = 0;
+
 // define a task for wifi
 class LoTWiFiTask {
     public:

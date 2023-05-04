@@ -39,7 +39,6 @@
 #include "../../lunokIoT.hpp"
 #include "../SystemEvents.hpp"
 //#include "lunokIoT.hpp"
-#define DATABASE_CORE 1
 Database * systemDatabase=nullptr;
 const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
@@ -49,8 +48,8 @@ int8_t Database::openedDatabases=0;
 // address text as PRIMARY KEY can be better :) @TODO
 const char *BLEDeleteQuery=(const char *)"DELETE FROM bluetooth WHERE address = '%s';";
 const char *BLEUpdateQuery=(const char *)"UPDATE OR IGNORE bluetooth SET timestamp = CURRENT_TIMESTAMP, locationGroup = %d WHERE address='%s';"; 
-const char *BLEInsertQuery=(const char *)"INSERT OR IGNORE INTO bluetooth VALUES (NULL,CURRENT_TIMESTAMP,'%s',%g,%d);";
-const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FROM bluetooth WHERE address='%s' ORDER BY id DESC LIMIT 1;";
+const char *BLEInsertQuery=(const char *)"INSERT OR IGNORE INTO bluetooth VALUES (CURRENT_TIMESTAMP,'%s',%g,%d);";
+const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FROM bluetooth WHERE address='%s' ORDER BY address DESC LIMIT 1;";
 
 
 char *zErrMsg = nullptr;
@@ -88,6 +87,8 @@ int db_open(const char *filename, sqlite3 **db) {
 }
 
 int db_exec(sqlite3 *db, const char *sql,sqlite3_callback resultCallback, void* payload) {
+    //lLog("@DEBUG DATABASE EXEC DISABLED\n");
+    //return SQLITE_OK;
     //lSysLog("EXEC SQL: '%s'\n",sql);
     if ( nullptr == resultCallback ) { resultCallback=SQLiteDumpSerialCallback; }
     esp_task_wdt_reset();
@@ -147,9 +148,9 @@ void Database::_DatabaseWorkerTaskLoop() {
             taskRunning=false;
             return;
         }
+        sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
     }
     Database::openedDatabases++; // increment
-    sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
     //create queue
     queue = xQueueCreate( uxQueueLength, sizeof( uxItemSize ) );
 
@@ -219,7 +220,7 @@ Database::Database(const char *filename) {
         lLog("Database: %p Task dies here!\n",myDatabase);
         vTaskDelete(NULL); // kill myself
 
-    }, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASE_CORE);
+    }, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASECORE);
 
     lLog("Database: %p Waiting thread %p...\n",this,databaseQueueTask);
     while(false == taskRunning) {
@@ -371,7 +372,7 @@ void SqlAddBluetoothDevice(const char * mac, double distance, int locationGroup)
 void SqlJSONLog(const char * from, const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
     //const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s',unishox1c('%s'));";
-    const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s','%s');";
+    const char fmtStr[]="INSERT INTO jsonLog VALUES (CURRENT_TIMESTAMP,'%s','%s');";
     size_t totalsz = strlen(fmtStr)+strlen(from)+strlen(logLine)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {
@@ -386,7 +387,7 @@ void SqlJSONLog(const char * from, const char * logLine) {
 
 void SqlLog(const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
-    const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
+    const char fmtStr[]="INSERT INTO rawlogSession VALUES (CURRENT_TIMESTAMP,'%s');";
     size_t totalsz = strlen(fmtStr)+strlen(logLine)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {

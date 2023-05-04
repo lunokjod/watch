@@ -30,6 +30,10 @@
 #include <freertos/task.h>
 #include <esp32/himem.h>
 
+const uint8_t SYSTEMCORE = 1;
+const UBaseType_t SYSTEMPRIORITY = tskIDLE_PRIORITY+2;
+const uint8_t INTHANDLERSCORE = SYSTEMCORE;
+const UBaseType_t INTHANDLERPRIORITY = tskIDLE_PRIORITY+12;
 /*
  * Event loop for the system
  */

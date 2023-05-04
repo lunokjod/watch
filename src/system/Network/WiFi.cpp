@@ -205,7 +205,7 @@ void LoTWiFi::InstallTimer() {
             instance->PerformTasks();
             //instance->InstallTimer(); // isn't recursive :P
             vTaskDelete(NULL);
-        },"lwifi",LUNOKIOT_TASK_STACK_SIZE,instance,tskIDLE_PRIORITY, NULL,0);
+        },"lwifi",LUNOKIOT_TASK_STACK_SIZE,instance,tskIDLE_PRIORITY, NULL,WIFICORE);
     },this);
 }
 

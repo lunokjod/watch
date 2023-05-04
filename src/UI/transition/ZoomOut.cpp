@@ -29,7 +29,7 @@ extern SemaphoreHandle_t UISemaphore;
 void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
     // set better priority
     UBaseType_t myPriority = uxTaskPriorityGet(NULL);
-    vTaskPrioritySet(NULL,tskIDLE_PRIORITY+5);
+    vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
     taskYIELD();
     // scale screen buffer
     const int images=4;

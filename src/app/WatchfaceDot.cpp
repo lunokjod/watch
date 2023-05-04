@@ -235,9 +235,10 @@ bool WatchfaceDotApplication::Tick() {
                 }
             }
             // SQL
-            if ( nullptr != systemDatabase ) {
+            unsigned int pendSQLQueries = systemDatabase->Pending();
+            if ( 0 != pendSQLQueries ) {
                 locationBuffer->canvas->setTextDatum(TL_DATUM);
-                sprintf(textBuffer,"SQL (%u)", systemDatabase->Pending() );
+                sprintf(textBuffer,"SQL (%u)", pendSQLQueries );
                 locationBuffer->canvas->setTextColor(TFT_WHITE);
                 locationBuffer->canvas->drawString(textBuffer,5,25);
             }

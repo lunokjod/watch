@@ -225,8 +225,8 @@ Watchface2Application::Watchface2Application() {
 
     // led display
     if ( nullptr == StateDisplay ) {
-        StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth); // space for one letter
-        StateDisplay->canvas->fillSprite(TFT_BLACK);
+        StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth,1); // space for one letter
+        SetStatus("Hi! (: ");
     }
     
     // Buttons
@@ -348,28 +348,55 @@ void Watchface2Application::RedrawDisplay() {
             if ( dy < 0 ) { return true; }
             if ( dy >= StateDisplay->canvas->height() ) { return true; }
             uint16_t newColor = StateDisplay->canvas->readPixel(dx,dy);
+            if ( TFT_BLACK != newColor ) { newColor = DisplayColor; }
             canvas->drawPixel(x,y,newColor);
             return true;
         });
         return true;
     });
-    if ( 0 == systemDatabase->Pending() ) {
-        //StateDisplay->DumpTo(canvas,0,0);
-        StateDisplay->canvas->scroll(-6,0);
-        bannerSpace+=6;
+    // update display
+    if ( pdTRUE == xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) ) {
+        if ( nullptr == whatToSay ) {
+            xSemaphoreGive( StatusSemaphore );
+            return;
+        }
+        if ( 0 == systemDatabase->Pending() ) {
+            //StateDisplay->DumpTo(canvas,0,0);
+            StateDisplay->canvas->scroll(DisplaySpeed*-1,0);
+            bannerSpace+=DisplaySpeed;
+        }
+        if ( bannerSpace >= DisplayFontWidth  ) {
+            StateDisplay->canvas->setTextColor(TFT_WHITE);
+            StateDisplay->canvas->setTextFont(1);
+            StateDisplay->canvas->setTextSize(4);
+            StateDisplay->canvas->drawChar(whatToSay[bannerOffset],StateDisplay->canvas->width()-DisplayFontWidth,4);
+            bannerOffset++;
+            if (bannerOffset > strlen(whatToSay)) {
+                // @TODO ugly
+                free(whatToSay);
+                whatToSay=nullptr;
+                StateDisplay->canvas->fillSprite(TFT_BLACK);
+                bannerOffset=0;
+            }
+            bannerSpace=0;
+        }
+        xSemaphoreGive( StatusSemaphore );
     }
-    if ( bannerSpace >= DisplayFontWidth  ) {
-        const char whatToSay[] = "lunokWatch ready! (: ";
-        // const char whatToSay[] = "Shinoa Fores rules!!! Never gonna give you up, Never gonna let you down, Never gonna run around and desert you, Never gonna make you cry ";
-        StateDisplay->canvas->setTextColor(tft->color24to16(0x437aff));
-        StateDisplay->canvas->setTextFont(1);
-        StateDisplay->canvas->setTextSize(4);
-        StateDisplay->canvas->drawChar(whatToSay[bannerOffset],StateDisplay->canvas->width()-19,4);
-        bannerOffset++;
-        if (bannerOffset > strlen(whatToSay)) { bannerOffset=0; }
-        bannerSpace=0;
-        //pushLetter=millis()+1400;
-    }
+}
+void Watchface2Application::SetStatus(const char*what) {
+    const char * frtmSring="%s          ";
+    char * buffer=(char*)ps_malloc(strlen(frtmSring)+strlen(what)+1);
+    sprintf(buffer,frtmSring,what);
+    SetStatus(buffer);
+}
+
+void Watchface2Application::SetStatus(char*what) {
+    xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    free(whatToSay);
+    StateDisplay->canvas->fillSprite(TFT_BLACK);
+    whatToSay=what;
+    bannerOffset=0;
+    xSemaphoreGive( StatusSemaphore );
 }
 
 void Watchface2Application::RedrawBLE() {
@@ -406,6 +433,11 @@ void Watchface2Application::Redraw() {
     RedrawBLE();
     
     if (weatherSyncDone) {
+        if ( false == weatherStatus ) {
+            SetStatus("Weather");
+            weatherStatus=true;
+        }
+
         // weather icon
         canvas->setBitmapColor(ThCol(mark), TFT_BLACK);
         // watchFaceCanvas->canvas->fillRect(120 - (img_weather_200.width/2),52,80,46,TFT_BLACK);
@@ -459,6 +491,8 @@ void Watchface2Application::Redraw() {
             canvas->setTextColor(TFT_WHITE);
             canvas->drawString(weatherDescription, 120, 60);
         }
+    } else {
+        weatherStatus=false;
     }
 
     // connectivity notifications
@@ -484,9 +518,19 @@ void Watchface2Application::Redraw() {
         int16_t posX = 51;
         int16_t posY = 189;
         uint32_t dotColor = ThCol(background);
-        if ( LoT().GetWiFi()->InUse() ) { dotColor = ThCol(low); }
+        if ( LoT().GetWiFi()->InUse() ) {
+            if ( false == wifiStatus ) {
+                SetStatus("WiFi");
+                wifiStatus=true;
+            }
+            dotColor = ThCol(low);
+        }
         canvas->fillCircle(posX, posY, DotSize, dotColor);
         canvas->drawXBitmap(posX + DotSize+5, posY - (img_wifi_16_height/2), img_wifi_16_bits, img_wifi_16_width, img_wifi_16_height, ThCol(text));
+    } else {
+        if ( wifiStatus ) {
+            wifiStatus = false;
+        }
     }
     // SQLite
     if ( nullptr != systemDatabase ) {

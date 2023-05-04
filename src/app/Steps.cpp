@@ -167,7 +167,7 @@ void StepsApplication::CreateStats() {
     if ( nullptr != activityGraph ) { delete activityGraph; }
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     
-    const char sqlQuery[]="SELECT * FROM rawlog ORDER BY id DESC LIMIT %d";
+    const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT %d";
     char sqlQueryBuffer[strlen(sqlQuery)+8] = { 0 };
     sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
 
