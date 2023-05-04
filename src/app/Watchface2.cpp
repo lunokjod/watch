@@ -31,12 +31,6 @@ extern TTGOClass *ttgo;
 #include "Battery.hpp"
 #include "Settings.hpp"
 
-#include "../static/img_wifi_16.xbm"
-#include "../static/img_bluetooth_16.xbm"
-#include "../static/img_bluetooth_peer_16.xbm"
-#include "../static/img_usb_16.xbm"
-#include "../static/img_database_16.xbm"
-
 #include "Stopwatch.hpp"
 #include "resources.hpp"
 #include "../system/Datasources/database.hpp"
@@ -508,9 +502,9 @@ void Watchface2Application::Redraw() {
             dotColor = ThCol(low);
         }
         canvas->fillCircle(posX, posY, DotSize, dotColor);
-        unsigned char *img = img_bluetooth_16_bits; // bluetooth logo only icon
+        unsigned char *img = (unsigned char *)img_bluetooth_16_bits; // bluetooth logo only icon
         if (LoT().GetBLE()->Clients() > 0 ) {
-            img = img_bluetooth_peer_16_bits;
+            img = (unsigned char *)img_bluetooth_peer_16_bits;
         } // bluetooth with peer icon
         canvas->drawXBitmap(posX + DotSize+5, posY - (img_bluetooth_16_height/2), img, img_bluetooth_16_width, img_bluetooth_16_height, ThCol(text));
     }

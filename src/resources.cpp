@@ -29,6 +29,13 @@
 
 #include "../static/img_check_32.xbm"
 
+#include "../static/img_wifi_16.xbm"
+#include "../static/img_bluetooth_16.xbm"
+#include "../static/img_bluetooth_peer_16.xbm"
+#include "../static/img_usb_16.xbm"
+#include "../static/img_database_16.xbm"
+
+
 
 
 #include "../static/img_icon_telegram_48.c"

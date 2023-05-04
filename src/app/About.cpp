@@ -33,8 +33,8 @@ const unsigned long AboutBoxTextScrollDelayScroll = 1000/24;
 //const unsigned long 
 size_t AboutBoxTextScrollOffset = 0;
 /* @TODO show all of them!
-Dependency Graph
-|-- TTGO TWatch Library @ 1.4.2
+|-- Sqlite3Esp32 @ 2.3.0+sha.9f35709
+|-- TTGO TWatch Library_alt @ 0.0.1+sha.f9d72c5
 |   |-- Wire @ 2.0.0
 |   |-- SPI @ 2.0.0
 |   |-- SPIFFS @ 2.0.0
@@ -48,9 +48,11 @@ Dependency Graph
 |-- QRCode @ 0.0.1
 |-- Arduino_JSON @ 0.1.0
 |-- NimBLE-Arduino @ 1.4.1
+|-- miniz @ 0.0.1+sha.bbaaaf6
 |-- ESP8266Audio @ 1.9.7
 |   |-- SPIFFS @ 2.0.0
 |   |   |-- FS @ 2.0.0
+|   |-- I2S @ 1.0
 |   |-- FS @ 2.0.0
 |   |-- HTTPClient @ 2.0.0
 |   |   |-- WiFi @ 2.0.0
@@ -60,15 +62,19 @@ Dependency Graph
 |   |   |-- FS @ 2.0.0
 |   |   |-- SPI @ 2.0.0
 |   |-- SPI @ 2.0.0
-|-- WiFi @ 2.0.0
-|-- WiFiProv @ 2.0.0
-|   |-- WiFi @ 2.0.0
-|   |-- SimpleBLE @ 2.0.0
 |-- Ticker @ 2.0.0
+|-- FS @ 2.0.0
 |-- HTTPClient @ 2.0.0
 |   |-- WiFi @ 2.0.0
 |   |-- WiFiClientSecure @ 2.0.0
 |   |   |-- WiFi @ 2.0.0
+|-- LittleFS @ 2.0.0
+|   |-- FS @ 2.0.0
+|-- SPI @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- WiFiProv @ 2.0.0
+|   |-- WiFi @ 2.0.0
+|   |-- SimpleBLE @ 2.0.0
 |-- ESP32 BLE Arduino @ 2.0.0
 */
 const char *AboutBoxTextEmptyLine="";
@@ -116,6 +122,9 @@ const char *AboutBoxTextScroll[] = {
     AboutBoxTextEmptyLine,
     "ricmoo",
     "QRCode",
+    AboutBoxTextEmptyLine,
+    "lbernstone",
+    "miniz-esp32",
     AboutBoxTextEmptyLine,
     "arduino",
     "libraries",

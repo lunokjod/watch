@@ -197,6 +197,26 @@ extern const unsigned char img_milestone_64_bits[];
 #define img_no_64_height 64
 extern const unsigned char img_no_64_bits[];
 
+#define img_wifi_16_width 16
+#define img_wifi_16_height 12
+extern const unsigned char img_wifi_16_bits[];
+
+#define img_bluetooth_16_width 15
+#define img_bluetooth_16_height 16
+extern const unsigned char img_bluetooth_16_bits[];
+
+#define img_bluetooth_peer_16_width 15
+#define img_bluetooth_peer_16_height 16
+extern const unsigned char img_bluetooth_peer_16_bits[];
+
+#define img_usb_16_width 7
+#define img_usb_16_height 16
+extern const unsigned char img_usb_16_bits[];
+
+#define img_database_16_width 13
+#define img_database_16_height 16
+extern const unsigned char img_database_16_bits[];
+
 
 typedef struct {
   unsigned int 	 width;

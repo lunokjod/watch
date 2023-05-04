@@ -56,6 +56,8 @@ class NTPWifiTask;
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "system/lua.hpp"
+
 //#include <esp32/himem.h>
 //#include <esp32/spiram.h>
 
@@ -103,6 +105,17 @@ Do not use ESP_LOGI functions inside.
 *******************************************************************************/
 
     ets_printf("\n\n\n@TODO ERROR: Watchdog TIMEOUT triggered\n\n\n\n");
+}
+
+
+
+void foo(int x) {
+    lLog("Hello %d!\n", x);
+}
+
+void *my_dlsym(void *handle, const char *name) {
+    if (strcmp(name, "foo") == 0) return (void*)foo;
+    return NULL;
 }
 
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
@@ -220,6 +233,10 @@ LunokIoT::LunokIoT() {
         }
         xSemaphoreGive(I2cMutex);
     }
+    SplashAnnounce("      LUA      ");
+    LuaInit();
+    LuaRun(luaCodeTest);
+
     SplashAnnounce("    Database    ");
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
