@@ -75,7 +75,7 @@ void LuaRunTask(void *data) {
         mustCall(result,LuaTaskData->payload);
     }
     lLog("LUA (%u) Result: '%s'\n",RunningLuaScripts,result);
-    //delete LuaTaskData.program;
+    delete LuaTaskData->program;
     delete LuaTaskData;
     RunningLuaScripts--;
     vTaskDelete(NULL);
