@@ -470,7 +470,7 @@ void StartDatabase() {
     time(&now);
     timeinfo = localtime(&now);
     int day = timeinfo->tm_mday;
-    int month = timeinfo->tm_mon;
+    int month = timeinfo->tm_mon+1;
     sprintf(DBFileLast,DBFileMask,day,month);
     if (!LittleFS.exists(DBFileLast)) {
         bool reached = LittleFS.rename(DBFile,DBFileLast);

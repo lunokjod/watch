@@ -75,7 +75,7 @@ void LuaInit() {
 void LuaRunTask(void *data) {
     LuaCallbackData * LuaTaskData = (LuaCallbackData*)data;
     const char * code = LuaTaskData->program->c_str();
-    lLog("LUA (%u) Code:\n%s\nLUA End\n",RunningLuaScripts,code);
+    lLog("LUA (%u) Code:\n%s\nLUA (%u) Code End\n",RunningLuaScripts,code,RunningLuaScripts);
     const char * result = lua.Lua_dostring(LuaTaskData->program).c_str();
     if ( nullptr != LuaTaskData->callback ) {
         LuaCallback mustCall = LuaTaskData->callback;
