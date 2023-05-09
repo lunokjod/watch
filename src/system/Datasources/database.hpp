@@ -41,7 +41,7 @@ class Database {
         UBaseType_t sqlWorkerPriority = DATABASEPRIORITY;
         sqlite3 *databaseDescriptor;
         const char * filename;
-        QueueHandle_t queue;
+        QueueHandle_t queue=NULL;
         volatile bool taskRunning=false;
         volatile bool taskEnded=false;
         SemaphoreHandle_t lock = xSemaphoreCreateMutex();
@@ -62,10 +62,11 @@ extern Database * systemDatabase;
 
 void StartDatabase();
 void StopDatabase();
+void CleanupDatabase();
 
 //@TODO @DEPRECATED SHIT MUST BE PORTED TO Database class
 void SqlUpdateBluetoothDevice(const char * mac,double distance=-1, int locationGroup=0);
-void SqlJSONLog(const char * from, const char * logLine);
+//void SqlJSONLog(const char * from, const char * logLine);
 void SqlAddBluetoothDevice(const char * mac, double distance=-1, int locationGroup=0);
 void SqlRefreshBluetoothDevice(const char * mac);
 //void SqlCleanUnusedBluetoothDevices();

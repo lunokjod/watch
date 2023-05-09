@@ -25,6 +25,7 @@
 #include "system/Network/WiFi.hpp"
 #include "system/Network.hpp"
 #include "system/Storage/Settings.hpp"
+#include "system/Storage/vfs.hpp"
 
 // almost empty defines to clarify the paramethers direction (see declarations below)
 #define IN const // clarify to developer if the data is input or output

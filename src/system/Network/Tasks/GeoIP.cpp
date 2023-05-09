@@ -108,7 +108,13 @@ void GeoIPWifiTask::Launch() {
     lNetLog("Task: %p '%s' Country '%s' City: '%s'\n",this,Name(),weatherCountry,weatherCity);
 
     String jsonString = myObject.stringify(myObject);
-    SqlJSONLog("geoip",jsonString.c_str());
+    const char * filebase = "/littlefs/geoip.log";
+    FILE *pFile = fopen(filebase, "a");
+    const char * asChar = jsonString.c_str();
+    fwrite(asChar,sizeof(char),strlen(asChar),pFile);
+    fwrite("\n",sizeof(char),strlen("\n"),pFile);
+    fclose(pFile);
+    //SqlJSONLog("geoip",jsonString.c_str());
     return;
 }
 

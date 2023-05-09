@@ -31,6 +31,12 @@ typedef struct {
 } LuaCallbackData;
 
 extern "C" {
+
+
+    static int lua_wrapper_millis(lua_State *lua_state) {
+        lua_pushnumber(lua_state, (lua_Number) millis());
+        return 1;
+    }
     static int myFunction(lua_State *lua_state) {
         Serial.println("Hi from my C function");
         return 0;
@@ -63,6 +69,7 @@ extern "C" {
 void LuaInit() {
     lua.Lua_register("print", &lua_wrapper_lwatch_print);
     lua.Lua_register("log", &lua_wrapper_lwatch_print);
+    lua.Lua_register("millis", &lua_wrapper_millis);
     lua.Lua_register("myFunction", &myFunction);
 }
 void LuaRunTask(void *data) {
@@ -87,5 +94,5 @@ void LuaRun(const String LuaProgram, LuaCallback callback, void *payload) {
     mypkg->callback = callback;
     mypkg->payload=payload;
     mypkg->program=new String(LuaProgram);
-    xTaskCreatePinnedToCore(LuaRunTask, "luaScr", LUNOKIOT_APP_STACK_SIZE, mypkg, LUAPRIORITY, NULL,LUACORE);
+    xTaskCreatePinnedToCore(LuaRunTask, "luaScr", LUNOKIOT_TASK_STACK_SIZE, mypkg, LUAPRIORITY, NULL,LUACORE);
 }

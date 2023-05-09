@@ -340,7 +340,6 @@ static void DoSleepTask(void *args) {
 
     uint64_t newTime = LUNOKIOT_WAKE_TIME_S; // normal wake time
     if ( LoT().GetBLE()->IsEnabled() ) {
-        lLog("@TODO BLE WAKEUP AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
         esp_err_t bleSleep = esp_bt_sleep_enable();     //CONFIG_CTRL_BTDM_MODEM_SLEEP
         if ( ESP_OK != bleSleep ) { lSysLog("ERROR: Unable to set BLE wakeup\n"); }
         newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S;
@@ -481,37 +480,13 @@ static void BMAEventActivity(void *handler_args, esp_event_base_t base, int32_t 
 
         int activity=-1; // the offset of strings BMAMessages
         // current activity mark
-        if (0 == strcmp("BMA423_USER_STATIONARY", nowActivity)) {
-            activity=0;
-            //SqlLog("Activity: Stationary");
-        }
-        else if (0 == strcmp("BMA423_USER_WALKING", nowActivity)) {
-            activity=1;
-            //SqlLog("Activity: Walking");
-        }
-        else if (0 == strcmp("BMA423_USER_RUNNING", nowActivity)) {
-            activity=2;
-            //SqlLog("Activity: Running");
-        }
-        else if (0 == strcmp("BMA423_STATE_INVALID", nowActivity)) {
-            activity=3;
-            //SqlLog("Activity: Invalid");
-        }
-        else if (0 == strcmp("None", nowActivity)) {
-            activity=4;
-            //SqlLog("Activity: None");
-        }
-        if ( -1 != activity ) {
-            SqlLog(BMAMessages[activity]);
-            /*
-            const char fmtStr[]="INSERT INTO rawlogSession VALUES (CURRENT_TIMESTAMP,'%s');";
-            size_t totalsz = strlen(fmtStr)+strlen(BMAMessages[activity])+8;
-            char * query=(char*)ps_malloc(totalsz);
-            sprintf(query,fmtStr,BMAMessages[activity]);
-            if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
-            free(query);
-            */
-        }
+        if (0 == strcmp("BMA423_USER_STATIONARY", nowActivity)) { activity=0;
+        } else if (0 == strcmp("BMA423_USER_WALKING", nowActivity)) { activity=1;
+        } else if (0 == strcmp("BMA423_USER_RUNNING", nowActivity)) { activity=2;
+        } else if (0 == strcmp("BMA423_STATE_INVALID", nowActivity)) { activity=3;
+        } else if (0 == strcmp("None", nowActivity)) { activity=4; }
+
+        if ( -1 != activity ) { SqlLog(BMAMessages[activity]); }
         FreeSpace();
 
         lEvLog("BMA423: Event: Last actity: %s\n", currentActivity);
@@ -691,13 +666,15 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
     const char AlwaysOnAppName[] = "Always on";
     bool screenOn = ttgo->bl->isOn();
     if (screenOn) {
-        if ( nullptr != currentApplication ) {
-            if ( 0 == strncmp(currentApplication->AppName(),AlwaysOnAppName,strlen(AlwaysOnAppName)) ) {
-                lEvLog("Event: user wants launch watchface\n");
-                LaunchWatchface(true,true);
-                return;
-            }
-        }
+        //if ( nullptr != currentApplication ) {
+            //if ( 0 == strncmp(currentApplication->AppName(),AlwaysOnAppName,strlen(AlwaysOnAppName)) ) {
+            //if ( false == currentApplication->isWatchface() ) {
+            //    lEvLog("Event: user wants launch watchface\n");
+            //    LaunchWatchface(true);
+            //    return;
+            //}
+            //}
+        //}
         lEvLog("Event: user wants to put device to sleep\n");
         FreeSpace();
         ScreenSleep();
@@ -709,7 +686,7 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         FreeSpace();
         ScreenWake();
-        LaunchWatchface(false,true);
+        LaunchWatchface(false);
     }
 }
 
@@ -814,7 +791,8 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 }
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    //SqlLog("stop");
+    SqlLog("stop");
+    if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
     lSysLog("System event: Stop\n");
 }
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
@@ -1908,6 +1886,7 @@ void TakeAllSamples() {
         SqlLog(logMsg);
         sprintf(logMsg,"Battery: %d, USB: %s", batteryPercent, (vbusPresent?"yes":"no"));
         SqlLog(logMsg);
+        //if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
         nextReportTimestamp=millis()+(10*60*1000);
     }
 

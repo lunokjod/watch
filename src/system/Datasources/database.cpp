@@ -42,6 +42,7 @@
 Database * systemDatabase=nullptr;
 const char JournalFile[]="/lwatch.db-journal";
 const char DBFile[]="/lwatch.db";
+const char DBFileMask[]="/lwatch_%d-%d.db";
 int8_t Database::openedDatabases=0;
 
 
@@ -50,6 +51,14 @@ const char *BLEDeleteQuery=(const char *)"DELETE FROM bluetooth WHERE address = 
 const char *BLEUpdateQuery=(const char *)"UPDATE OR IGNORE bluetooth SET timestamp = CURRENT_TIMESTAMP, locationGroup = %d WHERE address='%s';"; 
 const char *BLEInsertQuery=(const char *)"INSERT OR IGNORE INTO bluetooth VALUES (CURRENT_TIMESTAMP,'%s',%g,%d);";
 const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FROM bluetooth WHERE address='%s' ORDER BY address DESC LIMIT 1;";
+const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
+//const char *jsonLogCleanUnusedQuery=(const char *)"DELETE FROM jsonlog WHERE (timestamp <= datetime('now', '-8 days'));";
+const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
+const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
+const char *queryDumpSessionLog=(const char *)"INSERT INTO rawlog SELECT timestamp,message FROM rawlogSession;";
+//const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog (  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
+const char *DropSessionTable=(const char *)"DROP TABLE rawlogSession;";
+const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 
 char *zErrMsg = nullptr;
@@ -181,8 +190,8 @@ void Database::_DatabaseWorkerTaskLoop() {
         // temporal disable watchdog for me :)
         esp_err_t susbcribed = esp_task_wdt_status(NULL);
         if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
+        //lLog("@DEBUG DATABASE DISABLED, query ignored\n");
         rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
-        
         if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
@@ -368,7 +377,7 @@ void SqlAddBluetoothDevice(const char * mac, double distance, int locationGroup)
     systemDatabase->SendSQL(query);
     free(query);
 }
-
+/*
 void SqlJSONLog(const char * from, const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
     //const char fmtStr[]="INSERT INTO jsonLog VALUES (NULL,CURRENT_TIMESTAMP,'%s',unishox1c('%s'));";
@@ -384,7 +393,7 @@ void SqlJSONLog(const char * from, const char * logLine) {
     systemDatabase->SendSQL(query);
     free(query);
 }
-
+*/
 void SqlLog(const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
     const char fmtStr[]="INSERT INTO rawlogSession VALUES (CURRENT_TIMESTAMP,'%s');";
@@ -433,6 +442,20 @@ void NotificationLogSQL(const char * sqlQuery) {
     return;
 }
 */
+void CleanupDatabase() {
+    if ( nullptr != systemDatabase ) {
+        // Create tables and clean SQL old devices
+        systemDatabase->SendSQL(rawLogCleanUnusedQuery);
+        //systemDatabase->SendSQL(jsonLogCleanUnusedQuery);
+        systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
+        systemDatabase->SendSQL(BLECleanUnusedQuery);
+        systemDatabase->SendSQL(queryDumpSessionLog);
+        systemDatabase->SendSQL(DropSessionTable);
+        systemDatabase->SendSQL(queryCreateSessionRAWLog);
+    }
+    systemDatabase->Commit();
+}
+
 void StopDatabase() {
     delete systemDatabase;
     systemDatabase=nullptr;
@@ -440,6 +463,28 @@ void StopDatabase() {
 }
 
 void StartDatabase() {
+    // rotate the files
+    char * DBFileLast = (char*)ps_malloc(1024);
+    time_t now;
+    struct tm *timeinfo;
+    time(&now);
+    timeinfo = localtime(&now);
+    int day = timeinfo->tm_mday;
+    int month = timeinfo->tm_mon;
+    sprintf(DBFileLast,DBFileMask,day,month);
+    if (!LittleFS.exists(DBFileLast)) {
+        bool reached = LittleFS.rename(DBFile,DBFileLast);
+        if ( reached ) {
+            if (LittleFS.exists(JournalFile)) {
+                LittleFS.remove(JournalFile);
+                lLog("Database: Destroy old journaling\n");
+            }
+            lLog("Database: Rotated to %d-%d\n",day,month);
+        }
+
+    }
+    free(DBFileLast);
+
     // seems be on littleFS must create the file (SPIFFS not)
     if (!LittleFS.exists(DBFile)){
         File file = LittleFS.open(DBFile, FILE_WRITE);   //  /littlefs is automatically added to the front 

@@ -172,7 +172,13 @@ bool WeatherWifiTask::NetworkParseWeatherData() {
     weatherWindSpeed = wind["speed"];
 
     String jsonString = myObject.stringify(myObject);
-    SqlJSONLog("oweather",jsonString.c_str());
+    const char * filebase = "/littlefs/oweather.log";
+    FILE *pFile = fopen(filebase, "a");
+    const char * asChar = jsonString.c_str();
+    fwrite(asChar,sizeof(char),strlen(asChar),pFile);
+    fwrite("\n",sizeof(char),strlen("\n"),pFile);
+    fclose(pFile);
+    //SqlJSONLog("oweather",jsonString.c_str());
 
     return true;
 }
