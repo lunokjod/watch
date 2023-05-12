@@ -462,7 +462,7 @@ void StopDatabase() {
     return;
 }
 
-void StartDatabase() {
+void JournalDatabase() {
     // rotate the files
     char * DBFileLast = (char*)ps_malloc(1024);
     time_t now;
@@ -484,6 +484,10 @@ void StartDatabase() {
 
     }
     free(DBFileLast);
+}
+
+void StartDatabase() {
+    JournalDatabase();
 
     // seems be on littleFS must create the file (SPIFFS not)
     if (!LittleFS.exists(DBFile)){

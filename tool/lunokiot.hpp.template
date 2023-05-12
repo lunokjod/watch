@@ -83,6 +83,7 @@ const PROGMEM char LastVersionURL[] = "https://raw.githubusercontent.com/lunokjo
 #define LUNOKIOT_MID_STACK_SIZE 1024*6
 #define LUNOKIOT_APP_STACK_SIZE 1024*8  // UI task
 #define LUNOKIOT_NETWORK_STACK_SIZE 1024*16  // WiFi
+#define LUNOKIOT_UI_STACK 1024*32  // UI Loop
 #define LUNOKIOT_PROVISIONING_STACK_SIZE 1024*32    // BLE/OTA/Provisioning/webserver
 #define LUNOKIOT_NETWORK_TASK_STACK_SIZE 1024*22
 

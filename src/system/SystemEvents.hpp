@@ -131,13 +131,12 @@ static inline void FreeSpace() {
 
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
-/*
+    /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();
     lLog("ESP32: Himem has %dKiB of memory, %dKiB of which is free. Testing the free memory...\n", (int)memcnt/1024, (int)memfree/1024);
-
- uxTaskGetSnapshotAll()
-*/
+    */
+// uxTaskGetSnapshotAll()
 
 }
 

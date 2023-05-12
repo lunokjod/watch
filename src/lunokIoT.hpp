@@ -45,6 +45,7 @@ class LunokIoT {
             static LunokIoT _myInstance;
             return _myInstance;
         }
+        long int GetSecondsUntilHour(int desiredHour=0);
         void ListLittleFS(const char *path="/");
         bool IsLittleFSEnabled();
         void BootReason();
@@ -90,6 +91,8 @@ class LunokIoT {
         bool normalBoot=true;
         //bool NVSReady=false;
         void InitLogs();
+        void InstallRotateLogs();
+        Ticker LunokIoTSystemLogRotation;
 };
 
 #endif

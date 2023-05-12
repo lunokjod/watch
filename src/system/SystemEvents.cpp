@@ -75,7 +75,6 @@ extern TTGOClass *ttgo; // ttgo library
 #include <LittleFS.h>
 
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
-
 uint32_t systemStatsBootCounter = 0;
 uint32_t systemStatsRebootCounter = 0;
 uint32_t systemStatsCrashCounter = 0;
@@ -168,6 +167,7 @@ void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callbac
     if (false == ttgo->bl->isOn()) { return; } // only when screen is on
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
 }
+
 
 void LunokIoTSystemTickerStop() {
     if ( false == LunokIoTSystemTicker.active() ) { return; }
@@ -412,15 +412,6 @@ void DoSleep() {
             DoSleep();
         }
     });
-    /*
-    systemSleep = false;
-    if (false == ttgo->bl->isOn()) {                
-
-
-        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        FreeSpace();
-        ScreenWake(); <=== HERE IS THE FAULT!!!!!! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    }*/
 }
 
 const char *BMAMessages[] = {
@@ -826,33 +817,6 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
 
 }
 
-void SystemBMARestitution() {
-    return;
-    /*
-    // the date must be from the past (when event occurs)
-    // other "real-time events" don't need set timestamp manually
-    const char fmtStr[]="INSERT INTO rawlog VALUES (NULL,'%02u-%02u-%04u %02u:%02u:%02u','%s');";
-    if (BMAActivitesOffset > 0 ) {
-        for(int c=0;c<BMAActivitesOffset;c++) {
-            uint8_t currAct=BMAActivitesBuffer[c];
-            RTC_Date r=BMAActivitesTimes[c];
-            lEvLog("BMA: Pending activity (%d): %02u:%02u:%02u date: %02u-%02u-%04u ",c,r.hour,r.minute,r.second,r.day,r.month,r.year); 
-            lLog("%u: '%s' dump to SQLite\n",currAct,BMAMessages[currAct]);
-            size_t totalsz = strlen(fmtStr)+40;
-            char * query=(char*)ps_malloc(totalsz);
-            if ( nullptr == query ) {
-                lEvLog("BMA: ERROR: Pending activity (%d) unable to build SQL query!!!\n",c);
-                continue;
-            }
-            sprintf(query,fmtStr,r.day,r.month,r.year,r.hour,r.minute,r.second,BMAMessages[currAct]);
-            if ( nullptr != systemDatabase ) { systemDatabase->SendSQL(query); }
-            free(query);
-        }
-        BMAActivitesOffset=0;
-    }
-    */
-}
-
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
     //SqlLog("wake");
@@ -872,7 +836,7 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
     if ( launchLamp ) { // is the correct pose to get light?
         bool lampGestureSetting = NVS.getInt("lampGesture");
         lSysLog("User wants Lamp? %s\n",(launchLamp?"YES":"no"));
-        if (lampGestureSetting  ) { LaunchApplication(new LampApplication()); }
+        if ( lampGestureSetting ) { LaunchApplication(new LampApplication()); }
         return;
     } else if ( nullptr == currentApplication ) {
         LaunchWatchface(false);
@@ -882,9 +846,6 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
         }
     }
     // In case of already running a watchface, do nothing
-
-    // check the BMA ACTIVITIES during sleep
-    SystemBMARestitution();
 }
 // called when system is up
 static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {

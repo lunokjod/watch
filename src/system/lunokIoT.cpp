@@ -230,7 +230,6 @@ LunokIoT::LunokIoT() {
 
     SplashAnnounce("      LUA      ");
     LuaInit();
-    LuaRun(luaCodeTest);
 
     SplashAnnounce("    Database    ");
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
@@ -268,10 +267,12 @@ LunokIoT::LunokIoT() {
     SplashAnnounce("     Launch GUI      ");
     UIStart();
 
+    InstallRotateLogs();
 
     SplashAnnounceEnd();
     SetUserBrightness();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
+
     FreeSpace();
     
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
@@ -374,6 +375,33 @@ void LunokIoT::ListLittleFS(const char *path) {
     lSysLog("LittleFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
 }
 
+
+long int LunokIoT::GetSecondsUntilHour(int desiredHour) {
+    struct tm* tm;
+    time_t ts=time(NULL);
+    if(tm=localtime(&ts)) {
+        long int delta;
+        tm->tm_hour = desiredHour;
+        tm->tm_min = 0;
+        tm->tm_sec = 0;
+        delta = mktime(tm) - ts;
+        if( 0>delta ) { delta+=24*60*60; }
+        return delta;
+    }
+    return 0;
+}
+
+void LunokIoT::InstallRotateLogs() {
+    long int remainingSeconds=GetSecondsUntilHour(0); // at midnight
+    lSysLog("Rotatelog: planed in %d seconds\n",remainingSeconds);
+    LunokIoTSystemLogRotation.attach(remainingSeconds,[]() {
+        lSysLog("Rotatelog: Begin\n");
+        StopDatabase();
+        JournalDatabase();
+        StartDatabase();
+        lSysLog("Rotatelog: End\n");
+    });
+}
 
 void LunokIoT::BootReason() { // check boot status
     bool normalBoot = false;

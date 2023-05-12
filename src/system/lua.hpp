@@ -26,8 +26,6 @@ const uint8_t LUACORE = 1;
 const UBaseType_t LUAPRIORITY = tskIDLE_PRIORITY;
 typedef std::function<void (const char* response, void *payload)> LuaCallback;
 
-const static String luaCodeTest="log('awwwyeahhh')\nmyFunction()\nreturn 'test'";
-
 void LuaInit();
 void LuaRun(const String LuaProgram, LuaCallback callback=nullptr, void *payload=nullptr);
 

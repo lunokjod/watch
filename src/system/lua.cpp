@@ -37,10 +37,6 @@ extern "C" {
         lua_pushnumber(lua_state, (lua_Number) millis());
         return 1;
     }
-    static int myFunction(lua_State *lua_state) {
-        Serial.println("Hi from my C function");
-        return 0;
-    }
 
     static int lua_wrapper_lwatch_print(lua_State *L) {
         // no mutex here... ¿why?
@@ -70,7 +66,6 @@ void LuaInit() {
     lua.Lua_register("print", &lua_wrapper_lwatch_print);
     lua.Lua_register("log", &lua_wrapper_lwatch_print);
     lua.Lua_register("millis", &lua_wrapper_millis);
-    lua.Lua_register("myFunction", &myFunction);
 }
 void LuaRunTask(void *data) {
     LuaCallbackData * LuaTaskData = (LuaCallbackData*)data;

@@ -63,6 +63,7 @@ extern Database * systemDatabase;
 void StartDatabase();
 void StopDatabase();
 void CleanupDatabase();
+void JournalDatabase();
 
 //@TODO @DEPRECATED SHIT MUST BE PORTED TO Database class
 void SqlUpdateBluetoothDevice(const char * mac,double distance=-1, int locationGroup=0);

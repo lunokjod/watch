@@ -626,7 +626,6 @@ static void UITickTask(void* args) {
         if ( false == UIRunning ) { continue; }
         if ( systemSleep ) { continue; }
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
-
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         // Dynamic FPS... the apps receives less events per second
         if (( ESP_OK != what )||( isDelayed )) {
@@ -691,7 +690,7 @@ void UIStart() {
         .queue_size = 24,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = UIPRIORITY, // priorize UI over rest of system (responsive UI)
-        .task_stack_size = LUNOKIOT_NETWORK_STACK_SIZE, // normal arduinofw setup task stack
+        .task_stack_size = LUNOKIOT_UI_STACK, // normal arduinofw setup task stack
         .task_core_id = UICORE, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 

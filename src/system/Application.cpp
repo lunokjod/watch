@@ -241,7 +241,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         //    KillApplicationTaskSync(ptrToCurrent);
         //} else {
             // kill app in other thread (some apps takes much time)
-            xTaskCreatePinnedToCore(KillApplicationTask, "lkillApp", LUNOKIOT_TINY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,SYSTEMCORE);
+            xTaskCreatePinnedToCore(KillApplicationTask, "lkillApp", LUNOKIOT_QUERY_STACK_SIZE,(void*)ptrToCurrent, tskIDLE_PRIORITY, nullptr,SYSTEMCORE);
         //}
     }
     FreeSpace();
