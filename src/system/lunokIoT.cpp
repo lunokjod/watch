@@ -381,9 +381,9 @@ long int GetSecondsUntil(int hour,int minute, int second) {
     time_t ts=time(NULL);
     if(tm=localtime(&ts)) {
             long int delta;
-            tm->tm_hour = 21;
-            tm->tm_min = 0;
-            tm->tm_sec = 0;
+            tm->tm_hour = hour;
+            tm->tm_min = minute;
+            tm->tm_sec = second;
             delta = mktime(tm) - ts;
             if(delta<0) { delta+=24*60*60; }
             return delta;
