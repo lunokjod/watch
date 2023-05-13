@@ -376,31 +376,35 @@ void LunokIoT::ListLittleFS(const char *path) {
 }
 
 
-long int LunokIoT::GetSecondsUntilHour(int desiredHour) {
+long int GetSecondsUntil(int hour,int minute, int second) {
     struct tm* tm;
     time_t ts=time(NULL);
     if(tm=localtime(&ts)) {
-        long int delta;
-        tm->tm_hour = desiredHour;
-        tm->tm_min = 0;
-        tm->tm_sec = 0;
-        delta = mktime(tm) - ts;
-        if( 0>delta ) { delta+=24*60*60; }
-        return delta;
+            long int delta;
+            tm->tm_hour = 21;
+            tm->tm_min = 0;
+            tm->tm_sec = 0;
+            delta = mktime(tm) - ts;
+            if(delta<0) { delta+=24*60*60; }
+            return delta;
     }
     return 0;
 }
 
+void LunokIoT::LogRotate() {
+    lSysLog("Rotatelog: Begin\n");
+    StopDatabase();
+    JournalDatabase();
+    StartDatabase();
+    InstallRotateLogs();
+    lSysLog("Rotatelog: End\n");
+}
+
 void LunokIoT::InstallRotateLogs() {
-    long int remainingSeconds=GetSecondsUntilHour(0); // at midnight
-    lSysLog("Rotatelog: planed in %d seconds\n",remainingSeconds);
-    LunokIoTSystemLogRotation.attach(remainingSeconds,[]() {
-        lSysLog("Rotatelog: Begin\n");
-        StopDatabase();
-        JournalDatabase();
-        StartDatabase();
-        lSysLog("Rotatelog: End\n");
-    });
+    long int secondsUntilMidnight = GetSecondsUntil(0,0,0); //midnight
+    lSysLog("Rotatelog: Installed, launch planned in %d seconds\n",secondsUntilMidnight);
+    // perform logrotate at midnight
+    LunokIoTSystemLogRotation.attach((float)secondsUntilMidnight,[]() { LoT().LogRotate(); });
 }
 
 void LunokIoT::BootReason() { // check boot status
