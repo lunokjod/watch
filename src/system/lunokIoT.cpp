@@ -254,7 +254,6 @@ LunokIoT::LunokIoT() {
 
     // hooks for activities
     SplashAnnounce("   Activities   ");
-    InstallStepManager();
     StartPMUMonitor();
     selectedWatchFace=NVS.getInt("UWatchF");
     if ( selectedWatchFace >= WatchFacesAvailiable() ) {
@@ -391,20 +390,71 @@ long int GetSecondsUntil(int hour,int minute, int second) {
     return 0;
 }
 
+extern uint32_t weekSteps[7];
+extern uint8_t lastStepsDay;
+extern uint32_t lastBootStepCount;
+
 void LunokIoT::LogRotate() {
-    lSysLog("Rotatelog: Begin\n");
+    lEvLog("Rotatelog: Begin\n");
     StopDatabase();
     JournalDatabase();
     StartDatabase();
+
+    lEvLog("StepCounter: Rotating...\n");
+    
+    time_t now;
+    struct tm * tmpTime;
+    time(&now);
+    tmpTime = localtime(&now);
+
+    // my weeks begins on monday not sunday
+    int correctedDay = tmpTime->tm_wday-2; // use the last day recorded to save on it
+    if ( correctedDay == -2 ) { correctedDay = 5; }
+    else if ( correctedDay == -1 ) { correctedDay = 6; }
+    weekSteps[correctedDay] = stepCount;
+    stepCount = 0;
+    lastBootStepCount = 0;
+    NVS.setInt("stepCount",0,false);
+    lastStepsDay = tmpTime->tm_wday; // set the last register is today in raw
+
+
+    // reset all counters
+    ttgo->bma->resetStepCounter();
+    beginStepsBMAActivity=0; // sorry current activity is discarded
+    beginBMAActivity=0;
+    
+    stepsBMAActivityStationary = 0; // clean all
+    timeBMAActivityStationary = 0;
+    stepsBMAActivityWalking = 0;
+    timeBMAActivityWalking = 0;
+    stepsBMAActivityRunning = 0;
+    timeBMAActivityRunning = 0;
+    stepsBMAActivityInvalid = 0;
+    timeBMAActivityInvalid = 0;
+    stepsBMAActivityNone = 0;
+    timeBMAActivityNone = 0;
+
+    for(int a=0;a<7;a++) { // Obtain the last days steps
+        if ( weekSteps[a] > 0 ) {
+            char keyName[16] = {0};
+            sprintf(keyName,"lWSteps_%d",a);
+            //lLog("SAVING: %s %d\n",keyName,weekSteps[a]);
+            NVS.setInt(keyName,weekSteps[a],false);
+        }
+    }
+    NVS.setInt("lstWeekStp",lastStepsDay,false);
+    lEvLog("StepCounter: Rotation Ends\n");
+
+    delay(1000); // wait one second to not collide with current second
     InstallRotateLogs();
-    lSysLog("Rotatelog: End\n");
+    lEvLog("Rotatelog: End\n");
 }
 
 void LunokIoT::InstallRotateLogs() {
     long int secondsUntilMidnight = GetSecondsUntil(0,0,0); //midnight
     lSysLog("Rotatelog: Installed, launch planned in %d seconds\n",secondsUntilMidnight);
     // perform logrotate at midnight
-    LunokIoTSystemLogRotation.attach((float)secondsUntilMidnight,[]() { LoT().LogRotate(); });
+    LunokIoTSystemLogRotation.once((float)secondsUntilMidnight,[]() { LoT().LogRotate(); });
 }
 
 void LunokIoT::BootReason() { // check boot status

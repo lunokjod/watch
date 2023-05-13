@@ -687,7 +687,7 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
 void UIStart() {
     // create the UI event loop
     esp_event_loop_args_t uiEventloopConfig = {
-        .queue_size = 24,   // so much, but with multitask delays... maybe this is the most easy
+        .queue_size = 32,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = UIPRIORITY, // priorize UI over rest of system (responsive UI)
         .task_stack_size = LUNOKIOT_UI_STACK, // normal arduinofw setup task stack
