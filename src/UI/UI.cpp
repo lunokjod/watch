@@ -173,6 +173,7 @@ static void UIAnchor2DChange(void* handler_args, esp_event_base_t base, int32_t 
     lUILog("UI: Anchor(%p) Changed X: %d Y: %d\n",anchor, deltaX, deltaY);
 }*/
 
+/*
 void TakeScreenShootSound() {
 #ifdef LUNOKIOT_SILENT_BOOT
     lUILog("Audio: Not initialized due Silent boot is enabled\n");
@@ -220,7 +221,7 @@ void TakeScreenShootSound() {
 #endif
 
 }
-
+*/
 
 // https://www.gamedev.net/forums/topic.asp?topic_id=295943
 /* IsPointInTri() - 

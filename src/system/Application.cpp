@@ -27,6 +27,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
 #include "../UI/transition/ZoomOut.hpp" // animation
+#include "../UI/transition/Fade.hpp" // animation
 #include "../app/LogView.hpp"
 
 #include "../app/Watchface2.hpp"
@@ -36,7 +37,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../app/WatchfaceBasic.hpp"
 
 #include "SystemEvents.hpp"
-
+#include <esp_task_wdt.h>
 #include <functional>
 #include <string.h>
 #include "Datasources/database.hpp"
@@ -161,7 +162,25 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
             if ( animation ) {
                 // no datbase use during the transition (speed up)
                 if ( nullptr != systemDatabase ) { systemDatabase->Lock(); }
-                ZoomOutTransition(ptrToCurrent->canvas,appView);
+                    // temporal disable watchdog for me :)
+                    esp_err_t susbcribed = esp_task_wdt_status(NULL);
+                    if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
+
+                    // set better priority
+                    UBaseType_t myPriority = uxTaskPriorityGet(NULL);
+                    vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
+                    taskYIELD();
+
+                    // run this part fast as possible
+                    ZoomOutTransition(ptrToCurrent->canvas,appView);
+                    //FadeTransition(ptrToCurrent->canvas,appView);
+
+                    // restore my priority
+                    vTaskPrioritySet(NULL,myPriority);
+
+                    // restore watchdog
+                    if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
+                    taskYIELD();
                 if ( nullptr != systemDatabase ) { systemDatabase->UnLock(); }
             }
         }

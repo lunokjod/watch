@@ -17,7 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#include "ZoomOut.hpp"
+#include "Fade.hpp"
 #include <freertos/semphr.h>
 #include <freertos/task.h>
 #include "../../lunokiot_config.hpp"
@@ -26,28 +26,22 @@
 
 extern SemaphoreHandle_t UISemaphore;
 
-void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
-    // scale screen buffer
-    const int images=4;
-    TFT_eSprite *scaledImgs[images];
-    scaledImgs[0] = ScaleSprite(nextView,0.25);
-    scaledImgs[1] = ScaleSprite(nextView,0.5);
-    scaledImgs[2] = ScaleSprite(nextView,0.65);
-    scaledImgs[3] = ScaleSprite(nextView,0.8);
-    for(int scale=0;scale<images;scale++) {
-        TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
-        TFT_eSprite *scaledImg = scaledImgs[scale];
-        if ( nullptr != scaledImg ) {
-            scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
+void FadeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
+    // draw by fade
+    //for(uint16_t balance=0;balance<256;balance+=(256/4)) {
+        //TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
+        for(int32_t y=0;y<curentView->height();y+=2) {
+            for(int32_t x=0;x<curentView->width();x+=2) {
+                //uint16_t oldColor = curentView->readPixel(x,y);
+                uint16_t newColor = nextView->readPixel(x,y);
+                //uint16_t finalColor = tft->alphaBlend(balance,newColor,oldColor);
+                //tft->drawPixel(x,y,finalColor);
+                tft->drawPixel(x,y,newColor);
+            }
         }
-        BaseType_t delayed = xTaskDelayUntil( &nextStep, (50 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
-    }
+        //BaseType_t delayed = xTaskDelayUntil( &nextStep, (50 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
+        //taskYIELD();
+    //}
     // push full image
     nextView->pushSprite(0,0);
-    // cleanup
-    for(int i=0;i<images;i++) {
-        if ( nullptr == scaledImgs[i] ) { continue; }
-        scaledImgs[i]->deleteSprite();
-        delete scaledImgs[i];
-    }
 }
