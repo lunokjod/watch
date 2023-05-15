@@ -820,8 +820,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
 
 static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lSysLog("System event: Wake\n");
-    //SqlLog("wake");
-
+    SqlLog("wake");
     TakeAllSamples(); // get current pose
     
     //lSysLog("GESTURE? %f,%f,%f\n", degX, degY, degZ);

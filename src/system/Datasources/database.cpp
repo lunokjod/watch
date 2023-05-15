@@ -58,7 +58,6 @@ const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FRO
 //const char *queryDumpSessionLog=(const char *)"INSERT INTO rawlog SELECT timestamp,message FROM rawlogSession;";
 //const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog (  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
 //const char *DropSessionTable=(const char *)"DROP TABLE rawlogSession;";
-const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 
 char *zErrMsg = nullptr;
@@ -196,7 +195,7 @@ void Database::_DatabaseWorkerTaskLoop() {
         free(myData->query);
         free(myData);
         //UnLock();
-        //taskYIELD();
+        taskYIELD();
         //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
         //lLog("Database: Watermark Stack: %u\n",highWater);
     }
@@ -255,13 +254,13 @@ Database::~Database() {
 void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *payload) {
     // add element to queue
     if ( NULL == queue ) {
-        lLog("Database: %p ERROR: No queue valid for this database (see the logs)\n");
+        lLog("Database: %p ERROR: No queue valid for this database (see the logs)\n",this);
         return;
     }
     SQLQueryData * newQuery = (SQLQueryData *)ps_malloc(sizeof(SQLQueryData));
     char * queryCopy = (char*)ps_malloc(strlen(sqlQuery)+1);
     strcpy(queryCopy,sqlQuery);
-    //sprintf(queryCopy,sqlQuery);
+    //lLog("Database: %p DEBUG: QUERY: '%s'\n",this,queryCopy);
     newQuery->query=queryCopy;
     newQuery->callback=callback;
     newQuery->payload=payload;
@@ -451,7 +450,7 @@ void CleanupDatabase() {
         //systemDatabase->SendSQL(BLECleanUnusedQuery);
         //systemDatabase->SendSQL(queryDumpSessionLog);
         //systemDatabase->SendSQL(DropSessionTable);
-        systemDatabase->SendSQL(queryCreateSessionRAWLog);
+        //systemDatabase->SendSQL(queryCreateSessionRAWLog);
     }
     systemDatabase->Commit();
 }
@@ -465,14 +464,18 @@ void StopDatabase() {
 void JournalDatabase() {
     // rotate the files
     char * DBFileLast = (char*)ps_malloc(1024);
+    // get day-month
     time_t now;
     struct tm *timeinfo;
     time(&now);
     timeinfo = localtime(&now);
     int day = timeinfo->tm_mday;
     int month = timeinfo->tm_mon+1;
+    // build journal filename
     sprintf(DBFileLast,DBFileMask,day,month);
+    // exists?
     if (!LittleFS.exists(DBFileLast)) {
+        // doncare if the file don't exists
         bool reached = LittleFS.rename(DBFile,DBFileLast);
         if ( reached ) {
             if (LittleFS.exists(JournalFile)) {
@@ -487,8 +490,6 @@ void JournalDatabase() {
 }
 
 void StartDatabase() {
-    JournalDatabase();
-
     // seems be on littleFS must create the file (SPIFFS not)
     if (!LittleFS.exists(DBFile)){
         File file = LittleFS.open(DBFile, FILE_WRITE);   //  /littlefs is automatically added to the front 

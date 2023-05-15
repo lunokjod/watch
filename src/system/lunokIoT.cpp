@@ -123,8 +123,9 @@ bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 //#include "esp_console.h"
 
 const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
-const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+//const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
+const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
@@ -234,10 +235,11 @@ LunokIoT::LunokIoT() {
     SplashAnnounce("    Database    ");
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
-        systemDatabase->SendSQL(queryCreateRAWLog);
+        //systemDatabase->SendSQL(queryCreateRAWLog);
         //systemDatabase->SendSQL(queryCreateJSONLog);
         systemDatabase->SendSQL(queryCreateNotifications);
         systemDatabase->SendSQL(BLECreateTable);
+        systemDatabase->SendSQL(queryCreateSessionRAWLog);
         systemDatabase->Commit();
     }
     SplashAnnounce("   User prefs   ");
@@ -399,6 +401,10 @@ void LunokIoT::LogRotate() {
     StopDatabase();
     JournalDatabase();
     StartDatabase();
+    systemDatabase->SendSQL(queryCreateNotifications);
+    systemDatabase->SendSQL(BLECreateTable);
+    systemDatabase->SendSQL(queryCreateSessionRAWLog);
+    systemDatabase->Commit();
 
     lEvLog("StepCounter: Rotating...\n");
     

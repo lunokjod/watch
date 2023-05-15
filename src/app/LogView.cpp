@@ -137,7 +137,7 @@ LogViewApplication::LogViewApplication() {
 //                            "SELECT * FROM Table1 t1 INNER JOIN Table2 t2 ON t1.id = t2.id GROUP BY t1.data1;"
 //    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY timestamp DESC LIMIT 200;");//, LogEventsParser);
     systemDatabase->SendSQL("SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT 200;",LogEventsParser);
-    systemDatabase->SendSQL("SELECT origin FROM jsonLog ORDER BY timestamp DESC LIMIT 200;", LogEventsParserJSON);
+    //systemDatabase->SendSQL("SELECT origin FROM jsonLog ORDER BY timestamp DESC LIMIT 200;", LogEventsParserJSON);
     /*
     char *zErrMsg;
     if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
