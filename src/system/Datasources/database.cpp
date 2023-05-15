@@ -245,6 +245,7 @@ Database::~Database() {
     taskRunning=false;
     while(false == taskEnded) {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+        taskYIELD();
         xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
     lLog("Database: %p Thread %p dead\n",this,databaseQueueTask);
@@ -260,7 +261,7 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     SQLQueryData * newQuery = (SQLQueryData *)ps_malloc(sizeof(SQLQueryData));
     char * queryCopy = (char*)ps_malloc(strlen(sqlQuery)+1);
     strcpy(queryCopy,sqlQuery);
-    //lLog("Database: %p DEBUG: QUERY: '%s'\n",this,queryCopy);
+    lLog("Database: %p DEBUG: QUERY: '%s'\n",this,queryCopy);
     newQuery->query=queryCopy;
     newQuery->callback=callback;
     newQuery->payload=payload;
@@ -273,7 +274,7 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
 }
 
 
-
+/*
 static int SQLiteCallback(void *data, int argc, char **argv, char **azColName) {
    int i;
    lSysLog("SQL: Data dump:\n");
@@ -281,7 +282,7 @@ static int SQLiteCallback(void *data, int argc, char **argv, char **azColName) {
        lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
    }
    return 0;
-}
+}*/
 
 static int BLESqlGetDeviceCallback(void *data, int argc, char **argv, char **azColName) {
     int i;
@@ -444,13 +445,6 @@ void NotificationLogSQL(const char * sqlQuery) {
 void CleanupDatabase() {
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
-        //systemDatabase->SendSQL(rawLogCleanUnusedQuery);
-        //systemDatabase->SendSQL(jsonLogCleanUnusedQuery);
-        //systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
-        //systemDatabase->SendSQL(BLECleanUnusedQuery);
-        //systemDatabase->SendSQL(queryDumpSessionLog);
-        //systemDatabase->SendSQL(DropSessionTable);
-        //systemDatabase->SendSQL(queryCreateSessionRAWLog);
     }
     systemDatabase->Commit();
 }

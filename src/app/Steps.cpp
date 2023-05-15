@@ -61,8 +61,6 @@ StepsApplication::~StepsApplication() {
 }
 
 
-extern SemaphoreHandle_t SqlLogSemaphore;
-
 void StepsApplication::CreateStats() {
     
     // load last values!
@@ -104,12 +102,13 @@ void StepsApplication::CreateStats() {
 
     if ( nullptr != activityGraph ) { delete activityGraph; }
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
-    
-    const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT %d";
-    char sqlQueryBuffer[strlen(sqlQuery)+8] = { 0 };
-    sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());
-
-    systemDatabase->SendSQL(sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
+    systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
+    //const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT %d;";
+    const char sqlQuery[]="SELECT message FROM rawlogSession;";
+    char sqlQueryBuffer[strlen(sqlQuery)+10];
+    sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());    
+    systemDatabase->SendSQL(sqlQuery, [](void *data, int argc, char **argv, char **azColName) {
+    //systemDatabase->SendSQL(sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
         GraphWidget * myGraph=(GraphWidget*)data;
         int i;
         for (i = 0; i<argc; i++){
@@ -122,25 +121,6 @@ void StepsApplication::CreateStats() {
         myGraph->PushValue(1);
         return 0;
     }, (void*)activityGraph);
-    /*
-    char *zErrMsg;
-    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        sqlite3_exec(lIoTsystemDatabase, sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
-            GraphWidget * myGraph=(GraphWidget*)data;
-            int i;
-            for (i = 0; i<argc; i++){
-                //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
-                if ( 0 != strcmp(azColName[i],"message")) { continue; }        
-                if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
-                else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
-                else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
-            }
-            myGraph->PushValue(1);
-            return 0;
-        }, (void*)activityGraph, &zErrMsg);
-        xSemaphoreGive( SqlLogSemaphore );
-    }
-    */
 }
 StepsApplication::StepsApplication() {
     btnSetup=new ButtonImageXBMWidget(TFT_WIDTH-32,TFT_HEIGHT-32,32,32,[&,this](IGNORE_PARAM){
