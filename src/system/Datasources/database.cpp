@@ -51,13 +51,13 @@ const char *BLEDeleteQuery=(const char *)"DELETE FROM bluetooth WHERE address = 
 const char *BLEUpdateQuery=(const char *)"UPDATE OR IGNORE bluetooth SET timestamp = CURRENT_TIMESTAMP, locationGroup = %d WHERE address='%s';"; 
 const char *BLEInsertQuery=(const char *)"INSERT OR IGNORE INTO bluetooth VALUES (CURRENT_TIMESTAMP,'%s',%g,%d);";
 const char *BLEGetQuery=(const char *)"SELECT address,distance,locationGroup FROM bluetooth WHERE address='%s' ORDER BY address DESC LIMIT 1;";
-const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
+//const char *rawLogCleanUnusedQuery=(const char *)"DELETE FROM rawlog WHERE (timestamp <= datetime('now', '-8 days'));";
 //const char *jsonLogCleanUnusedQuery=(const char *)"DELETE FROM jsonlog WHERE (timestamp <= datetime('now', '-8 days'));";
-const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
-const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
-const char *queryDumpSessionLog=(const char *)"INSERT INTO rawlog SELECT timestamp,message FROM rawlogSession;";
+//const char *notificationsLogCleanUnusedQuery=(const char *)"DELETE FROM notifications WHERE (timestamp <= datetime('now', '-8 days'));";
+//const char *BLECleanUnusedQuery=(const char *)"DELETE FROM bluetooth WHERE locationGroup=0 AND (timestamp <= datetime('now', '-8 days'));";
+//const char *queryDumpSessionLog=(const char *)"INSERT INTO rawlog SELECT timestamp,message FROM rawlogSession;";
 //const char *queryCreateJSONLog=(const char *)"CREATE TABLE if not exists jsonLog (  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, origin text NOT NULL, message text NOT NULL);";
-const char *DropSessionTable=(const char *)"DROP TABLE rawlogSession;";
+//const char *DropSessionTable=(const char *)"DROP TABLE rawlogSession;";
 const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 
@@ -445,12 +445,12 @@ void NotificationLogSQL(const char * sqlQuery) {
 void CleanupDatabase() {
     if ( nullptr != systemDatabase ) {
         // Create tables and clean SQL old devices
-        systemDatabase->SendSQL(rawLogCleanUnusedQuery);
+        //systemDatabase->SendSQL(rawLogCleanUnusedQuery);
         //systemDatabase->SendSQL(jsonLogCleanUnusedQuery);
-        systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
-        systemDatabase->SendSQL(BLECleanUnusedQuery);
-        systemDatabase->SendSQL(queryDumpSessionLog);
-        systemDatabase->SendSQL(DropSessionTable);
+        //systemDatabase->SendSQL(notificationsLogCleanUnusedQuery);
+        //systemDatabase->SendSQL(BLECleanUnusedQuery);
+        //systemDatabase->SendSQL(queryDumpSessionLog);
+        //systemDatabase->SendSQL(DropSessionTable);
         systemDatabase->SendSQL(queryCreateSessionRAWLog);
     }
     systemDatabase->Commit();
