@@ -235,11 +235,11 @@ LunokIoT::LunokIoT() {
     SplashAnnounce("    Database    ");
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
-        //systemDatabase->SendSQL(queryCreateRAWLog);
-        //systemDatabase->SendSQL(queryCreateJSONLog);
+        systemDatabase->SendSQL("BEGIN TRANSACTION;");
         systemDatabase->SendSQL(queryCreateNotifications);
         systemDatabase->SendSQL(BLECreateTable);
         systemDatabase->SendSQL(queryCreateSessionRAWLog);
+        systemDatabase->SendSQL("END TRANSACTION;");
         systemDatabase->Commit();
     }
     SplashAnnounce("   User prefs   ");
@@ -401,9 +401,11 @@ void LunokIoT::LogRotate() {
     StopDatabase();
     JournalDatabase();
     StartDatabase();
+    systemDatabase->SendSQL("BEGIN TRANSACTION;");
     systemDatabase->SendSQL(queryCreateNotifications);
     systemDatabase->SendSQL(BLECreateTable);
     systemDatabase->SendSQL(queryCreateSessionRAWLog);
+    systemDatabase->SendSQL("END TRANSACTION;");
     systemDatabase->Commit();
 
     lEvLog("StepCounter: Rotating...\n");

@@ -1838,6 +1838,7 @@ void TakeAllSamples() {
 
     // periodical report
     if( millis() > nextReportTimestamp ) {
+        systemDatabase->SendSQL("BEGIN TRANSACTION;");
         char logMsg[255] = { 0 }; 
         sprintf(logMsg,"Temperatures: CPU: %.2f C, PMU: %.1f C, IMU: %g C", cpuTemp,axpTemp,bmaTemp);
         SqlLog(logMsg);
@@ -1847,6 +1848,7 @@ void TakeAllSamples() {
         SqlLog(logMsg);
         sprintf(logMsg,"Battery: %d, USB: %s", batteryPercent, (vbusPresent?"yes":"no"));
         SqlLog(logMsg);
+        systemDatabase->SendSQL("END TRANSACTION;");
         //if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
         nextReportTimestamp=millis()+(10*60*1000);
     }
