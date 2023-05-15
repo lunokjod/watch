@@ -145,7 +145,7 @@ extern int16_t accZ;
  * UI shit
  */
 extern uint32_t FPS;
-const PROGMEM uint32_t MAXFPS = 18;
+const PROGMEM uint32_t MAXFPS = 12;
 
 extern int16_t touchX; // X coordinate from last sample
 extern int16_t touchY; // Y coordinate from last sample

@@ -164,6 +164,7 @@ extern "C" // Extern C is used when we are using a funtion written in "C" langua
 uint8_t temprature_sens_read(); // on esp_idf 4.4 is faked to 55.33333 C :(
 
 void LunokIoTSystemTickerCallback() { // freeRTOS discourages process on callback due priority and recomends a queue :)
+    if ( systemSleep ) { return; } // only when isn't sleeping
     if (false == ttgo->bl->isOn()) { return; } // only when screen is on
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
 }
@@ -540,7 +541,7 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
         if ( userBright > MINIMUM_BACKLIGHT ) { ttgo->setBrightness(userBright); } // reset the user brightness
     }
 }
-
+/*
 static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
 {
     if (0 != strcmp(SYSTEM_EVENTS, base)) {
@@ -551,7 +552,7 @@ static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id
     // tasks for any activity?
     lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
 }
-
+*/
 static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("BMA423: Event: Double tap\n");
     if (false == ttgo->bl->isOn()) {

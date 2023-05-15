@@ -27,6 +27,7 @@
 extern SemaphoreHandle_t UISemaphore;
 
 void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
+    if ( ( nullptr == curentView ) || ( nullptr == nextView ) ) { return; }
     // scale screen buffer
     const int images=4;
     TFT_eSprite *scaledImgs[images];
@@ -40,7 +41,7 @@ void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
         if ( nullptr != scaledImg ) {
             scaledImg->pushSprite((TFT_WIDTH-scaledImg->width())/2,(TFT_HEIGHT-scaledImg->height())/2);
         }
-        BaseType_t delayed = xTaskDelayUntil( &nextStep, (50 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
+        BaseType_t delayed = xTaskDelayUntil( &nextStep, (40 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
     }
     // push full image
     nextView->pushSprite(0,0);

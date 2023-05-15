@@ -17,7 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#include "Fade.hpp"
+#include "Displace.hpp"
 #include <freertos/semphr.h>
 #include <freertos/task.h>
 #include "../../lunokiot_config.hpp"
@@ -26,21 +26,13 @@
 
 extern SemaphoreHandle_t UISemaphore;
 
-void FadeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
+void DisplaceTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
     if ( ( nullptr == curentView ) || ( nullptr == nextView ) ) { return; }
-    // draw by fade
-    //for(uint16_t balance=0;balance<256;balance+=(256/4)) {
-        //TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
-        for(int32_t y=0;y<curentView->height();y+=2) {
-            for(int32_t x=0;x<curentView->width();x+=2) {
-                //uint16_t oldColor = curentView->readPixel(x,y);
-                uint16_t newColor = nextView->readPixel(x,y);
-                //uint16_t finalColor = tft->alphaBlend(balance,newColor,oldColor);
-                //tft->drawPixel(x,y,finalColor);
-                tft->drawPixel(x,y,newColor);
-            }
+        for(int32_t x=curentView->width();x>0;x-=16) {
+            TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
+            nextView->pushSprite(x,0);
+            BaseType_t delayed = xTaskDelayUntil( &nextStep, (30 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
         }
-        //BaseType_t delayed = xTaskDelayUntil( &nextStep, (50 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
         //taskYIELD();
     //}
     // push full image

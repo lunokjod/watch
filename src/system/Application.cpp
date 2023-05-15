@@ -26,8 +26,11 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "Application.hpp"
 #include "../UI/widgets/CanvasWidget.hpp"
 #include "../UI/UI.hpp"
+
 #include "../UI/transition/ZoomOut.hpp" // animation
 #include "../UI/transition/Fade.hpp" // animation
+#include "../UI/transition/Displace.hpp" // animation
+
 #include "../app/LogView.hpp"
 
 #include "../app/Watchface2.hpp"
@@ -170,11 +173,14 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                     UBaseType_t myPriority = uxTaskPriorityGet(NULL);
                     vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
                     taskYIELD();
-
+                    static long transitionSelected = 0;
+                    lUILog("Application: %p '%s' Transition: %ld\n", instance,instance->AppName(),transitionSelected);
                     // run this part fast as possible
-                    ZoomOutTransition(ptrToCurrent->canvas,appView);
-                    //FadeTransition(ptrToCurrent->canvas,appView);
-
+                    if ( 0 == transitionSelected ) { ZoomOutTransition(ptrToCurrent->canvas,appView); }
+                    else if ( 1 == transitionSelected ) { FadeTransition(ptrToCurrent->canvas,appView); }
+                    else if ( 2 == transitionSelected ) { DisplaceTransition(ptrToCurrent->canvas,appView); }
+                    transitionSelected++;
+                    if ( transitionSelected > 2 ) { transitionSelected = 0; }
                     // restore my priority
                     vTaskPrioritySet(NULL,myPriority);
 
