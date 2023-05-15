@@ -196,7 +196,7 @@ void Database::_DatabaseWorkerTaskLoop() {
         free(myData->query);
         free(myData);
         //UnLock();
-        taskYIELD();
+        //taskYIELD();
         //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
         //lLog("Database: Watermark Stack: %u\n",highWater);
     }
@@ -270,7 +270,7 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
     xQueueSend(queue, &newQuery, portMAX_DELAY);
     if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
-    taskYIELD();
+    //taskYIELD();
 }
 
 

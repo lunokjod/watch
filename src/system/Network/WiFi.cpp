@@ -148,7 +148,7 @@ void LoTWiFi::PerformTasks() {
         lNetLog("WiFi: %p Trying to connect (status: %d)...\n",this,currStat);
         if ( WL_CONNECTED == currStat) { connected=true; break; }
         delay(2000);
-        taskYIELD();
+        //taskYIELD();
     }
     if (false == connected) {
         xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);

@@ -180,7 +180,7 @@ void BLEPlayerApplication::TryGetCoverOfTite() {
                 lNetLog("WiFi: %p Trying to connect (status: %d)...\n",instance,currStat);
                 if ( WL_CONNECTED == currStat) { connected=true; break; }
                 delay(1000);
-                taskYIELD();
+                //taskYIELD();
             }
             if (false == connected) {
                 instance->CoverObtained=false;

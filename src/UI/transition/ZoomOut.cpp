@@ -27,7 +27,6 @@
 extern SemaphoreHandle_t UISemaphore;
 
 void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
-    if ( ( nullptr == curentView ) || ( nullptr == nextView ) ) { return; }
     // scale screen buffer
     const int images=4;
     TFT_eSprite *scaledImgs[images];

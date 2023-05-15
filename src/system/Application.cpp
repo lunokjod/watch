@@ -30,6 +30,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../UI/transition/ZoomOut.hpp" // animation
 #include "../UI/transition/Fade.hpp" // animation
 #include "../UI/transition/Displace.hpp" // animation
+#include "../UI/transition/Stripes.hpp" // animation
 
 #include "../app/LogView.hpp"
 
@@ -163,31 +164,39 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         TFT_eSprite *appView = instance->canvas;
         if ( ( nullptr != appView ) && (nullptr != ptrToCurrent)) {
             if ( animation ) {
-                // no datbase use during the transition (speed up)
-                if ( nullptr != systemDatabase ) { systemDatabase->Lock(); }
-                    // temporal disable watchdog for me :)
-                    esp_err_t susbcribed = esp_task_wdt_status(NULL);
-                    if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
+                // only if two canvas are ready
+                if ( ( nullptr != ptrToCurrent->canvas ) && ( nullptr != appView ) ) {
+                    // no datbase use during the transition (speed up)
+                    if ( nullptr != systemDatabase ) { systemDatabase->Lock(); }
+                        // temporal disable watchdog for me :)
+                        esp_err_t susbcribed = esp_task_wdt_status(NULL);
+                        if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
 
-                    // set better priority
-                    UBaseType_t myPriority = uxTaskPriorityGet(NULL);
-                    vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
-                    taskYIELD();
-                    static long transitionSelected = 0;
-                    lUILog("Application: %p '%s' Transition: %ld\n", instance,instance->AppName(),transitionSelected);
-                    // run this part fast as possible
-                    if ( 0 == transitionSelected ) { ZoomOutTransition(ptrToCurrent->canvas,appView); }
-                    else if ( 1 == transitionSelected ) { FadeTransition(ptrToCurrent->canvas,appView); }
-                    else if ( 2 == transitionSelected ) { DisplaceTransition(ptrToCurrent->canvas,appView); }
-                    transitionSelected++;
-                    if ( transitionSelected > 2 ) { transitionSelected = 0; }
-                    // restore my priority
-                    vTaskPrioritySet(NULL,myPriority);
+                        // set better priority
+                        UBaseType_t myPriority = uxTaskPriorityGet(NULL);
+                        vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
+                        //taskYIELD();
+                        lLog("@TODO DEBUG UI TRANSITION\n");
+                        static long transitionSelected = 0;
+                        lUILog("Application: %p '%s' Transition: %ld\n", instance,instance->AppName(),transitionSelected);
+                        // run this part fast as possible
+                        if ( 0 == transitionSelected ) { ZoomOutTransition(ptrToCurrent->canvas,appView); }
+                        else if ( 1 == transitionSelected ) { FadeTransition(ptrToCurrent->canvas,appView); }
+                        else if ( 2 == transitionSelected ) { DisplaceTransition(ptrToCurrent->canvas,appView); }
+                        else if ( 3 == transitionSelected ) { StripeTransition(ptrToCurrent->canvas,appView); }
+                        transitionSelected++;
+                        if ( transitionSelected > 3 ) { transitionSelected = 0; }
 
-                    // restore watchdog
-                    if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
-                    taskYIELD();
-                if ( nullptr != systemDatabase ) { systemDatabase->UnLock(); }
+                        // restore my priority
+                        vTaskPrioritySet(NULL,myPriority);
+
+                        // restore watchdog
+                        esp_task_wdt_reset();
+                        if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
+                        esp_task_wdt_reset();
+                        //taskYIELD();
+                    if ( nullptr != systemDatabase ) { systemDatabase->UnLock(); }
+                }
             }
         }
         if ( false == currentApplication->isWatchface() ) { // don't log watchfaces!

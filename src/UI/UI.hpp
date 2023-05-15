@@ -182,6 +182,7 @@ void ScreenSleep();
 void ScreenWake();
 
 //TFT_eSprite *TakeScreenShoot();
+TFT_eSprite * GetSpriteRect(TFT_eSprite *view, int16_t x, int16_t y, int16_t h, int16_t w);
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view);
 TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform);
 TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor = 0.5);

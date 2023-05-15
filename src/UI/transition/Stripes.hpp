@@ -17,24 +17,10 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#include "Displace.hpp"
-#include <freertos/semphr.h>
-#include <freertos/task.h>
-#include "../../lunokiot_config.hpp"
-#include "../UI.hpp"
-#include "../../app/LogView.hpp"
-#include "lunokIoT.hpp"
+#ifndef __LUNOKIOT__ANIMATION__STRIPE__
+#define __LUNOKIOT__ANIMATION__STRIPE__
+#include <LilyGoWatch.h>
 
-extern SemaphoreHandle_t UISemaphore;
+void StripeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView);
 
-void DisplaceTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
-        for(int32_t x=curentView->width();x>0;x-=16) {
-            TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
-            nextView->pushSprite(x,0);
-            BaseType_t delayed = xTaskDelayUntil( &nextStep, (30 / portTICK_PERIOD_MS) ); // wait a ittle bit (freeRTOS must breath)
-        }
-        //taskYIELD();
-    //}
-    // push full image
-    nextView->pushSprite(0,0);
-}
+#endif

@@ -44,6 +44,7 @@
 #include "AudioOutputI2S.h"
 #endif
 
+
 //#include "../app/TaskSwitcher.hpp"
 
 #include "../system/Application.hpp"
@@ -442,6 +443,43 @@ TFT_eSprite *TakeScreenShoot() {
     return myCopy;
 }
 */
+TFT_eSprite * GetSpriteRect(TFT_eSprite *view, int16_t x, int16_t y, int16_t h, int16_t w) {
+    int16_t cx = x;
+    int16_t cy = y;
+    int16_t ch = h;
+    int16_t cw = w;
+    if ( cx < 0 ) { cx = 0; }
+    if ( (cx+cw) > view->width() ) { cx=view->width()-cw; }
+    if ( cy < 0 ) { cy = 0; }
+    if ( (cy+ch) > view->height() ) { cy=view->height()-ch; }
+
+    TFT_eSprite * out = new TFT_eSprite(tft);
+    if ( nullptr == out ) { return nullptr; }
+    out->setColorDepth(view->getColorDepth());
+    out->createSprite(cw,ch);
+
+    for(int ny=0;ny<out->height();ny++) {
+        for(int nx=0;nx<out->width();nx++) {
+            uint16_t color = view->readPixel(cx+nx,cy+ny);
+            out->drawPixel(nx,ny,color);
+        }
+    }
+    /*
+    int16_t fx=0;
+    int16_t fy=0; 
+    for(int ny=cy;ny<ch;ny++) {
+        for(int nx=cx;nx<cw;nx++) {
+            uint16_t color = view->readPixel(nx,ny);
+            out->drawPixel(fx,fy,color);
+            fx++;
+        }
+        fx=0;
+        fy++;
+    }
+    */
+    return out;
+}
+
 TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
     screenShootCanvas = new TFT_eSprite(tft);
     if ( nullptr == screenShootCanvas ) { return nullptr; }
