@@ -500,6 +500,7 @@ void LoTBLE::_BLELoopTask() {
 
             Disable();
             lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
+            SqlLog("BLE: passive scan");
             //pBLEScan->clearResults();
             pBLEScan->setMaxResults(3);
             pBLEScan->setInterval(1000);
@@ -650,6 +651,7 @@ LoTBLE::~LoTBLE() {
             xTaskDelayUntil( &nextCheck, (1000 / portTICK_PERIOD_MS) );
         }
     }
+    Disable();
     lNetLog("BLE: %p die here\n");
 }
 
@@ -657,12 +659,14 @@ LoTBLE::~LoTBLE() {
 void LoTBLE::Enable() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     enabled=true;
+    SqlLog("BLE: enabled");
     xSemaphoreGive( taskLock );
 }
 
 void LoTBLE::Disable() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     enabled=false;
+    SqlLog("BLE: disabled");
     xSemaphoreGive( taskLock );
 }
 

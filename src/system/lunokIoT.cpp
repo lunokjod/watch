@@ -233,6 +233,7 @@ LunokIoT::LunokIoT() {
     LuaInit();
 
     SplashAnnounce("    Database    ");
+    JournalDatabase();
     StartDatabase(); // must be started after RTC sync (timestamped inserts need it to be coherent)
     if ( nullptr != systemDatabase ) {
         systemDatabase->SendSQL("BEGIN TRANSACTION;");

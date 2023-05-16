@@ -59,6 +59,11 @@ GraphWidget *dataWidget=nullptr;
 static int LogEventsParser(void *data, int argc, char **argv, char **azColName) {
     int i;
     const char appBanner[]="Application:";
+    const char wifiOff[]="WiFi: disconnect";
+    const char wifiOn[]="WiFi: connected";
+    const char BLEScan[]="BLE: passive scan";
+    const char BLEOn[]="BLE: enabled";
+    const char BLEOff[]="BLE: disabled";
     appWidget->markColor = TFT_BLACK;
     for (i = 0; i<argc; i++){
         //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
@@ -76,10 +81,19 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         
         // feed app bar
         else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
+
+        // feed network bar
+        else if ( 0 == strncmp(argv[i],wifiOn,strlen(wifiOn))) { dataWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strncmp(argv[i],wifiOff,strlen(wifiOff))) { dataWidget->markColor = TFT_BLACK; }
+
+        else if ( 0 == strncmp(argv[i],BLEScan,strlen(BLEScan))) { dataWidget->markColor = TFT_YELLOW; }
+        else if ( 0 == strncmp(argv[i],BLEOn,strlen(BLEOn))) { dataWidget->markColor = TFT_BLUE; }
+        else if ( 0 == strncmp(argv[i],BLEOff,strlen(BLEOff))) { dataWidget->markColor = TFT_BLACK; }
     }
     powerWidget->PushValue(1);
     activityWidget->PushValue(1);
     appWidget->PushValue(1);
+    dataWidget->PushValue(1);
     return 0;
 }
 

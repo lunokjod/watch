@@ -916,6 +916,7 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
             else if ( WIFI_AUTH_WPA2_WPA3_PSK == connectData->authmode ) { AuthMode = "WPA2 WPA3 PSK"; }
 
             lNetLog("FreeRTOS event:'%s' WiFi STA: Connected SSID: '%s' Channel: %d Auth: '%s'\n", base,ssidstr,connectData->channel,AuthMode);
+            SqlLog("WiFi: connected");
             identified = true;
         } else if (WIFI_EVENT_STA_DISCONNECTED == id) {
             wifi_event_sta_disconnected_t *disconnectData = (wifi_event_sta_disconnected_t *)event_data;
@@ -993,6 +994,7 @@ static void FreeRTOSEventReceived(void *handler_args, esp_event_base_t base, int
                 ReasonText = "AP TSF reset";
             }
             lNetLog("FreeRTOS event:'%s' WiFi STA: Disconnected Reason: '%s'\n", base,ReasonText);
+            SqlLog("WiFi: disconnect");
 
             //lSysLog("FreeRTOS event: Forced poweroff WiFi after disconnect\n");
             //WiFi.mode(WIFI_OFF); 
@@ -1849,7 +1851,7 @@ void TakeAllSamples() {
         sprintf(logMsg,"Battery: %d, USB: %s", batteryPercent, (vbusPresent?"yes":"no"));
         SqlLog(logMsg);
         systemDatabase->SendSQL("END TRANSACTION;");
-        //if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
+        if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
         nextReportTimestamp=millis()+(10*60*1000);
     }
 

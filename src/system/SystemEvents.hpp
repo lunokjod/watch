@@ -132,6 +132,16 @@ static inline void FreeSpace() {
     UBaseType_t tasksNumber = uxTaskGetNumberOfTasks();
     lSysLog("ESP32: Tasks: %u\n",tasksNumber);
     /*
+    uint32_t timeIDLE = ulTaskGetIdleRunTimeCounter();
+    lSysLog("ESP32: Tasks: %u IDLE: %u\n",tasksNumber,timeIDLE);
+    */
+    /*
+    char * pcBuffer = (char*)ps_malloc(40*50);
+    vTaskGetRunTimeStats(pcBuffer);
+    lLog(pcBuffer);
+    free(pcBuffer);
+    */
+    /*
     size_t memcnt=esp_himem_get_phys_size();
     size_t memfree=esp_himem_get_free_size();
     lLog("ESP32: Himem has %dKiB of memory, %dKiB of which is free. Testing the free memory...\n", (int)memcnt/1024, (int)memfree/1024);
