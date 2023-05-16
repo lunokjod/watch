@@ -25,8 +25,6 @@
 #include "../../app/LogView.hpp"
 #include "lunokIoT.hpp"
 
-extern SemaphoreHandle_t UISemaphore;
-
 void StripeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
     const int16_t numStripes = 8;
     const int16_t sizeStripe = nextView->height()/numStripes;

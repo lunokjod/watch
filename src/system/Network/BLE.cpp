@@ -500,7 +500,7 @@ void LoTBLE::_BLELoopTask() {
 
             Disable();
             lNetLog("BLE: Location recognition: Pasive scan %d begin\n", bleLocationScanCounter);
-            SqlLog("BLE: passive scan");
+            SqlLog("BLE: pasive scan");
             //pBLEScan->clearResults();
             pBLEScan->setMaxResults(3);
             pBLEScan->setInterval(1000);

@@ -115,6 +115,7 @@ void SetUserBrightness() {
 }
 
 void ScreenWake() {
+    //lLog("@DEBUG TAKE SEMAPHORE WAKE\n");
     bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
@@ -141,6 +142,7 @@ void ScreenWake() {
 }
 
 void ScreenSleep() {
+    //lLog("@DEBUG TAKE SEMAPHORE SCREENSLEEP\n");
     //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
@@ -493,7 +495,55 @@ TFT_eSprite * DuplicateSprite(TFT_eSprite *view) {
 
 extern SemaphoreHandle_t I2cMutex;
 
-//SemaphoreHandle_t UIDrawProcess = xSemaphoreCreateMutex();
+
+// draw some user-waring about "thiking event" (app loading)
+Ticker UIAnimationCareetTimer;
+static void UIEventLoadingCareetStep() { // some loop to show
+    //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) != pdTRUE )  { return; };
+    if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
+    TFT_eSprite * curr = ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
+
+    // draw a "loading circle"
+    static int cangle = 0;
+    const int centerX=curr->width()/2;
+    const int centerY=curr->height()/2;
+    const int radius=8;
+    const int circleRadius=3;
+    const int circleBorder=2;
+    const int borders=radius+circleRadius+circleBorder;
+    // outer black border
+    curr->fillCircle(centerX,centerY,borders+circleBorder,TFT_BLACK);
+    // circle radius
+    DescribeCircle2(centerX,centerY,radius, [&](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
+        if ( angle < cangle ) { return true; }
+        cangle++;
+        if ( cangle > 360 ) { angle = 0; }
+        // circle loop
+        curr->fillCircle(x,y,circleRadius,TFT_WHITE);
+        return true;
+    });
+    // get a piece of image (more small and fast than full screen tft push)
+    TFT_eSprite *piece = GetSpriteRect(curr,centerX-borders,centerY-borders,borders,borders);
+    // push piece
+    piece->pushSprite(centerX-borders,centerY-borders);
+    xSemaphoreGive( UISemaphore );
+    // clean resources out of UI draw
+    curr->deleteSprite();
+    delete curr;
+    piece->deleteSprite();
+    delete piece;
+}
+
+// show the "please wait" untlil app is loaded
+static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIAnimationCareetTimer.attach_ms(40,UIEventLoadingCareetStep);
+}
+
+// hide the "please wait" when app is loaded
+static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIAnimationCareetTimer.detach();
+}
 
 /*
  * Update touch and screen 
@@ -746,6 +796,10 @@ void UIStart() {
     uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenTimeout, nullptr, NULL);
     uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY, UIReadyEvent, nullptr, NULL);
     uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, UIEventScreenRefresh, nullptr, NULL);
+
+
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, UIEventLaunchApp, nullptr, NULL);
+    uiLoopRc = esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH_END, UIEventLaunchAppEnd, nullptr, NULL);
     //    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_ANCHOR2D_CHANGE, UIAnchor2DChange, nullptr, NULL);
 
     // Useless if is sended later than whake x'D

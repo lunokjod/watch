@@ -69,12 +69,15 @@ size_t WatchFacesAvailiable() { return sizeof(Watchfaces)/sizeof(WatchfaceMaker*
 LunokIoTApplication *GetWatchFaceFromOffset(size_t off) { return Watchfaces[off](); }
 LunokIoTApplication *GetWatchFace() { return GetWatchFaceFromOffset(LoT().selectedWatchFace); }
 void LaunchWatchface(bool animation, bool forced) {
+    //lLog("@DEBUG TAKE SEMAPHORE LAUNCH\n");
+    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     bool launch=false;
     if ( nullptr == currentApplication ) {
         launch=true;
     } else if ( false == currentApplication->isWatchface() ) {
         launch=true;
     }
+    xSemaphoreGive( UISemaphore );
     if ( forced ) { launch = true; }
     if (launch) { LaunchApplication(GetWatchFace(),animation); }
 }
@@ -89,6 +92,8 @@ TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 // get a capture of current application
 TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
 LunokIoTApplication::LunokIoTApplication() {
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+    taskYIELD(); // force context switch
     directDraw=false;
     UILongTapOverride=false;
     canvas = new TFT_eSprite(tft);
@@ -146,12 +151,13 @@ void LaunchApplicationTask(void * data) {
 }
 void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched) {
 //    LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
-
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH_END, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
     LunokIoTApplication *instance = appDescriptor->instance; // get app instance loaded
     bool animation = appDescriptor->animation;
     delete appDescriptor;
-    LunokIoTApplication * ptrToCurrent = currentApplication;
+    //lLog("@DEBUG TAKE SEMAPHORE TASK SYNC\n");
     xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    LunokIoTApplication * ptrToCurrent = currentApplication;
     if ( nullptr == instance ) { // this situation is indeed as prior to screen sleep
         lUILog("Application: None\n");
         currentApplication = nullptr;     // no one driving now x'D
@@ -291,20 +297,24 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
     //@TODO MUTEX APP CHANGE
     if ( false == force ) {
+        //lLog("@DEBUG TAKE SEMAPHORE LAUNCH APPPPPPP\n");
+        //xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         if ( nullptr != instance ) {
             if ( instance == currentApplication) { // rare but possible (avoid: app is destroyed and pointer to invalid memory)
+                //xSemaphoreGive( UISemaphore );
                 lUILog("Application: %p Already running, ignoring launch\n", currentApplication);
                 return;
             }
         }
-
         if ( ( nullptr != currentApplication ) && (nullptr != instance) ) {
             if ( 0 == strcmp( currentApplication->AppName(),instance->AppName() )) {
+                //xSemaphoreGive( UISemaphore );
                 lUILog("Application: %p Already running, ignoring re-launch of '%s'\n", currentApplication,currentApplication->AppName());
                 delete(instance);
                 return;
             }
         }
+        //xSemaphoreGive( UISemaphore );
     }
 
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();

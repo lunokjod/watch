@@ -25,8 +25,6 @@
 #include "../../app/LogView.hpp"
 #include "lunokIoT.hpp"
 
-extern SemaphoreHandle_t UISemaphore;
-
 void FadeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
     TickType_t nextStep = xTaskGetTickCount();     // get the current ticks
     for(int32_t y=0;y<curentView->height();y+=2) {

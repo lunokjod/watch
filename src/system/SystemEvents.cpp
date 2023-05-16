@@ -286,15 +286,20 @@ static void DoSleepTask(void *args) {
     doSleepThreads++;
 
     lEvLog("ESP32: DoSleep(%d) began!\n", doSleepThreads);
-    //BLEKickAllPeers(); // anounche to others ble peers: I'm 'out of duty'
     LunokIoTSystemTickerStop();
-
+    //lLog("@DEBUG TAKE SEMAPHORE SEEEEEP\n");
+    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     // destroy the app if isn't the watchface
     if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
+        // must freed in order to get launch
+        xSemaphoreGive( UISemaphore );
         // the current app isn't a watchface... get out!
         LaunchApplication(nullptr,false,true); // Synched App Stop
-        delay(100);
     }
+    xSemaphoreGive( UISemaphore );
+
+    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+
     while(LoT().IsNetworkInUse()) {
         lNetLog("Network in use, waiting to get a nap! ...\n");
         delay(1000);
@@ -318,7 +323,6 @@ static void DoSleepTask(void *args) {
         }
     }
 
-    esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_LIGHTSLEEP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
     systemDatabase->Commit();
 
@@ -800,6 +804,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
     FreeSpace();
     lSysLog(lineTxt);
     // try to warn foreground app about the problem
+    //lLog("@DEBUG TAKE SEMAPHORE LOW MEM\n");
     if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
     if ( nullptr != currentApplication ) {
             currentApplication->LowMemory();
@@ -838,7 +843,7 @@ static void SystemEventWake(void *handler_args, esp_event_base_t base, int32_t i
         lSysLog("User wants Lamp? %s\n",(launchLamp?"YES":"no"));
         if ( lampGestureSetting ) { LaunchApplication(new LampApplication()); }
         return;
-    } else if ( nullptr == currentApplication ) {
+    } else if ( nullptr == currentApplication ) { // @TODO BIND THIS IF WITH UISemaphore
         LaunchWatchface(false);
     } else { // already have an app on currentApplication
         if ( false == currentApplication->isWatchface() ) { // Isn't a watchface, run it now!
@@ -858,6 +863,7 @@ static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t 
         return;
     }
     */
+   //@TODO BIND THIS WITH UISemaphore
     if ( nullptr == currentApplication ) { LaunchWatchface(false); }
 }
 

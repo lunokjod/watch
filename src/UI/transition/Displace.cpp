@@ -25,8 +25,6 @@
 #include "../../app/LogView.hpp"
 #include "lunokIoT.hpp"
 
-extern SemaphoreHandle_t UISemaphore;
-
 void DisplaceTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
         for(int32_t x=curentView->width();x>0;x-=16) {
             TickType_t nextStep = xTaskGetTickCount();     // get the current ticks

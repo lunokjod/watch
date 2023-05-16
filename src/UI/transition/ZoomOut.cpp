@@ -24,8 +24,6 @@
 #include "../UI.hpp"
 #include "../../app/LogView.hpp"
 
-extern SemaphoreHandle_t UISemaphore;
-
 void ZoomOutTransition(TFT_eSprite * curentView, TFT_eSprite * nextView) {
     // scale screen buffer
     const int images=4;

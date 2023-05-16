@@ -135,6 +135,8 @@ enum
     UI_EVENT_TICK,            // variable, depends of esp32 load
     UI_EVENT_CONTINUE,        // resume UI events please (get tick)
     UI_EVENT_STOP,            // stop all UI events please (stop tick)
+    UI_EVENT_APP_LAUNCH,      // announce system to show some "loading" thing meanwhile
+    UI_EVENT_APP_LAUNCH_END,  // announce system to show hide "loading" thing meanwhile
     UI_EVENT_NOTIFICATION,    // @TODO
     UI_EVENT_ANCHOR2D_CHANGE, //@TODO
 };

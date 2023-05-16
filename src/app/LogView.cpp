@@ -61,9 +61,14 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
     const char appBanner[]="Application:";
     const char wifiOff[]="WiFi: disconnect";
     const char wifiOn[]="WiFi: connected";
-    const char BLEScan[]="BLE: passive scan";
+    const char BLEScan[]="BLE: pasive scan";
     const char BLEOn[]="BLE: enabled";
     const char BLEOff[]="BLE: disabled";
+    const char TempReport[]="Temperatures:";
+    const char HallReport[]="Hall:";
+    const char AccelReport[]="Acceleromether:";
+    const char BatteryReport[]="Battery:";
+    const char UsageReport[]="Usage stats:";
     appWidget->markColor = TFT_BLACK;
     for (i = 0; i<argc; i++){
         //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
@@ -81,15 +86,23 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         
         // feed app bar
         else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
+        else if ( 0 == strncmp(argv[i],TempReport,strlen(TempReport))) { appWidget->markColor = TFT_YELLOW; }
+        else if ( 0 == strncmp(argv[i],HallReport,strlen(HallReport))) { appWidget->markColor = TFT_LIGHTGREY; }
+        else if ( 0 == strncmp(argv[i],AccelReport,strlen(AccelReport))) { appWidget->markColor = TFT_RED; }
+        else if ( 0 == strncmp(argv[i],BatteryReport,strlen(BatteryReport))) { appWidget->markColor = TFT_DARKGREEN; }
+        else if ( 0 == strncmp(argv[i],UsageReport,strlen(UsageReport))) { appWidget->markColor = TFT_GREEN; }
+
+        else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
 
         // feed network bar
         else if ( 0 == strncmp(argv[i],wifiOn,strlen(wifiOn))) { dataWidget->markColor = TFT_GREEN; }
         else if ( 0 == strncmp(argv[i],wifiOff,strlen(wifiOff))) { dataWidget->markColor = TFT_BLACK; }
 
-        else if ( 0 == strncmp(argv[i],BLEScan,strlen(BLEScan))) { dataWidget->markColor = TFT_YELLOW; }
+        else if ( 0 == strncmp(argv[i],BLEScan,strlen(BLEScan))) { dataWidget->markColor = TFT_DARKGREY; }
         else if ( 0 == strncmp(argv[i],BLEOn,strlen(BLEOn))) { dataWidget->markColor = TFT_BLUE; }
         else if ( 0 == strncmp(argv[i],BLEOff,strlen(BLEOff))) { dataWidget->markColor = TFT_BLACK; }
     }
+    // step all graphs with event color
     powerWidget->PushValue(1);
     activityWidget->PushValue(1);
     appWidget->PushValue(1);
