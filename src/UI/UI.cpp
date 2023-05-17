@@ -460,8 +460,8 @@ TFT_eSprite * GetSpriteRect(TFT_eSprite *view, int16_t x, int16_t y, int16_t h, 
     out->setColorDepth(view->getColorDepth());
     out->createSprite(cw,ch);
 
-    for(int ny=0;ny<out->height();ny++) {
-        for(int nx=0;nx<out->width();nx++) {
+    for(int ny=0;ny<ch;ny++) {
+        for(int nx=0;nx<cw;nx++) {
             uint16_t color = view->readPixel(cx+nx,cy+ny);
             out->drawPixel(nx,ny,color);
         }
@@ -498,51 +498,67 @@ extern SemaphoreHandle_t I2cMutex;
 
 // draw some user-waring about "thiking event" (app loading)
 Ticker UIAnimationCareetTimer;
+TFT_eSprite * UIAnimationCareetImage=nullptr;
 static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
-    if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) != pdTRUE )  { return; };
+    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
-    TFT_eSprite * curr = ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
-
+    if ( nullptr != UIAnimationCareetImage ) {
+        UIAnimationCareetImage->deleteSprite();
+        delete UIAnimationCareetImage;
+        UIAnimationCareetImage=nullptr;
+    }
+    UIAnimationCareetImage = ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
+    
     // draw a "loading circle"
-    static int cangle = 0;
-    const int centerX=curr->width()/2;
-    const int centerY=curr->height()/2;
-    const int radius=8;
-    const int circleRadius=3;
+    static int cangle = 0; // current angle anim
+    const int centerX=UIAnimationCareetImage->width()/2;
+    const int centerY=UIAnimationCareetImage->height()/2;
+    const int radius=20;
+    const int circleRadius=5;
     const int circleBorder=2;
     const int borders=radius+circleRadius+circleBorder;
     // outer black border
-    curr->fillCircle(centerX,centerY,borders+circleBorder,TFT_BLACK);
+    UIAnimationCareetImage->fillCircle(centerX,centerY,borders,TFT_BLACK);
     // circle radius
     DescribeCircle2(centerX,centerY,radius, [&](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
+        //if ( angle < 0 ) { return true; }
         if ( angle < cangle ) { return true; }
-        cangle++;
-        if ( cangle > 360 ) { angle = 0; }
         // circle loop
-        curr->fillCircle(x,y,circleRadius,TFT_WHITE);
+        UIAnimationCareetImage->fillCircle(x,y,circleRadius,TFT_WHITE);
         return true;
     });
+    cangle+=33; // animate
+    if ( cangle > 360 ) { cangle = 0; }
     // get a piece of image (more small and fast than full screen tft push)
-    TFT_eSprite *piece = GetSpriteRect(curr,centerX-borders,centerY-borders,borders,borders);
+    TFT_eSprite *piece = GetSpriteRect(UIAnimationCareetImage,centerX-borders,centerY-borders,borders*2,borders*2);
     // push piece
     piece->pushSprite(centerX-borders,centerY-borders);
-    xSemaphoreGive( UISemaphore );
     // clean resources out of UI draw
-    curr->deleteSprite();
-    delete curr;
     piece->deleteSprite();
     delete piece;
+    xSemaphoreGive( UISemaphore );
 }
 
 // show the "please wait" untlil app is loaded
 static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIAnimationCareetTimer.detach();
+    if ( nullptr != UIAnimationCareetImage ) {
+        UIAnimationCareetImage->deleteSprite();
+        delete UIAnimationCareetImage;
+        UIAnimationCareetImage=nullptr;
+    }
     UIAnimationCareetTimer.attach_ms(40,UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded
 static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     UIAnimationCareetTimer.detach();
+    if ( nullptr != UIAnimationCareetImage ) {
+        UIAnimationCareetImage->deleteSprite();
+        delete UIAnimationCareetImage;
+        UIAnimationCareetImage=nullptr;
+    }
 }
 
 /*
