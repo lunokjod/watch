@@ -173,7 +173,6 @@ void Database::_DatabaseWorkerTaskLoop() {
         return;
     }
     lLog("Database: %p open\n");
-
     while(taskRunning) {
         esp_task_wdt_reset();
         SQLQueryData * myData=nullptr;
@@ -195,7 +194,7 @@ void Database::_DatabaseWorkerTaskLoop() {
         free(myData->query);
         free(myData);
         //UnLock();
-        taskYIELD();
+        //taskYIELD();
         //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
         //lLog("Database: Watermark Stack: %u\n",highWater);
     }
@@ -228,7 +227,7 @@ Database::Database(const char *filename) {
         lLog("Database: %p Task dies here!\n",myDatabase);
         vTaskDelete(NULL); // kill myself
 
-    }, "sql", LUNOKIOT_MID_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASECORE);
+    }, "sql", LUNOKIOT_APP_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASECORE);
 
     lLog("Database: %p Waiting thread %p...\n",this,databaseQueueTask);
     while(false == taskRunning) {
@@ -245,7 +244,7 @@ Database::~Database() {
     taskRunning=false;
     while(false == taskEnded) {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
-        taskYIELD();
+        //taskYIELD();
         xTaskDelayUntil( &nextCheck, (150 / portTICK_PERIOD_MS) ); // wait a ittle bit
     }
     lLog("Database: %p Thread %p dead\n",this,databaseQueueTask);
@@ -269,8 +268,8 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     esp_err_t susbcribed = esp_task_wdt_status(NULL);
     if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
     xQueueSend(queue, &newQuery, portMAX_DELAY);
-    if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
     //taskYIELD();
+    if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
 }
 
 

@@ -94,9 +94,11 @@ TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 
 // get a capture of current application
 TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
+
 LunokIoTApplication::LunokIoTApplication() {
-    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-    taskYIELD(); // force context switch
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    //delay(50);
+    //taskYIELD(); // force context switch
     directDraw=false;
     UILongTapOverride=false;
     canvas = new TFT_eSprite(tft);
@@ -154,7 +156,7 @@ void LaunchApplicationTask(void * data) {
 }
 void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched) {
 //    LaunchApplicationDescriptor * dataDesc =  (LaunchApplicationDescriptor *)data;
-    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH_END, nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH_END, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     LunokIoTApplication *instance = appDescriptor->instance; // get app instance loaded
     bool animation = appDescriptor->animation;
     delete appDescriptor;

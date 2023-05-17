@@ -38,9 +38,9 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
     if ( savedata ) {
         SaveDataBeforeShutdown();
     }
-#ifdef LILYGO_WATCH_2020_V3
-    ttgo->shake();
-#endif
+//#ifdef LILYGO_WATCH_2020_V3
+//    ttgo->shake();
+//#endif
     nextRedraw=0;
     timeFromBegin=millis();
     //Serial.flush();

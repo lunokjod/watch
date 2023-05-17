@@ -26,6 +26,7 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../static/img_back_32.xbm"
+#include <esp_task_wdt.h>
 
 SemaphoreHandle_t lLogAsBlockSemaphore =  xSemaphoreCreateMutex(); // used when push a log line
 SemaphoreHandle_t lLogSemaphore =  xSemaphoreCreateMutex(); // used when push a chunk of log line
@@ -78,8 +79,9 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         if ( 0 == strcmp(argv[i],"Activity: Running")) { activityWidget->markColor = TFT_RED; }
         else if ( 0 == strcmp(argv[i],"Activity: Walking")) { activityWidget->markColor = TFT_YELLOW; }
         else if ( 0 == strcmp(argv[i],"Activity: None")) { activityWidget->markColor = TFT_GREEN; }
+
         // feed power bar
-        else if ( 0 == strcmp(argv[i],"begin")) { powerWidget->markColor = TFT_GREEN; }
+        else if ( 0 == strcmp(argv[i],"begin")) { powerWidget->markColor = TFT_YELLOW; }
         else if ( 0 == strcmp(argv[i],"end")) { powerWidget->markColor = TFT_BLACK; }
         else if ( 0 == strcmp(argv[i],"wake")) { powerWidget->markColor = TFT_GREEN; }
         else if ( 0 == strcmp(argv[i],"stop")) { powerWidget->markColor = TFT_DARKGREEN; }
@@ -101,45 +103,20 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         else if ( 0 == strncmp(argv[i],BLEScan,strlen(BLEScan))) { dataWidget->markColor = TFT_DARKGREY; }
         else if ( 0 == strncmp(argv[i],BLEOn,strlen(BLEOn))) { dataWidget->markColor = TFT_BLUE; }
         else if ( 0 == strncmp(argv[i],BLEOff,strlen(BLEOff))) { dataWidget->markColor = TFT_BLACK; }
+
+        else {
+            lLog("WARNING: unknown log message: '%s'\n", argv[i]);
+        }
     }
     // step all graphs with event color
     powerWidget->PushValue(1);
+    //esp_task_wdt_reset();
     activityWidget->PushValue(1);
+    //esp_task_wdt_reset();
     appWidget->PushValue(1);
+    //esp_task_wdt_reset();
     dataWidget->PushValue(1);
-    return 0;
-}
-
-
-
-// callback from sqlite3 used to build the activity bar
-static int LogEventsParserJSON(void *data, int argc, char **argv, char **azColName) {
-    int i;
-    for (i = 0; i<argc; i++){
-        //lLog("%s = %s\n",azColName[i],argv[i]);
-        if ( 0 != strcmp(azColName[i],"origin")) { continue; }
-
-        if ( 0 == strcmp(argv[i],"check")) { // is check?
-            dataWidget->markColor = TFT_BLACK;
-        } else if ( 0 == strcmp(argv[i],"error")) { // is error?
-            dataWidget->markColor = TFT_RED;
-        } else if ( 0 == strcmp(argv[i],"disabled")) {
-            dataWidget->markColor = TFT_DARKGREY;
-        } else if ( 0 == strcmp(argv[i],"noprovisioned")) {
-            dataWidget->markColor = TFT_BLUE;
-        } else if ( 0 == strcmp(argv[i],"nopendingtask")) {
-            dataWidget->markColor = TFT_BLACK;
-        } else if ( 0 == strcmp(argv[i],"nonetwork")) {
-            dataWidget->markColor = TFT_DARKGREEN;
-        } else if ( 0 == strcmp(argv[i],"tasktimeout")) {
-            dataWidget->markColor = TFT_RED;
-        } else if ( 0 == strcmp(argv[i],"taskdone")) {
-            dataWidget->markColor = TFT_GREEN;
-        } else {
-            dataWidget->markColor = TFT_YELLOW; // event?
-        }
-        dataWidget->PushValue(1);
-    }
+    //esp_task_wdt_reset();
     return 0;
 }
 
@@ -163,19 +140,15 @@ LogViewApplication::LogViewApplication() {
     dataWidget=dataLog;
 //                            "SELECT * FROM Table1 t1 INNER JOIN Table2 t2 ON t1.id = t2.id GROUP BY t1.data1;"
 //    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY timestamp DESC LIMIT 200;");//, LogEventsParser);
-    //systemDatabase->SendSQL("SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT 200;",LogEventsParser);
+//    systemDatabase->SendSQL("SELECT message FROM rawlogSession ORDER BY timestamp LIMIT 200;",LogEventsParser);
     systemDatabase->SendSQL("SELECT message FROM rawlogSession;",LogEventsParser);
-    //systemDatabase->SendSQL("SELECT origin FROM jsonLog ORDER BY timestamp DESC LIMIT 200;", LogEventsParserJSON);
-    /*
-    char *zErrMsg;
-    if( xSemaphoreTake( SqlLogSemaphore, portMAX_DELAY) == pdTRUE )  {
-        //sqlite3_exec(lIoTsystemDatabase, "SELECT * FROM rawlog WHERE message LIKE 'Activity:%' ORDER BY id DESC LIMIT 200;", StepsAppInspectLogGraphGenerator, (void*)activityGraph, &zErrMsg);
-        sqlite3_exec(lIoTsystemDatabase, "SELECT message FROM rawlog ORDER BY id DESC LIMIT 200;", LogEventsParser, nullptr, &zErrMsg);
-        //sqlite3_exec(lIoTsystemDatabase, "SELECT jsonLog.origin FROM rawlog, jsonLog WHERE rawlog.timestamp!=jsonLog.timestamp ORDER BY id DESC LIMIT 200", LogEventsParserJSON, nullptr, &zErrMsg);
-        sqlite3_exec(lIoTsystemDatabase, "SELECT origin FROM jsonLog ORDER BY id DESC LIMIT 200;", LogEventsParserJSON, nullptr, &zErrMsg);
-        xSemaphoreGive( SqlLogSemaphore );
-    }
-    */
+    //const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY 1 DESC LIMIT %d;";
+    //char sqlQueryBuffer[strlen(sqlQuery)+10];
+    //sprintf(sqlQueryBuffer,sqlQuery,canvas->width());    
+    //systemDatabase->SendSQL(sqlQueryBuffer,LogEventsParser);
+    //systemDatabase->SendSQL("SELECT message FROM rawlogSession WHERE 1 ORDER BY 1 DESC LIMIT 200;",LogEventsParser);
+    //systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
+
     Tick();
 }
 

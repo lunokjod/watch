@@ -102,13 +102,13 @@ void StepsApplication::CreateStats() {
 
     if ( nullptr != activityGraph ) { delete activityGraph; }
     activityGraph = new GraphWidget(5,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
-    systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
-    //const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY timestamp DESC LIMIT %d;";
-    const char sqlQuery[]="SELECT message FROM rawlogSession;";
-    char sqlQueryBuffer[strlen(sqlQuery)+10];
-    sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());    
-    systemDatabase->SendSQL(sqlQuery, [](void *data, int argc, char **argv, char **azColName) {
-    //systemDatabase->SendSQL(sqlQueryBuffer, [](void *data, int argc, char **argv, char **azColName) {
+    //systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
+    //const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY 1 DESC LIMIT %d;";
+    //char sqlQueryBuffer[strlen(sqlQuery)+10];
+    //sprintf(sqlQueryBuffer,sqlQuery,activityGraph->canvas->width());    
+    //const char sqlQuery[]="SELECT message FROM rawlogSession;";
+    //systemDatabase->SendSQL(sqlQuery, [](void *data, int argc, char **argv, char **azColName) {
+    systemDatabase->SendSQL("SELECT message FROM rawlogSession;", [](void *data, int argc, char **argv, char **azColName) {
         GraphWidget * myGraph=(GraphWidget*)data;
         int i;
         for (i = 0; i<argc; i++){

@@ -502,52 +502,68 @@ static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
     if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
-    TFT_eSprite * UIAnimationCareetImage=ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
-    
-    // draw a "loading circle"
+    if ( nullptr == currentApplication->canvas ) { xSemaphoreGive( UISemaphore ); return; }
     static int cangle = 0; // current angle anim
-    const int centerX=UIAnimationCareetImage->width()/2;
-    const int centerY=UIAnimationCareetImage->height()/2;
+    const int centerX=currentApplication->canvas->width()/2;
+    const int centerY=currentApplication->canvas->height()/2;
     const int radius=20;
     const int circleRadius=5;
     const int circleBorder=2;
     const int borders=radius+circleRadius+circleBorder;
+    TFT_eSprite *piece = GetSpriteRect(currentApplication->canvas,centerX-borders,centerY-borders,borders*2,borders*2);
+    //TFT_eSprite * UIAnimationCareetImage=ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
+    xSemaphoreGive( UISemaphore );
+    if ( nullptr == piece ) { return; }
+
+    // draw a "loading circle"
     // outer black border
-    UIAnimationCareetImage->fillCircle(centerX,centerY,borders,TFT_BLACK);
+    piece->fillCircle(borders,borders,borders,TFT_BLACK);
     // circle radius
-    DescribeCircle2(centerX,centerY,radius, [&](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
+    DescribeCircle2(borders,borders,radius, [&](int x, int y, int cx, int cy, int angle, int step, IGNORE_PARAM) {
         //if ( angle < 0 ) { return true; }
         if ( angle < cangle ) { return true; }
         // circle loop
-        UIAnimationCareetImage->fillCircle(x,y,circleRadius,TFT_WHITE);
+        piece->fillCircle(x,y,circleRadius,TFT_WHITE);
         return true;
     });
     cangle+=33; // animate
     if ( cangle > 360 ) { cangle = 0; }
     // get a piece of image (more small and fast than full screen tft push)
-    TFT_eSprite *piece = GetSpriteRect(UIAnimationCareetImage,centerX-borders,centerY-borders,borders*2,borders*2);
+    //TFT_eSprite *piece = GetSpriteRect(UIAnimationCareetImage,centerX-borders,centerY-borders,borders*2,borders*2);
     // push piece
-    piece->pushSprite(centerX-borders,centerY-borders);
-    xSemaphoreGive( UISemaphore );
+    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) {
+        piece->pushSprite(centerX-borders,centerY-borders);
+        xSemaphoreGive( UISemaphore );
+    }
     // clean resources out of UI draw
     piece->deleteSprite();
     delete piece;
+    /*
     if ( nullptr != UIAnimationCareetImage ) {
         UIAnimationCareetImage->deleteSprite();
         delete UIAnimationCareetImage;
         UIAnimationCareetImage=nullptr;
-    }
+    }*/
 }
 
 // show the "please wait" untlil app is loaded
 static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    lUILog("Event App launch\n");
     UIAnimationCareetTimer.detach();
-    UIAnimationCareetTimer.attach_ms(40,UIEventLoadingCareetStep);
+    UIAnimationCareetTimer.attach_ms(100,UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded
 static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     UIAnimationCareetTimer.detach();
+    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) {
+        if ( nullptr != currentApplication ) {
+            // force screen refresh to override problems with directDraw applications
+            currentApplication->canvas->pushSprite(0,0);
+        }
+        xSemaphoreGive( UISemaphore );
+    }
+    lUILog("Event App launch end\n");
 }
 
 /*
@@ -607,7 +623,8 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) != pdTRUE )  { return; };
     // no app?, nothing to do
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
-    
+    xSemaphoreGive( UISemaphore );
+
     // verify long tap to launch TaskSwitcher
     if ( 0 == touchDownTimeMS ) { // other way to detect touch :P
         UIlongTap=false;
@@ -619,9 +636,13 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 UIlongTap=true; // locked until thumb up
                 lEvLog("UI: Touchpad long tap\n");
                 // announce haptic on launch the long tap task
+                /*
                 #ifdef LILYGO_WATCH_2020_V3
+                if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdFALSE )  { return; }
                     ttgo->motor->onec(80);
+                xSemaphoreGive( I2cMutex );
                 #endif
+                */
 
                 //@TODO here is a good place to draw a circular menu and use the finger as arrow
                 // Up tasks
@@ -629,8 +650,6 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
                 // Left email
                 // Right notifications...
                 // and more...
-
-                xSemaphoreGive( UISemaphore );
                 
                 if ( ( false == UILongTapOverride ) && ( nullptr != currentApplication ) && ( 0 == strcmp(currentApplication->AppName(),"Task switcher" ) ) ) {
                     LaunchWatchface(); // return to user configured watchface
@@ -648,14 +667,16 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
         if ( false == UIlongTap ) { // only if no long tap in progress
             esp_task_wdt_reset();
             // Remove temporal watchdog here
-            esp_task_wdt_delete(NULL);
+            esp_err_t susbcribed = esp_task_wdt_status(NULL);
+            if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
             changes = currentApplication->Tick();
-            esp_task_wdt_add(NULL);
+            if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
+            //esp_task_wdt_add(NULL);
         }
     }
     esp_task_wdt_reset();
     if ( directDraw ) { changes=false; } // directDraw overrides application normal redraw
-
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) != pdTRUE )  { return; };
     if ( changes ) {
         if ( nullptr != keyboardInstance ) {
             keyboardInstance->canvas->pushSprite(0,0);
@@ -701,6 +722,7 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
     // get a nap!
     if ( ttgo->bl->isOn() ) {
         ScreenSleep();
+        esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         DoSleep();
     }
 }

@@ -122,7 +122,7 @@ bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 //#include "esp_console.h"
 
-const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
+const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL UNIQUE, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
 //const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
 const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
@@ -243,6 +243,7 @@ LunokIoT::LunokIoT() {
         systemDatabase->SendSQL("END TRANSACTION;");
         systemDatabase->Commit();
     }
+    SqlLog("begin");
     SplashAnnounce("   User prefs   ");
     userTall= NVS.getInt("UserTall");        // get how high is the user?
     if ( 0 == userTall ) { userTall = 120; } // almost midget value

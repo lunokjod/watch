@@ -315,7 +315,8 @@ Watchface2Application::Watchface2Application() {
     textBuffer = (char *)ps_malloc(255);
     // little bit more small
     SphereHands = new CanvasWidget(160,160);
-    Redraw();
+    Tick();
+    //Redraw();
 }
 
 void Watchface2Application::RedrawDisplay() {
