@@ -136,8 +136,8 @@ void Database::Lock() { xSemaphoreTake( lock, LUNOKIOT_EVENT_MANDATORY_TIME_TICK
 void Database::UnLock() { xSemaphoreGive( lock ); }
 
 unsigned int Database::Pending() {
-    if ( NULL == queue ) { return 0; }
     //Lock();
+    if ( NULL == queue ) { return 0; } // UnLock(); 
     unsigned int val =  uxQueueMessagesWaiting(queue);
     //UnLock();
     return val;

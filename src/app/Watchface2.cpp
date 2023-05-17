@@ -354,10 +354,12 @@ void Watchface2Application::RedrawDisplay() {
             xSemaphoreGive( StatusSemaphore );
             return;
         }
-        if ( 0 == systemDatabase->Pending() ) {
-            //StateDisplay->DumpTo(canvas,0,0);
-            StateDisplay->canvas->scroll(DisplaySpeed*-1,0);
-            bannerSpace+=DisplaySpeed;
+        if ( nullptr != systemDatabase ) {
+            if ( 0 == systemDatabase->Pending() ) {
+                //StateDisplay->DumpTo(canvas,0,0);
+                StateDisplay->canvas->scroll(DisplaySpeed*-1,0);
+                bannerSpace+=DisplaySpeed;
+            }
         }
         if ( bannerSpace >= DisplayFontWidth  ) {
             StateDisplay->canvas->setTextColor(TFT_WHITE);

@@ -182,7 +182,6 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                         UBaseType_t myPriority = uxTaskPriorityGet(NULL);
                         vTaskPrioritySet(NULL,UITRANSITIONPRIORITY);
                         //taskYIELD();
-                        lLog("@TODO DEBUG UI TRANSITION\n");
                         static long transitionSelected = 0;
                         lUILog("Application: %p '%s' Transition: %ld\n", instance,instance->AppName(),transitionSelected);
                         // run this part fast as possible
