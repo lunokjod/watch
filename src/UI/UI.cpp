@@ -498,17 +498,11 @@ extern SemaphoreHandle_t I2cMutex;
 
 // draw some user-waring about "thiking event" (app loading)
 Ticker UIAnimationCareetTimer;
-TFT_eSprite * UIAnimationCareetImage=nullptr;
 static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
     if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
-    if ( nullptr != UIAnimationCareetImage ) {
-        UIAnimationCareetImage->deleteSprite();
-        delete UIAnimationCareetImage;
-        UIAnimationCareetImage=nullptr;
-    }
-    UIAnimationCareetImage = ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
+    TFT_eSprite * UIAnimationCareetImage=ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
     
     // draw a "loading circle"
     static int cangle = 0; // current angle anim
@@ -534,31 +528,26 @@ static void UIEventLoadingCareetStep() { // some loop to show
     TFT_eSprite *piece = GetSpriteRect(UIAnimationCareetImage,centerX-borders,centerY-borders,borders*2,borders*2);
     // push piece
     piece->pushSprite(centerX-borders,centerY-borders);
+    xSemaphoreGive( UISemaphore );
     // clean resources out of UI draw
     piece->deleteSprite();
     delete piece;
-    xSemaphoreGive( UISemaphore );
-}
-
-// show the "please wait" untlil app is loaded
-static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-    UIAnimationCareetTimer.detach();
     if ( nullptr != UIAnimationCareetImage ) {
         UIAnimationCareetImage->deleteSprite();
         delete UIAnimationCareetImage;
         UIAnimationCareetImage=nullptr;
     }
+}
+
+// show the "please wait" untlil app is loaded
+static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    UIAnimationCareetTimer.detach();
     UIAnimationCareetTimer.attach_ms(40,UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded
 static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     UIAnimationCareetTimer.detach();
-    if ( nullptr != UIAnimationCareetImage ) {
-        UIAnimationCareetImage->deleteSprite();
-        delete UIAnimationCareetImage;
-        UIAnimationCareetImage=nullptr;
-    }
 }
 
 /*
