@@ -156,7 +156,7 @@ LogViewApplication::LogViewApplication() {
     activityLog = new GraphWidget(20,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
     appLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
     dataLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
-
+//appLog->inverted=false;
     powerWidget=powerLog;
     activityWidget=activityLog;
     appWidget=appLog;

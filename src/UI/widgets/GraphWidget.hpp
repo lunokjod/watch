@@ -31,7 +31,7 @@ class GraphWidget : public CanvasWidget{
         uint32_t markColor;
         uint32_t backgroundColor;
         uint32_t outColor;
-
+        bool inverted=true;
         int64_t lastValue;
         CanvasWidget *graph;
         GraphWidget(int16_t h=100, int16_t w=220, int64_t minValue=0, int64_t maxValue=100, uint32_t markColor=TFT_YELLOW, uint32_t backgroundColor=CanvasWidget::MASK_COLOR, uint32_t outColor=TFT_RED);

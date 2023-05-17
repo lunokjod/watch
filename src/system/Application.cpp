@@ -68,21 +68,24 @@ size_t WatchFacesAvailiable() { return sizeof(Watchfaces)/sizeof(WatchfaceMaker*
 
 LunokIoTApplication *GetWatchFaceFromOffset(size_t off) { return Watchfaces[off](); }
 LunokIoTApplication *GetWatchFace() { return GetWatchFaceFromOffset(LoT().selectedWatchFace); }
+
+LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
+
 void LaunchWatchface(bool animation, bool forced) {
     //lLog("@DEBUG TAKE SEMAPHORE LAUNCH\n");
-    xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    //xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     bool launch=false;
     if ( nullptr == currentApplication ) {
         launch=true;
     } else if ( false == currentApplication->isWatchface() ) {
         launch=true;
     }
-    xSemaphoreGive( UISemaphore );
+    //xSemaphoreGive( UISemaphore );
     if ( forced ) { launch = true; }
+    //lLog("@DEBUG LAUNCH WATCHFACE\n");
     if (launch) { LaunchApplication(GetWatchFace(),animation); }
+    //lLog("@DEBUG LAUNCH WATCHFACE ENDS\n");
 }
-
-LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 
 size_t lastAppsOffset=0;
 const char  * lastAppsName[LUNOKIOT_MAX_LAST_APPS] = { nullptr }; 
@@ -314,6 +317,7 @@ void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced
             }
         }
         //xSemaphoreGive( UISemaphore );
+        //lLog("@DEBUG TAKE SEMAPHORE LAUNCH OFFF APPPPPPP\n");
     }
 
     LaunchApplicationDescriptor * thisLaunch = new LaunchApplicationDescriptor();

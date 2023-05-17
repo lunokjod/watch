@@ -30,26 +30,51 @@ GraphWidget::GraphWidget(int16_t h, int16_t w, int64_t minValue, int64_t maxValu
 }
 
 bool GraphWidget::PushValue(int64_t value) {
-    graph->canvas->scroll(1,0);
-    if ( value > maxValue ) {
-        //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds > %lld\n", this, value, maxValue);
-        graph->canvas->drawFastVLine(0,0,canvas->height(),outColor);
-        return false;
-    } else if ( value < minValue ) {
-        //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds < %lld\n", this, value, minValue);
-        graph->canvas->drawFastVLine(0,0,canvas->height(),outColor);
-        return false;
+    if ( inverted ) {
+        graph->canvas->scroll(1,0);
+        if ( value > maxValue ) {
+            //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds > %lld\n", this, value, maxValue);
+            graph->canvas->drawFastVLine(0,0,canvas->height(),outColor);
+            return false;
+        } else if ( value < minValue ) {
+            //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds < %lld\n", this, value, minValue);
+            graph->canvas->drawFastVLine(0,0,canvas->height(),outColor);
+            return false;
+        }
+        float range=maxValue-minValue;
+        float correctedValue=value-minValue;
+        int32_t pcValue = 0;
+        if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
+        else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
+        else { pcValue = (correctedValue/range)*canvas->height(); }
+        //lUILog("@DEBUG pixels: %d, val: %lld, corrected: %.2f, min: %lld, max: %lld, range: %.2f, canvas: %d\n",pcValue,value,correctedValue,minValue,maxValue,range,canvas->height());
+        // bottom to top
+        graph->canvas->drawFastVLine(0, 0, canvas->height(), backgroundColor);
+        graph->canvas->drawFastVLine(0,canvas->height()-pcValue,pcValue,markColor);
+    } else {
+        graph->canvas->scroll(-1,0);
+        if ( value > maxValue ) {
+            //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds > %lld\n", this, value, maxValue);
+            graph->canvas->drawFastVLine(canvas->width()-1,0,canvas->height(),outColor);
+            return false;
+        } else if ( value < minValue ) {
+            //Serial.printf("UI: GraphWidget: %p Pushed value '%lld' is out of bounds < %lld\n", this, value, minValue);
+            graph->canvas->drawFastVLine(canvas->width()-1,0,canvas->height(),outColor);
+            return false;
+        }
+        float range=maxValue-minValue;
+        float correctedValue=value-minValue;
+        int32_t pcValue = 0;
+        if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
+        else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
+        else { pcValue = (correctedValue/range)*canvas->height(); }
+        //lUILog("@DEBUG pixels: %d, val: %lld, corrected: %.2f, min: %lld, max: %lld, range: %.2f, canvas: %d\n",pcValue,value,correctedValue,minValue,maxValue,range,canvas->height());
+        // bottom to top
+        graph->canvas->drawFastVLine(canvas->width()-1, 0, canvas->height(), backgroundColor);
+        graph->canvas->drawFastVLine(canvas->width()-1,canvas->height()-pcValue,pcValue,markColor);
     }
-    float range=maxValue-minValue;
-    float correctedValue=value-minValue;
-    int32_t pcValue = 0;
-    if ( 0 == correctedValue ) { pcValue = 0; } // don't perform divide by zero x'D
-    else if ( 0 == range ) { pcValue = 0; }     // don't perform divide by zero x'D
-    else { pcValue = (correctedValue/range)*canvas->height(); }
-    //lUILog("@DEBUG pixels: %d, val: %lld, corrected: %.2f, min: %lld, max: %lld, range: %.2f, canvas: %d\n",pcValue,value,correctedValue,minValue,maxValue,range,canvas->height());
-    // bottom to top
-    graph->canvas->drawFastVLine(0, 0, canvas->height(), backgroundColor);
-    graph->canvas->drawFastVLine(0,canvas->height()-pcValue,pcValue,markColor);
+
+
     lastValue = value;
     return true;
 }
