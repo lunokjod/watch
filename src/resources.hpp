@@ -23,6 +23,10 @@ extern const unsigned char img_activity_stay_bits[];
 //extern const unsigned char * img_backscreen_24_bits;
 extern const unsigned char img_backscreen_24_bits[];
 
+#define img_backscreen_42_width 42
+#define img_backscreen_42_height 42
+extern const unsigned char img_backscreen_42_bits[];
+
 #define img_lunokiot_logo_width 128
 #define img_lunokiot_logo_height 109
 extern const unsigned char img_lunokiot_logo_bits[1744];

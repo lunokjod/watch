@@ -500,7 +500,7 @@ extern SemaphoreHandle_t I2cMutex;
 Ticker UIAnimationCareetTimer;
 static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
-    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
+    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
     if ( nullptr == currentApplication->canvas ) { xSemaphoreGive( UISemaphore ); return; }
     static int cangle = 0; // current angle anim
@@ -550,7 +550,7 @@ static void UIEventLoadingCareetStep() { // some loop to show
 static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("Event App launch\n");
     UIAnimationCareetTimer.detach();
-    UIAnimationCareetTimer.attach_ms(100,UIEventLoadingCareetStep);
+    UIAnimationCareetTimer.attach_ms((1000/4),UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded

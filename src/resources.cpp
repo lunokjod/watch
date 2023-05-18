@@ -44,6 +44,7 @@
 
 
 #include "../static/img_backscreen_24.xbm"
+#include "../static/img_backscreen_42.xbm"
 #include "../static/img_mainmenu_calendar.xbm"
 #include "../static/img_mainmenu_lamp.xbm"
 

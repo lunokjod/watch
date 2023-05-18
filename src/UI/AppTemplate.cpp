@@ -29,9 +29,10 @@
 TemplateApplication::~TemplateApplication() { delete btnBack; }
 
 TemplateApplication::TemplateApplication() {
-    btnBack=new ButtonImageXBMWidget(0,canvas->height()-32,32,32,[&,this](void *unused){
+    btnBack=new ButtonImageXBMWidget(0,canvas->height()-img_backscreen_42_height,
+                img_backscreen_42_width,img_backscreen_42_height,[&,this](void *unused){
         LaunchWatchface();
-    },img_backscreen_24_bits,img_backscreen_24_height,img_backscreen_24_width,ThCol(background_alt),0,false);
+    },img_backscreen_42_bits,img_backscreen_42_height,img_backscreen_42_width,ThCol(background_alt),0,false);
 }
 
 bool TemplateApplication::Tick() {
