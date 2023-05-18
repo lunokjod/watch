@@ -35,14 +35,12 @@ extern TTGOClass *ttgo; // ttgo library shit ;)
 extern uint32_t systemStatsRebootCounter;
 
 ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(restart), savedata(savedata) {
-    if ( savedata ) {
-        SaveDataBeforeShutdown();
-    }
+
 //#ifdef LILYGO_WATCH_2020_V3
 //    ttgo->shake();
 //#endif
-    nextRedraw=0;
-    timeFromBegin=millis();
+    //nextRedraw=0;
+    //timeFromBegin=millis();
     //Serial.flush();
 
     this->canvas->setSwapBytes(true);
@@ -77,10 +75,28 @@ ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(r
 }
 
 bool ShutdownApplication::Tick() {
-    if ( nullptr == this->canvas ) { return false; }
-    unsigned long milisFromBegin = millis()-timeFromBegin;
+    // do a lightfade
     bright-=8;
     if ( bright > -1 ) { ttgo->setBrightness(bright); }
+    else {
+        // screen is off
+        ttgo->setBrightness(0);
+        tft->fillScreen(TFT_BLACK);
+        // save system data and unmount filesystems gracefully
+        if ( savedata ) { SaveDataBeforeShutdown(); }
+        if ( restart ) {
+            lEvLog("ESP32: System restart NOW!\n");
+            uart_wait_tx_idle_polling(UART_NUM_0);
+            ESP.restart();
+        } else {
+            lEvLog("ESP32: System shutdown NOW!\n");
+            uart_wait_tx_idle_polling(UART_NUM_0);
+            ttgo->shutdown();
+        }
+    }
+    /*
+    if ( nullptr == this->canvas ) { return false; }
+    unsigned long milisFromBegin = millis()-timeFromBegin;
     if ( milisFromBegin > 2200 ) {
         systemStatsRebootCounter++;
         ttgo->setBrightness(0);
@@ -94,6 +110,6 @@ bool ShutdownApplication::Tick() {
             uart_wait_tx_idle_polling(UART_NUM_0);
             ttgo->shutdown();
         }
-    }
-    return false;
+    }*/
+    return true;
 }

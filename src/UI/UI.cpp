@@ -500,7 +500,7 @@ extern SemaphoreHandle_t I2cMutex;
 Ticker UIAnimationCareetTimer;
 static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
-    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_TIME_TICKS) ) { return; }
+    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
     if ( nullptr == currentApplication->canvas ) { xSemaphoreGive( UISemaphore ); return; }
     static int cangle = 0; // current angle anim
@@ -511,7 +511,6 @@ static void UIEventLoadingCareetStep() { // some loop to show
     const int circleBorder=2;
     const int borders=radius+circleRadius+circleBorder;
     TFT_eSprite *piece = GetSpriteRect(currentApplication->canvas,centerX-borders,centerY-borders,borders*2,borders*2);
-    //TFT_eSprite * UIAnimationCareetImage=ScaleSprite(currentApplication->canvas,1.0); // do a dump of current
     xSemaphoreGive( UISemaphore );
     if ( nullptr == piece ) { return; }
 
@@ -526,31 +525,23 @@ static void UIEventLoadingCareetStep() { // some loop to show
         piece->fillCircle(x,y,circleRadius,TFT_WHITE);
         return true;
     });
-    cangle+=33; // animate
+    cangle+=(360 / 7); // animate
     if ( cangle > 360 ) { cangle = 0; }
-    // get a piece of image (more small and fast than full screen tft push)
-    //TFT_eSprite *piece = GetSpriteRect(UIAnimationCareetImage,centerX-borders,centerY-borders,borders*2,borders*2);
     // push piece
-    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) {
+    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) ) {
         piece->pushSprite(centerX-borders,centerY-borders);
         xSemaphoreGive( UISemaphore );
     }
     // clean resources out of UI draw
     piece->deleteSprite();
     delete piece;
-    /*
-    if ( nullptr != UIAnimationCareetImage ) {
-        UIAnimationCareetImage->deleteSprite();
-        delete UIAnimationCareetImage;
-        UIAnimationCareetImage=nullptr;
-    }*/
 }
 
 // show the "please wait" untlil app is loaded
 static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("Event App launch\n");
     UIAnimationCareetTimer.detach();
-    UIAnimationCareetTimer.attach_ms((1000/4),UIEventLoadingCareetStep);
+    UIAnimationCareetTimer.attach_ms((1000/5),UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded

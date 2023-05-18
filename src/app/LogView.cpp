@@ -65,6 +65,7 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
     const char BLEScan[]="BLE: pasive scan";
     const char BLEOn[]="BLE: enabled";
     const char BLEOff[]="BLE: disabled";
+    const char BLELocationFound[]="BLELocation:";
     const char TempReport[]="Temperatures:";
     const char HallReport[]="Hall:";
     const char AccelReport[]="Acceleromether:";
@@ -103,6 +104,7 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         else if ( 0 == strncmp(argv[i],BLEScan,strlen(BLEScan))) { dataWidget->markColor = TFT_DARKGREY; }
         else if ( 0 == strncmp(argv[i],BLEOn,strlen(BLEOn))) { dataWidget->markColor = TFT_BLUE; }
         else if ( 0 == strncmp(argv[i],BLEOff,strlen(BLEOff))) { dataWidget->markColor = TFT_BLACK; }
+        else if ( 0 == strncmp(argv[i],BLELocationFound,strlen(BLELocationFound))) { dataWidget->markColor = TFT_WHITE; }
 
         else {
             lLog("WARNING: unknown log message: '%s'\n", argv[i]);

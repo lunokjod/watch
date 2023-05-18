@@ -26,9 +26,8 @@ class ShutdownApplication: public LunokIoTApplication {
     private:
         bool restart;
         bool savedata;
-        unsigned long nextRedraw;
-        unsigned long timeFromBegin;
         int16_t bright=255;
+        bool systemKnow=false;
     public:
         const char *AppName() override { return "Shutdown"; };
         ShutdownApplication(bool restart=false, bool savedata=true);

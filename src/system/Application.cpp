@@ -97,7 +97,7 @@ TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canva
 
 LunokIoTApplication::LunokIoTApplication() {
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    //delay(50);
+    delay(120); // makes the timer launch animation possible :(
     //taskYIELD(); // force context switch
     directDraw=false;
     UILongTapOverride=false;

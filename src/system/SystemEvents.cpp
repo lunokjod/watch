@@ -641,18 +641,28 @@ void SaveDataBeforeShutdown() {
     }
     LoT().DestroyWiFi();
     LoT().DestroyBLE();
+    if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
     SqlLog("end");
     StopDatabase();
     LoT().LittleFSReady=false; // mark as unused
     LittleFS.end();
     lEvLog("LittleFS: Closed\n");
     LoT().DestroySettings();
+    /*
+    ttgo->setBrightness(0);
+    tft->fillScreen(TFT_BLACK);
+    if ( restart ) {
+        lEvLog("ESP32: System restart NOW!\n");
+        uart_wait_tx_idle_polling(UART_NUM_0);
+        ESP.restart();
+    } else {
+        lEvLog("ESP32: System shutdown NOW!\n");
+        uart_wait_tx_idle_polling(UART_NUM_0);
+        ttgo->shutdown();
+    }*/
 }
 
 static void AXPEventPEKLong(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
-    if ( ttgo->bl->isOn() ) {
-        LaunchApplication(new ShutdownApplication());
-    }
     esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 }
 void _SendEventWakeTask(void *data) {
@@ -789,9 +799,10 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
 
 static void SystemEventStop(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     SqlLog("stop");
-    if ( nullptr != systemDatabase ) { systemDatabase->Commit(); }
     lSysLog("System event: Stop\n");
+    if ( ttgo->bl->isOn() ) { LaunchApplication(new ShutdownApplication(),false,true); }
 }
+
 unsigned long lastLowMemTimestamp_ms=0; // time limit for the next LowMemory()
 static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     // dont trigger too fast
