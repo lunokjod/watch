@@ -395,7 +395,7 @@ void SqlJSONLog(const char * from, const char * logLine) {
 */
 void SqlLog(const char * logLine) {
     if ( nullptr == systemDatabase ) { return; }
-    const char fmtStr[]="INSERT INTO rawlogSession VALUES (CURRENT_TIMESTAMP,'%s');";
+    const char fmtStr[]="INSERT INTO rawlogSession VALUES (NULL,CURRENT_TIMESTAMP,'%s');";
     size_t totalsz = strlen(fmtStr)+strlen(logLine)+1;
     char * query=(char*)ps_malloc(totalsz);
     if ( nullptr == query ) {

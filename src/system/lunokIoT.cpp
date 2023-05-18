@@ -125,7 +125,7 @@ bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, address text NOT NULL UNIQUE, distance INT DEFAULT -1, locationGroup INT DEFAULT 0);";
 //const char *queryCreateRAWLog=(const char *)"CREATE TABLE if not exists rawlog ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
-const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession ( timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
+const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time

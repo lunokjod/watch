@@ -132,10 +132,14 @@ extern SemaphoreHandle_t SqlLogSemaphore;
 
 LogViewApplication::LogViewApplication() {
     powerLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
+    powerLog->inverted=false;
     activityLog = new GraphWidget(20,200,0,1,TFT_GREEN, Drawable::MASK_COLOR);
+    activityLog->inverted=false;
     appLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
+    appLog->inverted=false;
     dataLog = new GraphWidget(20,200,0,1,TFT_BLACK, Drawable::MASK_COLOR);
-//appLog->inverted=false;
+    dataLog->inverted=false;
+
     powerWidget=powerLog;
     activityWidget=activityLog;
     appWidget=appLog;
@@ -143,11 +147,11 @@ LogViewApplication::LogViewApplication() {
 //                            "SELECT * FROM Table1 t1 INNER JOIN Table2 t2 ON t1.id = t2.id GROUP BY t1.data1;"
 //    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY timestamp DESC LIMIT 200;");//, LogEventsParser);
 //    systemDatabase->SendSQL("SELECT message FROM rawlogSession ORDER BY timestamp LIMIT 200;",LogEventsParser);
-    systemDatabase->SendSQL("SELECT message FROM rawlogSession;",LogEventsParser);
-    //const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY 1 DESC LIMIT %d;";
-    //char sqlQueryBuffer[strlen(sqlQuery)+10];
-    //sprintf(sqlQueryBuffer,sqlQuery,canvas->width());    
-    //systemDatabase->SendSQL(sqlQueryBuffer,LogEventsParser);
+    //systemDatabase->SendSQL("SELECT message FROM rawlogSession;",LogEventsParser);
+    const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY id DESC LIMIT %d;";
+    char sqlQueryBuffer[strlen(sqlQuery)+10];
+    sprintf(sqlQueryBuffer,sqlQuery,powerLog->canvas->width());    
+    systemDatabase->SendSQL(sqlQueryBuffer,LogEventsParser);
     //systemDatabase->SendSQL("SELECT message FROM rawlogSession WHERE 1 ORDER BY 1 DESC LIMIT 200;",LogEventsParser);
     //systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
 
