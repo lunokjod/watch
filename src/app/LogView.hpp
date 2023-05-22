@@ -89,10 +89,14 @@ extern void SqlLog(const char * logLine);
 class LogViewApplication: public TemplateApplication {
     private:
         unsigned long nextRedraw=0;
-        unsigned long nextSlideTime=0;
+        unsigned long nextDBQuery=0;
         bool lastTouch=false;
         int16_t offsetX=0;
         int16_t offsetY=0;
+        void SendQuery();
+        size_t totalSPIFFS=0;
+        size_t usedSPIFFS=0;
+        const unsigned long MsUntilRefresh=20*1000;
     public:
         const char *AppName() override { return "Log viewer"; };
         GraphWidget * powerLog = nullptr;

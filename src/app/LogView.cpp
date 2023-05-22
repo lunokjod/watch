@@ -27,6 +27,7 @@
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../static/img_back_32.xbm"
 #include <esp_task_wdt.h>
+#include <LittleFS.h>
 
 SemaphoreHandle_t lLogAsBlockSemaphore =  xSemaphoreCreateMutex(); // used when push a log line
 SemaphoreHandle_t lLogSemaphore =  xSemaphoreCreateMutex(); // used when push a chunk of log line
@@ -106,9 +107,7 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         else if ( 0 == strncmp(argv[i],BLEOff,strlen(BLEOff))) { dataWidget->markColor = TFT_BLACK; }
         else if ( 0 == strncmp(argv[i],BLELocationFound,strlen(BLELocationFound))) { dataWidget->markColor = TFT_WHITE; }
 
-        else {
-            lLog("WARNING: unknown log message: '%s'\n", argv[i]);
-        }
+        else { lLog("WARNING: unknown log message: '%s'\n", argv[i]); }
     }
     // step all graphs with event color
     powerWidget->PushValue(1);
@@ -148,22 +147,49 @@ LogViewApplication::LogViewApplication() {
 //    systemDatabase->SendSQL("SELECT message FROM rawlog ORDER BY timestamp DESC LIMIT 200;");//, LogEventsParser);
 //    systemDatabase->SendSQL("SELECT message FROM rawlogSession ORDER BY timestamp LIMIT 200;",LogEventsParser);
     //systemDatabase->SendSQL("SELECT message FROM rawlogSession;",LogEventsParser);
-    const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY id DESC LIMIT %d;";
-    char sqlQueryBuffer[strlen(sqlQuery)+10];
-    sprintf(sqlQueryBuffer,sqlQuery,powerLog->canvas->width());    
-    systemDatabase->SendSQL(sqlQueryBuffer,LogEventsParser);
     //systemDatabase->SendSQL("SELECT message FROM rawlogSession WHERE 1 ORDER BY 1 DESC LIMIT 200;",LogEventsParser);
     //systemDatabase->SendSQL("SELECT COUNT(1) FROM rawlogSession;");
 
     Tick();
 }
 
+void LogViewApplication::SendQuery() {
+    const char sqlQuery[]="SELECT message FROM rawlogSession ORDER BY id DESC LIMIT %d;";
+    char sqlQueryBuffer[strlen(sqlQuery)+10];
+    sprintf(sqlQueryBuffer,sqlQuery,powerLog->canvas->width());    
+    systemDatabase->SendSQL(sqlQueryBuffer,LogEventsParser,this);
+}
+
 bool LogViewApplication::Tick() {
-    UINextTimeout = millis()+UITimeout; // disable screen timeout on this app    
+    //UINextTimeout = millis()+UITimeout; // disable screen timeout on this app    
     btnBack->Interact(touched,touchX, touchY);
+
+    if (millis() > nextDBQuery ) {
+        // reset bar color
+        powerLog->markColor = TFT_GREEN; // on by default
+        activityLog->markColor = TFT_GREEN; // rest by default
+        appLog->markColor = TFT_BLACK;
+        dataLog->markColor=TFT_BLACK;
+        SendQuery();
+        totalSPIFFS = LittleFS.totalBytes();
+        usedSPIFFS = LittleFS.usedBytes();        
+        nextDBQuery=millis()+MsUntilRefresh; // next db refresh
+    }
+
     if (millis() > nextRedraw ) {
-        canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
+        canvas->fillSprite(TFT_BLACK);
+        //canvas->fillRect(0,0,TFT_WIDTH,TFT_HEIGHT-70,TFT_BLACK);
         //canvas->fillRect(0,TFT_HEIGHT-70,TFT_WIDTH,70,ThCol(background));
+
+        char buffer[255];
+        canvas->setTextFont(0);
+        canvas->setTextSize(1);
+        canvas->setTextDatum(TR_DATUM);
+        unsigned long secsTillNextRefresh = (nextDBQuery-millis())/1000;
+        sprintf(buffer,"refresh in %lu seconds",secsTillNextRefresh);
+        canvas->setTextColor(TFT_WHITE,TFT_BLACK);
+        canvas->drawString(buffer,canvas->width()-5,5);
+
 
         canvas->setTextFont(0);
         canvas->setTextColor(TFT_WHITE);
@@ -193,11 +219,14 @@ bool LogViewApplication::Tick() {
         canvas->fillRect(x-border,y-border,dataLog->canvas->width()+(border*2),dataLog->canvas->height()+(border*2),ThCol(background_alt));
         dataLog->DrawTo(canvas,x,y);
 
+        sprintf(buffer,"Free: %u Kb",(totalSPIFFS-usedSPIFFS)/1024);
+        canvas->setTextColor(TFT_WHITE,TFT_BLACK);
+        canvas->drawString(buffer,60,canvas->height()-12);
 
 
         btnBack->DrawTo(canvas);
 
-        nextRedraw=millis()+(1000/3);
+        nextRedraw=millis()+(1000/1);
         return true;
     }
     return false;

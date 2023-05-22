@@ -342,7 +342,7 @@ bool Provisioning2Application::Tick() {
         qrVisible = false;
     }
     //backBtn->enabled = provisioned;
-    clearProvBtn->enabled = provisioned;
+    //clearProvBtn->enabled = provisioned;
     btnBack->Interact(touched,touchX,touchY);
     clearProvBtn->Interact(touched,touchX,touchY);
     startProvBtn->Interact(touched,touchX,touchY);

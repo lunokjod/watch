@@ -500,7 +500,7 @@ extern SemaphoreHandle_t I2cMutex;
 Ticker UIAnimationCareetTimer;
 static void UIEventLoadingCareetStep() { // some loop to show
     //lLog("@DEBUG TAKE SEMAPHORE CAREEET\n");
-    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) ) { return; }
+    if ( pdTRUE != xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) { return; }
     if ( nullptr == currentApplication ) { xSemaphoreGive( UISemaphore ); return; }
     if ( nullptr == currentApplication->canvas ) { xSemaphoreGive( UISemaphore ); return; }
     static int cangle = 0; // current angle anim
@@ -528,7 +528,7 @@ static void UIEventLoadingCareetStep() { // some loop to show
     cangle+=(360 / 7); // animate
     if ( cangle > 360 ) { cangle = 0; }
     // push piece
-    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) ) {
+    if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) {
         piece->pushSprite(centerX-borders,centerY-borders);
         xSemaphoreGive( UISemaphore );
     }
@@ -541,12 +541,13 @@ static void UIEventLoadingCareetStep() { // some loop to show
 static void UIEventLaunchApp(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     lUILog("Event App launch\n");
     UIAnimationCareetTimer.detach();
-    UIAnimationCareetTimer.attach_ms((1000/5),UIEventLoadingCareetStep);
+    //UIAnimationCareetTimer.attach_ms((1000/5),UIEventLoadingCareetStep);
 }
 
 // hide the "please wait" when app is loaded
 static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
     UIAnimationCareetTimer.detach();
+    /*
     if ( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_FAST_TIME_TICKS) ) {
         if ( nullptr != currentApplication ) {
             // force screen refresh to override problems with directDraw applications
@@ -554,6 +555,7 @@ static void UIEventLaunchAppEnd(void* handler_args, esp_event_base_t base, int32
         }
         xSemaphoreGive( UISemaphore );
     }
+    */
     lUILog("Event App launch end\n");
 }
 
