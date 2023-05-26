@@ -60,6 +60,10 @@ extern const unsigned char img_pause_48_bits[];
 #define img_back_16_height 18
 extern const unsigned char img_back_16_bits[];
 
+#define img_mainmenu_lunonoid_width 160
+#define img_mainmenu_lunonoid_height 160
+extern const unsigned char img_mainmenu_lunonoid_bits[];
+
 #define img_mainmenu_zone_width 120
 #define img_mainmenu_zone_height 114
 extern const unsigned char img_mainmenu_zone_bits[];
@@ -116,6 +120,10 @@ extern const unsigned char img_mainmenu_bright_bits[];
 #define img_mainmenu_notifications_width 120
 #define img_mainmenu_notifications_height 113
 extern const unsigned char img_mainmenu_notifications_bits[];
+
+#define img_mainmenu_dungeon_width 120
+#define img_mainmenu_dungeon_height 120
+extern const unsigned char img_mainmenu_dungeon_bits[];
 
 #define img_rotate_120_width 120
 #define img_rotate_120_height 120

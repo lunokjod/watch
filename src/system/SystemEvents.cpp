@@ -258,15 +258,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
     } else if ( ESP_SLEEP_WAKEUP_BT == wakeup_reason) {
         //!< Wakeup caused by BT (light sleep only)
     }
-    if ( continueSleep ) {
-        TakeAllSamples();
-        DoSleep();
-        return true;
-    }
-    // Start the tick loop
-    LunokIoTSystemTickerStart();
-
-    return false;
+    return continueSleep;
 }
 
 uint16_t doSleepThreads = 0;
@@ -293,8 +285,9 @@ static void DoSleepTask(void *args) {
     if ( ( nullptr != currentApplication) && ( false == currentApplication->isWatchface() ) ) {
         // must freed in order to get launch
         xSemaphoreGive( UISemaphore );
+        lEvLog("ESP32: DoSleep Closing current application\n");
         // the current app isn't a watchface... get out!
-        LaunchApplication(nullptr,false,true); // Synched App Stop
+        LaunchApplication(nullptr,false,true,true); // Synched App Stop and forced
     }
     xSemaphoreGive( UISemaphore );
 
@@ -322,8 +315,6 @@ static void DoSleepTask(void *args) {
             delay(100);
         }
     }
-
-
     systemDatabase->Commit();
 
     int64_t howMuchTime = esp_timer_get_next_alarm();
@@ -337,7 +328,7 @@ static void DoSleepTask(void *args) {
     } else {
         lEvLog("ESP32: Next alarm in:   %lu secs\n",diffTime_secs);
     }
-    
+    lEvLog("ESP32: Set wakeup hooks...\n");
     // AXP202 interrupt gpio_35
     // RTC interrupt gpio_37
     // touch panel interrupt gpio_38
@@ -349,6 +340,8 @@ static void DoSleepTask(void *args) {
         if ( ESP_OK != bleSleep ) { lSysLog("ERROR: Unable to set BLE wakeup\n"); }
         newTime = LUNOKIOT_WAKE_TIME_NOTIFICATIONS_S;
     } // time for notifications
+    //lLog("@TODO @DEBUG SYSTEMEVENT SLEEP SHORTENED TO PRODUCE BUGS <----------------------------------------\n");
+    //newTime=5;
     esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
     if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
 
@@ -358,6 +351,7 @@ static void DoSleepTask(void *args) {
     esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
     if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
     //esp_err_t wakeAXP_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_35 + GPIO_SEL_37) , ESP_EXT1_WAKEUP_ALL_LOW);
+
     //esp_err_t wakeBMA_RTC = esp_sleep_enable_ext1_wakeup( (GPIO_SEL_37 + GPIO_SEL_39) , ESP_EXT1_WAKEUP_ANY_HIGH);
     //if ( ESP_OK != wakeBMA_RTC ) { lSysLog("ERROR: Unable to set ext1 (IMU+RTC) wakeup\n"); }
     /*
@@ -378,14 +372,11 @@ static void DoSleepTask(void *args) {
 
     int64_t beginSleepTime_us = esp_timer_get_time();
     esp_err_t canSleep = esp_light_sleep_start();    // device sleeps now
-    if ( ESP_OK != canSleep ) {
-        lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped? !!!!!!!\n");
-    }
+    if ( ESP_OK != canSleep ) { lEvLog("ESP32: cant sleep due BLE/WiFi isnt stopped? !!!!!!!\n"); }
     int64_t wakeSleepTime_us = esp_timer_get_time();
     int32_t differenceSleepTime_msec = (wakeSleepTime_us-beginSleepTime_us)/1000;
     deviceSleepMSecs+=differenceSleepTime_msec;
     deviceUsageMSecs=(esp_timer_get_time()/1000)-deviceSleepMSecs;
-    //float deviceUsageRatio=(deviceUsageMSecs/float(deviceSleepMSecs+deviceUsageMSecs))*100.0;
     deviceUsageRatio=(deviceUsageMSecs/float(esp_timer_get_time()/1000.0))*100.0;
 
     lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
@@ -398,7 +389,15 @@ static void DoSleepTask(void *args) {
 
     systemSleep = false;
     xSemaphoreGive(DoSleepTaskSemaphore);
-    WakeUpReason();
+    bool continueSleep = WakeUpReason();
+
+    if ( continueSleep ) {
+        TakeAllSamples();
+        DoSleep();
+    }
+    // Start the tick loop again
+    LunokIoTSystemTickerStart();
+
     lEvLog("ESP32: DoSleep(%d) dies here!\n", doSleepThreads);
     vTaskDelete(NULL);
 }
@@ -793,7 +792,7 @@ static void SystemEventTick(void *handler_args, esp_event_base_t base, int32_t i
         nextSlowSensorsTick = millis() + 2666;
     } else if (millis() > nextSensorsTick) { // poll some other sensors ( normal pooling )
         TakeBMPSample();
-        nextSensorsTick = millis() + (1000 / 8);
+        nextSensorsTick = millis() + (1000 / 6);
     }
 }
 

@@ -1,3 +1,21 @@
+//
+//    LunokWatch, a open source smartwatch software
+//    Copyright (C) 2022,2023  Jordi Rubió <jordi@binarycell.org>
+//    This file is part of LunokWatch.
+//
+// LunokWatch is free software: you can redistribute it and/or modify it under
+// the terms of the GNU General Public License as published by the Free Software 
+// Foundation, either version 3 of the License, or (at your option) any later 
+// version.
+//
+// LunokWatch is distributed in the hope that it will be useful, but WITHOUT 
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+// details.
+//
+// You should have received a copy of the GNU General Public License along with 
+// LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
+//
 #include "Dungeon.hpp"
 #include <libraries/TFT_eSPI/TFT_eSPI.h>
 
@@ -88,7 +106,6 @@ DungeonGameApplication::DungeonGameApplication() {
 //    canvas->pushImage(0,0,img_palette_test.width,img_palette_test.height, (uint16_t *)img_palette_test.pixel_data);
     canvas->setSwapBytes(false);
 
-    canvas->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
 
 
     tft->setTextColor(TFT_WHITE,tft->color24to16(0x191919));
@@ -116,7 +133,6 @@ void DungeonGameApplication::ManageSplashScreen() {
                 MapGeneratorHandle=NULL;
                 currentLevel.running=false;
                 loadedSpawnPoint=false;
-                tft->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
 
                 lAppLog("Starting map generator (retry %d)...\n",generationRetries);
                 generationRetries++;
@@ -136,12 +152,15 @@ void DungeonGameApplication::ManageSplashScreen() {
                 waitGeneratorTimestamp=millis()+1800;
                 currentSentence++;
             }
-
+            /*
             // show dungeon generation layers
+            canvas->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
+            tft->fillRect(0,0,currentLevel.width,currentLevel.height,TFT_WHITE); // map generator background
             currentLevel.floorMap->pushSprite(0,0,255);
             currentLevel.objectsMap->pushSprite(0,0,255);
             currentLevel.wallMap->pushSprite(0,0,255);
             currentLevel.topMap->pushSprite(0,0,255);
+            */
         }
     }
 }
@@ -168,8 +187,8 @@ bool DungeonGameApplication::Tick() {
         loadedSpawnPoint=true;
         lAppLog("User location X: %d Y: %d px: %d py: %d\n",currentLevel.PlayerBeginX,currentLevel.PlayerBeginY,offsetX,offsetY);
         dirty=true;
-        Redraw();
-        return false;
+        //Redraw();
+        //return false;
     }
     if ( touched ) {
         animationTimeout=millis()+renderTime; // don't redraw meanwhile drag
@@ -228,31 +247,18 @@ bool DungeonGameApplication::Tick() {
             //floorLayer->canvas->fillSprite(TFT_BLACK);
             //gameScreen->DirectDraw(0,0);
             dirty=true;
-            Redraw();
-            return false;
+            //Redraw();
+            //return false;
         }
     }
+
     if ( millis() > animationTimeout ) {
-        /*
-        float turnX = round(degX-zeroDegX);
-        float turnY = round(degY-zeroDegY);
-        float turnZ = round(degZ-zeroDegZ);
-
-       if ( ( abs(turnX)>10 ) || ( abs(turnY)>10 )) {
-        Serial.printf("diffX: %f diffY: %f\n",turnX,turnY);
-        //Y+ = right
-        //X+ = up
-        offsetX+=turnY;
-        offsetY+=(turnX*-1);
-        dirty=true;
-       }*/
-
+        dirty = true;
+        //Redraw();
+        animationTimeout=millis()+(1000/8); //(renderTime*1.25);
+    }
+    if ( dirty ) {
         Redraw();
-        animationTimeout=millis()+(renderTime*1.25);
-    } else {
-        if ( dirty ) {
-            Redraw();
-        }
     }
     return false;
 }
@@ -306,8 +312,8 @@ void DungeonGameApplication::Redraw() {
     //Serial.printf("Current tile offset X: %d Y: %d DisX: %d DisY: %d\n",tileOffsetX,tileOffsetY,disX,disY);
     //for(int16_t y=disY;y<=floorLayer->canvas->width()+(tileW*NormalScale);y+=(tileW*NormalScale)) {
     //    for(int16_t x=disX;x<=floorLayer->canvas->height()+(tileH*NormalScale);x+=(tileH*NormalScale)) {
-    for(int16_t y=0;y<=floorLayer->canvas->width()+(tileH*2);y+=(tileH)) {
-        for(int16_t x=0;x<=floorLayer->canvas->height()+(tileW*2);x+=(tileW)) {
+    for(int16_t y=0;y<=floorLayer->canvas->height()+(tileH*2);y+=(tileH)) {
+        for(int16_t x=0;x<=floorLayer->canvas->width()+(tileW*2);x+=(tileW)) {
             int16_t tileX = (x/(tileW))+tileOffsetX;
             int16_t tileY = (y/(tileH))+tileOffsetY;
             if ( tileX < 0 ) { break; }
@@ -332,7 +338,7 @@ void DungeonGameApplication::Redraw() {
                 else if ( 31 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,32); animated=true; }
                 else if ( 32 ==  floorColor ) { currentLevel.floorMap->drawPixel(tileX,tileY,29); animated=true; }
                 floorColor = currentLevel.floorMap->readPixel(tileX,tileY);
-                if ( ( dirty )||( animated )) {
+                if (( dirty )||( animated )) {
                     //Serial.printf("tX: %d tY: %d\n",tileX,tileY);
                     const unsigned char *ptr=DungeonTileSets[floorColor]; // current tile ptr            
                     CanvasZWidget *tempBuffer = new CanvasZWidget(tileH,tileW);
@@ -462,7 +468,29 @@ void DungeonGameApplication::Redraw() {
         wallLayer->DrawTo(gameScreen->canvas,0,0,1.0,false,TFT_BLACK);
         topLayer->DrawTo(gameScreen->canvas,0,0,1.0,false,TFT_BLACK);
         directDraw=true;
-        gameScreen->DrawTo(0,0,NormalScale,false);
+        //if (nullptr == lastGameScreen ) {
+            gameScreen->DrawTo(0,0,NormalScale,false);
+        /*} else {
+            for(int16_t y=0;y<=lastGameScreen->height();y++) {
+                for(int16_t x=0;x<=lastGameScreen->width();x++) {
+                    uint16_t lastColor = lastGameScreen->readPixel(x,y);
+                    uint16_t newColor = gameScreen->canvas->readPixel(x,y);
+                    if ( lastColor != newColor ) {
+                        //tft->fillRect(x*(tileW*NormalScale),y*(tileH*NormalScale),tileW,tileH,newColor);
+                        //tft->fillRect(x*NormalScale,y*NormalScale,tileW/NormalScale,tileH/NormalScale,TFT_GREEN);
+                        // usefull to debug draw
+                        tft->drawPixel(x*NormalScale,y*NormalScale,TFT_GREEN);
+                        //tft->drawRect(x*NormalScale,y*NormalScale,NormalScale,NormalScale,TFT_GREEN);
+                    }
+                }
+            }
+        }
+
+        if (nullptr != lastGameScreen ) {
+            lastGameScreen->deleteSprite();
+            delete lastGameScreen;
+        }
+        lastGameScreen=ScaleSprite(gameScreen->canvas,1.0);*/
         dirty=false;
     }
     /* GRID

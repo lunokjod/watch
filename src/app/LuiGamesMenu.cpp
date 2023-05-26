@@ -25,6 +25,7 @@
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
 #include "LuIGameOfLife.hpp"
+#include "LunoNoid.hpp"
 
 //#include "../system/Datasources/kvo.hpp"
 //#include "../system/SystemEvents.hpp"
@@ -38,6 +39,7 @@ using namespace LuI;
 const IconMenuEntry LuIGamesMenuItems[] = {
     {"Watchface", img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); } },
+    {"LunoNoid",img_mainmenu_lunonoid_bits, img_mainmenu_lunonoid_height, img_mainmenu_lunonoid_width, [](void *unused) { LaunchApplication(new LunoNoidGameApplication()); } },
     {"GofLife",img_mainmenu_glider_bits, img_mainmenu_glider_height, img_mainmenu_glider_width, [&](IGNORE_PARAM) { LaunchApplication(new LuIDemoGameOfLifeApplication()); } },
 
 
