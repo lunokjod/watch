@@ -136,10 +136,10 @@ void Database::Lock() { xSemaphoreTake( lock, LUNOKIOT_EVENT_MANDATORY_TIME_TICK
 void Database::UnLock() { xSemaphoreGive( lock ); }
 
 unsigned int Database::Pending() {
-    //Lock();
-    if ( NULL == queue ) { return 0; } // UnLock(); 
+    Lock();
+    if ( NULL == queue ) { UnLock(); return 0; } // UnLock(); 
     unsigned int val =  uxQueueMessagesWaiting(queue);
-    //UnLock();
+    UnLock();
     return val;
 }
 
@@ -147,6 +147,7 @@ void Database::_DatabaseWorkerTaskLoop() {
     taskRunning=true;
     taskEnded=false;
     esp_task_wdt_delete(NULL);
+    Lock();
     if ( 0 == Database::openedDatabases ) {
         lSysLog("Database: Sqlite3 initializing...\n");
         int sqlbegin = sqlite3_initialize();
@@ -154,6 +155,7 @@ void Database::_DatabaseWorkerTaskLoop() {
             queue=NULL;
             taskEnded=true;
             taskRunning=false;
+            UnLock();
             return;
         }
         sqlite3_config(SQLITE_CONFIG_LOG, SQLerrorLogCallback, nullptr);
@@ -170,8 +172,10 @@ void Database::_DatabaseWorkerTaskLoop() {
         queue=NULL;
         taskEnded=true;
         taskRunning=false;
+        UnLock();
         return;
     }
+    UnLock();
     lLog("Database: %p open\n");
     while(taskRunning) {
         esp_task_wdt_reset();
@@ -182,7 +186,7 @@ void Database::_DatabaseWorkerTaskLoop() {
             xTaskDelayUntil( &nextCheck, (1 / portTICK_PERIOD_MS) );
             continue;
         }
-        //Lock();
+        Lock();
         // execute query
         int rc;
         // temporal disable watchdog for me :)
@@ -193,17 +197,19 @@ void Database::_DatabaseWorkerTaskLoop() {
         if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
-        //UnLock();
+        UnLock();
         //taskYIELD();
         //UBaseType_t highWater = uxTaskGetStackHighWaterMark(NULL);
         //lLog("Database: Watermark Stack: %u\n",highWater);
     }
+    Lock();
     // close db
     sqlite3_close(databaseDescriptor);
     databaseDescriptor=nullptr;
     // destroy queue
     vQueueDelete(queue);
     queue=NULL;
+    UnLock();
     lLog("Database: %p close\n", this);
     Database::openedDatabases--;
     if ( 0 == Database::openedDatabases ) {

@@ -72,8 +72,6 @@ LunokIoTApplication *GetWatchFace() { return GetWatchFaceFromOffset(LoT().select
 LunokIoTApplication *currentApplication = nullptr; // ptr to get current foreground application
 
 void LaunchWatchface(bool animation, bool forced) {
-    //lLog("@DEBUG TAKE SEMAPHORE LAUNCH\n");
-    //xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     bool launch=false;
     if ( nullptr == currentApplication ) {
         launch=true;
@@ -97,7 +95,7 @@ TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 
 LunokIoTApplication::LunokIoTApplication() {
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    delay(120); // makes the timer launch animation possible :(
+    //delay(120); // makes the timer launch animation possible :(
     //taskYIELD(); // force context switch
     directDraw=false;
     UILongTapOverride=false;
@@ -116,7 +114,6 @@ LunokIoTApplication::LunokIoTApplication() {
         return;
     };
     lUILog("LunokIoTApplication: %p begin\n", this);
-
 }
 
 LunokIoTApplication::~LunokIoTApplication() {
@@ -133,13 +130,11 @@ bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the f
 
 // This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTaskSync(LunokIoTApplication *instance) {
-    //if( xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) != pdTRUE )  { return; }
     if ( nullptr != instance ) {
         lUILog("KillApplicationTask: %p '%s' closing...\n", instance,instance->AppName());
         delete instance;
         lUILog("KillApplicationTask: %p has gone\n", instance);
     }
-    //xSemaphoreGive( UISemaphore ); // free
 }
 
 void KillApplicationTask(void * data) {

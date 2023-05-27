@@ -282,7 +282,7 @@ void View3D::DrawBilboards() {
 }
 
 void View3D::Render() {
-    if( xSemaphoreTake( renderMutex, portMAX_DELAY) != pdTRUE )  { return; }
+    if( xSemaphoreTake( renderMutex, LUNOKIOT_EVENT_TIME_TICKS) != pdTRUE )  { return; }
     unsigned long bRender=millis();
     //lUILog("Clean...\n");
     /* THIS IS UNNECESARy, THE LAST CACHE IS VALID 

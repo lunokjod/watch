@@ -816,7 +816,7 @@ static void SystemEventLowMem(void *handler_args, esp_event_base_t base, int32_t
     lSysLog(lineTxt);
     // try to warn foreground app about the problem
     //lLog("@DEBUG TAKE SEMAPHORE LOW MEM\n");
-    if( xSemaphoreTake( UISemaphore, portMAX_DELAY) == pdTRUE )  {
+    if( pdTRUE == xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS) )  {
     if ( nullptr != currentApplication ) {
             currentApplication->LowMemory();
         }
