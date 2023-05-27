@@ -53,7 +53,8 @@ bool LoTWiFi::RadioInUse() {
 
 bool LoTWiFi::InUse() {
     bool response;
-    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t res = xSemaphoreTake( taskLock, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+    if ( pdFALSE == res ) { return true; } // locked, ergo in use x'D
     response=running;
     xSemaphoreGive( taskLock );
     return response;
@@ -61,7 +62,8 @@ bool LoTWiFi::InUse() {
 
 bool LoTWiFi::IsEnabled() {
     bool response;
-    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    BaseType_t res = xSemaphoreTake( taskLock, LUNOKIOT_EVENT_FAST_TIME_TICKS);
+    if ( pdFALSE == res ) { return true; } // locked, ergo in use x'D
     response=enabled;
     xSemaphoreGive( taskLock );
     return response;

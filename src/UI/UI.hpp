@@ -135,6 +135,7 @@ enum
     UI_EVENT_TICK,            // variable, depends of esp32 load
     UI_EVENT_CONTINUE,        // resume UI events please (get tick)
     UI_EVENT_STOP,            // stop all UI events please (stop tick)
+    UI_EVENT_REFRESH,         // force application refresh
     UI_EVENT_APP_LAUNCH,      // announce system to show some "loading" thing meanwhile
     UI_EVENT_APP_LAUNCH_END,  // announce system to show hide "loading" thing meanwhile
     UI_EVENT_NOTIFICATION,    // @TODO
@@ -160,6 +161,7 @@ extern bool directDraw;
 extern unsigned long UINextTimeout;
 extern const unsigned long UITimeout;
 void UIStart();
+void UIRefresh();
 // create user event loop for UI events
 // https://github.com/espressif/esp-idf/tree/v4.2.2/examples/system/esp_event/user_event_loops
 // create thread for feed the event loop

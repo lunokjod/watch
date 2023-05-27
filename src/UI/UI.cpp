@@ -791,6 +791,13 @@ static void UITickStopCallback(void *handler_args, esp_event_base_t base, int32_
 }
 
 /*
+ * UIRefresh force applications to refresh their UI
+ */
+void UIRefresh() {
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_REFRESH,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
+}
+
+/*
  * UIStart begin the UI loop, to handle UI events
  */
 void UIStart() {
@@ -835,7 +842,6 @@ void UIStart() {
     uiLoopRc = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, UITickStartCallback, nullptr, NULL);
 
     uiLoopRc = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_READY,nullptr, 0, LUNOKIOT_EVENT_TIME_TICKS);
-
 }
 
 // Implementing Mid-Point Circle Drawing Algorithm

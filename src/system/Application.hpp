@@ -40,7 +40,7 @@ class LunokIoTApplication {
         LunokIoTApplication();
         virtual ~LunokIoTApplication();
         virtual bool Tick(); // the UI callback to manage input and screen
-        TFT_eSprite *ScreenCapture();
+        //TFT_eSprite *ScreenCapture();
         virtual const bool isWatchface() { return false; } // used to determine if the app must be replaced with watchface when PEK button
         virtual const char *AppName() = 0; // app title
         virtual const bool mustShowAsTask() { return true; } // false=Not show in task switcher (menus and intermediate views must be hidden)

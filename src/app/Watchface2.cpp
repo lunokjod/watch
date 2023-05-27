@@ -54,7 +54,8 @@ int16_t Watchface2Application::bannerOffset=0;
 CanvasWidget * Watchface2Application::StateDisplay = nullptr;
 
 Watchface2Application::~Watchface2Application() {
-    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUI);
+    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUIContinue);
+    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_REFRESH,ListenerUIRefresh);
     //taskRunning=false; // send "signal" to draw thread
     delete topLeftButton;
     delete topRightButton;
@@ -197,9 +198,15 @@ Watchface2Application::Watchface2Application() {
     radius = (canvas->width() + canvas->height()) / 4;
 
     esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, [](void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+        lLog("Watchface2: UI CONTINUE\n");
         Watchface2Application * self = (Watchface2Application*)handler_args;
         self->markForDestroy=true;
-    }, this, &ListenerUI);
+    }, this, &ListenerUIContinue);
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_REFRESH, [](void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+        lLog("Watchface2: UI REFRESH\n");
+        Watchface2Application * self = (Watchface2Application*)handler_args;
+        self->markForDestroy=true;
+    }, this, &ListenerUIRefresh);
 
     // initialize corner buttons
     bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });

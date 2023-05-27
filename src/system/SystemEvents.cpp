@@ -874,7 +874,7 @@ static void SystemEventReady(void *handler_args, esp_event_base_t base, int32_t 
         return;
     }
     */
-   //@TODO BIND THIS WITH UISemaphore
+   //@TODO BIND THIS WITH UISemaphore?
     if ( nullptr == currentApplication ) { LaunchWatchface(false); }
 }
 

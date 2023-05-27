@@ -47,7 +47,7 @@
 #include "PMU/AXP202.hpp"
 #include "system/Network.hpp"
 #include "system/Storage/Settings.hpp"
-
+#include "ulp.hpp"
 class NTPWifiTask;
 
 #include "app/Steps.hpp" // Step manager
@@ -192,6 +192,7 @@ LunokIoT::LunokIoT() {
     }
     SplashAnnounce("    Boot check    ");
     BootReason(); // announce boot reason and from what partition to serial
+    //ULPRun();
 
 
     #ifdef LILYGO_WATCH_2020_V3
@@ -273,6 +274,7 @@ LunokIoT::LunokIoT() {
     InstallRotateLogs();
 
     SplashAnnounceEnd();
+
     SetUserBrightness();
     SystemEventBootEnd(); // notify to system end boot procedure (SystemEvents must launch watchface here)
 

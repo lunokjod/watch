@@ -93,7 +93,7 @@ unsigned long lastAppsTimestamp[LUNOKIOT_MAX_LAST_APPS] = { 0 };
 TFT_eSprite * lastApps[LUNOKIOT_MAX_LAST_APPS] = { nullptr };
 
 // get a capture of current application
-TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
+//TFT_eSprite *LunokIoTApplication::ScreenCapture() { return DuplicateSprite(canvas); }
 
 LunokIoTApplication::LunokIoTApplication() {
     esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_APP_LAUNCH, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
@@ -216,6 +216,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
         }
     }
     xSemaphoreGive( UISemaphore ); // free
+    UIRefresh();
     /*
     // take screenshoot for the task switcher
     if ( nullptr == ptrToCurrent ) { return; }

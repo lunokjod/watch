@@ -36,7 +36,8 @@ class Watchface2Application: public LunokIoTApplication {
         static CanvasWidget * StateDisplay;
         TFT_eSprite * lastCanvas=nullptr;
         //bool taskRunning=false;
-        esp_event_handler_instance_t ListenerUI;
+        esp_event_handler_instance_t ListenerUIRefresh;
+        esp_event_handler_instance_t ListenerUIContinue;
         //unsigned long pushLetter=0;
         uint8_t bannerSpace=0;
         static int16_t bannerOffset;

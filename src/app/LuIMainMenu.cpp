@@ -25,13 +25,10 @@
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
 
-//#include "../system/Datasources/kvo.hpp"
-//#include "../system/SystemEvents.hpp"
-
 #include <LilyGoWatch.h>
 
 #include "../resources.hpp"
-//#include "SettingsMenu.hpp"
+
 #include "Battery.hpp"
 #include "Notifications.hpp"
 #include "About.hpp"
@@ -50,9 +47,18 @@
 #include "LuiGamesMenu.hpp"
 #include "LuaLauncher.hpp"
 
+#include "LunoNoid.hpp"
+//#include "Dungeon/Dungeon.hpp"
+
 using namespace LuI;
 const IconMenuEntry LuIMenuItems[] = {
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
+    //{"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, [](void *unused) { LaunchApplication(new DungeonGameApplication()); } },
+//    {"LunoNoid",img_mainmenu_lunonoid_bits, img_mainmenu_lunonoid_height, img_mainmenu_lunonoid_width, [](void *unused) { LaunchApplication(new LunoNoidGameApplication()); } },
+//    {"Log",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
+
+//    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
+
 //    {"Lua",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new LuaLauncher(HelloworldLuaScript)); } },
 //    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
