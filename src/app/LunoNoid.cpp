@@ -182,8 +182,8 @@ bool LunoNoidGameApplication::Tick() {
     }
     // rebound with walls
     if (( ballX < 0 )||( ballX > canvas->width() )) { BallSpeedX*=-1; }    
-    if ( ballY < 0 ) { BallSpeedY*=-1; }
-    if ( ballY > canvas->height() ) {
+    if ( ballY+20 < 0 ) { BallSpeedY*=-1; }
+    if ( ballY+20 > canvas->height() ) {
         // DEBUG: BallSpeedY*=-1;
         ballX = playerPosition;
         ballY = canvas->height()-32-20;
