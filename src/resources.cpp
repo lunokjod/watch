@@ -26,6 +26,7 @@
 #include "../static/img_mainmenu_glider.xbm"
 #include "../static/img_mainmenu_dungeon.xbm"
 #include "../static/img_mainmenu_lunonoid.xbm"
+#include "../static/img_mainmenu_wifi.xbm"
 
 #include "../static/img_log_32.xbm"
 

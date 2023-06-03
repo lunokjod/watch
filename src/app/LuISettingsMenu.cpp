@@ -50,7 +50,7 @@ using namespace LuI;
 const IconMenuEntry LuISettingsMenuItems[] = {
     {"Back", img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); } },
-    {"Radios",img_mainmenu_options_bits, img_mainmenu_options_height, img_mainmenu_options_width, [](void *unused) { LaunchApplication(new SettingsApplication()); } },
+    {"Radios",img_mainmenu_wifi_bits, img_mainmenu_wifi_height, img_mainmenu_wifi_width, [](void *unused) { LaunchApplication(new SettingsApplication()); } },
     {"Gestures",img_mainmenu_gesture_bits, img_mainmenu_gesture_height, img_mainmenu_gesture_width, [](void *unused) { LaunchApplication(new GestureSettings()); } },
     {"Watchface",img_mainmenu_watchface_bits, img_mainmenu_watchface_height, img_mainmenu_watchface_width, [](void *unused) { LaunchApplication(new WatchfaceSelectorApplication()); } },
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, [](void *unused) { LaunchApplication(new ThemeApplication()); } },

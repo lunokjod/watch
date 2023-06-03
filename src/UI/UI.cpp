@@ -102,9 +102,6 @@ esp_event_loop_handle_t uiEventloopHandle;
 TFT_eSprite *screenShootCanvas = nullptr;
 bool screenShootInProgress = false; // @TODO watchface must show it
 
-
-//SemaphoreHandle_t ScreenSemaphore = xSemaphoreCreateMutex();
-
 void SetUserBrightness() {
     uint8_t userBright = NVS.getInt("lBright");
     if ( 0 == userBright ) {
@@ -117,7 +114,6 @@ void SetUserBrightness() {
 void ScreenWake() {
     //lLog("@DEBUG TAKE SEMAPHORE WAKE\n");
     bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
-    //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
@@ -137,13 +133,10 @@ void ScreenWake() {
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         FPS = MAXFPS;
     }
-    //xSemaphoreGive(ScreenSemaphore);
     xSemaphoreGive(UISemaphore);
 }
 
 void ScreenSleep() {
-    //lLog("@DEBUG TAKE SEMAPHORE SCREENSLEEP\n");
-    //bool done = xSemaphoreTake(ScreenSemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     bool done = xSemaphoreTake(UISemaphore, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (false == done) {
         lEvLog("Unable to obtain the Screen Lock!\n");
@@ -155,11 +148,9 @@ void ScreenSleep() {
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
-        //Serial.flush();
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         LoT().CpuSpeed(80);
     }
-    //xSemaphoreGive(ScreenSemaphore);
     xSemaphoreGive(UISemaphore);
     
 }

@@ -35,12 +35,6 @@ extern TTGOClass *ttgo;
 #include "resources.hpp"
 #include "../system/Datasources/database.hpp"
 
-int currentSec;
-int currentMin;
-int currentHour;
-int currentDay;
-int currentMonth;
-
 extern float PMUBattDischarge;
 
 extern bool weatherSyncDone;
@@ -52,6 +46,12 @@ extern char *weatherIcon;
 // for led display
 int16_t Watchface2Application::bannerOffset=0;
 CanvasWidget * Watchface2Application::StateDisplay = nullptr;
+
+int currentDay;
+int currentMonth;
+int currentSec;
+int currentMin;
+int currentHour;
 
 Watchface2Application::~Watchface2Application() {
     esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUIContinue);
@@ -225,9 +225,14 @@ Watchface2Application::Watchface2Application() {
     outherSphere->canvas->fillSprite(TFT_PINK);
 
     // led display
-    if ( nullptr == StateDisplay ) {
-        StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth,1); // space for one letter
-        SetStatus("Hi! (: ");
+    if( xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS) == pdTRUE )  {
+        if ( nullptr == StateDisplay ) {
+            StateDisplay = new CanvasWidget(40, 90+DisplayFontWidth,1); // space for one letter
+            xSemaphoreGive( StatusSemaphore );
+            SetStatus("Hi! (: ");
+        } else {
+            xSemaphoreGive( StatusSemaphore );
+        }
     }
     
     // Buttons
@@ -342,16 +347,31 @@ void Watchface2Application::RedrawDisplay() {
             double currentDistance = sqrt(pow(vectorX, 2) + pow(vectorY, 2) * 1.0);
             if ( currentDistance < lowPoint ) { return true; } // ignore, too low
             if ( currentDistance > highPoint ) { return false; } // stop, too high
-            int32_t dx = (StateDisplay->canvas->width()-DisplayFontWidth)-(angle-90);
-            int32_t dy = currentDistance-lowPoint;
-            // check image bounds
-            if ( dx < 0 ) { return true; }
-            if ( dx >= StateDisplay->canvas->width() ) { return true; }
-            if ( dy < 0 ) { return true; }
-            if ( dy >= StateDisplay->canvas->height() ) { return true; }
-            uint16_t newColor = StateDisplay->canvas->readPixel(dx,dy);
-            if ( TFT_BLACK != newColor ) { newColor = DisplayColor; }
-            canvas->drawPixel(x,y,newColor);
+            if ( pdTRUE == xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS) ) {
+                int32_t dx = (StateDisplay->canvas->width()-DisplayFontWidth)-(angle-90);
+                int32_t dy = currentDistance-lowPoint;
+                // check image bounds
+                if ( dx < 0 ) {
+                    xSemaphoreGive( StatusSemaphore );
+                    return true;
+                }
+                if ( dx >= StateDisplay->canvas->width() ) {
+                    xSemaphoreGive( StatusSemaphore );
+                    return true;
+                }
+                if ( dy < 0 ) {
+                    xSemaphoreGive( StatusSemaphore );
+                    return true;
+                }
+                if ( dy >= StateDisplay->canvas->height() ) {
+                    xSemaphoreGive( StatusSemaphore );
+                    return true;
+                }
+                uint16_t newColor = StateDisplay->canvas->readPixel(dx,dy);
+                if ( TFT_BLACK != newColor ) { newColor = DisplayColor; }
+                canvas->drawPixel(x,y,newColor);
+                xSemaphoreGive( StatusSemaphore );
+            }
             return true;
         });
         return true;

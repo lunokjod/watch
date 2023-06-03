@@ -89,6 +89,10 @@ extern const unsigned char img_mainmenu_themes_bits[];
 #define img_mainmenu_bluetooth_height 120
 extern const unsigned char img_mainmenu_bluetooth_bits[];
 
+#define img_mainmenu_wifi_width 120
+#define img_mainmenu_wifi_height 92
+extern const unsigned char img_mainmenu_wifi_bits[];
+
 #define img_mainmenu_cpu_width 120
 #define img_mainmenu_cpu_height 120
 extern const unsigned char img_mainmenu_cpu_bits[];

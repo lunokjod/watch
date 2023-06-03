@@ -57,7 +57,7 @@ class NTPWifiTask;
 #include <freertos/task.h>
 
 #include "system/lua.hpp"
-
+#include "app/Stopwatch.hpp"
 //#include <esp32/himem.h>
 //#include <esp32/spiram.h>
 
@@ -252,6 +252,9 @@ LunokIoT::LunokIoT() {
     userMaleFemale = NVS.getInt("UserSex");  // maybe is better use "hip type A/B" due to no offend any gender
     if ( true == userMaleFemale ) { stepDistanceCm = userTall * WOMAN_STEP_PROPORTION; }
     else { stepDistanceCm = userTall * MAN_STEP_PROPORTION; }
+    //StopwatchApplication::pauseTime=(unsigned long)NVS.getInt("sw_pause");
+    //StopwatchApplication::starTime=(unsigned long)NVS.getInt("sw_start");
+
     SplashAnnounce("    Events     ");
 
     // Build the lunokiot message bus
@@ -266,7 +269,7 @@ LunokIoT::LunokIoT() {
     }
 
     // databas cleanup
-    SplashAnnounce("    Cleanup    ");
+    SplashAnnounce("      Cleanup      ");
     CleanupDatabase();
     SplashAnnounce("     Launch GUI      ");
     UIStart();
@@ -283,12 +286,6 @@ LunokIoT::LunokIoT() {
     int64_t endBootTime = esp_timer_get_time()-beginBootTime;
     lSysLog("loaded in %lld us\n",endBootTime);
 };
-/*
-static int free_mem(int argc, char **argv)
-{
-    printf("%d\n", esp_get_free_heap_size());
-    return 0;
-}*/
 
 void LunokIoT::InitLogs() {
     // Get serial comms with you

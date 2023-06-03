@@ -26,6 +26,7 @@
 #include "../UI/activator/ActiveRect.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 
+
 class Watchface2Application: public LunokIoTApplication {
     protected:
         unsigned long nextRefresh=0;

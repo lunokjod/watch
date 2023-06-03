@@ -24,7 +24,7 @@
 #include "../static/img_play_48.xbm"
 #include "../static/img_reload_48.xbm"
 #include "../static/img_pause_48.xbm"
-
+#include <ArduinoNvs.h>
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
 
@@ -46,11 +46,15 @@ StopwatchApplication::StopwatchApplication() {
     startBtn = new ButtonImageXBMWidget(10,120,70,70,[this](void *unused) {
         starTime=millis();
         pauseTime=0;
+        //NVS.setInt("sw_start",uint64_t(starTime),false);
+        //NVS.setInt("sw_pause",uint64_t(pauseTime),false);
     },img_play_48_bits,img_play_48_height,img_play_48_width,TFT_GREEN,Drawable::MASK_COLOR,false);
 
     resetBtn = new ButtonImageXBMWidget(10+74,120,70,70,[this](void *unused) {
         starTime=0;
         pauseTime=0;
+        //NVS.setInt("sw_start",uint64_t(starTime),false);
+        //NVS.setInt("sw_pause",uint64_t(pauseTime),false);
     },img_reload_48_bits,img_reload_48_height,img_reload_48_width,TFT_RED,Drawable::MASK_COLOR,false);
 
     pauseBtn = new ButtonImageXBMWidget(10+(74*2),120,70,70,[this](void *unused) {
@@ -62,6 +66,8 @@ StopwatchApplication::StopwatchApplication() {
         unsigned long diff=pauseTime-starTime;
         starTime=millis()-diff;
         pauseTime=0;
+        //NVS.setInt("sw_start",uint64_t(starTime),false);
+        //NVS.setInt("sw_pause",uint64_t(pauseTime),false);
 
     },img_pause_48_bits,img_pause_48_height,img_pause_48_width,TFT_YELLOW,Drawable::MASK_COLOR,false);
 
