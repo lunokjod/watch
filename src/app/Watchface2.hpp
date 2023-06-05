@@ -21,6 +21,7 @@
 #define __LUNOKIOT__WATCHFACE2_APP__
 
 #include <Arduino.h>
+#include "../system/Datasources/kvo.hpp"
 #include "../system/Network.hpp"
 #include "../system/Application.hpp"
 #include "../UI/activator/ActiveRect.hpp"
@@ -36,9 +37,15 @@ class Watchface2Application: public LunokIoTApplication {
         CanvasWidget * SphereForeground = nullptr;
         static CanvasWidget * StateDisplay;
         TFT_eSprite * lastCanvas=nullptr;
-        //bool taskRunning=false;
-        esp_event_handler_instance_t ListenerUIRefresh;
-        esp_event_handler_instance_t ListenerUIContinue;
+        // event monitoring for UI
+        EventUIKVO * UIRefreshKVO=nullptr;
+        EventUIKVO * UIContinueKVO=nullptr;
+        // system event monitoring for Status
+        EventKVO * BatteryFullKVO=nullptr;
+        EventKVO * BatteryChargingKVO=nullptr;
+        EventKVO * USBInKVO=nullptr;
+        EventKVO * USBOutKVO=nullptr;
+
         //unsigned long pushLetter=0;
         uint8_t bannerSpace=0;
         static int16_t bannerOffset;
@@ -79,10 +86,10 @@ class Watchface2Application: public LunokIoTApplication {
         bool weatherStatus=false;
     tunable:
         const uint16_t DisplayColor=tft->color24to16(0x437aff);
-        const int16_t DisplaySpeed=12;
+        const int16_t DisplaySpeed=12; // speed of text display
         const int8_t DotSize=3;
-        const bool ShowNumbers=false;
-        // hourt numbers on watchface (12/3/6/9)
+        // hour numbers on watchface (12/3/6/9)
+        const bool ShowNumbers=true;
         const int16_t NumberMargin = 20; // distance inner border of sphere
         const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font
         const uint8_t NumberSize = 1; // size

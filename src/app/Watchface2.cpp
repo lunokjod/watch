@@ -54,8 +54,14 @@ int currentMin;
 int currentHour;
 
 Watchface2Application::~Watchface2Application() {
-    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_CONTINUE,ListenerUIContinue);
-    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS,UI_EVENT_REFRESH,ListenerUIRefresh);
+    // destroy system monitoring calls
+    if (nullptr != UIRefreshKVO) { delete UIRefreshKVO; }
+    if (nullptr != UIContinueKVO) { delete UIContinueKVO; }
+    if (nullptr != BatteryFullKVO) { delete BatteryFullKVO; }
+    if (nullptr != BatteryChargingKVO) { delete BatteryChargingKVO; }
+    if (nullptr != USBInKVO) { delete USBInKVO; }
+    if (nullptr != USBOutKVO) { delete USBOutKVO; }
+
     //taskRunning=false; // send "signal" to draw thread
     delete topLeftButton;
     delete topRightButton;
@@ -196,17 +202,20 @@ Watchface2Application::Watchface2Application() {
     middleX = canvas->width() / 2;
     middleY = canvas->height() / 2;
     radius = (canvas->width() + canvas->height()) / 4;
-
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE, [](void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
-        lLog("Watchface2: UI CONTINUE\n");
-        Watchface2Application * self = (Watchface2Application*)handler_args;
-        self->markForDestroy=true;
-    }, this, &ListenerUIContinue);
-    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, UI_EVENT_REFRESH, [](void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    // listeners to UI for force refresh
+    UIRefreshKVO = new EventUIKVO([&, this](){
         lLog("Watchface2: UI REFRESH\n");
-        Watchface2Application * self = (Watchface2Application*)handler_args;
-        self->markForDestroy=true;
-    }, this, &ListenerUIRefresh);
+        this->markForDestroy=true;
+    },UI_EVENT_REFRESH);
+    UIContinueKVO = new EventUIKVO([&, this](){
+        lLog("Watchface2: UI CONTINUE\n");
+        this->markForDestroy=true;
+    },UI_EVENT_CONTINUE);
+
+    BatteryFullKVO = new EventKVO([&, this](){ SetStatus("Battery full"); },PMU_EVENT_BATT_FULL);
+    BatteryChargingKVO = new EventKVO([&, this](){ SetStatus("Batt. charge"); },PMU_EVENT_BATT_CHARGING);
+    USBInKVO = new EventKVO([&, this](){ SetStatus("USB plug"); },PMU_EVENT_POWER);
+    USBOutKVO = new EventKVO([&, this](){ SetStatus("unplugged"); },PMU_EVENT_NOPOWER);
 
     // initialize corner buttons
     bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });
@@ -214,7 +223,7 @@ Watchface2Application::Watchface2Application() {
     topRightButton = new ActiveRect(160, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); });
     bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
 
-    // generate proceduraly the backface (no bitmap wasting space on flash)
+    // generate proceduraly the backface (no bitmap using space on flash)
     SphereBackground = new CanvasWidget(canvas->height(),canvas->width());
     SphereBackground->canvas->fillSprite(TFT_BLACK);
     //
@@ -415,8 +424,9 @@ void Watchface2Application::SetStatus(const char*what) {
 }
 
 void Watchface2Application::SetStatus(char*what) {
+    lLog("Watchface2: SetStatus '%s'\n",what);
     xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-    free(whatToSay);
+    if ( nullptr != whatToSay ) { free(whatToSay); }
     StateDisplay->canvas->fillSprite(TFT_BLACK);
     whatToSay=what;
     bannerOffset=0;
