@@ -45,3 +45,14 @@ EventKVO::~EventKVO() {
     esp_event_handler_instance_unregister_with(systemEventloopHandler,SYSTEM_EVENTS, event,instance);
     lEvLog("KVO: 0x%p stop watching event: %d\n",this,event);
 }
+
+
+EventUIKVO::EventUIKVO(KVOCallback callback, int UIEvent) : callback(callback), event(UIEvent) {
+    esp_event_handler_instance_register_with(uiEventloopHandle, UI_EVENTS, event, StaticKVOCallback, (void *)this, &instance);
+    lEvLog("UIKVO: 0x%p attaching to event: %d\n",this,event);
+}
+
+EventUIKVO::~EventUIKVO() {
+    esp_event_handler_instance_unregister_with(uiEventloopHandle,UI_EVENTS, event,instance);
+    lEvLog("UIKVO: 0x%p stop watching event: %d\n",this,event);
+}

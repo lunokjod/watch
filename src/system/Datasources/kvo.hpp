@@ -36,4 +36,13 @@ class EventKVO {
         ~EventKVO();
 };
 
+class EventUIKVO {
+    public:
+        esp_event_handler_instance_t instance;
+        KVOCallback callback;
+        int event;
+        EventUIKVO(KVOCallback callback, int UIEvent);
+        ~EventUIKVO();
+};
+
 #endif
