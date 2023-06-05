@@ -36,9 +36,9 @@ extern uint32_t systemStatsRebootCounter;
 
 ShutdownApplication::ShutdownApplication(bool restart, bool savedata): restart(restart), savedata(savedata) {
 
-//#ifdef LILYGO_WATCH_2020_V3
-//    ttgo->shake();
-//#endif
+#ifdef LILYGO_WATCH_2020_V3
+    ttgo->shake();
+#endif
     //nextRedraw=0;
     //timeFromBegin=millis();
     //Serial.flush();
