@@ -417,18 +417,24 @@ void Watchface2Application::RedrawDisplay() {
     }
 }
 void Watchface2Application::SetStatus(const char*what) {
-    const char * frtmSring="%s          ";
-    char * buffer=(char*)ps_malloc(strlen(frtmSring)+strlen(what)+1);
-    sprintf(buffer,frtmSring,what);
+    //const char * frtmSring="%s          ";
+    //char * buffer=(char*)ps_malloc(strlen(frtmSring)+strlen(what)+1);
+    //sprintf(buffer,frtmSring,what);
+    char * buffer=(char*)ps_malloc(strlen(what)+1);
+    strcpy(buffer,what);
     SetStatus(buffer);
+    free(buffer);
 }
 
 void Watchface2Application::SetStatus(char*what) {
     lLog("Watchface2: SetStatus '%s'\n",what);
+    const char * frtmSring="%s          ";
+    char * buffer=(char*)ps_malloc(strlen(frtmSring)+strlen(what)+1);
+    sprintf(buffer,frtmSring,what);
     xSemaphoreTake( StatusSemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     if ( nullptr != whatToSay ) { free(whatToSay); }
     StateDisplay->canvas->fillSprite(TFT_BLACK);
-    whatToSay=what;
+    whatToSay=buffer;
     bannerOffset=0;
     xSemaphoreGive( StatusSemaphore );
 }

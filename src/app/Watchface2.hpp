@@ -90,28 +90,28 @@ class Watchface2Application: public LunokIoTApplication {
         const int8_t DotSize=3;
         // hour numbers on watchface (12/3/6/9)
         const bool ShowNumbers=true;
-        const int16_t NumberMargin = 20; // distance inner border of sphere
-        const GFXfont * NumberFreeFont = &FreeMonoBold24pt7b; // font
+        const int16_t NumberMargin = 16; // distance inner border of sphere
+        const GFXfont * NumberFreeFont = &FreeMonoBold18pt7b; // font
         const uint8_t NumberSize = 1; // size
         const uint16_t NumberColorBright=tft->color24to16(0x546084); // bright
         const uint16_t NumberColor=tft->color24to16(0x1f2d56); // color
         const uint16_t NumberColorShadow=tft->color24to16(0x071232); // shadow
-        const uint8_t OverSphereAlpha=128;
+        const uint8_t OverSphereAlpha=64;
         // hands values
         const int32_t SecondsTickness = 2;
         const uint16_t SecondsColor=ThCol(clock_hands_second);
         const uint16_t SecondsBrightColor=tft->alphaBlend(128,SecondsColor,TFT_WHITE);
         const uint8_t MaxSecondsLen = 98; // define the lenght of hand (from up)
 
-        const int32_t MinutesTickness = 4;
+        const int32_t MinutesTickness = 6;
         const uint16_t MinutesColor=tft->color24to16(0x787ca0);
         const uint16_t MinutesBrightColor=tft->alphaBlend(128,MinutesColor,TFT_WHITE);
         const uint8_t MinMinutesLen = 30;
-        const uint8_t MaxMinutesLen = 60; // define the lenght of hand
+        const uint8_t MaxMinutesLen = 80; // define the lenght of hand
 
-        const int32_t HoursTickness = 5;
-        const uint16_t HoursColor=ThCol(highlight);
-        const uint16_t HoursBrightColor=tft->alphaBlend(128,HoursColor,TFT_WHITE);
+        const int32_t HoursTickness = 8;
+        const uint16_t HoursColor=tft->color24to16(0xfcb61d);
+        const uint16_t HoursBrightColor=tft->alphaBlend(128,HoursColor,TFT_BLACK);
         const uint8_t MinHourLen = 30;
         const uint8_t MaxHourLen = 45; // define the lenght of hand
 };
