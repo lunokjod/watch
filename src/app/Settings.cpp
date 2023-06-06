@@ -40,6 +40,7 @@
 
 //extern void StopBLE();
 //extern void StartBLE(bool synched);
+extern bool weatherSyncDone;
 
 SettingsApplication::~SettingsApplication() {
     // on destroy
@@ -57,6 +58,11 @@ SettingsApplication::~SettingsApplication() {
 
     LoT().GetSettings()->SetInt(SystemSettings::SettingKey::OpenWeather,openweatherCheck->switchEnabled);
     //NVS.setInt("OWeatherEnabled",openweatherCheck->switchEnabled,false);
+    
+    // disable weather when off
+    if (false == openweatherCheck->switchEnabled ) {
+        weatherSyncDone = false;
+    }
 
     if ( nullptr != ntpCheck) { delete ntpCheck; }
     if ( nullptr != openweatherCheck) { delete openweatherCheck; }
