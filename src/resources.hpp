@@ -133,9 +133,17 @@ extern const unsigned char img_mainmenu_dungeon_bits[];
 #define img_rotate_120_height 120
 extern const unsigned char img_rotate_120_bits[];
 
+#define img_steps_16_width 12
+#define img_steps_16_height 16
+extern const unsigned char img_steps_16_bits[];
+
 #define img_mainmenu_steps_width 89
 #define img_mainmenu_steps_height 120
 extern const unsigned char img_mainmenu_steps_bits[];
+
+#define img_battery_16_width 9
+#define img_battery_16_height 16
+extern const unsigned char img_battery_16_bits[];
 
 #define img_mainmenu_battery_width 66
 #define img_mainmenu_battery_height 120
@@ -144,6 +152,10 @@ extern const unsigned char img_mainmenu_battery_bits[];
 #define img_mainmenu_stopwatch_width 102
 #define img_mainmenu_stopwatch_height 120
 extern const unsigned char img_mainmenu_stopwatch_bits[];
+
+#define img_settings_16_width 16
+#define img_settings_16_height 16
+extern const unsigned char img_settings_16_bits[];
 
 #define img_mainmenu_options_width 118
 #define img_mainmenu_options_height 120
@@ -180,6 +192,14 @@ extern const unsigned char img_xbm_32_bits[];
 #define img_check_32_width 32
 #define img_check_32_height 32
 extern const unsigned char img_check_32_bits[];
+
+#define img_home_16_width 16
+#define img_home_16_height 15
+extern const unsigned char img_home_16_bits[];
+
+#define img_home_32_width 32
+#define img_home_32_height 29
+extern const unsigned char img_home_32_bits[];
 
 #define img_home_64_width 64
 #define img_home_64_height 58

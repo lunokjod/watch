@@ -61,7 +61,7 @@ Watchface2Application::~Watchface2Application() {
     if (nullptr != BatteryChargingKVO) { delete BatteryChargingKVO; }
     if (nullptr != USBInKVO) { delete USBInKVO; }
     if (nullptr != USBOutKVO) { delete USBOutKVO; }
-
+    if (nullptr != ScreenDirectionKVO) { delete ScreenDirectionKVO; }
     //taskRunning=false; // send "signal" to draw thread
     delete topLeftButton;
     delete topRightButton;
@@ -188,13 +188,60 @@ void Watchface2Application::RedrawHands(struct tm *timeinfo) {
 }
 
 void Watchface2Application::DestroyDoubleBuffer() {
-    lAppLog("Double buffer clean\n");
     if ( nullptr != lastCanvas ) {
+        lAppLog("Double buffer clean\n");
         TFT_eSprite * bkp = lastCanvas;
         lastCanvas=nullptr;
         bkp->deleteSprite();
         delete bkp;
     }
+}
+
+void Watchface2Application::NumberLayerReraw() {
+    //lAppLog("NumberLayerReraw %u <---------------------------------------\n",bmaRotation);
+    ShowNumbersMustRefresh=false;
+    SphereForeground->canvas->fillSprite(TFT_PINK);
+
+    // draw time 12/3/6/9 marks on cardinals
+    SphereForeground->canvas->setFreeFont(NumberFreeFont);
+
+    SphereForeground->canvas->setTextSize(NumberSize);
+
+    SphereForeground->canvas->setTextDatum(TC_DATUM);
+    SphereForeground->canvas->setTextColor(NumberColorBright);
+    SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2)-1, (NumberMargin)-1);
+    SphereForeground->canvas->setTextColor(NumberColorShadow);
+    SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2)+1, (NumberMargin)+1);
+    if ( 4 == bmaRotation ) { SphereForeground->canvas->setTextColor(TFT_WHITE);
+    } else { SphereForeground->canvas->setTextColor(NumberColor); }
+    SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2), NumberMargin);
+
+    SphereForeground->canvas->setTextDatum(CR_DATUM);
+    SphereForeground->canvas->setTextColor(NumberColorBright);
+    SphereForeground->canvas->drawString("3", (TFT_WIDTH - NumberMargin)-1, (TFT_HEIGHT / 2)-1);
+    SphereForeground->canvas->setTextColor(NumberColorShadow);
+    SphereForeground->canvas->drawString("3", (TFT_WIDTH - NumberMargin)+1, (TFT_HEIGHT / 2)+1);
+    if ( 0 == bmaRotation ) { SphereForeground->canvas->setTextColor(TFT_WHITE);
+    } else { SphereForeground->canvas->setTextColor(NumberColor); }
+    SphereForeground->canvas->drawString("3", TFT_WIDTH - NumberMargin, TFT_HEIGHT / 2);
+
+    SphereForeground->canvas->setTextDatum(BC_DATUM);
+    SphereForeground->canvas->setTextColor(NumberColorBright);
+    SphereForeground->canvas->drawString("6", (TFT_WIDTH / 2)-1, (TFT_HEIGHT - NumberMargin)-1);
+    SphereForeground->canvas->setTextColor(NumberColorShadow);
+    SphereForeground->canvas->drawString("6", (TFT_WIDTH / 2)+1, (TFT_HEIGHT - NumberMargin)+1);
+    if ( 2 == bmaRotation ) { SphereForeground->canvas->setTextColor(TFT_WHITE);
+    } else { SphereForeground->canvas->setTextColor(NumberColor); }
+    SphereForeground->canvas->drawString("6", TFT_WIDTH / 2, TFT_HEIGHT - NumberMargin);
+
+    SphereForeground->canvas->setTextDatum(CL_DATUM);
+    SphereForeground->canvas->setTextColor(NumberColorBright);
+    SphereForeground->canvas->drawString("9", NumberMargin-1, (TFT_HEIGHT / 2)-1);
+    SphereForeground->canvas->setTextColor(NumberColorShadow);
+    SphereForeground->canvas->drawString("9", NumberMargin+1, (TFT_HEIGHT / 2)+1);
+    if ( 1 == bmaRotation ) { SphereForeground->canvas->setTextColor(TFT_WHITE);
+    } else { SphereForeground->canvas->setTextColor(NumberColor); }
+    SphereForeground->canvas->drawString("9", NumberMargin, TFT_HEIGHT / 2);
 }
 
 Watchface2Application::Watchface2Application() {
@@ -211,24 +258,29 @@ Watchface2Application::Watchface2Application() {
         lLog("Watchface2: UI CONTINUE\n");
         this->markForDestroy=true;
     },UI_EVENT_CONTINUE);
-
+    // system listeners to get info about relevant events
     BatteryFullKVO = new EventKVO([&, this](){ SetStatus("Battery full"); },PMU_EVENT_BATT_FULL);
     BatteryChargingKVO = new EventKVO([&, this](){ SetStatus("Batt. charge"); },PMU_EVENT_BATT_CHARGING);
     USBInKVO = new EventKVO([&, this](){ SetStatus("USB plug"); },PMU_EVENT_POWER);
     USBOutKVO = new EventKVO([&, this](){ SetStatus("unplugged"); },PMU_EVENT_NOPOWER);
+    ScreenDirectionKVO = new EventKVO([&, this](){
+        lAppLog("Direction changed to: %u\n",bmaRotation);
+        ShowNumbersMustRefresh=true;
+    },BMA_EVENT_DIRECTION);
 
     // initialize corner buttons
-    bottomLeftButton = new ActiveRect(0, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); });
-    topLeftButton = new ActiveRect(0, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); });
-    topRightButton = new ActiveRect(160, 0, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); });
-    bottomRightButton = new ActiveRect(160, 160, 80, 80, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); });
+    const int16_t ButtonSize = 45;
+    const int16_t MenuButtonSize = 50;
+    bottomLeftButton = new ButtonImageXBMWidget(0, canvas->height()-ButtonSize, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); },img_battery_16_bits,img_battery_16_height,img_battery_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
+    topLeftButton = new ButtonImageXBMWidget(0, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); },img_settings_16_bits,img_settings_16_height,img_settings_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
+    topRightButton = new ButtonImageXBMWidget(canvas->width()-ButtonSize, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); },img_steps_16_bits,img_steps_16_height,img_steps_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
+    bottomRightButton = new ButtonImageXBMWidget(canvas->width()-MenuButtonSize, canvas->height()-MenuButtonSize, MenuButtonSize, MenuButtonSize, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); },img_home_32_bits,img_home_32_height,img_home_32_width,TFT_DARKGREY,TFT_BLACK,false);
 
     // generate proceduraly the backface (no bitmap using space on flash)
     SphereBackground = new CanvasWidget(canvas->height(),canvas->width());
     SphereBackground->canvas->fillSprite(TFT_BLACK);
     //
     SphereForeground = new CanvasWidget(canvas->height(), canvas->width());
-    SphereForeground->canvas->fillSprite(TFT_PINK);
     //
     CanvasWidget * outherSphere = new CanvasWidget(canvas->height(),canvas->width());
     outherSphere->canvas->fillSprite(TFT_PINK);
@@ -289,44 +341,7 @@ Watchface2Application::Watchface2Application() {
     innerSphere->DumpTo(SphereBackground->canvas, middleX, middleY, TFT_PINK);
     delete innerSphere;
 
-    { // draw time 12/3/6/9 marks on cardinals
-        SphereForeground->canvas->setFreeFont(NumberFreeFont);
-
-        SphereForeground->canvas->setTextSize(NumberSize);
-
-        SphereForeground->canvas->setTextDatum(TC_DATUM);
-        SphereForeground->canvas->setTextColor(NumberColorBright);
-        SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2)-1, (NumberMargin)-1);
-        SphereForeground->canvas->setTextColor(NumberColorShadow);
-        SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2)+1, (NumberMargin)+1);
-        SphereForeground->canvas->setTextColor(NumberColor);
-        SphereForeground->canvas->drawString("12", (TFT_WIDTH / 2), NumberMargin);
-
-        SphereForeground->canvas->setTextDatum(CR_DATUM);
-        SphereForeground->canvas->setTextColor(NumberColorBright);
-        SphereForeground->canvas->drawString("3", (TFT_WIDTH - NumberMargin)-1, (TFT_HEIGHT / 2)-1);
-        SphereForeground->canvas->setTextColor(NumberColorShadow);
-        SphereForeground->canvas->drawString("3", (TFT_WIDTH - NumberMargin)+1, (TFT_HEIGHT / 2)+1);
-        SphereForeground->canvas->setTextColor(NumberColor);
-        SphereForeground->canvas->drawString("3", TFT_WIDTH - NumberMargin, TFT_HEIGHT / 2);
-
-        SphereForeground->canvas->setTextDatum(BC_DATUM);
-        SphereForeground->canvas->setTextColor(NumberColorBright);
-        SphereForeground->canvas->drawString("6", (TFT_WIDTH / 2)-1, (TFT_HEIGHT - NumberMargin)-1);
-        SphereForeground->canvas->setTextColor(NumberColorShadow);
-        SphereForeground->canvas->drawString("6", (TFT_WIDTH / 2)+1, (TFT_HEIGHT - NumberMargin)+1);
-        SphereForeground->canvas->setTextColor(NumberColor);
-        SphereForeground->canvas->drawString("6", TFT_WIDTH / 2, TFT_HEIGHT - NumberMargin);
-
-        SphereForeground->canvas->setTextDatum(CL_DATUM);
-        SphereForeground->canvas->setTextColor(NumberColorBright);
-        SphereForeground->canvas->drawString("9", NumberMargin-1, (TFT_HEIGHT / 2)-1);
-        SphereForeground->canvas->setTextColor(NumberColorShadow);
-        SphereForeground->canvas->drawString("9", NumberMargin+1, (TFT_HEIGHT / 2)+1);
-        SphereForeground->canvas->setTextColor(NumberColor);
-        SphereForeground->canvas->drawString("9", NumberMargin, TFT_HEIGHT / 2);
-    }
-
+    NumberLayerReraw();
     // time mark
     DescribeCircle(middleX, middleY, radius - 1, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
         int angleEnd = (markAngle + 90) % 360;
@@ -699,8 +714,21 @@ void Watchface2Application::Redraw() {
     }
 
     // push over with alpha
-    if ( ShowNumbers ) { SphereForeground->DumpAlphaTo(canvas,0,0,OverSphereAlpha,TFT_PINK); }
+    if ( ShowNumbers ) {
+        if ( ShowNumbersMustRefresh ) { NumberLayerReraw(); }
+        SphereForeground->DumpAlphaTo(canvas,0,0,OverSphereAlpha,TFT_PINK);
+    }
 
+    // drawbuttons
+    topRightButton->DrawTo(canvas);
+    bottomRightButton->DrawTo(canvas);
+    topLeftButton->DrawTo(canvas);
+    bottomLeftButton->DrawTo(canvas);
+
+    //Interact(touched, touchX, touchY); // steps
+    //bottomRightButton->Interact(touched, touchX, touchY); // menu
+    //topLeftButton->Interact(touched, touchX, touchY); // settings
+    //bottomLeftButton->Interact(touched, touchX, touchY); // battery
 
 
     // alway on top
@@ -734,12 +762,14 @@ bool Watchface2Application::Tick() {
     // real image refresh to buffer
     if (millis() > nextRefresh) {
         Redraw();
-        if ( ( nullptr == lastCanvas ) || ( markForDestroy )) {
-            // clone the canvas
+        if ( ( markForDestroy )||( nullptr == lastCanvas )) {
+            DestroyDoubleBuffer();
+            // clone the current canvas
             lastCanvas = ScaleSprite(canvas,1.0);
+            canvas->pushSprite(0,0);
             markForDestroy=false;
             nextRefresh = millis() + (1000 / CleanupFPS);
-            return true; // full screen push (doublebuffer destroyed)
+            return false; // full screen push (doublebuffer destroyed)
         }
         uint32_t drawPixels=0;
         for(int y=0;y<canvas->height();y++) {

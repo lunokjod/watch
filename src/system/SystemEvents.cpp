@@ -546,11 +546,13 @@ static void SystemEventPMUPower(void *handler_args, esp_event_base_t base, int32
     if ( false == ttgo->bl->isOn()) { return; } // no screen?
 
     if ( vbusPresent ) { // is plugged?
+        //lEvLog("PMU Power event\n");
         ttgo->setBrightness(255); // full light!!!
-        LaunchApplication(new BatteryApplication());
+        //LaunchApplication(new BatteryApplication());
     } else {
         uint8_t userBright = NVS.getInt("lBright"); // restore user light
-        if ( userBright > MINIMUM_BACKLIGHT ) { ttgo->setBrightness(userBright); } // reset the user brightness
+        if (  MINIMUM_BACKLIGHT > userBright ) { userBright = MINIMUM_BACKLIGHT; }
+        ttgo->setBrightness(userBright);// reset the user brightness
     }
 }
 /*

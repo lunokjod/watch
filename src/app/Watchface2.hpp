@@ -24,7 +24,8 @@
 #include "../system/Datasources/kvo.hpp"
 #include "../system/Network.hpp"
 #include "../system/Application.hpp"
-#include "../UI/activator/ActiveRect.hpp"
+//#include "../UI/activator/ActiveRect.hpp"
+#include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/CanvasZWidget.hpp"
 
 
@@ -45,14 +46,21 @@ class Watchface2Application: public LunokIoTApplication {
         EventKVO * BatteryChargingKVO=nullptr;
         EventKVO * USBInKVO=nullptr;
         EventKVO * USBOutKVO=nullptr;
-
+        EventKVO * ScreenDirectionKVO=nullptr;
+        bool ShowNumbersMustRefresh=true;
         //unsigned long pushLetter=0;
         uint8_t bannerSpace=0;
         static int16_t bannerOffset;
-        ActiveRect * topLeftButton = nullptr;    
+        /*
+        ActiveRect * topLeftButton = nullptr;
         ActiveRect * topRightButton = nullptr;
         ActiveRect * bottomRightButton = nullptr;
         ActiveRect * bottomLeftButton = nullptr;
+        */
+        ButtonImageXBMWidget * topLeftButton = nullptr;
+        ButtonImageXBMWidget * topRightButton = nullptr;
+        ButtonImageXBMWidget * bottomRightButton = nullptr;
+        ButtonImageXBMWidget * bottomLeftButton = nullptr;
         int16_t middleX;
         int16_t middleY;
         int16_t radius;
@@ -74,6 +82,7 @@ class Watchface2Application: public LunokIoTApplication {
         void RedrawDisplay();
         void RedrawHands(struct tm *timeinfo);
         void Redraw();
+        void NumberLayerReraw();
         bool Tick();
         const bool isWatchface() override { return true; }
         const bool mustShowAsTask() override { return false; }
@@ -96,7 +105,7 @@ class Watchface2Application: public LunokIoTApplication {
         const uint16_t NumberColorBright=tft->color24to16(0x546084); // bright
         const uint16_t NumberColor=tft->color24to16(0x1f2d56); // color
         const uint16_t NumberColorShadow=tft->color24to16(0x071232); // shadow
-        const uint8_t OverSphereAlpha=64;
+        const uint8_t OverSphereAlpha=92;
         // hands values
         const int32_t SecondsTickness = 2;
         const uint16_t SecondsColor=ThCol(clock_hands_second);

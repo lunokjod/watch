@@ -4,9 +4,14 @@
 #include "../static/img_mainmenu_calculator.xbm"
 #include "../static/img_mainmenu_activity.xbm"
 #include "../static/img_mainmenu_bright.xbm"
+
+#include "../static/img_steps_16.xbm"
 #include "../static/img_mainmenu_steps.xbm"
+
 #include "../static/img_mainmenu_back.xbm"
+#include "../static/img_settings_16.xbm"
 #include "../static/img_mainmenu_options.xbm"
+#include "../static/img_battery_16.xbm"
 #include "../static/img_mainmenu_battery.xbm"
 #include "../static/img_mainmenu_debug.xbm"
 #include "../static/img_mainmenu_notifications.xbm"
@@ -101,6 +106,9 @@
 #include "../static/img_weather_600.c"
 #include "../static/img_weather_800.c"
 
+
+#include "../static/img_home_16.xbm"
+#include "../static/img_home_32.xbm"
 #include "../static/img_home_64.xbm"
 #include "../static/img_planet_64.xbm"
 #include "../static/img_glider_64.xbm"
