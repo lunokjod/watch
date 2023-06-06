@@ -18,11 +18,17 @@
 //
 
 #include <Arduino.h>
+#include "../lunokIoT.hpp"
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
+#include <LilyGoWatch.h>
 #include "Calendar.hpp"
 #include "../UI/widgets/ButtonTextWidget.hpp"
-
+#include <LittleFS.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstdio>
+#include <FS.h>
 int days_in_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
 const char *MonthsAsChars[] = {
 	"January",
@@ -46,6 +52,46 @@ int dayNumber(int day, int month, int year)  {
     return ( year + year/4 - year/100 + 
             year/400 + t[month-1] + day) % 7; 
 } 
+void CalendarApplication::CheckDatabasesForMonth() {
+    // clean current month
+    memset(databaseFoundDay,false,sizeof(bool)*32);
+    if ( LoT().IsLittleFSEnabled() ) {
+        //lAppLog("---------------------> @TODO ITERATE .db FILES!!!\n");
+        fs::File root = LittleFS.open("/");
+        if (!root) {
+            //lAppLog("LittleFS: ERROR: Failed to open directory\n");
+            return;
+        }
+        if (!root.isDirectory()) {
+            //lAppLog("LittleFS: ERROR: not a directory\n");
+            return;
+        }
+        fs::File file = root.openNextFile();
+        while (file) {
+            // get only regular files
+            if (false == file.isDirectory()) {
+                const char begin[] = "lwatch_";
+                if ( 0 != strncmp(file.name(),begin,strlen(begin)) ) {
+                    file = root.openNextFile();
+                    continue;
+                }
+                const char endStrFmt[] = "-%d.db";
+                char nameToCompare[255]; // monthToShow
+                sprintf(nameToCompare,endStrFmt,monthToShow+1);
+                const char *filename = file.name();
+                if ( 0 != strncmp(filename+strlen(filename)-strlen(nameToCompare),nameToCompare,strlen(nameToCompare)) ) {
+                    file = root.openNextFile();
+                    continue;
+                }
+                //lAppLog("'%s'\n",file.name());
+                int day = atoi(filename+strlen(begin));
+                //lAppLog("DAY: %d\n",day);
+                databaseFoundDay[day]=true;
+            }
+            file = root.openNextFile();
+        }
+    }
+}
 
 CalendarApplication::CalendarApplication() {
     //https://www.codingunit.com/how-to-make-a-calendar-in-c
@@ -73,11 +119,15 @@ CalendarApplication::CalendarApplication() {
     nextBtn=new ButtonTextWidget(canvas->width()-40,0,40,40,[&,this](void *nah){
         monthToShow++;
         if ( monthToShow > 11 ) { monthToShow = 11; }
+        CheckDatabasesForMonth();
     },">",ThCol(text),TFT_BLACK,false);
     lastBtn=new ButtonTextWidget(0,0,40,40,[&,this](void *nah){
         monthToShow--;
         if ( monthToShow < 0 ) { monthToShow = 0; }
+        CheckDatabasesForMonth();
     },"<",ThCol(text),TFT_BLACK,false);
+
+    CheckDatabasesForMonth();
     Tick(); // OR call this if no splash 
 }
 
@@ -136,6 +186,9 @@ bool CalendarApplication::Tick() {
             canvas->setTextDatum(CC_DATUM);
             canvas->drawNumber(day,(offsetX+(width/2))+posX,(offsetY+(width/2))+posY);
             //canvas->drawString(textBuffer, posX, posY);
+            if ( databaseFoundDay[day]) {
+                canvas->fillCircle(offsetX+posX,offsetY+posY,width/7,TFT_GREENYELLOW);
+            }
 
             weekday++;
             if ( weekday>7) { weekday=1; numWeek++; }

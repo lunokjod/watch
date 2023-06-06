@@ -354,7 +354,7 @@ bool LunokIoT::IsNetworkInUse() {
 void LunokIoT::ListLittleFS(const char *path) {
     if ( false == LittleFSReady ) { return; }
     lSysLog("LittleFS: contents:\n");
-    File root = LittleFS.open(path);
+    fs::File root = LittleFS.open(path);
     if (!root) {
         lLog("LittleFS: ERROR: Failed to open directory\n");
         return;
@@ -363,7 +363,7 @@ void LunokIoT::ListLittleFS(const char *path) {
         lLog("LittleFS: ERROR: not a directory\n");
         return;
     }
-    File file = root.openNextFile();
+    fs::File file = root.openNextFile();
     while (file) {
         if (file.isDirectory()) {
             lSysLog("<DIR> '%s'\n",file.name());
