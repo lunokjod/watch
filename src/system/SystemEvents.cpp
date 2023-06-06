@@ -381,6 +381,14 @@ static void DoSleepTask(void *args) {
 
     lEvLog("ESP32: -- Wake -- o_O' Slippin' time: (this nap: %d secs/total: %u secs) in use: %lu secs (usage ratio: %.2f%%%%)\n",
             differenceSleepTime_msec/1000,deviceSleepMSecs/1000,deviceUsageMSecs/1000,deviceUsageRatio);
+    // fast refresh (little coupled code, this must be moved to UI.cpp) @TODO
+    if( xSemaphoreTake( UISemaphore, LUNOKIOT_UI_SHORT_WAIT) == pdTRUE ) {
+        if ( nullptr != currentApplication) {
+                currentApplication->Tick();
+                currentApplication->canvas->pushSprite(0,0);
+        }
+        xSemaphoreGive(UISemaphore);
+    }
 
     // get stepcounter meanwhile sleep
     xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
@@ -395,6 +403,7 @@ static void DoSleepTask(void *args) {
         TakeAllSamples();
         DoSleep();
     }
+
     // Start the tick loop again
     LunokIoTSystemTickerStart();
 
@@ -690,7 +699,7 @@ static void AXPEventPEKShort(void *handler_args, esp_event_base_t base, int32_t 
     else {
         lEvLog("Event: user wants to get a screen\n");
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_WAKE, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        FreeSpace();
+        //FreeSpace();
         ScreenWake();
         LaunchWatchface(false);
     }
@@ -1067,6 +1076,7 @@ static void AXPInterruptController(void *args) {
 
     lSysLog("AXP interrupt handler \n");
     // ADC monitoring must be enabled to use the AXP202 monitoring function
+    xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     ttgo->power->adc1Enable(
         AXP202_VBUS_VOL_ADC1 |
             AXP202_VBUS_CUR_ADC1 |
@@ -1082,9 +1092,9 @@ static void AXPInterruptController(void *args) {
                                AXP202_CHARGING_IRQ | AXP202_CHARGING_FINISHED_IRQ,
                            true);
     ttgo->power->clearIRQ();
+    xSemaphoreGive(I2cMutex);
 
-
-    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {
         vTaskSuspend(NULL); // pause myself
         //if (pdFALSE == xSemaphoreTake( AXPInterruptSemaphore, LONG_TIME )) { continue; }
@@ -1425,7 +1435,7 @@ static void BMAInterruptController(void *args) {
 
     xSemaphoreGive(I2cMutex);
 
-    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    //TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
     while(true) {
         //if (pdFALSE == xSemaphoreTake( BMAInterruptSemaphore, LONG_TIME )) { continue; }
         vTaskSuspend(NULL);
@@ -1436,11 +1446,11 @@ static void BMAInterruptController(void *args) {
         taskENTER_CRITICAL(&BMAMux);
         bool currirqBMA = irqBMA;
         taskEXIT_CRITICAL(&BMAMux);*/
-        //lLog("TRYING TO AQUIRE MUTEX i2C on BMAInterruptController\n");
-        //xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        //lLog("AAAAAAAAAAAAAAAAAAA TRYING TO AQUIRE MUTEX i2C on BMAInterruptController\n");
+        lEvLog("BMA423: INT received\n");
+        xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 
         //if (currirqBMA) {
-            lEvLog("BMA423: INT received\n");
             int readed = ttgo->bma->readInterrupt();
             if ( false == readed ) {
                 xSemaphoreGive(I2cMutex);

@@ -129,7 +129,7 @@ void ScreenWake() {
         //delay(1); // get time to queue digest ;)
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
-        tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
+        //tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
         FPS = MAXFPS;
     }

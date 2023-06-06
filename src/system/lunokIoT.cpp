@@ -34,6 +34,7 @@
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 #include <LilyGoWatch.h>
+#include "driver/uart.h"
 
 //#include <SPI.h>
 //#include <FS.h>
@@ -504,6 +505,8 @@ void LunokIoT::BootReason() { // check boot status
 bool LunokIoT::CpuSpeed(uint32_t mhz) {
     lLog("@TODO @DEBUG DISABLED CPUSPEED FOR TESTING\n");
     return true;
+    // force flush
+    uart_wait_tx_idle_polling(UART_NUM_0);
     uint32_t currentMhz = getCpuFrequencyMhz();
     if ( mhz == currentMhz ) { return true; } // nothing to do :)
     lSysLog("CPU: Freq: %u Mhz to %u Mhz\n", currentMhz, mhz);
