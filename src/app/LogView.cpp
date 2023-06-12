@@ -96,7 +96,7 @@ static int LogEventsParser(void *data, int argc, char **argv, char **azColName) 
         else if ( 0 == strncmp(argv[i],BatteryReport,strlen(BatteryReport))) { appWidget->markColor = TFT_DARKGREEN; }
         else if ( 0 == strncmp(argv[i],UsageReport,strlen(UsageReport))) { appWidget->markColor = TFT_GREEN; }
 
-        else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
+        //else if ( 0 == strncmp(argv[i],appBanner,strlen(appBanner))) { appWidget->markColor = TFT_CYAN; }
 
         // feed network bar
         else if ( 0 == strncmp(argv[i],wifiOn,strlen(wifiOn))) { dataWidget->markColor = TFT_GREEN; }

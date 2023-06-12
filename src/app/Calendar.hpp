@@ -31,7 +31,8 @@ class CalendarApplication : public TemplateApplication {
         int monthToShow=0;
         ButtonTextWidget *nextBtn=nullptr;
         ButtonTextWidget *lastBtn=nullptr;
-        bool databaseFoundDay[32] = { false }; // to set "dot" on day of month
+        static const uint8_t MAXDAYS=32;
+        bool databaseFoundDay[MAXDAYS] = { false }; // to set "dot" on day of month
         void CheckDatabasesForMonth();
     public:
         const char *AppName() override { return "Calendar"; };

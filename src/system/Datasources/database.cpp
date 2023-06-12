@@ -190,11 +190,11 @@ void Database::_DatabaseWorkerTaskLoop() {
         // execute query
         int rc;
         // temporal disable watchdog for me :)
-        esp_err_t susbcribed = esp_task_wdt_status(NULL);
-        if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
+        //esp_err_t susbcribed = esp_task_wdt_status(NULL);
+        //if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
         //lLog("@DEBUG DATABASE DISABLED, query ignored\n");
         rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
-        if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
+        //if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
         UnLock();
@@ -233,8 +233,8 @@ Database::Database(const char *filename) {
         lLog("Database: %p Task dies here!\n",myDatabase);
         vTaskDelete(NULL); // kill myself
 
-    }, "sql", LUNOKIOT_APP_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASECORE);
-
+    }, "sql", LUNOKIOT_APP_STACK_SIZE, this, sqlWorkerPriority, &databaseQueueTask,DATABASECORE);    
+    esp_task_wdt_delete(databaseQueueTask);
     lLog("Database: %p Waiting thread %p...\n",this,databaseQueueTask);
     while(false == taskRunning) {
         TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks

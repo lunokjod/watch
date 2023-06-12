@@ -797,7 +797,7 @@ void UIStart() {
         .queue_size = 32,   // so much, but with multitask delays... maybe this is the most easy
         .task_name = "uiTask", // task will be created
         .task_priority = UIPRIORITY, // priorize UI over rest of system (responsive UI)
-        .task_stack_size = LUNOKIOT_UI_STACK, // normal arduinofw setup task stack
+        .task_stack_size = LUNOKIOT_APP_STACK_SIZE, // normal arduinofw setup task stack
         .task_core_id = UICORE, //tskNO_AFFINITY // PRO_CPU // APP_CPU
     };
 

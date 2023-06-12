@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <cstdio>
 #include <FS.h>
+#include "CalendarLogDetail.hpp"
 int days_in_month[]={31,28,31,30,31,30,31,31,30,31,30,31};
 const char *MonthsAsChars[] = {
 	"January",
@@ -54,7 +55,11 @@ int dayNumber(int day, int month, int year)  {
 } 
 void CalendarApplication::CheckDatabasesForMonth() {
     // clean current month
-    memset(databaseFoundDay,false,sizeof(bool)*32);
+    // @TODO ugly
+    //memset(databaseFoundDay,false,sizeof(bool)*32);
+    for(int d=0;d<MAXDAYS;d++) {
+        databaseFoundDay[d]=false;
+    }
     if ( LoT().IsLittleFSEnabled() ) {
         //lAppLog("---------------------> @TODO ITERATE .db FILES!!!\n");
         fs::File root = LittleFS.open("/");
@@ -126,7 +131,6 @@ CalendarApplication::CalendarApplication() {
         if ( monthToShow < 0 ) { monthToShow = 0; }
         CheckDatabasesForMonth();
     },"<",ThCol(text),TFT_BLACK,false);
-
     CheckDatabasesForMonth();
     Tick(); // OR call this if no splash 
 }
@@ -137,6 +141,7 @@ CalendarApplication::~CalendarApplication() {
 }
 
 bool CalendarApplication::Tick() {
+    static bool lastTouched=false;
     // put your interacts here:
     //mywidget->Interact(touched,touchX,touchY);
     TemplateApplication::btnBack->Interact(touched,touchX,touchY);
@@ -151,16 +156,30 @@ bool CalendarApplication::Tick() {
     int numWeek = 1;
     int weekday = dayNumber(1, monthToShow+1, year);
     if ( weekday == 0 ) { weekday=7; } // start on monday
-    if ( touched ) {
+    if (touched) {
         for(int day=1;day<=days_in_month[monthToShow];day++) {
             posX=(weekday-1)*width;
             posY=(numWeek-1)*height;
             if ( ActiveRect::InRect(touchX,touchY,offsetX+posX,offsetY+posY,width,height) ) {
-                monthDay=day;
+                if (false==lastTouched) {
+                    //lAppLog("Thumb IN\n");
+                    if ( day == monthDay ) {
+                        LaunchApplication(new CalendarLogDetailApplication(year,monthToShow+1,day));
+                    } else {
+                        lAppLog("Selected day: %d month: %d\n",day,monthToShow);
+                        monthDay=day;
+                    }
+                }
                 break;
             }
             weekday++;
             if ( weekday>7) { weekday=1; numWeek++; }
+        }
+        lastTouched=true;
+    } else {
+        if ( lastTouched ) {
+            //lAppLog("Thumb OUT\n");
+            lastTouched=false;
         }
     }
     if ( millis() > nextRefresh ) { // redraw full canvas

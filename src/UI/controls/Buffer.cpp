@@ -102,13 +102,15 @@ void Buffer::DrawBars() {
     barHorizontal->fillSprite(TFT_BLACK);
     barHorizontal->drawRoundRect(0,0,width-30,10,5,TFT_WHITE);
     barHorizontal->fillCircle(5+percentX,5,5,TFT_WHITE);
-    for(int y=0;y<barHorizontal->height();y++) {
-        for(int x=0;x<barHorizontal->width();x++) {
-            bool mustDraw = barHorizontal->readPixel(x,y);
-            if ( mustDraw ) {
-                uint16_t color = canvas->readPixel(15+x,5+y);
-                uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
-                canvas->drawPixel(15+x,5+y,fcolor);
+    if ( width < imageWidth ) { // only if my view is smaller than buffer width
+        for(int y=0;y<barHorizontal->height();y++) {
+            for(int x=0;x<barHorizontal->width();x++) {
+                bool mustDraw = barHorizontal->readPixel(x,y);
+                if ( mustDraw ) {
+                    uint16_t color = canvas->readPixel(15+x,5+y);
+                    uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
+                    canvas->drawPixel(15+x,5+y,fcolor);
+                }
             }
         }
     }
@@ -121,13 +123,15 @@ void Buffer::DrawBars() {
     barVertical->fillSprite(TFT_BLACK);
     barVertical->drawRoundRect(0,0,10,height-30,5,TFT_WHITE);
     barVertical->fillCircle(5,5+percentY,5,TFT_WHITE);
-    for(int y=0;y<barVertical->height();y++) {
-        for(int x=0;x<barVertical->width();x++) {
-            bool mustDraw = barVertical->readPixel(x,y);
-            if ( mustDraw ) {
-                uint16_t color = canvas->readPixel(5+x,15+y);
-                uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
-                canvas->drawPixel(5+x,15+y,fcolor);
+    if ( height < imageHeight ) { // only if my view is smaller than buffer height
+        for(int y=0;y<barVertical->height();y++) {
+            for(int x=0;x<barVertical->width();x++) {
+                bool mustDraw = barVertical->readPixel(x,y);
+                if ( mustDraw ) {
+                    uint16_t color = canvas->readPixel(5+x,15+y);
+                    uint16_t fcolor = tft->alphaBlend(fadeDownBarsValue,TFT_WHITE,color);
+                    canvas->drawPixel(5+x,15+y,fcolor);
+                }
             }
         }
     }
@@ -147,7 +151,8 @@ void Buffer::Refresh(bool direct) {
     // redraw bars?
     if ( showBars ) { DrawBars(); }
     if ( direct ) { canvas->pushSprite(clipX,clipY); }
-
-    fadeDownBarsValue-=32;
-    dirty=true; // fade down
+    if ( fadeDownBarsValue > 0 ) {
+        fadeDownBarsValue-=32;
+        dirty=true; // fade down
+    }
 }

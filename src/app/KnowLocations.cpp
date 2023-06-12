@@ -105,10 +105,11 @@ KnowLocationApplication::KnowLocationApplication() {
 
     // add back button to dismiss
     Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
-    backButton->border=10;
+    backButton->border=0;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
-    XBM * backButtonIcon = new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
+    XBM * backButtonIcon = new XBM(img_backscreen_42_width,img_backscreen_42_height,img_backscreen_42_bits);
+    //new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
     // put the icon inside the button
     backButton->AddChild(backButtonIcon);
     // shrink button to left and empty control oversized (want button on left bottom)

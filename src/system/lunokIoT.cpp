@@ -128,6 +128,55 @@ const char *BLECreateTable=(const char *)"CREATE TABLE if not exists bluetooth (
 const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists notifications (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, data text NOT NULL);";
 const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
+void LunokIoT::CleanCache(const char *path) {
+    fs::File root = LittleFS.open(path);
+    if (root) {
+        if (root.isDirectory()) {
+            fs::File file = root.openNextFile();
+            while (file) {
+                if (file.isDirectory()) {
+                    char * newPathToScan = (char*)ps_malloc(strlen(path)+strlen(file.name())+1);
+                    sprintf(newPathToScan,"%s%s",path,file.name());
+                    CleanCache(newPathToScan);
+                    free(newPathToScan);
+                } else {
+                    char buffer[255];
+                    sprintf(buffer,"%s/%s", path,file.name());
+                    lSysLog("Destroy cache file: %s\n",buffer);
+                    file.close();
+                    LittleFS.remove(buffer);
+                }
+                file = root.openNextFile();
+            }
+        }
+    }
+    bool reachClean = LittleFS.rmdir(path);
+    lSysLog("Destroy old cache folder: %s\n",(reachClean?"true":"false"));
+}
+
+void LunokIoT::DestroyOldFiles() {
+    fs::File root = LittleFS.open("/");
+    if (root) {
+        if (root.isDirectory()) { // only files please
+            fs::File file = root.openNextFile();
+            while (file) {
+                if (false == file.isDirectory()) {
+                    lSysLog("@TODO DESTROY OLD FILES??? %s\n",file.name());
+                    /*
+                    char buffer[255];
+                    sprintf(buffer,"/%s",file.name());
+                    lSysLog("Destroy cache file: %s\n",buffer);
+                    file.close();
+                    LittleFS.remove(buffer);
+                    */
+                }
+                file = root.openNextFile();
+            }
+        }
+    }
+
+}
+
 LunokIoT::LunokIoT() {
     int64_t beginBootTime = esp_timer_get_time(); // stats 'bout boot time
     InitLogs(); // need for stdout on usb-uart
@@ -178,6 +227,8 @@ LunokIoT::LunokIoT() {
         }
     }
     ListLittleFS(); // show contents to serial
+    CleanCache();
+    DestroyOldFiles();
     SplashAnnounce("   freeRTOS   ");
 
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
@@ -351,31 +402,43 @@ bool LunokIoT::IsNetworkInUse() {
     return false;
 }
 
-void LunokIoT::ListLittleFS(const char *path) {
+void LunokIoT::ListLittleFS(const char *path,uint8_t spaces) {
     if ( false == LittleFSReady ) { return; }
-    lSysLog("LittleFS: contents:\n");
+    char * spaceStrings = (char*)ps_malloc(spaces+1);
+    sprintf(spaceStrings,"%*s", spaces, " ");
+    if ( 0 == strcmp("/",path) ) {
+        lLog("%sLittleFS '%s'\n",spaceStrings,path);
+    }
     fs::File root = LittleFS.open(path);
     if (!root) {
-        lLog("LittleFS: ERROR: Failed to open directory\n");
+        lLog("%sLittleFS: ERROR: Failed to open directory '%s'\n",spaceStrings,path);
+        free(spaceStrings);
         return;
     }
     if (!root.isDirectory()) {
-        lLog("LittleFS: ERROR: not a directory\n");
+        lLog("%sLittleFS: ERROR: not a directory\n",spaceStrings);
+        free(spaceStrings);
         return;
     }
     fs::File file = root.openNextFile();
     while (file) {
         if (file.isDirectory()) {
-            lSysLog("<DIR> '%s'\n",file.name());
-            //ListLittleFS(file.name());
+            lLog("%s<DIR> '%s'\n",spaceStrings,file.name());
+            char * newPathToScan = (char*)ps_malloc(strlen(path)+strlen(file.name())+1);
+            sprintf(newPathToScan,"%s%s",path,file.name());
+            ListLittleFS(newPathToScan,spaces+5);
+            free(newPathToScan);
         } else {
-            lSysLog("      '%s' (%u byte)\n",file.name(),file.size());
+            lLog("%s      '%s' (%u byte)\n",spaceStrings,file.name(),file.size());
         }
         file = root.openNextFile();
     }
-    size_t totalSPIFFS = LittleFS.totalBytes();
-    size_t usedSPIFFS = LittleFS.usedBytes();
-    lSysLog("LittleFS (Free: %u KB)\n",(totalSPIFFS-usedSPIFFS)/1024);
+    if ( 0 == strcmp("/",path) ) {
+        size_t totalSPIFFS = LittleFS.totalBytes();
+        size_t usedSPIFFS = LittleFS.usedBytes();
+        lLog("%sLittleFS (Free: %u KB)\n",spaceStrings,(totalSPIFFS-usedSPIFFS)/1024);
+    }
+    free(spaceStrings);
 }
 
 

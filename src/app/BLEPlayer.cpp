@@ -190,7 +190,6 @@ void BLEPlayerApplication::TryGetCoverOfTite() {
                 xSemaphoreGive( instance->GetCoverLock );
                 return;
             }
-
             //CoverURL
             HTTPClient coverClient;
             lLog("Trying to get: '%s'\n",urlBuffer);
@@ -331,31 +330,33 @@ bool BLEPlayerApplication::Tick() {
 
                 //lLog("@DEBUG FAKE TRACK NAME TO 'tron'\n");
                 //const char * trackData = "Tron";
-                const char * trackData = (const char *)lastPlayerInfoEntry["track"]; 
-                title = (char*)ps_malloc(strlen(trackData)+1);
-                strcpy(title,trackData);
-                if ( nullptr != title) {
-                    canvas->setTextDatum(TL_DATUM);
-                    canvas->setTextSize(1);
-                    canvas->setTextColor(ThCol(text));
-                    canvas->drawString("Track:", 30, 40);
-                    canvas->setTextSize(3);
-                    if ( 14 < strlen(title) ) {
-                        //lAppLog("Reduced Who font due doesn't fit\n");
-                        canvas->setTextSize(2);
-                    }
-                    canvas->setTextDatum(TL_DATUM);
+                const char * trackData = (const char *)lastPlayerInfoEntry["track"];
+                if ( nullptr != trackData ) {
+                    title = (char*)ps_malloc(strlen(trackData)+1);
+                    strcpy(title,trackData);
+                    if ( nullptr != title) {
+                        canvas->setTextDatum(TL_DATUM);
+                        canvas->setTextSize(1);
+                        canvas->setTextColor(ThCol(text));
+                        canvas->drawString("Track:", 30, 40);
+                        canvas->setTextSize(3);
+                        if ( 14 < strlen(title) ) {
+                            //lAppLog("Reduced Who font due doesn't fit\n");
+                            canvas->setTextSize(2);
+                        }
+                        canvas->setTextDatum(TL_DATUM);
 
-                    if ( strlen(title) > 0 ) {
-                        /*
-                        if( xSemaphoreTake( GetCoverLock, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
-                            if ( false == CoverObtained ) {
-                                lAppLog("Search on network for '%s'\n", title);
-                                xSemaphoreGive( GetCoverLock );
-                                TryGetCoverOfTite();
-                            } else { xSemaphoreGive( GetCoverLock ); }
-                        } */                       
-                        canvas->drawString(title, 20, 50);
+                        if ( strlen(title) > 0 ) {
+                            /*
+                            if( xSemaphoreTake( GetCoverLock, LUNOKIOT_EVENT_FAST_TIME_TICKS) == pdTRUE )  {
+                                if ( false == CoverObtained ) {
+                                    lAppLog("Search on network for '%s'\n", title);
+                                    xSemaphoreGive( GetCoverLock );
+                                    TryGetCoverOfTite();
+                                } else { xSemaphoreGive( GetCoverLock ); }
+                            } */                       
+                            canvas->drawString(title, 20, 50);
+                        }
                     }
                 }
 

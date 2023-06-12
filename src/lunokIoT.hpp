@@ -47,7 +47,9 @@ class LunokIoT {
         }
         void LogRotate();
         long int GetSecondsUntilHour(int hour=0,int minute=0, int second=0);
-        void ListLittleFS(const char *path="/");
+        void DestroyOldFiles();
+        void CleanCache(const char *path="/_cache");
+        void ListLittleFS(const char *path="/",uint8_t spaces=1);
         bool IsLittleFSEnabled();
         void BootReason();
         bool IsNetworkInUse();
