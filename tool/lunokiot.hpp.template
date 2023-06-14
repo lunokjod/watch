@@ -159,7 +159,7 @@ extern int16_t touchDragVectorY; // drag vectorY
 const PROGMEM char openWeatherMapApiKey[] = "@@OPENWEATHER_APIKEY@@";
 const PROGMEM char OMDB_API_KEY[] = "@@OMDB_APIKEY@@";
 
-const PROGMEM uint8_t BaseBackLightBrightness = 32; // minimal bright
+const PROGMEM uint8_t BaseBackLightBrightness = 10; // minimal bright
 
 // https://aleph.org.mx/cuanto-mide-la-zancada-de-una-persona
 extern uint8_t userTall; 

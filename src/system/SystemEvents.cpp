@@ -567,6 +567,13 @@ static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id
     lEvLog("@TODO Unhandheld SystemEvent: args: %p base: '%s' id: %d data: %p\n",handler_args,base,id,event_data);
 }
 */
+static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
+    //lSysLog("NEW ROTATION: %u\n",bmaRotation);
+    if ( 5 == bmaRotation ) {
+        lSysLog("---------------------------------> @TODO GET DEEP SLEEP WHEN GET UPSIDE DOWN POSE\n");
+    }
+}
+
 static void BMAEventDoubleTap(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("BMA423: Event: Double tap\n");
     if (false == ttgo->bl->isOn()) {
@@ -1784,6 +1791,11 @@ void SystemEventsStart() {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Tilt\n");
     }
     registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DOUBLE_TAP, BMAEventDoubleTap, nullptr, NULL);
+    if ( ESP_OK != registered ) {
+        lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Double tap\n");
+    }
+    // direction control
+    registered = esp_event_handler_instance_register_with(systemEventloopHandler, SYSTEM_EVENTS, BMA_EVENT_DIRECTION, BMAEventDirection, nullptr, NULL);
     if ( ESP_OK != registered ) {
         lSysLog("SystemEventsStart: ERROR: Unable register on lunokIoT queue Event: Double tap\n");
     }

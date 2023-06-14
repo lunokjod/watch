@@ -129,6 +129,7 @@ const char *queryCreateNotifications=(const char *)"CREATE TABLE if not exists n
 const char *queryCreateSessionRAWLog=(const char *)"CREATE TABLE if not exists rawlogSession (id INTEGER PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, message text NOT NULL);";
 
 void LunokIoT::CleanCache(const char *path) {
+    if ( false == LittleFSReady ) { return; }
     fs::File root = LittleFS.open(path);
     if (root) {
         if (root.isDirectory()) {
@@ -155,13 +156,39 @@ void LunokIoT::CleanCache(const char *path) {
 }
 
 void LunokIoT::DestroyOldFiles() {
+    if ( false == LittleFSReady ) { return; }
+    int monthToShow=0;
+    int monthDay=1;
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        //lAppLog("Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon, 1900 + timeinfo.tm_year);
+        monthDay=timeinfo.tm_mday;
+        lSysLog("DestroyOldFiles() Current day: %d\n", monthDay);
+        monthToShow=timeinfo.tm_mon; // 0 is JANUARY
+        lSysLog("DestroyOldFiles() Current month: %d\n", monthToShow+1); // human readable 1~12
+    }
     fs::File root = LittleFS.open("/");
     if (root) {
         if (root.isDirectory()) { // only files please
             fs::File file = root.openNextFile();
             while (file) {
                 if (false == file.isDirectory()) {
-                    lSysLog("@TODO DESTROY OLD FILES??? %s\n",file.name());
+                    const char endStrFmt[] = "-%d.db";
+                    char nameToCompare[255];
+                    sprintf(nameToCompare,endStrFmt,monthToShow); // list the last month files
+                    const char *filename = file.name();
+                    if ( 0 != strncmp(filename+strlen(filename)-strlen(nameToCompare),nameToCompare,strlen(nameToCompare)) ) {
+                        file = root.openNextFile();
+                        continue;
+                    }
+                    lSysLog("DestroyOldFiles() @TODO DESTROY OLD FILES??? %s\n",file.name());
+                    /*
+[4293165][lunokIoT] @TODO DESTROY OLD FILES??? geoip.log
+[4308993][lunokIoT] @TODO DESTROY OLD FILES??? lwatch.db
+[4332743][lunokIoT] @TODO DESTROY OLD FILES??? lwatch_10-6.db
+[4357064][lunokIoT] @TODO DESTROY OLD FILES??? lwatch_12-6.db
+[4380613][lunokIoT] @TODO DESTROY OLD FILES??? oweather.log
+                    */
                     /*
                     char buffer[255];
                     sprintf(buffer,"/%s",file.name());
@@ -228,7 +255,6 @@ LunokIoT::LunokIoT() {
     }
     ListLittleFS(); // show contents to serial
     CleanCache();
-    DestroyOldFiles();
     SplashAnnounce("   freeRTOS   ");
 
     // https://github.com/espressif/esp-idf/blob/9ee3c8337d3c4f7914f62527e7f7c78d7167be95/examples/system/task_watchdog/main/task_watchdog_example_main.c
@@ -280,6 +306,7 @@ LunokIoT::LunokIoT() {
         xSemaphoreGive(I2cMutex);
     }
     SplashAnnounce("      VFS      ");
+    DestroyOldFiles();
     VFSInit();
 
     SplashAnnounce("      LUA      ");

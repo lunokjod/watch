@@ -165,6 +165,10 @@ extern const unsigned char img_mainmenu_options_bits[];
 #define img_mainmenu_calendar_height 120
 extern const unsigned char img_mainmenu_calendar_bits[];
 
+#define img_mainmenu_folder_width 120
+#define img_mainmenu_folder_height 103
+extern const unsigned char img_mainmenu_folder_bits[];
+
 #define img_mainmenu_calculator_width 95
 #define img_mainmenu_calculator_height 120
 extern const unsigned char img_mainmenu_calculator_bits[];

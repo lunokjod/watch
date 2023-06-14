@@ -24,19 +24,10 @@ extern TTGOClass *ttgo; // ttgo lib
 
 #include "Lamp.hpp"
 
-LampApplication::LampApplication() {
-    canvas->fillSprite(TFT_WHITE);
-    //ttgo->setBrightness(255);
-    Tick(); // OR call this if no splash 
-}
-
-//LampApplication::~LampApplication() {
-    // please remove/delete/free all to avoid leaks!
-//}
-
+LampApplication::LampApplication() { canvas->fillSprite(TFT_WHITE); }
 bool LampApplication::Tick() {
-    if (  255 > ttgo->bl->getLevel() ) {
-        ttgo->setBrightness(ttgo->bl->getLevel()+1);
-    }
+    if (  255 > ttgo->bl->getLevel() ) { ttgo->setBrightness(ttgo->bl->getLevel()+1); }
+    if ( touched ) { LaunchWatchface(); }
     return false;
 }
+LampApplication::~LampApplication() { SetUserBrightness(); }

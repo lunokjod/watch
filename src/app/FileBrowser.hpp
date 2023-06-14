@@ -17,18 +17,30 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__APPLICATION__LAMP__
-#define __LUNOKIOT__APPLICATION__LAMP__
+#ifndef __LUNOKIOT__APPLICATION__FILE_BROWSER__
+#define __LUNOKIOT__APPLICATION__FILE_BROWSER__
 
-#include "../system/Application.hpp"
+#include "../UI/AppLuITemplate.hpp"
+#include "../UI/controls/Text.hpp"
+#include "../UI/controls/IconMenu.hpp"
 
-class LampApplication : public LunokIoTApplication {
+class FileExplorerApplication : public TemplateLuIApplication {
+    private:
+        size_t partTableCSVSize=0;
+        char * partTableCSV=nullptr;
+        size_t appPartitionNumber=0;
+        size_t dataPartitionNumber=0;
     public:
-        const char *AppName() override { return "Lamp"; };
-        LampApplication();
-        ~LampApplication();
-        const bool mustShowAsTask() override { return false; }
-        bool Tick();
+        unsigned long lastCheck=0;
+        LuI::Text * devicesFoundText;
+        LuI::Text * totalDBText;
+        LuI::Text * statusText;
+        LuI::IconMenu * locationMenu;
+        ~FileExplorerApplication();
+        FileExplorerApplication(const char * path="/");
+        void RefreshTotalKnowDevices();
+        const char *AppName() override { return "File explorer"; };
+        bool Tick() override;
 };
 
 #endif

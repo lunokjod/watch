@@ -7,6 +7,7 @@
 
 #include "../static/img_steps_16.xbm"
 #include "../static/img_mainmenu_steps.xbm"
+#include "../static/img_mainmenu_folder.xbm"
 
 #include "../static/img_mainmenu_back.xbm"
 #include "../static/img_settings_16.xbm"
