@@ -46,16 +46,23 @@
 #include "KnowLocations.hpp"
 #include "LuiGamesMenu.hpp"
 #include "LuaLauncher.hpp"
-
-#include "LunoNoid.hpp"
+#include "FileBrowser.hpp"
+#include "Lamp.hpp"
+#include "PartitionBrowser.hpp"
+//#include "LunoNoid.hpp"
 //#include "Dungeon/Dungeon.hpp"
 
 using namespace LuI;
 const IconMenuEntry LuIMenuItems[] = {
+    
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
+//    {"Log",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
+
+//    {"Partitions",img_mainmenu_partition_bits, img_mainmenu_partition_height, img_mainmenu_partition_width, [](IGNORE_PARAM) { LaunchApplication(new PartitionExplorerApplication()); } },
+//    {"FileBrowser",img_mainmenu_folder_bits, img_mainmenu_folder_height, img_mainmenu_folder_width, [](IGNORE_PARAM) { LaunchApplication(new FileExplorerApplication()); } },
+//    {"Calendar",img_mainmenu_calendar_bits, img_mainmenu_calendar_height, img_mainmenu_calendar_width, [](IGNORE_PARAM) { LaunchApplication(new CalendarApplication()); } },
     //{"Dungeon",img_mainmenu_dungeon_bits, img_mainmenu_dungeon_height, img_mainmenu_dungeon_width, [](void *unused) { LaunchApplication(new DungeonGameApplication()); } },
 //    {"LunoNoid",img_mainmenu_lunonoid_bits, img_mainmenu_lunonoid_height, img_mainmenu_lunonoid_width, [](void *unused) { LaunchApplication(new LunoNoidGameApplication()); } },
-    {"Log",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
 
 //    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
 
@@ -64,6 +71,7 @@ const IconMenuEntry LuIMenuItems[] = {
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
 //    {"LuIDemos",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](IGNORE_PARAM) { LaunchApplication(new BrightnessApplication()); } },
+    {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](IGNORE_PARAM) { LaunchApplication(new LampApplication()); } },
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, [](IGNORE_PARAM) { LaunchApplication(new NotificacionsApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); } },

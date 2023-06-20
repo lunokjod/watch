@@ -17,21 +17,29 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__APPLICATION__FILE_BROWSER__
-#define __LUNOKIOT__APPLICATION__FILE_BROWSER__
+#ifndef __LUNOKIOT__APPLICATION__PARTITION_BROWSER__
+#define __LUNOKIOT__APPLICATION__PARTITION_BROWSER__
 
 #include "../UI/AppLuITemplate.hpp"
-//#include "../UI/controls/Text.hpp"
-#include "../UI/controls/Buffer.hpp"
-//#include "../UI/controls/IconMenu.hpp"
+#include "../UI/controls/Text.hpp"
+#include "../UI/controls/IconMenu.hpp"
 
-class FileExplorerApplication : public TemplateLuIApplication {
+class PartitionExplorerApplication : public TemplateLuIApplication {
+    private:
+        size_t partTableCSVSize=0;
+        char * partTableCSV=nullptr;
+        size_t appPartitionNumber=0;
+        size_t dataPartitionNumber=0;
     public:
-        LuI::Buffer *FileView=nullptr;
-        char * currentPath=nullptr;
-        ~FileExplorerApplication();
-        FileExplorerApplication(const char * path="/");
-        const char *AppName() override { return "File explorer"; };
+        unsigned long lastCheck=0;
+        LuI::Text * devicesFoundText;
+        LuI::Text * totalDBText;
+        LuI::Text * statusText;
+        LuI::IconMenu * locationMenu;
+        ~PartitionExplorerApplication();
+        PartitionExplorerApplication(const char * path="/");
+        void RefreshTotalKnowDevices();
+        const char *AppName() override { return "Partition explorer"; };
         bool Tick() override;
 };
 

@@ -45,6 +45,8 @@
 #include "FreehandKeyboardSetup.hpp"
 #include "GestureSettings.hpp"
 #include "WatchfaceSelector.hpp"
+#include "FileBrowser.hpp"
+#include "PartitionBrowser.hpp"
 
 using namespace LuI;
 const IconMenuEntry LuISettingsMenuItems[] = {
@@ -56,12 +58,14 @@ const IconMenuEntry LuISettingsMenuItems[] = {
     {"Themes",img_mainmenu_themes_bits, img_mainmenu_themes_height, img_mainmenu_themes_width, [](void *unused) { LaunchApplication(new ThemeApplication()); } },
     {"Pair",img_mainmenu_bluetooth_bits, img_mainmenu_bluetooth_height, img_mainmenu_bluetooth_width, [](void *unused) { LaunchApplication(new BluetoothApplication()); } },
     {"Advanced",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new AdvancedSettingsApplication()); } },
+    //{"LittleFS",img_mainmenu_folder_bits, img_mainmenu_folder_height, img_mainmenu_folder_width, [](IGNORE_PARAM) { LaunchApplication(new FileExplorerApplication()); } },
     {"Keyboard",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new FreeHandKeyboardSetupApplication()); } },
     {"BLEMonitor",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](void *unused) { LaunchApplication(new BLEMonitorApplication()); } },
     {"Set time", img_mainmenu_settime_bits, img_mainmenu_settime_height, img_mainmenu_settime_width, [](void *unused) { LaunchApplication(new SetTimeApplication()); } },
     {"Timezone",img_timezone_120_bits, img_timezone_120_height, img_timezone_120_width, [](void *unused) { LaunchApplication(new SetTimeZoneApplication()); } },
     {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
     {"Rotation", img_rotate_120_bits, img_rotate_120_height, img_rotate_120_width, [](void *unused) { LaunchApplication(new LuIRotateApplication()); } },
+    {"Partitions",img_mainmenu_partition_bits, img_mainmenu_partition_height, img_mainmenu_partition_width, [](IGNORE_PARAM) { LaunchApplication(new PartitionExplorerApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](void *unused) { LaunchApplication(new BrightnessApplication()); } },
 };
 int LuISettingsMenuItemsNumber = sizeof(LuISettingsMenuItems) / sizeof(LuISettingsMenuItems[0])-1;

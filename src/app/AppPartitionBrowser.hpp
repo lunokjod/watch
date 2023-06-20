@@ -17,21 +17,20 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-#ifndef __LUNOKIOT__APPLICATION__FILE_BROWSER__
-#define __LUNOKIOT__APPLICATION__FILE_BROWSER__
+#ifndef __LUNOKIOT__APPLICATION__APP_PARTITION_BROWSER__
+#define __LUNOKIOT__APPLICATION__APP_PARTITION_BROWSER__
 
 #include "../UI/AppLuITemplate.hpp"
 //#include "../UI/controls/Text.hpp"
 #include "../UI/controls/Buffer.hpp"
 //#include "../UI/controls/IconMenu.hpp"
 
-class FileExplorerApplication : public TemplateLuIApplication {
+class AppPartitionApplication : public TemplateLuIApplication {
     public:
-        LuI::Buffer *FileView=nullptr;
-        char * currentPath=nullptr;
-        ~FileExplorerApplication();
-        FileExplorerApplication(const char * path="/");
-        const char *AppName() override { return "File explorer"; };
+        LuI::Buffer *AppView=nullptr;
+        ~AppPartitionApplication();
+        AppPartitionApplication(const esp_partition_t *part);
+        const char *AppName() override { return "App part explorer"; };
         bool Tick() override;
 };
 

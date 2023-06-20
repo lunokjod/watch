@@ -89,6 +89,10 @@ extern const unsigned char img_mainmenu_themes_bits[];
 #define img_mainmenu_bluetooth_height 120
 extern const unsigned char img_mainmenu_bluetooth_bits[];
 
+#define img_mainmenu_partition_width 119
+#define img_mainmenu_partition_height 120
+extern const unsigned char img_mainmenu_partition_bits[];
+
 #define img_mainmenu_wifi_width 120
 #define img_mainmenu_wifi_height 92
 extern const unsigned char img_mainmenu_wifi_bits[];
@@ -257,6 +261,13 @@ extern const unsigned char img_usb_16_bits[];
 #define img_database_16_height 16
 extern const unsigned char img_database_16_bits[];
 
+#define img_file_16_width 12
+#define img_file_16_height 16
+extern const unsigned char img_file_16_bits[];
+
+#define img_folder_16_width 16
+#define img_folder_16_height 14
+extern const unsigned char img_folder_16_bits[];
 
 typedef struct {
   unsigned int 	 width;

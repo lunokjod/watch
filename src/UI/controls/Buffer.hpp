@@ -38,6 +38,7 @@ namespace LuI {
             TFT_eSprite * barVertical=nullptr;
             int16_t fadeDownBarsValue=255; // used to fadedown bars effect
         public:
+            int16_t backgroundColor=ThCol(background);
             UICallback bufferPushCallback=nullptr; // where call when tap
             void * bufferPushCallbackParam=nullptr; // what pass to callback
             //bool hideBars=true;

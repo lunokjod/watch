@@ -253,6 +253,8 @@ LunokIoT::LunokIoT() {
             NVS.setInt("littleFSReady",true,false); // assume format reached and disable it in next boot
         }
     }
+    //LittleFS.mkdir("/Download");
+    //LittleFS.mkdir("/_cache");
     ListLittleFS(); // show contents to serial
     CleanCache();
     SplashAnnounce("   freeRTOS   ");

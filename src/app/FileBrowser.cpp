@@ -39,19 +39,21 @@ using namespace LuI;
 //#include "../system/Datasources/database.hpp"
 //extern TFT_eSPI * tft;
 
-extern const PROGMEM uint8_t partiton_csv_start[] asm("_binary_twatch16MB_csv_start");
-extern const PROGMEM uint8_t partiton_csv_end[] asm("_binary_twatch16MB_csv_end");
+#include <LittleFS.h>
+
+
 
 
 FileExplorerApplication::FileExplorerApplication(const char *path) {
     directDraw=false;
+    //lAppLog("CREATEDCREATEDCREATEDCREATEDCREATEDCREATED: %s\n",(CREATED?"true":"false"));
     canvas->fillSprite(ThCol(background));
     Container * screen = new Container(LuI_Horizontal_Layout,2); 
     // bottom buttons container
-    Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,3);
+    Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,2);
     // main view space
     Container * viewContainer = new Container(LuI_Horizontal_Layout,2);
-    //viewContainer->border=5;
+    viewContainer->border=5;
     // add back button to dismiss
     Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=0;
@@ -61,105 +63,116 @@ FileExplorerApplication::FileExplorerApplication(const char *path) {
     // put the icon inside the button
     backButton->AddChild(backButtonIcon);
     // shrink button to left and empty control oversized (want button on left bottom)
-    bottomButtonContainer->AddChild(backButton,0.45);
-    // get compile csv data
-    partTableCSVSize= partiton_csv_end - partiton_csv_start;
-    partTableCSV=(char*)ps_malloc(partTableCSVSize+1);
-    memcpy(partTableCSV,partiton_csv_start,partTableCSVSize);
-    partTableCSV[partTableCSVSize]='\0'; // EOL
-    lAppLog("--[BEGIN]-- Build time partitions:\n");
-    lLog("%s\n", partTableCSV);
-    lAppLog("--[END]-- Build time partitions\n");
-    // get flash partitions
-    const esp_partition_t *whereIAm = esp_ota_get_boot_partition();
-
-    lAppLog("Boot from: '%s'\n",whereIAm->label);
-
-    // obtain number of data partitions
-    esp_partition_iterator_t it;
-    it = esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, NULL);
-    appPartitionNumber=0;
-    for (; it != NULL; it = esp_partition_next(it)) {
-        const esp_partition_t *part = esp_partition_get(it);
-        lAppLog("Found app partition '%s' at offset 0x%x with size 0x%x\n", part->label, part->address, part->size);
-        appPartitionNumber++;
+    bottomButtonContainer->AddChild(backButton,0.3);
+    // label current path
+    currentPath=(char*)ps_malloc(strlen(path)+1);
+    strcpy(currentPath,path);
+    lAppLog("Current path to explore: '%s'\n", currentPath);
+    char *pathLabelText = (char*)ps_malloc(255);
+    sprintf(pathLabelText,"LittleFS: '%s'",currentPath);
+    viewContainer->AddChild(new Text(pathLabelText),0.2);
+    free(pathLabelText);
+    // iterate path
+    uint32_t itemsCount=0;
+    uint32_t maxFileLen=0;
+    fs::File root = LittleFS.open(currentPath);
+    fs::File file = root.openNextFile();
+    while (file) {
+        size_t fileLen = strlen(file.name());
+        if ( fileLen > maxFileLen ) { maxFileLen = fileLen; }
+        itemsCount++;
+        file = root.openNextFile();
     }
-    // create buttons for every one
-    esp_partition_iterator_release(it);
-    //Container * headerAppPartitionsContainer= new Container(LuI_Horizontal_Layout,2);
-    Container * appPartitionsContainer= new Container(LuI_Vertical_Layout,appPartitionNumber);
-    //appPartitionsContainer->AddChild(new Text("Code:"),0.8);
-    //headerAppPartitionsContainer->AddChild(new Text("Code:"),0.8);
-    it = esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, NULL);
-    for (; it != NULL; it = esp_partition_next(it)) {
-        const esp_partition_t *part = esp_partition_get(it);
-        
-        Button *partButton=new Button(LuI_Horizontal_Layout,1);
-        if ( 0 == strcmp(whereIAm->label,part->label)) {
-            char buff[19];
-            sprintf(buff,"*%s", part->label);
-            partButton->AddChild(new Text(buff));
+    if ( 0 == strcmp("/",currentPath) ) {
+        size_t totalSPIFFS = LittleFS.totalBytes();
+        size_t usedSPIFFS = LittleFS.usedBytes();
+        char buf[60];
+        sprintf(buf,"Free: %u KB\n",(totalSPIFFS-usedSPIFFS)/1024);
+        bottomButtonContainer->AddChild(new Text(buf),1.7);
+    }
+    file.close();
+    root.close();
+    const int FontHeight=20;
+    const int FontWidth=12;
+    const int MAXFILENAME=maxFileLen;
+    const int MAXNUMLENGHT=3;
+    const char SizeBytesPrintf[]="%u b";
+    const char SizeKBytesPrintf[]="%u Kb";
+    const char SizeMBytesPrintf[]="%u Mb";
+    const int BeginMargin=20;
+    const int FinalMargin=5;
+    const uint16_t IconColor=ByteSwap(TFT_YELLOW);
+    const uint16_t FileColor=ByteSwap(TFT_WHITE);
+    const uint16_t FileSizeColor=ByteSwap(TFT_GREENYELLOW);
+    // 3 for the "("")"
+    FileView = new Buffer(FontWidth*(MAXFILENAME+MAXNUMLENGHT+strlen(SizeMBytesPrintf))+BeginMargin+FinalMargin,(itemsCount*FontHeight));
+    FileView->showBars=false;
+    FileView->GetBuffer()->fillSprite(ByteSwap(ThCol(background)));
+    FileView->GetBuffer()->setTextSize(1);
+
+    root = LittleFS.open(currentPath);
+    file = root.openNextFile();
+    int32_t itemOffset=0;
+    int32_t count=0;
+    while (file) {
+        if ( 0 == (count%2)) { FileView->GetBuffer()->fillRect(0,itemOffset,FileView->GetBuffer()->width(),FontHeight,ByteSwap(ThCol(background_alt))); }
+        // file name
+        FileView->GetBuffer()->setTextColor(FileColor);
+        FileView->GetBuffer()->setFreeFont(&FreeMono12pt7b);
+        FileView->GetBuffer()->setTextDatum(TL_DATUM);
+        FileView->GetBuffer()->drawString(file.name(),BeginMargin,itemOffset);
+        if ( file.isDirectory()) {
+            //lAppLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA: %s DIRRRRR\n",file.name());
+            FileView->GetBuffer()->drawXBitmap(0,(int16_t)itemOffset,(const uint8_t *)img_folder_16_bits,img_folder_16_width,img_folder_16_height,IconColor);
         } else {
-            partButton->AddChild(new Text(part->label));
+            // file size
+            FileView->GetBuffer()->setTextColor(FileSizeColor);
+            FileView->GetBuffer()->setFreeFont(&FreeMono9pt7b);
+            FileView->GetBuffer()->setTextDatum(TR_DATUM);
+            char buff[255];
+            size_t fileSize = file.size();
+            if( fileSize > (1024*1024)) {
+                sprintf(buff,SizeMBytesPrintf,fileSize/1024/1024);
+
+            } else if( fileSize > (1024)) {
+                sprintf(buff,SizeKBytesPrintf,fileSize/1024);
+
+            } else {
+                sprintf(buff,SizeBytesPrintf,fileSize);
+            }
+            FileView->GetBuffer()->drawString(buff,FileView->GetBuffer()->width()-FinalMargin,itemOffset);
+
+            // draw icon from type
+            const char DbFilePattern[]=".db";
+            const char LogFilePattern[]=".log";
+            if ( 0 == strcmp(file.name()+(strlen(file.name())-strlen(DbFilePattern)),DbFilePattern)) {
+               //FileView->GetBuffer()->drawXBitmap(0,(int16_t)itemOffset,(const uint8_t *)img_file_log_16_bits,img_file_log_16_width,img_file_log_16_height,TFT_WHITE);
+            } else if ( 0 == strcmp(file.name()+(strlen(file.name())-strlen(LogFilePattern)),LogFilePattern)) {
+                //FileView->GetBuffer()->drawXBitmap(0,(int16_t)itemOffset,(const uint8_t *)img_file_log_16_bits,img_file_log_16_width,img_file_log_16_height,TFT_WHITE);
+            }
+            FileView->GetBuffer()->drawXBitmap(0,(int16_t)itemOffset,(const uint8_t *)img_file_16_bits,img_file_16_width,img_file_16_height,IconColor);
+            // increment draw offset
         }
-        partButton->tapCallbackParam=(void*)part;
-        partButton->tapCallback=[](void * obj){
-            const esp_partition_t *part = (const esp_partition_t *)obj;
-            lLog("SELECTED APP partition '%s' at offset 0x%x with size 0x%x\n", part->label, part->address, part->size);
-        }; // callback when tap
-        appPartitionsContainer->AddChild(partButton);
+        itemOffset+=FontHeight;
+        count++;
+        file = root.openNextFile();
     }
-    esp_partition_iterator_release(it);
-    //headerAppPartitionsContainer->AddChild(appPartitionsContainer,1.3);
-    //viewContainer->AddChild(headerAppPartitionsContainer,0.4);
-    viewContainer->AddChild(appPartitionsContainer,0.4);
-    // get data partitions availiable
-    dataPartitionNumber=0;
-    it = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, NULL);
-    for (; it != NULL; it = esp_partition_next(it)) {
-        const esp_partition_t *part = esp_partition_get(it);
-        lAppLog("Found data partition '%s' at offset 0x%x with size 0x%x\n", part->label, part->address, part->size);
-        dataPartitionNumber++;
-    }
-    it = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, NULL);
-    // draw data partitions
-    //Container * headerDataPartitionsContainer= new Container(LuI_Horizontal_Layout,2);
-    //headerDataPartitionsContainer->border=2;
-    Container * dataPartitionsContainer= new Container(LuI_Horizontal_Layout,dataPartitionNumber);
-    //Container * rotateColorContainer= new Container(LuI_Horizontal_Layout,1);
-    //headerDataPartitionsContainer->AddChild(new Text("Data partitions:"),0.2);
-    for (; it != NULL; it = esp_partition_next(it)) {
-        const esp_partition_t *part = esp_partition_get(it);
-        //lAppLog("Found data partition '%s' at offset 0x%x with size 0x%x\n", part->label, part->address, part->size);
-        Button *partButton=new Button(LuI_Horizontal_Layout,1);
-        partButton->AddChild(new Text(part->label));
-        partButton->tapCallbackParam=(void*)part;
-        partButton->tapCallback=[](void * obj){
-            const esp_partition_t *part = (const esp_partition_t *)obj;
-            lLog("SELECTED DATA partition '%s' at offset 0x%x with size 0x%x\n", part->label, part->address, part->size);
-        }; // callback when tap
-        dataPartitionsContainer->AddChild(partButton);
-    }
-    esp_partition_iterator_release(it);
-    //headerDataPartitionsContainer->AddChild(dataPartitionsContainer,1.8);
-    //rotateColorContainer->AddChild(headerDataPartitionsContainer);
-    //viewContainer->AddChild(rotateColorContainer,1.6);
-    viewContainer->AddChild(dataPartitionsContainer,1.6);
+    viewContainer->AddChild(FileView,1.8);
 
-
-    // @TODO ITERATE "path"
-    // @TODO CREATE BUFFER OF PATH SIZE
     // @TODO TOUCH AVAILIABLE
-    screen->AddChild(viewContainer,1.75);
-    screen->AddChild(bottomButtonContainer,0.25);
+    screen->AddChild(viewContainer,1.65);
+    screen->AddChild(bottomButtonContainer,0.35);
 
     AddChild(screen);
+
     directDraw=true;
 }
 
 FileExplorerApplication::~FileExplorerApplication() {
-    free(partTableCSV);
-    partTableCSV=nullptr;
+    if ( nullptr != currentPath ) {
+        free(currentPath);
+        currentPath=nullptr;
+    }
 }
 
 bool FileExplorerApplication::Tick() {

@@ -143,7 +143,7 @@ void Buffer::Refresh(bool direct) {
     Control::Refresh();
 
     if ( nullptr != bufferPushCallback ) { (bufferPushCallback)(bufferPushCallbackParam); }
-
+    canvas->fillSprite(backgroundColor);
     //centered
     canvas->setPivot(0,0);
     imageCanvas->setPivot(offsetX,offsetY);

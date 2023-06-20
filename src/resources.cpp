@@ -33,6 +33,7 @@
 #include "../static/img_mainmenu_dungeon.xbm"
 #include "../static/img_mainmenu_lunonoid.xbm"
 #include "../static/img_mainmenu_wifi.xbm"
+#include "../static/img_mainmenu_partition.xbm"
 
 #include "../static/img_log_32.xbm"
 
@@ -118,3 +119,7 @@
 #include "../static/img_sleep_64.xbm"
 #include "../static/img_milestone_64.xbm"
 #include "../static/img_no_64.xbm"
+
+
+#include "../static/img_file_16.xbm"
+#include "../static/img_folder_16.xbm"
