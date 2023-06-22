@@ -583,6 +583,16 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
             ttgo->power->setPowerOutPut(AXP202_EXTEN, false);
             ttgo->power->setPowerOutPut(AXP202_DCDC2, false);
             
+            // wake with movement
+            ttgo->bma->enableFeature(BMA423_TILT, true);
+            ttgo->bma->enableFeature(BMA423_ANY_MOTION, true);
+            ttgo->bma->enableFeature(BMA423_ACTIVITY, true);
+            ttgo->bma->enableFeature(BMA423_WAKEUP, true);
+            ttgo->bma->enableActivityInterrupt();
+            // wake with button
+            ttgo->power->enableIRQ(AXP202_PEK_SHORTPRESS_IRQ | AXP202_PEK_LONGPRESS_IRQ, true);
+            ttgo->power->clearIRQ();
+
             // dont set timer timeout
             //esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
             //if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
@@ -591,6 +601,7 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
             // the only good ones :(
             esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
             if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
+
             lSysLog("Device in deep sleep NOW!\n");
             esp_deep_sleep_start();
         }
