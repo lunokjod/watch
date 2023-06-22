@@ -45,8 +45,7 @@
 #include "../static/img_usb_16.xbm"
 #include "../static/img_database_16.xbm"
 
-
-
+#include "../static/img_mainmenu_chess.xbm"
 
 #include "../static/img_icon_telegram_48.c"
 #include "../static/img_icon_mail_48.c"

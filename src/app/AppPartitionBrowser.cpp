@@ -79,7 +79,6 @@ AppPartitionApplication::AppPartitionApplication(const esp_partition_t *part) {
     if ( header->magic == ESP_IMAGE_HEADER_MAGIC ) {
         //AppView = new Buffer(canvas->width()-(viewContainer->border*2),90+(header->segment_count*(FONTHEIGHT*2)));
         AppView = new Buffer(canvas->width()-(viewContainer->border*2),90+(header->segment_count*(FONTHEIGHT*4)));
-        AppView->showBars=true;
         AppView->GetBuffer()->fillSprite(ByteSwap(ThCol(background)));
         //AppView->GetBuffer()->fillSprite(TFT_BLACK);
         AppView->GetBuffer()->setTextFont(1);

@@ -81,6 +81,10 @@ extern const unsigned char img_mainmenu_back_bits[];
 #define img_mainmenu_gesture_height 120
 extern const unsigned char img_mainmenu_gesture_bits[];
 
+#define img_mainmenu_chess_width 80
+#define img_mainmenu_chess_height 118
+extern const unsigned char img_mainmenu_chess_bits[];
+
 #define img_mainmenu_themes_width 120
 #define img_mainmenu_themes_height 120
 extern const unsigned char img_mainmenu_themes_bits[];

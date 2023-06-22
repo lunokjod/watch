@@ -51,11 +51,13 @@
 #include "PartitionBrowser.hpp"
 //#include "LunoNoid.hpp"
 //#include "Dungeon/Dungeon.hpp"
+#include "LuiChess.hpp"
 
 using namespace LuI;
 const IconMenuEntry LuIMenuItems[] = {
     
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
+//    {"Chess",img_mainmenu_chess_bits, img_mainmenu_chess_height, img_mainmenu_chess_width, [](IGNORE_PARAM) { LaunchApplication(new ChessApplication()); } },
 //    {"Log",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
 
 //    {"Partitions",img_mainmenu_partition_bits, img_mainmenu_partition_height, img_mainmenu_partition_width, [](IGNORE_PARAM) { LaunchApplication(new PartitionExplorerApplication()); } },

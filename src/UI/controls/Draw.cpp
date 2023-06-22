@@ -42,14 +42,22 @@ Draw::Draw(IN uint32_t width, IN uint32_t height)//,LuI_Layout layout, size_t ch
 void Draw::Refresh(bool direct) {
     //lLog("Buffer %p refresh direct: %s swap: %s\n",this,(direct?"true":"false"),(swap?"true":"false"));
     if ( false == dirty ) { return; } // I'm clean!!
-    Control::Refresh(direct);
+    Control::Refresh();
 
     if ( nullptr != drawPushCallback ) { (drawPushCallback)(drawPushCallbackParam); }
 
-    //centered
-    //canvas->setPivot(0,0);
-    //imageCanvas->setPivot(0,offsetY);
-    imageCanvas->pushRotated(canvas,0);
-
-    //dirty=true;
+    //uint16_t fMaskcolor = maskColor;
+    // center image
+    int cXOff=(int(width)-imageCanvas->width())/2;
+    int cYOff=(int(height)-imageCanvas->height())/2;
+    for(int y=0;y<imageCanvas->height();y++) {
+        int32_t dY = cYOff+y;
+        for(int x=0;x<imageCanvas->width();x++) {
+            uint16_t originalColor = imageCanvas->readPixel(x,y);
+            //if ( originalColor == fMaskcolor) { continue; }
+            //if ( direct ) { originalColor = ByteSwap(originalColor); }
+            int32_t dX = cXOff+x;
+            canvas->drawPixel(dX,dY,ByteSwap(originalColor));
+        }
+    }
 }

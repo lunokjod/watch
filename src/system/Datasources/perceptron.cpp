@@ -34,6 +34,19 @@ const int TRAINING_ITERATIONS = 16;
 extern "C" {
 #endif
 
+// Definir el número de Euler
+#define E 2.71828182845904523536
+
+// Definir la función sigmoide
+double sigmoid(double x) {
+  return 1.0 / (1.0 + pow(E, -x));
+}
+
+// Definir la función sigmoide rápida
+double fast_sigmoid(double x) {
+  return x / (1.0 + fabs(x));
+}
+
 Perceptron *Perceptron_new(unsigned numOfInputs, double trainingRate) {
 	unsigned i;
 	static int initializedRandomization_ = 0;
