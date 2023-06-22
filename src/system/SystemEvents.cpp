@@ -570,7 +570,30 @@ static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id
 static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     //lSysLog("NEW ROTATION: %u\n",bmaRotation);
     if ( 5 == bmaRotation ) {
-        lSysLog("---------------------------------> @TODO GET DEEP SLEEP WHEN GET UPSIDE DOWN POSE\n");
+        if ( ttgo->bl->isOn() ) {
+            lSysLog("Starting deep sleep (pose upside down with screen on)...\n");
+            ScreenSleep();
+            esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            SaveDataBeforeShutdown();
+            // energy close
+            ttgo->power->setPowerOutPut(AXP202_LDO3, false);
+            ttgo->power->setPowerOutPut(AXP202_LDO4, false);
+            ttgo->power->setPowerOutPut(AXP202_LDO2, false);
+            // The following power channels are not used
+            ttgo->power->setPowerOutPut(AXP202_EXTEN, false);
+            ttgo->power->setPowerOutPut(AXP202_DCDC2, false);
+            
+            // dont set timer timeout
+            //esp_err_t wakeTimer = esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * newTime); // periodical wakeup to take samples
+            //if ( ESP_OK != wakeTimer ) { lSysLog("ERROR: Unable to set timer wakeup in %u seconds\n",newTime); }
+            esp_err_t wakeAXP = esp_sleep_enable_ext0_wakeup((gpio_num_t)AXP202_INT, LOW);
+            if ( ESP_OK != wakeAXP ) { lSysLog("ERROR: Unable to set ext0 wakeup\n"); }
+            // the only good ones :(
+            esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
+            if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
+            lSysLog("Device in deep sleep NOW!\n");
+            esp_deep_sleep_start();
+        }
     }
 }
 
