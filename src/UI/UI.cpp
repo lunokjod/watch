@@ -696,8 +696,9 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
     }
     // if vbus get energy don't sleep
     if ( vbusPresent ) {
-        UINextTimeout = millis()+UITimeout;
-        return;
+        //lUILog("@TODO disabled 'always on' when VBUS present\n");
+        //UINextTimeout = millis()+UITimeout;
+        //return;
     }
 
     // on timeout?

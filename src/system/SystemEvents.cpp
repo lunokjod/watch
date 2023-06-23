@@ -574,8 +574,8 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
     //lSysLog("NEW ROTATION: %u\n",bmaRotation);
     DeepSleepPoseTimer.detach();
     if ( 5 == bmaRotation ) {
-        const float delayTime=5;
-        lEvLog("Pose candidate to 'deep sleep' check again in %f seconds...\n",delayTime);
+        const int delayTime=5;
+        lEvLog("Pose candidate to 'deep sleep' check again in %d seconds...\n",delayTime);
         DeepSleepPoseTimer.once(delayTime,[](){
             bool launch=true;
             // check conditions to deep sleep pose
