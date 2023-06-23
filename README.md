@@ -95,6 +95,9 @@ $ pio run -e Release-twatch2020_V3 -t uploadfs
  * Handwritting trainable keyboard
  * BLE zone location
  * omdb Posters api
+ * Launch lamp on gesture (put your arms down and double tap or PEK)
+ * Deep sleep: Put your watch with the screen ON facing to plane surface and the stripes points up
+ * Wakeup: Simply wear-it on your wrist, the watch boots up, PEK and doubleTap already works
 
 ## Full application list:
 

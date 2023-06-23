@@ -292,7 +292,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
     FreeSpace();
 }
 
-Ticker LogAppRun;
+//Ticker LogAppRun;
 void LaunchApplication(LunokIoTApplication *instance, bool animation,bool synced,bool force) {
     UINextTimeout = millis()+UITimeout;  // dont allow screen sleep
     //@TODO MUTEX APP CHANGE

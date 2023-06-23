@@ -53,6 +53,8 @@ extern TTGOClass *ttgo; // ttgo library
 #include "../app/Battery.hpp"
 
 #include <cmath>
+#include <Ticker.h>
+Ticker DeepSleepPoseTimer;
 
 #include "driver/uart.h"
 
@@ -216,7 +218,7 @@ bool WakeUpReason() { // this function decides the system must wake or sleep
 
         if (GPIO_SEL_35 == GPIO_reason) {
             lLog("(PMU) AXP202\n");
-            vTaskResume(AXPInterruptControllerHandle);
+            vTaskResume(AXPInterruptControllerHandle); // force handle due the int isn't received during sleep
         } else if (GPIO_SEL_37 == GPIO_reason) {
             lLog("(RTC) PCF8563\n");
             vTaskResume(RTCInterruptControllerHandle);
@@ -412,6 +414,7 @@ static void DoSleepTask(void *args) {
 }
 
 void DoSleep() {
+    DeepSleepPoseTimer.detach();
     if (systemSleep) { return; }
     systemSleep = true;
     BaseType_t intTaskOk = xTaskCreatePinnedToCore(DoSleepTask, "lSleepTask", LUNOKIOT_TASK_STACK_SIZE, NULL,tskIDLE_PRIORITY+1, NULL,SYSTEMCORE);
@@ -569,19 +572,25 @@ static void AnyEventSystem(void *handler_args, esp_event_base_t base, int32_t id
 */
 static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     //lSysLog("NEW ROTATION: %u\n",bmaRotation);
+    DeepSleepPoseTimer.detach();
     if ( 5 == bmaRotation ) {
-        if ( ttgo->bl->isOn() ) {
-            lSysLog("Starting deep sleep (pose upside down with screen on)...\n");
+        const float delayTime=5;
+        lEvLog("Pose candidate to 'deep sleep' check again in %f seconds...\n",delayTime);
+        DeepSleepPoseTimer.once(delayTime,[](){
+            bool launch=true;
+            // check conditions to deep sleep pose
+            if ( 5 != bmaRotation ) { launch=false; }
+            if ( false == ttgo->bl->isOn() ) { launch=false; }
+            if ( false == launch ) {
+                lEvLog("Pose candidate to 'deep sleep' discarded\n");
+                return;
+            } 
+            lSysLog("Starting 'deep sleep'...\n");
             ScreenSleep();
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             SaveDataBeforeShutdown();
-            // energy close
-            ttgo->power->setPowerOutPut(AXP202_LDO3, false);
-            ttgo->power->setPowerOutPut(AXP202_LDO4, false);
-            ttgo->power->setPowerOutPut(AXP202_LDO2, false);
-            // The following power channels are not used
-            ttgo->power->setPowerOutPut(AXP202_EXTEN, false);
-            ttgo->power->setPowerOutPut(AXP202_DCDC2, false);
+            // cut wires!
+            ttgo->powerOff();
             
             // wake with movement
             ttgo->bma->enableFeature(BMA423_TILT, true);
@@ -604,7 +613,7 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
 
             lSysLog("Device in deep sleep NOW!\n");
             esp_deep_sleep_start();
-        }
+        });
     }
 }
 
@@ -1489,7 +1498,7 @@ static void BMAInterruptController(void *args) {
         taskENTER_CRITICAL(&BMAMux);
         bool currirqBMA = irqBMA;
         taskEXIT_CRITICAL(&BMAMux);*/
-        //lLog("AAAAAAAAAAAAAAAAAAA TRYING TO AQUIRE MUTEX i2C on BMAInterruptController\n");
+        //lLog(" TRYING TO AQUIRE MUTEX i2C on BMAInterruptController\n");
         lEvLog("BMA423: INT received\n");
         xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
 

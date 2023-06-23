@@ -140,6 +140,12 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     vTaskDelete(NULL);
 }
 
+void SplashBootMode(const char *what) {
+    tft->setTextColor(ThCol(boot_splash_foreground),ThCol(boot_splash_background));
+    tft->setTextDatum(TL_DATUM);
+    tft->drawString(what,5,5);
+
+}
 void SplashAnnounce(const char * what) {
     tft->setTextColor(ThCol(boot_splash_foreground),ThCol(boot_splash_background));
     tft->setTextDatum(BC_DATUM);

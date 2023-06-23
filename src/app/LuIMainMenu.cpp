@@ -39,24 +39,28 @@
 #include "Stopwatch.hpp"
 #include "LuISettingsMenu.hpp"
 #include "Calendar.hpp"
-#include "LuiExperiment.hpp"
+//#include "LuiExperiment.hpp"
 //#include "LuITest.hpp"
 //#include "LuIDemoRubiks.hpp"
 //#include "ScreenTest.hpp"
 #include "KnowLocations.hpp"
 #include "LuiGamesMenu.hpp"
-#include "LuaLauncher.hpp"
-#include "FileBrowser.hpp"
+//#include "LuaLauncher.hpp"
+//#include "FileBrowser.hpp"
+#ifdef LUNOKIOT_LILYGO_TWATCH_BUTTON_FAULTY
 #include "Lamp.hpp"
-#include "PartitionBrowser.hpp"
+#endif
+//#include "PartitionBrowser.hpp"
 //#include "LunoNoid.hpp"
 //#include "Dungeon/Dungeon.hpp"
-#include "LuiChess.hpp"
-
+//#include "LuiChess.hpp"
+#include "MostUsedApps.hpp"
 using namespace LuI;
 const IconMenuEntry LuIMenuItems[] = {
     
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
+
+//    {"MostUsed",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIMostUsedApplication()); } },
 //    {"Chess",img_mainmenu_chess_bits, img_mainmenu_chess_height, img_mainmenu_chess_width, [](IGNORE_PARAM) { LaunchApplication(new ChessApplication()); } },
 //    {"Log",img_mainmenu_cpu_bits, img_mainmenu_cpu_height, img_mainmenu_cpu_width, [](void *unused) { LaunchApplication(new LogViewApplication()); } },
 
@@ -73,7 +77,9 @@ const IconMenuEntry LuIMenuItems[] = {
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
 //    {"LuIDemos",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },
     {"Bright",img_mainmenu_bright_bits, img_mainmenu_bright_height, img_mainmenu_bright_width, [](IGNORE_PARAM) { LaunchApplication(new BrightnessApplication()); } },
+#ifdef LUNOKIOT_LILYGO_TWATCH_BUTTON_FAULTY
     {"Lamp",img_mainmenu_lamp_bits, img_mainmenu_lamp_height, img_mainmenu_lamp_width, [](IGNORE_PARAM) { LaunchApplication(new LampApplication()); } },
+#endif
     {"Notify", img_mainmenu_notifications_bits, img_mainmenu_notifications_height, img_mainmenu_notifications_width, [](IGNORE_PARAM) { LaunchApplication(new NotificacionsApplication()); } },
     {"Steps",img_mainmenu_steps_bits, img_mainmenu_steps_height, img_mainmenu_steps_width, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); } },
     {"Battery",img_mainmenu_battery_bits, img_mainmenu_battery_height, img_mainmenu_battery_width,  [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); } },

@@ -561,6 +561,7 @@ void LunokIoT::InstallRotateLogs() {
 
 void LunokIoT::BootReason() { // check boot status
     bool normalBoot = false;
+    bool fromDeepSleep = false;
     lEvLog("Boot reason: ");
     esp_reset_reason_t lastBootStatus = esp_reset_reason();
     if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
@@ -571,13 +572,14 @@ void LunokIoT::BootReason() { // check boot status
     else if ( ESP_RST_INT_WDT == lastBootStatus) { lLog("'Watchdog interrupt'\n"); }
     else if ( ESP_RST_TASK_WDT == lastBootStatus) { lLog("'Watchdog TIMEOUT'\n"); }
     else if ( ESP_RST_WDT == lastBootStatus) { lLog("'Watchdog reset'\n"); }
-    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n") normalBoot = true; }
+    else if ( ESP_RST_DEEPSLEEP == lastBootStatus) { lLog("'Recovering from deep seep'\n") normalBoot = true; fromDeepSleep=true; }
     else if ( ESP_RST_BROWNOUT == lastBootStatus) { lLog("'Brownout'\n"); }
     else if ( ESP_RST_SDIO == lastBootStatus) { lLog("'Reset over SDIO'\n"); }
     else { lLog("UNHANDLED UNKNOWN\n"); }
 
-    if ( false == normalBoot ){
+    if (( false == normalBoot )&&( false == fromDeepSleep )) {
         lEvLog("/!\\ /!\\ /!\\ WARNING: Last boot FAIL\n");
+        SplashBootMode("Recover...");
     } else {
         #ifdef LILYGO_WATCH_2020_V3
             ttgo->shake();
@@ -589,7 +591,8 @@ void LunokIoT::BootReason() { // check boot status
 
     #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
         // do sound only if boot is normal (crash-silent if last boot fail)
-        if ( true == normalBoot ) { SplashFanfare(); } // sound and shake
+        if (( true == normalBoot )&&( false == fromDeepSleep )) { SplashFanfare(); } // sound and shake
+        if ( fromDeepSleep ) { SplashBootMode("Sleepy..."); }
     #endif
 }
 

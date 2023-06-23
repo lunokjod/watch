@@ -22,6 +22,7 @@
 
 void SplashAnnounce();
 void SplashAnnounce(const char * what);
+void SplashBootMode(const char *what);
 void SplashAnnounceBegin();
 void SplashAnnounceEnd();
 void SplashFormatSPIFFSAnnounce();
