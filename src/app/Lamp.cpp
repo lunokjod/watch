@@ -26,7 +26,9 @@ extern TTGOClass *ttgo; // ttgo lib
 
 LampApplication::LampApplication() { canvas->fillSprite(TFT_WHITE); }
 bool LampApplication::Tick() {
-    if (  255 > ttgo->bl->getLevel() ) { ttgo->setBrightness(ttgo->bl->getLevel()+1); }
+    if ( ttgo->bl->isOn() ) { // is the screen ON? 
+        if (  255 > ttgo->bl->getLevel() ) { ttgo->setBrightness(ttgo->bl->getLevel()+1); }
+    }
     if ( touched ) { LaunchWatchface(); }
     return false;
 }
