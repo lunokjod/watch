@@ -20,10 +20,11 @@
 #ifndef __LUNOKIOT__APPLICATION__LUA__
 #define __LUNOKIOT__APPLICATION__LUA__
 
-#include "../UI/AppLuITemplate.hpp"
+#include "../system/Application.hpp"
+
 extern const char * HelloworldLuaScript;
 
-class LuaLauncher : public TemplateLuIApplication {
+class LuaLauncher : public LunokIoTApplication {
     public:
         LuaLauncher(const char * script);
         const char *AppName() override { return "LUA script"; };
