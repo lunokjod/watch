@@ -17,6 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
+#include "../lunokIoT.hpp"
 #include "../UI/AppLuITemplate.hpp"
 #include "MostUsedApps.hpp"
 #include "../UI/controls/IconMenu.hpp"
@@ -29,8 +30,10 @@
 #include <LilyGoWatch.h>
 #include "../system/Datasources/database.hpp"
 #include "../resources.hpp"
-
+#include <esp_task_wdt.h>
 using namespace LuI;
+
+const char *LuIMostUsedApplication::BLACKLIST[] = {"Main Menu", "Most used"};
 
 LuIMostUsedApplication::LuIMostUsedApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
@@ -94,13 +97,13 @@ LuIMostUsedApplication::LuIMostUsedApplication() {
                             // GET VALUE
                             int currVal=(int)self->entriesCounter[(const char*)strFrom];
                             currVal++; // increment counter for app
-                            lSysLog("Updating entry: '%s' to: %d\n",strFrom,currVal);
+                            //lSysLog("Updating entry: '%s' to: %d\n",strFrom,currVal);
                             // update value on json property
                             self->entriesCounter[(const char*)strFrom]= currVal; //JSONVar(currVal);
                             if ( self->HighCount < currVal ) { self->HighCount = currVal; }
                         } else {
                             // create entry with 1 as value
-                            lSysLog("Adding entry: '%s'\n",strFrom);
+                            //lSysLog("Adding entry: '%s'\n",strFrom);
                             self->entriesCounter[(const char*)strFrom] = 1; //JSONVar(1);
                         }
                     }
@@ -108,20 +111,77 @@ LuIMostUsedApplication::LuIMostUsedApplication() {
             }
             return 0;
         },this);
+        /*,[&,this] { pending=false; });*/
     }
+    // wait until SQL response @TODO this is a timed crap
+    //while(pending) {
+    TickType_t nextCheck = xTaskGetTickCount();     // get the current ticks
+    xTaskDelayUntil( &nextCheck, (1000 / portTICK_PERIOD_MS) ); // wait a little bit
+    esp_task_wdt_reset();
+    //}
+    // process the JSON dictionary 
+    lAppLog("JSON: '%s'\n",JSON.stringify(entriesCounter).c_str());
 
-}
-bool LuIMostUsedApplication::Tick() {
-    if ( lastHighCount != HighCount ) {
-        lastHighCount=HighCount;
-        lAppLog("JSON: '%s'\n",JSON.stringify(entriesCounter).c_str());
-        /*
-        int numEntries = entriesCounter.length();
-        lAppLog("HIGHTER VAL: %d entries: %d\n",HighCount,numEntries);
-        for(int currentEntry=0; numEntries>currentEntry;currentEntry++) {
-            JSONVar entryLaunches = entriesCounter[currentEntry];
-            lAppLog("  KEY NAMES: '%s' launches %d\n",(const char*)entryLaunches, (int)entryLaunches);
-        }*/
+    JSONVar keys = entriesCounter.keys();
+    lAppLog("Most hits: %d total entries: %d\n",HighCount,keys.length());
+
+    int appsHits[keys.length()+1]; // maintain list of hits
+    //lAppLog("\nDISORDERED:\n\n");
+    for (int i = 0; i < keys.length(); i++) {
+        JSONVar ikey = keys[i];
+        JSONVar ivalue = entriesCounter[ikey];
+        //check names blacklist
+        bool blackListed=false;
+        for (int n = 0; n < sizeof(BLACKLIST) / sizeof(*BLACKLIST); n++) {
+            if ( 0 == strcmp(BLACKLIST[n],(const char *)ikey)) {
+                blackListed=true;
+                break;
+            }
+        }
+        if ( blackListed ) { continue; }
+        // ignore low hits 
+        if ( (int)ivalue > MINHITS ) {
+            appsHits[i] = (int)ivalue;
+            //lAppLog("%d '%s' hits: %d\n",i, (const char*)ikey,appsHits[i]);
+        } else {
+            appsHits[i] = IGNORED;
+        }
     }
+    ReverseBubbleSort(appsHits,keys.length());
+    //lAppLog("\nORDERED:\n\n");
+    size_t maxEntries=0;
+    const char* appsOrderedNames[keys.length()+1];
+    for (int i = 0; i < keys.length(); i++) {
+        if ( IGNORED == appsHits[i] ) { continue; } // ignore it
+        if ( i+1 > keys.length() ) { continue; } // out of array
+        for (int c=0; c < keys.length(); c++) {
+            JSONVar ikey = keys[c];
+            JSONVar ivalue = entriesCounter[ikey];
+            if ( appsHits[i] == (int)ivalue ) {
+                // remove repeated
+                bool found=false;
+                for ( int r=0;r<maxEntries;r++) {
+                    if ( 0 == strcmp((const char*)ikey,appsOrderedNames[r]) ) {
+                        found=true;
+                        break;
+                    }
+                }
+                if ( false==found ) {
+                    //lAppLog("%u '%s' hits: %d\n",maxEntries, (const char*)ikey,appsHits[i]);
+                    appsOrderedNames[maxEntries]=(const char * )ikey;
+                    maxEntries++;
+                }
+                break;
+            }
+        }
+    }
+    lAppLog("MOST USED APPS:\n");
+    for (int i = 0; i < maxEntries; i++) {
+        lAppLog("%u '%s'\n",i,appsOrderedNames[i]);
+    }
+    lAppLog("Total valid entries: %u\n",maxEntries);
+}
+
+bool LuIMostUsedApplication::Tick() {
     return TemplateLuIApplication::Tick();
 }

@@ -24,10 +24,12 @@
 #include <Arduino_JSON.h>
 
 class LuIMostUsedApplication : public TemplateLuIApplication {
-    private:
-        int lastHighCount=0;
     public:
+        static const char *BLACKLIST[];
+        static const int IGNORED = -1;
+        static const int MINHITS = 3;
         int HighCount=0;
+        bool pending=true;
         JSONVar entriesCounter;
         // max apps used
         LuIMostUsedApplication();
