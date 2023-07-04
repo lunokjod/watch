@@ -194,6 +194,12 @@ void Database::_DatabaseWorkerTaskLoop() {
         //if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }
         //lLog("@DEBUG DATABASE DISABLED, query ignored\n");
         rc = db_exec(databaseDescriptor, myData->query,myData->callback,myData->payload);
+        //@TODO RUN FINAL CALLBACK
+        /*
+        if ( nullptr != myData->callbackEnd ) {
+            lLog("Database: %p end query of '%s' callback %p\n", this,myData->query,myData->callbackEnd);
+            myData->callbackEnd();
+        }*/
         //if ( ESP_OK == susbcribed) { esp_task_wdt_add(NULL); }
         free(myData->query);
         free(myData);
@@ -257,7 +263,7 @@ Database::~Database() {
     databaseQueueTask=NULL;
 }
 
-void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *payload) {
+void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *payload, DBCallback endCallback) {
     // add element to queue
     if ( NULL == queue ) {
         lLog("Database: %p ERROR: No queue valid for this database (see the logs)\n",this);
@@ -270,6 +276,7 @@ void Database::SendSQL(const char * sqlQuery,sqlite3_callback callback, void *pa
     newQuery->query=queryCopy;
     newQuery->callback=callback;
     newQuery->payload=payload;
+    //newQuery->callbackEnd=endCallback;
     // temporal disable watchdog for me :)
     esp_err_t susbcribed = esp_task_wdt_status(NULL);
     if ( ESP_OK == susbcribed) { esp_task_wdt_delete(NULL); }

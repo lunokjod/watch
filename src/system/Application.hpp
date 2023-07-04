@@ -35,6 +35,7 @@ const uint8_t APPLICATIONCORE=UICORE;
  */
 class LunokIoTApplication {
     public:
+        bool dirty=false;
         TFT_eSprite *canvas; // application buffer (all must draw here)
         // build canvas
         LunokIoTApplication();
@@ -65,7 +66,6 @@ class LaunchApplicationDescriptor {
 void LaunchApplication(LunokIoTApplication *instance,bool animation=true,bool synced=false, bool force=false);
 void LaunchWatchface(bool animation=false, bool force=false);
 void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool synched=false);
-
 
 /*
  * Software keyboard is a special app

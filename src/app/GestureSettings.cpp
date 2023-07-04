@@ -84,7 +84,7 @@ bool GestureSettings::Tick() {
         canvas->drawString("Double tap",UseDoubleTapSwitch->GetX()+72,UseDoubleTapSwitch->GetY()+32);
         canvas->setTextDatum(TL_DATUM);
         canvas->setTextSize(1);
-        canvas->drawString("launches fastWatch",UseDoubleTapSwitch->GetX()+72,UseDoubleTapSwitch->GetY()+32);
+        canvas->drawString("launches watchface",UseDoubleTapSwitch->GetX()+72,UseDoubleTapSwitch->GetY()+32);
 
         // enable lamp code
         UseLampSwitch->DrawTo(canvas);

@@ -108,7 +108,7 @@ void SetUserBrightness() {
         userBright=BaseBackLightBrightness;
         NVS.setInt("lBright",userBright,false);
     }
-    ttgo->setBrightness(userBright);
+    if ( ttgo->bl->isOn() ) { ttgo->setBrightness(userBright); }
 }
 
 void ScreenWake() {

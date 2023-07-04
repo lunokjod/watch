@@ -119,6 +119,25 @@ void *my_dlsym(void *handle, const char *name) {
     return NULL;
 }
 
+// Swap function
+void Swap(int *arr,int i,int j){
+    int temp=arr[i];
+      arr[i]=arr[j];
+      arr[j]=temp;
+}
+  
+// A function to implement bubble sort
+void ReverseBubbleSort(int arr[], int n) {
+    int i, j;
+    for (i = 0; i < n - 1; i++)
+  
+        // Last i elements are already 
+        // in place
+        for (j = 0; j < n - i - 1; j++)
+            if (arr[j] < arr[j + 1])
+                Swap(arr,j,j + 1);
+}
+
 bool LunokIoT::IsLittleFSEnabled() { return LittleFSReady; }
 
 //#include "esp_console.h"
@@ -307,9 +326,10 @@ LunokIoT::LunokIoT() {
         }
         xSemaphoreGive(I2cMutex);
     }
-    SplashAnnounce("      VFS      ");
+    SplashAnnounce("    Cleanup    ");
     DestroyOldFiles();
-    VFSInit();
+    //SplashAnnounce("      VFS      ");
+    //VFSInit();
 
     SplashAnnounce("      LUA      ");
     LuaInit();
@@ -356,7 +376,11 @@ LunokIoT::LunokIoT() {
     UIStart();
 
     InstallRotateLogs();
-
+    if ( fromDeepSleep ) {
+        const float delaySeconds = 30;
+        lEvLog("LogRotate: Cleanup launch after deep sleep planned in %g seconds...\n",delaySeconds);
+        LunokIoTSystemLogRotationByDeepSleep.once(delaySeconds,[]() { LoT().LogRotate(); });
+    }
     SplashAnnounceEnd();
 
     SetUserBrightness();
@@ -491,7 +515,29 @@ extern uint8_t lastStepsDay;
 extern uint32_t lastBootStepCount;
 
 void LunokIoT::LogRotate() {
-    lEvLog("Rotatelog: Begin\n");
+    if ( false == settings->IsNVSEnabled() ) {
+        lEvLog("LogRotate: Unable to rotate logs due NVS is disabled\n");
+        InstallRotateLogs();
+        return;
+    }
+
+    time_t now;
+    struct tm * tmpTime;
+    time(&now);
+    tmpTime = localtime(&now);
+
+    // my weeks begins on monday not sunday
+    int correctedDay = tmpTime->tm_wday-2; // use the last day recorded to save on it
+    if ( correctedDay == -2 ) { correctedDay = 5; }
+    else if ( correctedDay == -1 ) { correctedDay = 6; }
+    int lastDate = LoT().settings->GetInt(SystemSettings::SettingKey::LastRotateLog);
+    if ( tmpTime->tm_mday == lastDate ) {
+        lEvLog("LogRotate: Already started on this day\n");
+        InstallRotateLogs();
+        return;
+    }
+    settings->SetInt(SystemSettings::SettingKey::LastRotateLog,tmpTime->tm_mday);
+    lEvLog("LogRotate: Begin\n");
     StopDatabase();
     JournalDatabase();
     StartDatabase();
@@ -502,17 +548,8 @@ void LunokIoT::LogRotate() {
     systemDatabase->SendSQL("END TRANSACTION;");
     systemDatabase->Commit();
 
-    lEvLog("StepCounter: Rotating...\n");
+    lEvLog("LogRotate: Rotating...\n");
     
-    time_t now;
-    struct tm * tmpTime;
-    time(&now);
-    tmpTime = localtime(&now);
-
-    // my weeks begins on monday not sunday
-    int correctedDay = tmpTime->tm_wday-2; // use the last day recorded to save on it
-    if ( correctedDay == -2 ) { correctedDay = 5; }
-    else if ( correctedDay == -1 ) { correctedDay = 6; }
     weekSteps[correctedDay] = stepCount;
     stepCount = 0;
     lastBootStepCount = 0;
@@ -545,23 +582,25 @@ void LunokIoT::LogRotate() {
         }
     }
     NVS.setInt("lstWeekStp",lastStepsDay,false);
-    lEvLog("StepCounter: Rotation Ends\n");
+    //lEvLog("LogRotate: Rotation Ends\n");
 
     delay(1000); // wait one second to not collide with current second
     InstallRotateLogs();
-    lEvLog("Rotatelog: End\n");
+    lEvLog("LogRotate: End\n");
 }
 
 void LunokIoT::InstallRotateLogs() {
+    if ( LunokIoTSystemLogRotation.active() ) {
+        lSysLog("LogRotate: Already planned, re-scheduling...\n");
+        LunokIoTSystemLogRotation.detach();
+    }
     long int secondsUntilMidnight = GetSecondsUntil(0,0,0); //midnight
-    lSysLog("Rotatelog: Installed, launch planned in %d seconds\n",secondsUntilMidnight);
+    lSysLog("LogRotate: Installed, launch planned in %d seconds\n",secondsUntilMidnight);
     // perform logrotate at midnight
     LunokIoTSystemLogRotation.once((float)secondsUntilMidnight,[]() { LoT().LogRotate(); });
 }
 
 void LunokIoT::BootReason() { // check boot status
-    bool normalBoot = false;
-    bool fromDeepSleep = false;
     lEvLog("Boot reason: ");
     esp_reset_reason_t lastBootStatus = esp_reset_reason();
     if ( ESP_RST_UNKNOWN == lastBootStatus) { lLog("'Unknown'\n"); }
@@ -592,8 +631,10 @@ void LunokIoT::BootReason() { // check boot status
     #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
         // do sound only if boot is normal (crash-silent if last boot fail)
         if (( true == normalBoot )&&( false == fromDeepSleep )) { SplashFanfare(); } // sound and shake
-        if ( fromDeepSleep ) { SplashBootMode("Sleepy..."); }
     #endif
+    if ( fromDeepSleep ) {
+        SplashBootMode("Sleepy...");
+    }
 }
 
 

@@ -26,7 +26,7 @@
 const char SystemSettings::KeysAsString[][20] = {"ScreenRot", "lWTheme","littleFSReady","doubleTap",
                                 "lampGesture","summerTime","timezoneTime",
                                 "WifiEnabled","NTPEnabled","OWeatherEnabled",
-                                "BLEEnabled","NTPBLEEnabled"};
+                                "BLEEnabled","NTPBLEEnabled","LastRotateLog" };
 
 SystemSettings::SystemSettings() {
     NVSReady = NVS.begin(); // need NVS to get the current settings

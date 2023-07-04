@@ -27,5 +27,5 @@ void SplashAnnounceBegin();
 void SplashAnnounceEnd();
 void SplashFormatSPIFFSAnnounce();
 void SplashFanfare();
-
+void SleepFanfare();
 #endif

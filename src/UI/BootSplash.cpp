@@ -45,11 +45,13 @@ bool bootLoopEnds = false; // this is used by the splash to know bootLoop is end
 
 
 #if defined(LILYGO_WATCH_2020_V1)||defined(LILYGO_WATCH_2020_V3)
-extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
-extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
+//extern const PROGMEM uint8_t boot_sound_start[] asm("_binary_asset_boot_sound_mp3_start");
+//extern const PROGMEM uint8_t boot_sound_end[] asm("_binary_asset_boot_sound_mp3_end");
 
 extern const PROGMEM uint8_t boot_sound_muji_start[] asm("_binary_asset_boot_sound_muji_mp3_start");
 extern const PROGMEM uint8_t boot_sound_muji_end[] asm("_binary_asset_boot_sound_muji_mp3_end");
+extern const PROGMEM uint8_t sleep_sound_muji_start[] asm("_binary_asset_sleep_sound_muji_mp3_start");
+extern const PROGMEM uint8_t sleep_sound_muji_end[] asm("_binary_asset_sleep_sound_muji_mp3_end");
 
 void SplashFanfare() {
 #ifdef LUNOKIOT_SILENT_BOOT
@@ -76,6 +78,54 @@ void SplashFanfare() {
     out = new AudioOutputI2S();
     out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
     lUILog("Audio: MP3 boot sound\n");
+    mp3 = new AudioGeneratorMP3();
+    mp3->begin(id3, out);
+    while (true) {
+        if (mp3->isRunning()) {
+            if (!mp3->loop()) {
+                mp3->stop();
+            }
+        } else {
+            lUILog("Audio: MP3 done\n");
+            break;
+        }
+    }
+    delete file;
+    delete id3;
+    delete out;
+    delete mp3;
+
+    i2s_driver_uninstall(I2S_NUM_0);
+    ttgo->disableAudio();
+    //lLog("FANFARE TIME: %d\n",millis()-begin);
+}
+
+
+void SleepFanfare() {
+#ifdef LUNOKIOT_SILENT_BOOT
+    lUILog("Audio: Not initialized due Silent boot is enabled\n");
+    //delay(1200); // the delay of audio
+    return;
+#endif
+    //unsigned long begin=millis();
+    // Audio fanfare x'D
+    lUILog("Audio: Initialize\n");
+    
+    ttgo->enableAudio();
+
+    // from https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library/blob/master/examples/UnitTest/HardwareTest/HardwareTest.ino
+    AudioGeneratorMP3 *mp3;
+    AudioFileSourcePROGMEM *file;
+    AudioOutputI2S *out;
+    AudioFileSourceID3 *id3;
+
+    // file = new AudioFileSourcePROGMEM(boot_sound_start, (uint32_t)(boot_sound_end-boot_sound_start));
+    file = new AudioFileSourcePROGMEM(sleep_sound_muji_start, (uint32_t)(sleep_sound_muji_end-sleep_sound_muji_start));
+
+    id3 = new AudioFileSourceID3(file);
+    out = new AudioOutputI2S();
+    out->SetPinout(TWATCH_DAC_IIS_BCK, TWATCH_DAC_IIS_WS, TWATCH_DAC_IIS_DOUT);
+    lUILog("Audio: MP3 sleep sound\n");
     mp3 = new AudioGeneratorMP3();
     mp3->begin(id3, out);
     while (true) {

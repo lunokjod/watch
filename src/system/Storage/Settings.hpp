@@ -35,7 +35,8 @@ class SystemSettings {
             NTPWiFi,
             OpenWeather,
             BLE,
-            NTPBLE
+            NTPBLE,
+            LastRotateLog
         } SettingKey;
         SystemSettings();
         ~SystemSettings();

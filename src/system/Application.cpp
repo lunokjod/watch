@@ -126,7 +126,13 @@ LunokIoTApplication::~LunokIoTApplication() {
     lUILog("LunokIoTApplication: %p ends\n", this);
 }
 
-bool LunokIoTApplication::Tick() { return false; } // true to notify to UI the full screen redraw
+bool LunokIoTApplication::Tick() {
+    if ( dirty ) {
+        dirty=false;
+        return true;
+    } // true to notify to UI the full screen redraw
+    return false;
+}
 
 // This task destroy the last app in a second thread trying to maintain the user experience
 void KillApplicationTaskSync(LunokIoTApplication *instance) {

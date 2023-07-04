@@ -75,6 +75,7 @@ Ticker DeepSleepPoseTimer;
 #include <SPI.h>
 #include <FS.h>
 #include <LittleFS.h>
+#include "UI/BootSplash.hpp"
 
 Ticker LunokIoTSystemTicker; // This loop is the HEART of system <3 <3 <3
 uint32_t systemStatsBootCounter = 0;
@@ -588,6 +589,7 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
             lSysLog("Starting 'deep sleep'...\n");
             ScreenSleep();
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+            //SleepFanfare();
             SaveDataBeforeShutdown();
             // cut wires!
             ttgo->powerOff();
@@ -610,7 +612,6 @@ static void BMAEventDirection(void *handler_args, esp_event_base_t base, int32_t
             // the only good ones :(
             esp_err_t wakeBMA = esp_sleep_enable_ext1_wakeup( GPIO_SEL_39, ESP_EXT1_WAKEUP_ANY_HIGH); 
             if ( ESP_OK != wakeBMA ) { lSysLog("ERROR: Unable to set ext1 (BMA) wakeup\n"); }
-
             lSysLog("Device in deep sleep NOW!\n");
             esp_deep_sleep_start();
         });
@@ -640,8 +641,7 @@ static void BMAEventTilt(void *handler_args, esp_event_base_t base, int32_t id, 
 }
 
 
-static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
-{
+static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     lEvLog("BMA423: Event: No actity\n");
     if (false == ttgo->bl->isOn()) { DoSleep(); }
 }
@@ -649,8 +649,7 @@ static void BMAEventNoActivity(void *handler_args, esp_event_base_t base, int32_
 static void BMAEventStepCounter(void *handler_args, esp_event_base_t base, int32_t id, void *event_data) {
     // Get step data from register
     uint32_t nowSteps = ttgo->bma->getCounter();
-    if (nowSteps != (stepCount - lastBootStepCount))
-    {
+    if (nowSteps != (stepCount - lastBootStepCount)) {
         stepCount = nowSteps + lastBootStepCount;
         lEvLog("BMA423: Event: Steps: %d\n", stepCount);
     }

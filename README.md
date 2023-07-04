@@ -98,10 +98,16 @@ $ pio run -e Release-twatch2020_V3 -t uploadfs
  * Launch lamp on gesture (put your arms down and double tap or PEK)
  * Deep sleep: Put your watch with the screen ON facing to plane surface and the stripes points up
  * Wakeup: Simply wear-it on your wrist, the watch boots up, PEK and doubleTap already works
+ * Lua scripting
+ * UI rich controls with layouting via (LuI)
+ * 3D engine control on LuI
+ * Handwritting reconeisance
 
 ## Full application list:
 
-[See App gallery](src/app/README.md)
+**OUTDATED**
+
+[See outdated app gallery](src/app/README.md)
 
 ## Hardware support:
  * BMA423 support (including during sleep)
@@ -120,17 +126,11 @@ $ pio run -e Release-twatch2020_V3 -t uploadfs
 * PDM Mic (voice assistant)
 * RTC (alarm features)
 * espNow (locate other family watches, icon chat availiable)
-* Touch on sleep/doubletap
 * Custom activities (hidden app availiable for testing)
 * feedbacked apps (what do you need?)
-* LocalCloud, a support app for the watch (companion app or something)
 * Web installer: https://espressif.github.io/esptool-js/
-* TFT low-power minimal service (no backligth+slow bus clock), only black and white, trying to simulate eINK (playground7)
  * User customizable night hours, during this time, the system don't allow to reply anything inmediatly(delayed send guarantees don't send stupid messages to others by accident)
  * Menú must remember the last used or better: reorder the list with user preferences (app usage counters)
- * viewport
- * animations
- * alternative digital watchface 
  * hive mode (wireless mesh, share info with other lunokIoT, without infrastructure)
 ## Important build flags
  platform.ini file contains the build flags, the more relevant are:

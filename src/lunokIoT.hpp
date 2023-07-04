@@ -35,6 +35,8 @@
 #define NO_CALLBACK nullptr
 #define IGNORE_PARAM void *unused
 
+void ReverseBubbleSort(int arr[], int n);
+
 // LoT is all you need for use it! ;)
 #define LoT LunokIoT::Get
 
@@ -91,11 +93,13 @@ class LunokIoT {
         LoTWiFi * wifi=nullptr; // used internally
         LoTBLE * ble=nullptr;
         SystemSettings * settings=nullptr;
-        bool normalBoot=true;
+        bool normalBoot = false;
+        bool fromDeepSleep = false;
         //bool NVSReady=false;
         void InitLogs();
         void InstallRotateLogs();
         Ticker LunokIoTSystemLogRotation;
+        Ticker LunokIoTSystemLogRotationByDeepSleep;
 };
 
 #endif

@@ -26,11 +26,13 @@
 
 const uint8_t DATABASECORE = 1;
 const UBaseType_t DATABASEPRIORITY = tskIDLE_PRIORITY;
+typedef std::function<void ()> DBCallback;
 
 typedef struct {
     char * query;
     sqlite3_callback callback;
     void * payload;
+    DBCallback callbackEnd;
 } SQLQueryData;
 
 class Database {
@@ -56,7 +58,7 @@ class Database {
         ~Database();
         //bool InUse=false;
         void Commit();
-        void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr);
+        void SendSQL(const char * sqlQuery,sqlite3_callback callback=nullptr, void *payload=nullptr,DBCallback endCallback=nullptr);
 };
 extern Database * systemDatabase;
 
