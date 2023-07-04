@@ -114,7 +114,8 @@ void StepsApplication::CreateStats() {
         int i;
         for (i = 0; i<argc; i++){
             //lSysLog("   SQL: %s = %s\n", azColName[i], (argv[i] ? argv[i] : "NULL"));
-            if ( 0 != strcmp(azColName[i],"message")) { continue; }        
+            if ( 0 != strcmp(azColName[i],"message")) { continue; }
+
             if ( 0 == strcmp(argv[i],"Activity: Running")) { myGraph->markColor = TFT_RED; }
             else if ( 0 == strcmp(argv[i],"Activity: Walking")) { myGraph->markColor = TFT_YELLOW; }
             else if ( 0 == strcmp(argv[i],"Activity: None")) { myGraph->markColor = TFT_GREEN; }
@@ -160,7 +161,6 @@ bool StepsApplication::Tick() {
         x=30;
         y=45;
 
-
         canvas->setTextSize(1);
         canvas->setTextDatum(BL_DATUM);
         canvas->drawString("Week comparision:", 40,y-(border*2));
@@ -179,7 +179,6 @@ bool StepsApplication::Tick() {
         canvas->drawString("Sa.", 166,y+60);
         canvas->drawString("Su.", 192,y+60);
 
-
         time_t now;
         struct tm * tmpTime;
         time(&now);
@@ -190,8 +189,6 @@ bool StepsApplication::Tick() {
         if ( -1 == correctedDay ) { correctedDay=6; }
         //drawrect under the current week day
         canvas->fillRect(32+(25*correctedDay),y+70,25,5,ThCol(light));
-
-
 
         char bufferText[32] = {0};
         x=30;
@@ -211,13 +208,13 @@ bool StepsApplication::Tick() {
         canvas->drawString("steps", x+30,y+20);
 
         x=130;
-        y=140;
+        y=135;
 
         canvas->setTextSize(1);
         canvas->setTextDatum(BL_DATUM);
         canvas->drawString("Distance:", x+10,y-(border*2));
 
-        canvas->drawXBitmap(x,y,img_distance_32_bits,img_distance_32_width,img_distance_32_height,ThCol(text));
+        canvas->drawXBitmap(x,y-5,img_distance_32_bits,img_distance_32_width,img_distance_32_height,ThCol(text));
         canvas->setTextSize(2);
         canvas->setTextDatum(BL_DATUM);
         float distance = (stepCount*stepDistanceCm)/100;
@@ -226,13 +223,13 @@ bool StepsApplication::Tick() {
         } else {
             sprintf(bufferText,"%.2f",distance);
         }
-        canvas->drawString(bufferText, x+40,y+20);
+        canvas->drawString(bufferText, x+40,y+15);
         canvas->setTextSize(1);
         canvas->setTextDatum(TL_DATUM);
         if ( distance > 1000 ) {
-            canvas->drawString("Km", x+40,y+20);
+            canvas->drawString("Km", x+40,y+15);
         } else {
-            canvas->drawString("mts.", x+40,y+20);
+            canvas->drawString("mts.", x+40,y+15);
         }
 
         uint32_t totalStepsValues = stepsBMAActivityStationary
@@ -243,9 +240,18 @@ bool StepsApplication::Tick() {
         y=canvas->height()-48;
         int32_t h=5;
 
+
+        canvas->setTextSize(2);
+        canvas->setTextDatum(BR_DATUM);
+        float calories = stepCount/25.0; // 1 kcal =  25 steps
+        sprintf(bufferText,"%0.1f KCal", calories);
+        canvas->drawString(bufferText,canvas->width()-5,y-(border*2));
+
         canvas->setTextSize(1);
         canvas->setTextDatum(BL_DATUM);
         canvas->drawString("Percentage:", 40,y-(border*2));
+
+
 
         canvas->fillRect(x-2,y-2,barWidth+border,h+border,ThCol(background_alt));
         canvas->fillRect(x,y,barWidth,h,ThCol(low));
