@@ -86,6 +86,9 @@ void Provisioning2DestroyNVS() {
     if ( ESP_OK == erased ) {
         lLog("Provisioning: NVS: Provisioning data destroyed\n");
         NVS.setInt("provisioned",0,false);
+        NVS.setInt("WiFiCredNo",0,false);
+        LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFiCredentialsNumber,0);
+
         provisioned=false;
         LaunchApplication(new ShutdownApplication(true,true));
     }
@@ -119,11 +122,15 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             lLog("Provisioning: Received Wi-Fi credentials:\n");
             lLog("SSID: '%s'\n",(const char *) sys_event->event_info.prov_cred_recv.ssid);
             lLog("Password: '%s'\n",(char const *) sys_event->event_info.prov_cred_recv.password);
-            char buffr[65];
-            snprintf(buffr,64,"%s",sys_event->event_info.prov_cred_recv.ssid);
-            NVS.setString("provSSID",buffr,false);
-            snprintf(buffr,64,"%s",sys_event->event_info.prov_cred_recv.password);
-            NVS.setString("provPWD",buffr,false);
+            const size_t BuffrSize = 64;
+            char ssid[BuffrSize+1];
+            char passwd[BuffrSize+1];
+            snprintf(ssid,BuffrSize,"%s",sys_event->event_info.prov_cred_recv.ssid);
+            snprintf(passwd,BuffrSize,"%s",sys_event->event_info.prov_cred_recv.password);
+            lLog("Provisioning: Added '%s' pwd: '%s' offset: %u\n", ssid, passwd, LoT().GetWiFi()->GetConnections() );
+            LoT().GetWiFi()->AddConnection(ssid,passwd);
+            //NVS.setString("provSSID",buffr,false);
+            //NVS.setString("provPWD",buffr,false);
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {

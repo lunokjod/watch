@@ -23,7 +23,8 @@
 #include "FreehandKeyboardSetup.hpp"
 #include "../UI/widgets/ButtonTextWidget.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
-#include "../static/img_trash_32.xbm"
+//#include "../static/img_trash_32.xbm"
+#include "../resources.hpp"
 #include "../UI/widgets/SwitchWidget.hpp"
 #include "FreehandKeyboardTraining.hpp"
 #include "FreehandKeyboardQuery.hpp"
@@ -76,7 +77,7 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
         LaunchApplication(new FreehandKeyboardTraining());
     },"Learn");
     DumpButton=new ButtonTextWidget(120,64,54,110,[&,this](void * unused){
-        lAppLog("=== C DUMP: BEGIN ===\n");
+        lLog("// === C DUMP: BEGIN ===\n");
         //lLog("symbol, trained times, learn rate, threshold, inputs count, weights blob\n")
         for(size_t c=0;c<FreehandKeyboardLetterTrainableSymbolsCount;c++) {
             char current=FreehandKeyboardLetterTrainableSymbols[c];
@@ -102,7 +103,7 @@ FreeHandKeyboardSetupApplication::FreeHandKeyboardSetupApplication() {
 
             free(thaPerceptron);
         }
-        lAppLog("=== C DUMP: END ===\n");
+        lLog("// === C DUMP: END ===\n");
     },"Dump");
     #ifndef LUNOKIOT_DEBUG
     DumpButton->SetEnabled(false);

@@ -59,6 +59,7 @@ BatteryApplication::BatteryApplication() {
     Tick();
 }
 bool BatteryApplication::Tick() {
+    UINextTimeout = millis()+UITimeout; // disable screen timeout
     TemplateApplication::btnBack->Interact(touched, touchX, touchY);
     /*
     if ( vbusPresent ) {

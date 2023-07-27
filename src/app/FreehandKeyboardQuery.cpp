@@ -198,7 +198,7 @@ bool FreehandKeyboardQuery::Tick() {
                             *pDataPtr=1;
                             isData=true;
                         }
-                        lLog("%c",(isData?'O':' '));
+                        lLog("%c",(isData?'O':'.'));
                         pDataPtr++;
                     }
                     lLog("\n");

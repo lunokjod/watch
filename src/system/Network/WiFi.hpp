@@ -22,7 +22,7 @@
 #include <Arduino.h>
 
 #include <freertos/semphr.h>
-
+#include <WiFiMulti.h>
 #include <Ticker.h>
 #include <functional>
 #include <list>
@@ -38,9 +38,16 @@ class LoTWiFiTask {
         virtual const char * Name() { return "NOT SET"; }
 };
 
+class LoTWiFiCredentials {
+    public:
+        char * SSID=nullptr;
+        char * Password=nullptr;
+};
+
 // define wifi hanlder
 class LoTWiFi {
     private:
+        std::list<LoTWiFiCredentials*> credentials = {};
         const float GraceTimeSeconds=5;
         const unsigned long ConnectionTimeoutMs = 20*1000;
         const float HeartBeatTime = 5*60; // time in seconds to check pending tasks
@@ -49,7 +56,13 @@ class LoTWiFi {
         bool enabled=false;
         bool running=false;
         void InstallTimer();
+        WiFiMulti wifiMulti;
     public:
+        bool Provisioned();
+        void AddConnection(const char *SSID, const char *password); 
+        size_t GetConnections();
+        char * GetSSID(size_t offset=0);
+        char * GetPWD(size_t offset=0);
         const float GraceTime() { return GraceTimeSeconds; }
         Ticker NetworkHeartbeatTicker;
         // allow/disallow wifi tasks

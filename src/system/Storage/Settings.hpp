@@ -36,7 +36,8 @@ class SystemSettings {
             OpenWeather,
             BLE,
             NTPBLE,
-            LastRotateLog
+            LastRotateLog,
+            WiFiCredentialsNumber
         } SettingKey;
         SystemSettings();
         ~SystemSettings();

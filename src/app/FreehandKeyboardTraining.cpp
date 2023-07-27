@@ -26,9 +26,11 @@
 #include "../system/Datasources/perceptron.hpp"
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include <ArduinoNvs.h>
+//#include <WiFi.h>
 
 extern TTGOClass *ttgo;
-#include "../static/img_trash_32.xbm"
+#include "../resources.hpp"
+//#include "../static/img_trash_32.xbm"
 extern bool UILongTapOverride;
 
 // from: https://en.wikipedia.org/wiki/Letter_frequency#Relative_frequencies_of_letters_in_the_English_language
@@ -196,7 +198,7 @@ FreehandKeyboardTraining::~FreehandKeyboardTraining() {
 Perceptron * FreehandKeyboardTraining::BuildBlankPerceptron() {
     lAppLog("Blank perceptron\n");
     // 0.2 of training rate
-    return Perceptron_new(PerceptronMatrixSize*PerceptronMatrixSize, 0.2);
+    return Perceptron_new(PerceptronMatrixSize*PerceptronMatrixSize, 0.3);
 }
 
 void FreehandKeyboardTraining::Cleanup() {
@@ -283,7 +285,7 @@ bool FreehandKeyboardTraining::Tick() {
                             *pDataPtr=1;
                             isData=true;
                         }
-                        lLog("%c",(isData?'O':' '));
+                        lLog("%c",(isData?'O':'.'));
                         pDataPtr++;
                     }
                     lLog("\n");
@@ -295,67 +297,84 @@ bool FreehandKeyboardTraining::Tick() {
                 int pResponse0 = Perceptron_getResult(perceptrons[currentSymbolOffset],perceptronData);
                 lAppLog("Perceptron %p (%u:'%c') response (BEFORE TRAINING): %d (trained: %u times)\n",perceptrons[currentSymbolOffset], currentSymbolOffset, currentSymbol, pResponse0,perceptrons[currentSymbolOffset]->trainedTimes);
                 bool isGood=false;
-                bool needTraining=false;
+                //bool needTraining=false;
+                if ( perceptrons[currentSymbolOffset]->trainedTimes < 20 ) {
+                    pResponse0 = 0;
+                    lAppLog("Perceptron %p (%u:'%c') trained: %u times (< 20=forced learning)\n",perceptrons[currentSymbolOffset], currentSymbolOffset, currentSymbol,perceptrons[currentSymbolOffset]->trainedTimes);
+                }
                 // Announche if match
                 if ( 1 == pResponse0 ) {
                     tft->fillScreen(TFT_GREEN);
                     isGood=true;
-                    needTraining=true; // TEST
+                    //needTraining=true; // Needed for train "noes"
                 } else {
-                    needTraining=true;
+                    //needTraining=true;
                     tft->fillScreen(TFT_RED);
                 }
-                if ( needTraining ) {
+                //if ( needTraining ) {
                     lAppLog("Training...\n");
                     bool reached=false;
                     //train the perceptron here
                     for (size_t c=0;c<FreehandKeyboardLetterTrainableSymbolsCount;c++) {
                         if ( c == currentSymbolOffset ) { //is my symbol
+                            if ( 1 == pResponse0 ) {
+                                tft->fillScreen(TFT_GREEN);
+                            } else {
+                                tft->fillScreen(TFT_RED);
+                            }
                             reached=true; // warn not suggest also match character beyond this point
+                            //if ( isGood ) { continue; } @TODO test disabled, forcing always train
                             // train TRUE;
+                            /*
                             if ( 0 != perceptrons[c]->trainedTimes ) {
                                 if ( 1 == pResponse0 ) { continue; } // don't need train if isgood response
-                            }
-                            int learned=0;
+                            }*/
+                            int learned=PERCEPTRON_UNKNOWN;
                             do {
                                 lAppLog("Perceptron: %p, Training: '%c'\n", perceptrons[c],currentSymbol);
                                 int8_t repeat=PerceptronIterations;
                                 while (repeat > 0 ) {
-                                    Perceptron_train(perceptrons[c], perceptronData, 1);
+                                    Perceptron_train(perceptrons[c], perceptronData, PERCEPTRON_MATCH);
                                     repeat--;
                                 }
                                 learned = Perceptron_getResult(perceptrons[c], perceptronData);
-                            } while (0==learned);
+                            } while (PERCEPTRON_UNKNOWN==learned);
                         } else {
                             // train FALSE;
                             if ( nullptr != perceptrons[c] ) {
                                 int pResponse1 = Perceptron_getResult(perceptrons[c], perceptronData);
-                                if ( 1 == pResponse1 ) { // say: "I know this symbol" (no! you are doing wrong!!!)
+                                if ( PERCEPTRON_MATCH == pResponse1 ) { // say: "I know this symbol" (no! you are doing wrong!!!)
+                                    tft->fillScreen(TFT_BLUE);
                                     if ( perceptrons[currentSymbolOffset]->trainedTimes > 0 ) { // only if are trained almost 1 time
                                         lAppLog("Perceptron: %p, Match also: '%c'\n", perceptrons[c], FreehandKeyboardLetterTrainableSymbols[c]);
-                                        int learned=1;
+                                        int learned=PERCEPTRON_MATCH;
                                         do {
                                             int8_t repeat=PerceptronIterationsNO;
                                             while (repeat > 0 ) {
-                                                Perceptron_train(perceptrons[c], perceptronData, 0);
+                                                Perceptron_train(perceptrons[c], perceptronData, PERCEPTRON_UNKNOWN);
                                                 repeat--;
                                             }
                                         learned = Perceptron_getResult(perceptrons[c], perceptronData);
-                                        } while (1==learned);
-                                    }
-                                    if ( false == reached ) {
+                                        } while (PERCEPTRON_MATCH==learned);
                                         suggestedSymbol=FreehandKeyboardLetterTrainableSymbols[c];
                                         suggestedOffset=c;
                                         isGood=true; // force to select this as next symbol
                                     }
+                                    /*
+                                    if ( false == reached ) {
+                                        suggestedSymbol=FreehandKeyboardLetterTrainableSymbols[c];
+                                        suggestedOffset=c;
+                                        isGood=true; // force to select this as next symbol
+                                    }*/
                                 }
                             }
                         }
                     }
-                }
+                //}
                 free(perceptronData);
+                //WiFi.mode(WIFI_STA);
                 lAppLog("Next char: ");
-                if ( isGood ) {
+                //if ( isGood ) {
                     if ( 0 == suggestedSymbol ) { // pick random next letter to train
                         if ( random(0,100) > 60 )  { // maybe next
                             currentSymbolOffset++;
@@ -363,19 +382,23 @@ bool FreehandKeyboardTraining::Tick() {
                                 currentSymbolOffset=0;
                             }
                             lLog("Sequential");
+                            nextCharMethod=SEQUENTIAL_CHOICE;
                         } else { // maybe random
                             currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
                             lLog("Random");
+                            nextCharMethod=RANDOM_CHOICE;
                         }
                     } else { // try to re-check the matched symbols
                         currentSymbolOffset = suggestedOffset;
                         lLog("Recommended");
+                        nextCharMethod=RECOMMENDED_CHOICE;
                     }
-                } else {
+                /*} else {
                     currentSymbolOffset=random(0,FreehandKeyboardLetterTrainableSymbolsCount);
                     lLog("Random");
-
-                }
+                    nextCharMethod=RANDOM_CHOICE;
+                }*/
+                //WiFi.mode(WIFI_OFF);
                 currentSymbol=FreehandKeyboardLetterTrainableSymbols[currentSymbolOffset];
                 lLog(": '%c'\n",currentSymbol);
                 Cleanup();
@@ -399,6 +422,38 @@ void FreehandKeyboardTraining::RedrawMe() {
     canvas->height()-90,
     BORDER/2,ThCol(background_alt));
 
+    if ( nullptr != perceptrons[currentSymbolOffset] ) {
+        // show current perceptron info
+        const float ratioFromScreen = canvas->width()/PerceptronMatrixSize;
+        int x=-1;
+        int y=0;
+        for(int c=0;c<=perceptrons[currentSymbolOffset]->numInputs_;c++) {
+            x++;
+            if ( x >= PerceptronMatrixSize ) { x=0; y++; }
+            double val = perceptrons[currentSymbolOffset]->weights_[c];
+            uint16_t color = TFT_BLACK;
+            int32_t radius = 3;
+            if ( val > 0 ) {
+                color = TFT_GREEN;
+                radius+=ceil(val*2.0);
+                if ( val > 2.2 ) {
+                    canvas->fillCircle((x*ratioFromScreen)+ratioFromScreen/2,
+                                (y*ratioFromScreen)+ratioFromScreen/2,radius,color);
+                } else {
+                    canvas->drawCircle((x*ratioFromScreen)+ratioFromScreen/2,
+                                (y*ratioFromScreen)+ratioFromScreen/2,radius,color);
+                }
+            }
+            //else if ( val < 0 ) { color = TFT_RED; }
+            //if ( val > 0 ) { radius+=val; }
+            //else if ( val < -1 ) { radius--; }
+            //lLog("VAL: %g ",val);
+        }
+        //lLog("\n");
+    }
+
+
+
     canvas->drawFastHLine(30,50,canvas->width()-60,ThCol(shadow));
     canvas->drawFastHLine(30,140,canvas->width()-60,ThCol(light));
     canvas->drawFastHLine(30,155,canvas->width()-60,ThCol(light));
@@ -407,18 +462,34 @@ void FreehandKeyboardTraining::RedrawMe() {
         canvas->setFreeFont(&FreeMonoBold24pt7b);
         canvas->setTextDatum(BC_DATUM);
         canvas->setTextColor(TFT_DARKGREY);
-        char buffer[20];
+        char buffer[80];
         canvas->setTextSize(1);
         canvas->drawString("DRAW", canvas->width()/2,60);
         canvas->setTextSize(2);
         sprintf(buffer,"'%c'", currentSymbol);
         canvas->drawString(buffer, canvas->width()/2,145);
-
         //canvas->setFreeFont(&FreeMonoBold12pt7b);
         //canvas->setTextDatum(BR_DATUM);
         //canvas->setTextSize(1);
         //sprintf(buffer,"T: %u", perceptrons[currentSymbolOffset]->trainedTimes);
         //canvas->drawString(buffer, canvas->width()-5,canvas->height()-5);
+        canvas->setFreeFont(&FreeMonoBold12pt7b);
+        canvas->setTextDatum(BR_DATUM);
+        canvas->setTextColor(TFT_DARKGREY);
+        canvas->setTextSize(1);
+        sprintf(buffer,"%u times", perceptrons[currentSymbolOffset]->trainedTimes);
+        canvas->drawString(buffer, canvas->width()-5,canvas->height()-(12+5+5));
+
+        if ( SEQUENTIAL_CHOICE == nextCharMethod ) {
+            // sequential
+            canvas->drawString("sequential", canvas->width()-5,canvas->height()-5);
+        } else if ( RANDOM_CHOICE == nextCharMethod ) {
+            // random
+            canvas->drawString("random", canvas->width()-5,canvas->height()-5);
+        } else if ( RECOMMENDED_CHOICE == nextCharMethod ) {
+            // recommended
+            canvas->drawString("recommended", canvas->width()-5,canvas->height()-5);
+        }
 
     }
     if ( (false == touched) || ( 0 == touchDragDistance )) {

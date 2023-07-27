@@ -41,7 +41,7 @@ class FreehandKeyboardQuery : public TemplateApplication {
         TFT_eSprite * perceptronCanvas=nullptr;
         TFT_eSprite * freeHandCanvas=nullptr;
 
-        const uint8_t PerceptronMatrixSize=11;
+        const uint8_t PerceptronMatrixSize=7;
         const int16_t MINIMALDRAWSIZE=PerceptronMatrixSize*4;
         void Cleanup();
         void RedrawMe();

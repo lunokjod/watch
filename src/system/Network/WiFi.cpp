@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiMulti.h>
 #include "WiFi.hpp"
 #include "../../app/LogView.hpp"
 #include "../SystemEvents.hpp" 
@@ -29,9 +30,11 @@
 #include <list>
 #include "BLE.hpp"
 #include <esp_task_wdt.h>
+#include "../../lunokIoT.hpp"
 
 //void LoTWiFi::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); disabled=true; }
 //void LoTWiFi::ResumeTasks() { xSemaphoreGive( taskLock ); disabled=false; }
+extern bool provisioned;
 
 void LoTWiFi::Enable() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
@@ -91,6 +94,43 @@ bool LoTWiFi::RemoveTask(LoTWiFiTask * newTask) {
     return false;
 
 }
+size_t LoTWiFi::GetConnections() { return credentials.size(); }
+
+//@TODO 
+char * LoTWiFi::GetSSID(size_t offset) {
+    return nullptr;
+}
+
+char * LoTWiFi::GetPWD(size_t offset) {
+    return nullptr;
+}
+
+bool LoTWiFi::Provisioned() {
+    if ( GetConnections() ) { return true; }
+    return false;
+}
+
+void LoTWiFi::AddConnection(const char *SSID,const char *password) {
+    LoTWiFiCredentials * cred = new LoTWiFiCredentials();
+    char *nSSID = (char *)ps_malloc(strlen(SSID)+1);
+    char *nPwd = (char *)ps_malloc(strlen(password)+1);
+    sprintf(nSSID,"%s",SSID);
+    sprintf(nPwd,"%s",password);
+    cred->SSID=nSSID;
+    cred->Password=nPwd;
+    xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+    credentials.push_back(cred);
+    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFiCredentialsNumber,int(GetConnections()));
+    lNetLog("WiFi: %p Added connection %u SSID: '%s' Password: '%s'\n", this, GetConnections()-1, nSSID, nPwd);
+    char labelName[255];
+    sprintf(labelName,"SSID_%u",GetConnections()-1);
+    NVS.setString(String(labelName),String(nSSID),false);
+    sprintf(labelName,"WIFIPWD_%u",GetConnections()-1);
+    NVS.setString(String(labelName),String(nPwd),false);
+    wifiMulti.addAP(nSSID,nPwd);
+    provisioned=true;
+    xSemaphoreGive( taskLock );
+}
 
 void LoTWiFi::PerformTasks() {
     // check user permission
@@ -104,13 +144,31 @@ void LoTWiFi::PerformTasks() {
         lNetLog("WiFi: %p WARNING: Instance disabled\n",this);
         return;
     }
+    /*
     //check provisioning
+    if ( false == Provisioned() ) {
+        lNetLog("WiFi: not provisioned\n");
+        return;
+    }
+    
+    size_t currentWiFiOffset=0;
+    while ( currentWiFiOffset < GetConnections()) {
+        lLog("@DEBUG TRYING TO CONNECT TO OFFSET: %u\n", currentWiFiOffset);
+        currentWiFiOffset++;
+    }
+    return;
+    // @TODO    
+    String WSSID = NVS.getString("provSSID");
+    String WPass = NVS.getString("provPWD");
+     */
+    /*
     String WSSID = NVS.getString("provSSID");
     String WPass = NVS.getString("provPWD");
     if (( 0 == WSSID.length() )||( 0 == WPass.length() )) {
         lNetLog("WiFi: %p WARNING: Device not provisioned\n",this);
         return;
     }
+    */
     // set lower priority
     //UBaseType_t myPriority = uxTaskPriorityGet(NULL);
     //vTaskPrioritySet(NULL,tskIDLE_PRIORITY);
@@ -140,8 +198,10 @@ void LoTWiFi::PerformTasks() {
     xSemaphoreGive( taskLock );
     // perform connection
     wl_status_t currStat;
-    lNetLog("WiFi: %p trying to connect to '%s'...\n",this,WSSID.c_str());
-
+    bool connected = false;
+    lNetLog("WiFi: %p trying to connect ...\n",this);
+    if ( WL_CONNECTED == wifiMulti.run() ) { connected = true; }
+    /*
     currStat = WiFi.begin(WSSID.c_str(),WPass.c_str());
     bool connected=false;
     unsigned long timeout = millis()+ConnectionTimeoutMs;
@@ -151,7 +211,7 @@ void LoTWiFi::PerformTasks() {
         if ( WL_CONNECTED == currStat) { connected=true; break; }
         delay(2000);
         //taskYIELD();
-    }
+    }*/
     if (false == connected) {
         xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         esp_task_wdt_reset();
@@ -216,7 +276,18 @@ LoTWiFi::LoTWiFi() {
     bool canUse = NVS.getInt("WifiEnabled");
     if ( canUse ) { Enable(); }
     else { Disable(); }
-    // @TODO warn if NVS user preference don't allow
+    int maxWifis = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::WiFiCredentialsNumber);
+    size_t currentWiFiOffset=0;
+    while ( currentWiFiOffset < maxWifis ) {
+        char labelName[255];
+        sprintf(labelName,"SSID_%u",currentWiFiOffset);
+        String nSSID = NVS.getString(String(labelName));
+        sprintf(labelName,"WIFIPWD_%u",currentWiFiOffset);
+        String nPwd = NVS.getString(String(labelName));
+        //lNetLog("WiFi: %p Add connection: %u SSID: '%s' Pwd: '%s'\n", this, currentWiFiOffset,nSSID.c_str(),nPwd.c_str());
+        AddConnection(nSSID.c_str(),nPwd.c_str());
+        currentWiFiOffset++;
+    }
     InstallTimer();
 }
 

@@ -47,11 +47,20 @@ class FreehandKeyboardTraining : public TemplateApplication {
         Perceptron **perceptrons; // all of them
 
         Perceptron **secondLayerPerceptrons;
-
-        const uint8_t PerceptronMatrixSize=11;
+        enum PerceptronsData {
+            PERCEPTRON_UNKNOWN = 0,
+            PERCEPTRON_MATCH = 1
+        };
+        enum NextCharMethod {
+            SEQUENTIAL_CHOICE,
+            RANDOM_CHOICE,
+            RECOMMENDED_CHOICE
+        };
+        uint8_t nextCharMethod=RANDOM_CHOICE;
+        const uint8_t PerceptronMatrixSize=7;
         const int16_t MINIMALDRAWSIZE=PerceptronMatrixSize*4;
-        const uint8_t PerceptronIterations=1; // 16 is big
-        const uint8_t PerceptronIterationsNO=1;
+        const uint8_t PerceptronIterations=10; // 16 is big
+        const uint8_t PerceptronIterationsNO=2;
         void Cleanup();
         void RedrawMe();
         ButtonImageXBMWidget * destroySymbolData = nullptr;
