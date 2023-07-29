@@ -322,6 +322,8 @@ TFT_eSprite * ShearSprite(TFT_eSprite *view, TransformationMatrix transform) {
 // reduce the size of image using float value (0.5=50%)
 TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
     if ( nullptr == view ) { return nullptr; }
+    //return ShearSprite(view,{divisor,0,0,divisor});
+
     //if ( 1.0 == divisor ) { return DuplicateSprite(view); } // is the same!!! @TODO Duplicate invert colors :( invert colors
     if ( divisor < 0.0 ) { divisor=0.05; } // dont allow 0 scale
     int16_t nh = view->height()*divisor; // calculate new size

@@ -33,6 +33,7 @@ extern TTGOClass *ttgo; // access to ttgo specific libs
 #include "../UI/transition/Stripes.hpp" // animation
 #include "../UI/transition/UpDown.hpp" // animation
 #include "../UI/transition/Chess.hpp" // animation
+#include "../UI/transition/Flip.hpp" // animation
 
 #include "../app/LogView.hpp"
 
@@ -193,7 +194,7 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                         static long transitionSelected = 0;
                         lUILog("Application: %p '%s' Transition: %ld\n", instance,instance->AppName(),transitionSelected);
                         //lUILog("@TODO DEBUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUG TRANSITION\n");
-                        //transitionSelected=5; //@TODO DEBUG
+                        //transitionSelected=6; //@TODO DEBUG
                         // run this part fast as possible
                         if ( 0 == transitionSelected ) { ZoomOutTransition(ptrToCurrent->canvas,appView); }
                         else if ( 1 == transitionSelected ) { FadeTransition(ptrToCurrent->canvas,appView); }
@@ -201,8 +202,9 @@ void LaunchApplicationTaskSync(LaunchApplicationDescriptor * appDescriptor,bool 
                         else if ( 3 == transitionSelected ) { StripeTransition(ptrToCurrent->canvas,appView); }
                         else if ( 4 == transitionSelected ) { UpDownTransition(ptrToCurrent->canvas,appView); }
                         else if ( 5 == transitionSelected ) { ChessTransition(ptrToCurrent->canvas,appView); }
+                        else if ( 6 == transitionSelected ) { FlipTransition(ptrToCurrent->canvas,appView); }
                         transitionSelected++;
-                        if ( transitionSelected > 5 ) { transitionSelected = 0; }
+                        if ( transitionSelected > 6 ) { transitionSelected = 0; }
 
                         // restore my priority
                         vTaskPrioritySet(NULL,myPriority);
