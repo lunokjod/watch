@@ -34,7 +34,7 @@
 
 //void LoTWiFi::SuspendTasks() { xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS); disabled=true; }
 //void LoTWiFi::ResumeTasks() { xSemaphoreGive( taskLock ); disabled=false; }
-extern bool provisioned;
+//extern bool provisioned;
 
 void LoTWiFi::Enable() {
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
@@ -120,15 +120,18 @@ void LoTWiFi::AddConnection(const char *SSID,const char *password) {
     cred->Password=nPwd;
     xSemaphoreTake( taskLock, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
     credentials.push_back(cred);
-    LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFiCredentialsNumber,int(GetConnections()));
-    lNetLog("WiFi: %p Added connection %u SSID: '%s' Password: '%s'\n", this, GetConnections()-1, nSSID, nPwd);
+    NVS.setInt(String(SystemSettings::KeysAsString[SystemSettings::SettingKey::WiFiCredentialsNumber]),int(GetConnections()),true);
+    //LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFiCredentialsNumber,int(GetConnections()));
+    lNetLog("WiFi: %p Added connection %u SSID: '%s' Password: '%s'\n", this, GetConnections(), nSSID, nPwd);
     char labelName[255];
-    sprintf(labelName,"SSID_%u",GetConnections()-1);
-    NVS.setString(String(labelName),String(nSSID),false);
-    sprintf(labelName,"WIFIPWD_%u",GetConnections()-1);
-    NVS.setString(String(labelName),String(nPwd),false);
+    sprintf(labelName,"SSID_%u",GetConnections());
+    NVS.setString(String(labelName),String(nSSID));
+    sprintf(labelName,"WIFIPWD_%u",GetConnections());
+    NVS.setString(String(labelName),String(nPwd));
     wifiMulti.addAP(nSSID,nPwd);
-    provisioned=true;
+    //provisioned=true;
+    int shit = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::WiFiCredentialsNumber);
+    lLog("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: %d\n",shit);
     xSemaphoreGive( taskLock );
 }
 
@@ -277,15 +280,25 @@ LoTWiFi::LoTWiFi() {
     if ( canUse ) { Enable(); }
     else { Disable(); }
     int maxWifis = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::WiFiCredentialsNumber);
+    /*
+    if ( -1 == maxWifis ) {
+        lNetLog("WiFi: not provisioned!\n");
+        return;
+    }*/
+    if ( 0 == maxWifis ) {
+        lNetLog("WiFi: not provisioned!\n");
+        return;
+    }
     size_t currentWiFiOffset=0;
-    while ( currentWiFiOffset < maxWifis ) {
+    while ( currentWiFiOffset <= maxWifis ) {
         char labelName[255];
         sprintf(labelName,"SSID_%u",currentWiFiOffset);
         String nSSID = NVS.getString(String(labelName));
         sprintf(labelName,"WIFIPWD_%u",currentWiFiOffset);
         String nPwd = NVS.getString(String(labelName));
-        //lNetLog("WiFi: %p Add connection: %u SSID: '%s' Pwd: '%s'\n", this, currentWiFiOffset,nSSID.c_str(),nPwd.c_str());
-        AddConnection(nSSID.c_str(),nPwd.c_str());
+        lNetLog("WiFi: %p Add connection: %u SSID: '%s' Pwd: '%s'\n", this, currentWiFiOffset,nSSID.c_str(),nPwd.c_str());
+        wifiMulti.addAP(nSSID.c_str(),nPwd.c_str());
+        //AddConnection(nSSID.c_str(),nPwd.c_str());
         currentWiFiOffset++;
     }
     InstallTimer();

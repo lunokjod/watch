@@ -660,7 +660,7 @@ extern bool provisioned;
 extern void StopDatabase();
 
 void SaveDataBeforeShutdown() {
-    NVS.setInt("provisioned", provisioned, false);
+    //NVS.setInt("provisioned", provisioned, false);
 
     NVS.setInt("accXMax", accXMax, false);
     NVS.setInt("accXMin", accXMin, false);

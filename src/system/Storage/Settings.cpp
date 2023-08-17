@@ -44,11 +44,12 @@ SystemSettings::~SystemSettings() {
 
 int64_t SystemSettings::GetInt(SettingKey what) { 
     int64_t result = NVS.getInt(KeysAsString[what]);
-    //lSysLog("SystemSettings %p: Get '%s' as: (signed: %d) (unsigned: %u)\n", this,KeysAsString[what],result,result);
+    lSysLog("SystemSettings %p: Get '%s' as: (signed: %d) (unsigned: %u)\n", this,KeysAsString[what],result,result);
     return result;
 }
 
 bool SystemSettings::SetInt(SettingKey what, int32_t value) {
+    lLog("SystemSettings: DEBUG INT32\n");
     bool result = NVS.setInt(String(KeysAsString[what]),value,false);
     if (false == result) {
         lSysLog("SystemSettings %p: ERROR: Unable to set key '%s'\n", this,KeysAsString[what]);
@@ -57,6 +58,7 @@ bool SystemSettings::SetInt(SettingKey what, int32_t value) {
 }
 
 bool SystemSettings::SetInt(SettingKey what, uint8_t value) {
+    lLog("SystemSettings: DEBUG UINT8\n");
     bool result = NVS.setInt(String(KeysAsString[what]),value,false);
     if (false == result) {
         lSysLog("SystemSettings %p: ERROR: Unable to set key '%s'\n", this,KeysAsString[what]);

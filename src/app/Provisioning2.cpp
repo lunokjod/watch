@@ -72,7 +72,7 @@ const int16_t QRSize = 240;
 #define PROV_QR_VERSION         "v1"
 
 //extern bool wifiOverride;
-bool provisioned=false;
+//bool provisioned=false;
 extern TTGOClass *ttgo;
 
 Provisioning2Application *lastProvisioning2Instance = nullptr;
@@ -85,11 +85,10 @@ void Provisioning2DestroyNVS() {
     WiFi.mode(WIFI_OFF);
     if ( ESP_OK == erased ) {
         lLog("Provisioning: NVS: Provisioning data destroyed\n");
-        NVS.setInt("provisioned",0,false);
-        NVS.setInt("WiFiCredNo",0,false);
+        //NVS.setInt("provisioned",0,false);
+        //NVS.setInt("WiFiCredNo",0,false);
         LoT().GetSettings()->SetInt(SystemSettings::SettingKey::WiFiCredentialsNumber,0);
-
-        provisioned=false;
+        //provisioned=false;
         LaunchApplication(new ShutdownApplication(true,true));
     }
 }
@@ -127,36 +126,36 @@ void Provisioning2_SysProvEvent(arduino_event_t *sys_event) {
             char passwd[BuffrSize+1];
             snprintf(ssid,BuffrSize,"%s",sys_event->event_info.prov_cred_recv.ssid);
             snprintf(passwd,BuffrSize,"%s",sys_event->event_info.prov_cred_recv.password);
-            lLog("Provisioning: Added '%s' pwd: '%s' offset: %u\n", ssid, passwd, LoT().GetWiFi()->GetConnections() );
+            lNetLog("WiFi: Provisioning: Added '%s' pwd: '%s' offset: %u\n", ssid, passwd, LoT().GetWiFi()->GetConnections() );
             LoT().GetWiFi()->AddConnection(ssid,passwd);
             //NVS.setString("provSSID",buffr,false);
             //NVS.setString("provPWD",buffr,false);
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_FAIL: {
-            lLog("Provisioning: Failed, reason:\n");
+            lNetLog("WiFi: Provisioning: Failed, reason:\n");
             if(sys_event->event_info.prov_fail_reason == WIFI_PROV_STA_AUTH_ERROR) {
-                lLog("Wi-Fi AP password incorrect\n");
+                lNetLog("WiFi: AP password incorrect\n");
             } else {
-                lLog("Wi-Fi AP not found\n");
+                lNetLog("WiFi: AP not found\n");
             }
             Provisioning2DestroyNVS();
-            NVS.setInt("provisioned",0,false);
-            provisioned = false;
+            //NVS.setInt("provisioned",0,false);
+            //provisioned = false;
             Provisioning2Deinit();
             break;
         }
         case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-            lLog("Provisioning Successful\n");
+            lNetLog("WiFi: Provisioning Successful\n");
             if ( nullptr != lastProvisioning2Instance ) {
                 lastProvisioning2Instance->provisioningStarted = false;
-                NVS.setInt("provisioned",1, false);
-                provisioned = true;
+                //NVS.setInt("provisioned",1, false);
+                //provisioned = true;
                 //LaunchApplication(new ShutdownApplication(true,true));
             }
             break;
         case ARDUINO_EVENT_PROV_END:
-            lLog("Provisioning Ends\n");
+            lNetLog("WiFi: Provisioning Ends\n");
             LaunchWatchface();
             break;
         default:
