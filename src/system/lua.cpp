@@ -84,11 +84,12 @@ extern "C" {
     static int lua_wrapper_tft_fillScreen(lua_State *lua_state) {
         uint16_t color = luaL_checkinteger(lua_state, 1);
         xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        LunokIoTApplication * current = currentApplication;
+        //LunokIoTApplication * current = currentApplication;
         if ( nullptr != currentApplication ) {
             currentApplication->canvas->fillSprite(color);
             currentApplication->dirty=true;
         }
+        UINextTimeout = millis()+UITimeout; // disable screen timeout
         xSemaphoreGive( UISemaphore );
         return 0;
     }
@@ -102,7 +103,7 @@ extern "C" {
         bool fill = lua_toboolean(lua_state, 5);
 
         xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        LunokIoTApplication * current = currentApplication;
+        //LunokIoTApplication * current = currentApplication;
         if ( nullptr != currentApplication ) {
             if ( fill ) {
                 currentApplication->canvas->fillCircle(x0,y0,r,color);
@@ -111,6 +112,48 @@ extern "C" {
             }
             currentApplication->dirty=true;
         }
+        UINextTimeout = millis()+UITimeout; // disable screen timeout
+        xSemaphoreGive( UISemaphore );
+        return 0;
+    }
+    
+    static int lua_wrapper_tft_setTextColor(lua_State *lua_state) {
+        uint32_t color = luaL_checkinteger(lua_state, 1);
+        xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        //LunokIoTApplication * current = currentApplication;
+        if ( nullptr != currentApplication ) {
+            currentApplication->canvas->setTextColor(color);
+        }
+        xSemaphoreGive( UISemaphore );
+        return 0;
+    }
+
+    static int lua_wrapper_tft_setTextSize(lua_State *lua_state) {
+        uint32_t tsize = luaL_checkinteger(lua_state, 1);
+        xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        //LunokIoTApplication * current = currentApplication;
+        if ( nullptr != currentApplication ) {
+            currentApplication->canvas->setTextSize(tsize);
+        }
+        xSemaphoreGive( UISemaphore );
+        return 0;
+    }
+    
+    static int lua_wrapper_tft_drawText(lua_State *lua_state) {
+        int32_t x0 = luaL_checkinteger(lua_state, 1);
+        int32_t y0 = luaL_checkinteger(lua_state, 2);
+        const char * what = luaL_checkstring(lua_state, 3);
+        xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        //LunokIoTApplication * current = currentApplication;
+        if ( nullptr != currentApplication ) {
+            /* @TODO
+            currentApplication->canvas->setFreeFont(&FreeMonoBold9pt7b);
+            currentApplication->canvas->setTextDatum(BC_DATUM);
+            */
+            currentApplication->canvas->drawString(what,x0,y0);
+            currentApplication->dirty=true;
+        }
+        UINextTimeout = millis()+UITimeout; // disable screen timeout
         xSemaphoreGive( UISemaphore );
         return 0;
     }
@@ -125,7 +168,7 @@ extern "C" {
         bool fill = lua_toboolean(lua_state, 6);
 
         xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        LunokIoTApplication * current = currentApplication;
+        //LunokIoTApplication * current = currentApplication;
         if ( nullptr != currentApplication ) {
             if ( fill ) {
                 currentApplication->canvas->fillRect(x0,y0,x1,y1,color);
@@ -134,6 +177,7 @@ extern "C" {
             }
             currentApplication->dirty=true;
         }
+        UINextTimeout = millis()+UITimeout; // disable screen timeout
         xSemaphoreGive( UISemaphore );
         return 0;
     }
@@ -146,11 +190,12 @@ extern "C" {
         uint32_t color = luaL_checkinteger(lua_state, 5);
 
         xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
-        LunokIoTApplication * current = currentApplication;
+        //LunokIoTApplication * current = currentApplication;
         if ( nullptr != currentApplication ) {
             currentApplication->canvas->drawLine(x0,y0,x1,y1,color);
             currentApplication->dirty=true;
         }
+        UINextTimeout = millis()+UITimeout; // disable screen timeout
         xSemaphoreGive( UISemaphore );
         return 0;
     }
@@ -221,6 +266,9 @@ void LuaInit() {
     lua.Lua_register("DrawLine", &lua_wrapper_tft_drawLine);
     lua.Lua_register("DrawCircle", &lua_wrapper_tft_drawCircle);
     lua.Lua_register("DrawRect", &lua_wrapper_tft_drawRect);
+    lua.Lua_register("SetTextColor", &lua_wrapper_tft_setTextColor);
+    lua.Lua_register("SetTextSize", &lua_wrapper_tft_setTextSize);
+    lua.Lua_register("DrawText", &lua_wrapper_tft_drawText);
     lua.Lua_register("RGBTft", &lua_wrapper_tft_rgbTFTColor);
     // @TODO UI calls
     // @TODO GUI calls
@@ -252,6 +300,5 @@ void LuaRun(const String LuaProgram, LuaCallback callback, void *payload) {
     mypkg->payload=payload;
     mypkg->id = RunningLuaScripts;
     mypkg->program=new String(LuaProgram);
-
     xTaskCreatePinnedToCore(LuaRunTask, "luaScr", LUNOKIOT_TASK_STACK_SIZE, mypkg, LUAPRIORITY, NULL,LUACORE);
 }

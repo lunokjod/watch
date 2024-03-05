@@ -34,6 +34,17 @@ for i=1,3 do\n\
     delay(500);\n\
 end\n\
 Debug()\n\
+log('Draw strings random')\n\
+for i=1,100 do\n\
+    local color = random(0,0xffff)\n\
+    local x0 = random(0,240)\n\
+    local y0 = random(0,240)\n\
+    local tsize = random(1,8)\n\
+    SetTextColor(color)\n\
+    SetTextSize(tsize)\n\
+    DrawText(x0,y0,\"hello world!\")\n\
+end\n\
+Debug()\n\
 log('Fill screen with color cycle')\n\
 local color=0\n\
 for x=0,240 do\n\
@@ -85,7 +96,7 @@ for i=1,50 do\n\
     DrawRect(x0,y0,x1,y1,color,true)\n\
 end\n\
 log('Little delay...')\n\
-delay(1000)\n\
+-- delay(1000)\n\
 Debug()\n\
 log('See you!')\n\
 LaunchWatchface()\n\
