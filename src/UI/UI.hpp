@@ -21,7 +21,18 @@
 #define __LUNOKIOT__UI__DEFINE__
 
 #include <Arduino.h>
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+extern TFT_eSPI * tft;
+#endif
+
+#ifdef M5_DEV
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
+
+
 #include <esp_event_base.h>
 #include <functional> // callbacks 
 
@@ -33,7 +44,6 @@ typedef std::function<void (void* payload)> UICallback; // repeated declaration
 typedef std::function<void (void* payload,void* payload2)> UICallback2;
 typedef std::function<void (void* payload,void* payload2,void* payload3)> UICallback3;
 
-extern TFT_eSPI * tft;
 //extern TTGOClass *ttgo; // ttgo lib
 //#include "../system/Application.hpp"
 // caller contains the object (must be converted)
@@ -95,11 +105,17 @@ extern const TemplateColorPalette * currentColorPalette;
 extern const TemplateThemeScheme * currentThemeScheme;
 
 // color utilities
+uint16_t Get16BitFromRGB(uint32_t color888);
 void GetRGBFrom16Bit(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 uint16_t ColorSwap(uint16_t colorToSwap);
 uint16_t ByteSwap(uint16_t colorToSwap);
 
-#define ThCol(WHAT) tft->color24to16(currentThemeScheme->WHAT)
+#ifdef LILYGO_DEV
+#define ThCol(WHAT) Get16BitFromRGB(currentThemeScheme->WHAT)
+#else
+#define ThCol(WHAT) currentThemeScheme->WHAT
+#endif
+
 
 
 extern uint8_t pendingNotifications;

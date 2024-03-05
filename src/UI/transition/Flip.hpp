@@ -19,7 +19,12 @@
 
 #ifndef __LUNOKIOT__ANIMATION__FLIP__
 #define __LUNOKIOT__ANIMATION__FLIP__
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 void FlipTransition(TFT_eSprite * curentView, TFT_eSprite * nextView);
 

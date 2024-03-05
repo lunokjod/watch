@@ -19,7 +19,12 @@
 
 #ifndef __LUNOKIOT__ANIMATION__UPDOWN__
 #define __LUNOKIOT__ANIMATION__UPDOWN__
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 void UpDownTransition(TFT_eSprite * curentView, TFT_eSprite * nextView);
 

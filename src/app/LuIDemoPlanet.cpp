@@ -31,8 +31,8 @@
 #include "LogView.hpp"
 
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
-using namespace LuI;
+//#include <LilyGoWatch.h>
+//using namespace LuI;
 #include "../resources.hpp"
 
 #include "../../static/img_asteroid0_64.c"
@@ -40,7 +40,13 @@ using namespace LuI;
 #include "../../static/img_asteroid2_64.c"
 #include "../../static/img_brokenMoon.c"
 
+#ifdef LILYGO_DEV
+#include <LilyGoWatch.h>
 extern TFT_eSPI * tft;
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
 
 LuIExperimentPlanetApplication::LuIExperimentPlanetApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
@@ -48,12 +54,12 @@ LuIExperimentPlanetApplication::LuIExperimentPlanetApplication() {
     canvas->fillSprite(TFT_BLACK); // use theme colors
 
     /// create root container with two slots horizontal
-    Container * screen = new Container(LuI_Horizontal_Layout,2);
+    LuI::Container * screen = new LuI::Container(LuI_Horizontal_Layout,2);
     // bottom buttons container
-    Container * bottomButtonContainer = new Container(LuI_Vertical_Layout,2);
+    LuI::Container * bottomButtonContainer = new LuI::Container(LuI_Vertical_Layout,2);
 
     // main view space
-    Container * viewContainer = new Container(LuI_Horizontal_Layout,1);
+    LuI::Container * viewContainer = new LuI::Container(LuI_Horizontal_Layout,1);
     //viewContainer->border=10;
     // if use quota, all the slot quotas must sum equal the total number of elements
     // example: default quota in 2 controls result 50/50% of view space with 1.0 of quota everyone (2.0 in total)
@@ -63,11 +69,11 @@ LuIExperimentPlanetApplication::LuIExperimentPlanetApplication() {
     screen->AddChild(bottomButtonContainer,0.32);
 
     // add back button to dismiss
-    backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
-    XBM * backButtonIcon = new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
+    LuI::XBM * backButtonIcon = new LuI::XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
     // put the icon inside the button
     backButton->AddChild(backButtonIcon);
     // shrink button to left and empty control oversized (want button on left bottom)
@@ -76,7 +82,7 @@ LuIExperimentPlanetApplication::LuIExperimentPlanetApplication() {
 
     // here the main view
     LuI::View3D * view3DTest1 = new LuI::View3D();
-    view3DTest1->RenderMode=LuI::View3D::RENDER::NODRAW; // only will show bilboards, not meshes
+    view3DTest1->RenderMode=LuI::View3D::RENDER::nodraw; // only will show bilboards, not meshes
 
     LuI::Mesh3D * myMesh3d = new LuI::Mesh3D(&CubeMesh);
     // render into bilboards

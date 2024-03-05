@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "../lunokiot_config.hpp"
 
 #include "../UI/widgets/CanvasWidget.hpp" // for color mask
@@ -37,7 +37,7 @@ IATestApplication::IATestApplication() {
     accelSphere = new CanvasWidget(150, 150); // BMP info on a spin
     compositeBuffer150 = new CanvasWidget(150,150); // dirty buffer to do things with accelSphere
 
-    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,canvas->color24to16(0x2a040c));//0x686890));
+    eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,98,Get16BitFromRGB(0x2a040c));//0x686890));
     eyeLensBuffer->canvas->fillCircle(eyeLensBuffer->canvas->height()/2, eyeLensBuffer->canvas->width()/2,87,CanvasWidget::MASK_COLOR);
     eyeLensBuffer->canvas->fillRect(0,0,100,200,CanvasWidget::MASK_COLOR);
 
@@ -48,7 +48,7 @@ IATestApplication::IATestApplication() {
     compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80,CanvasWidget::MASK_COLOR);
 
     // outher circle decoration
-    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,120,Get16BitFromRGB(0x383838));
     compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,116,CanvasWidget::MASK_COLOR);
     // eraser ;-P
     compositeBuffer->canvas->fillRect(0,0,118,TFT_HEIGHT,CanvasWidget::MASK_COLOR);
@@ -62,10 +62,10 @@ IATestApplication::IATestApplication() {
     }
 
     // upper single border circle
-    compositeBuffer->canvas->drawCircle(TFT_HEIGHT/2, TFT_WIDTH/2,150, canvas->color24to16(0x383838));
+    compositeBuffer->canvas->drawCircle(TFT_HEIGHT/2, TFT_WIDTH/2,150, Get16BitFromRGB(0x383838));
 
     // inner circle
-    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80, canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,80, Get16BitFromRGB(0x383838));
     compositeBuffer->canvas->fillCircle(TFT_HEIGHT/2, TFT_WIDTH/2,75,CanvasWidget::MASK_COLOR);
     // right side circle cut
     compositeBuffer->canvas->fillRect(180,84,120,74, TFT_BLACK);
@@ -73,8 +73,8 @@ IATestApplication::IATestApplication() {
 
 //    compositeBuffer->canvas->fillRect(120,80,120,80, TFT_BLACK);
     // right side circle cut lines
-    compositeBuffer->canvas->fillRect(185,80,55,5, compositeBuffer->canvas->color24to16(0x383838));
-    compositeBuffer->canvas->fillRect(185,160,55,5, compositeBuffer->canvas->color24to16(0x383838));
+    compositeBuffer->canvas->fillRect(185,80,55,5, Get16BitFromRGB(0x383838));
+    compositeBuffer->canvas->fillRect(185,160,55,5, Get16BitFromRGB(0x383838));
 
     // Dump to buffer
     compositeBuffer->canvas->pushRotated(watchFacebackground->canvas,0,CanvasWidget::MASK_COLOR);
@@ -89,9 +89,9 @@ IATestApplication::IATestApplication() {
     // notification pane draw
 
     // notif 1 test
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x00ff00));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,Get16BitFromRGB(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,Get16BitFromRGB(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,Get16BitFromRGB(0x00ff00));
 
     compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
 
@@ -99,9 +99,9 @@ IATestApplication::IATestApplication() {
     circleNotifications->canvas->fillSprite(CanvasWidget::MASK_COLOR);
     compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
     // notif 2 test
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0x0000ff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,Get16BitFromRGB(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,Get16BitFromRGB(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,Get16BitFromRGB(0x0000ff));
 
     compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
     circleNotifications->canvas->pushRotated(compositeBuffer->canvas,notificationRouletteAngle,CanvasWidget::MASK_COLOR);
@@ -109,9 +109,9 @@ IATestApplication::IATestApplication() {
     compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
 
     // notif 3 test
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff00ff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,Get16BitFromRGB(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,Get16BitFromRGB(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,Get16BitFromRGB(0xff00ff));
 
     compositeBuffer->canvas->fillSprite(CanvasWidget::MASK_COLOR);
     circleNotifications->canvas->pushRotated(compositeBuffer->canvas,notificationRouletteAngle,CanvasWidget::MASK_COLOR);
@@ -119,9 +119,9 @@ IATestApplication::IATestApplication() {
     compositeBuffer->canvas->pushRotated(circleNotifications->canvas,0,CanvasWidget::MASK_COLOR);
 
     // notif 4 test
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,canvas->color24to16(0x0));
-    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,canvas->color24to16(0xffffff));
-    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,canvas->color24to16(0xff0ffa));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,20,Get16BitFromRGB(0x0));
+    circleNotifications->canvas->drawCircle(TFT_WIDTH/2,38,18,Get16BitFromRGB(0xffffff));
+    circleNotifications->canvas->fillCircle(TFT_WIDTH/2,38,16,Get16BitFromRGB(0xff0ffa));
     
 }
 
@@ -164,13 +164,13 @@ bool IATestApplication::Tick() {
         uint16_t pcYinByte = pcY*2.55;
         uint16_t pcZinByte = pcZ*2.55;
         
-        uint16_t colorX = canvas->alphaBlend(pcXinByte,TFT_WHITE, canvas->color24to16(0xbfbf40))+randX;
-        //uint16_t colorX = canvas->alphaBlend(pcX,TFT_WHITE, canvas->color24to16(0x1c02a2))+randX;
-        uint16_t colorY = canvas->alphaBlend(pcYinByte,TFT_WHITE, canvas->color24to16(0xff1649))+randY;
+        uint16_t colorX = canvas->alphaBlend(pcXinByte,TFT_WHITE, Get16BitFromRGB(0xbfbf40))+randX;
+        //uint16_t colorX = canvas->alphaBlend(pcX,TFT_WHITE, Get16BitFromRGB(0x1c02a2))+randX;
+        uint16_t colorY = canvas->alphaBlend(pcYinByte,TFT_WHITE, Get16BitFromRGB(0xff1649))+randY;
         
-        //uint16_t colorY = canvas->alphaBlend(pcY,TFT_WHITE, canvas->color24to16(0x4266f6))+randY;
-        //uint16_t colorZ = canvas->alphaBlend(pcZ,TFT_WHITE, canvas->color24to16(0xff1ecf))+randZ;
-        uint16_t colorZ = canvas->alphaBlend(pcZinByte,TFT_WHITE, canvas->color24to16(0x1c72c5))+randZ;
+        //uint16_t colorY = canvas->alphaBlend(pcY,TFT_WHITE, Get16BitFromRGB(0x4266f6))+randY;
+        //uint16_t colorZ = canvas->alphaBlend(pcZ,TFT_WHITE, Get16BitFromRGB(0xff1ecf))+randZ;
+        uint16_t colorZ = canvas->alphaBlend(pcZinByte,TFT_WHITE, Get16BitFromRGB(0x1c72c5))+randZ;
 
         int32_t sizeX = (pcX*0.12); if ( sizeX < 2 ) { sizeX =1; }
         int32_t sizeY = (pcY*0.12); if ( sizeY < 2 ) { sizeY =1; }
@@ -186,14 +186,14 @@ bool IATestApplication::Tick() {
         int32_t fakeHeight = random(0, 100);
         //int32_t dcolor = random(0, 16536);
         int32_t dsize = random(1, 4);
-        compositeBuffer150->canvas->fillCircle(75,fakeHeight,dsize,canvas->color24to16(0x8840bf)+randZ);
+        compositeBuffer150->canvas->fillCircle(75,fakeHeight,dsize,Get16BitFromRGB(0x8840bf)+randZ);
 
         /*
         int32_t drandX = random(0, 100);
         int32_t drandY = random(0, 100);
         int32_t dsize = random(1, 4);
         int32_t dcolor = random(0, 16536);
-        compositeBuffer150->canvas->fillCircle(drandX,drandY,dsize,canvas->color24to16(0x8840bf)+randZ);
+        compositeBuffer150->canvas->fillCircle(drandX,drandY,dsize,Get16BitFromRGB(0x8840bf)+randZ);
         */
 
         // cleanup final buffer

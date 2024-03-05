@@ -94,7 +94,7 @@ class Watchface2Application: public LunokIoTApplication {
         bool wifiStatus=false;
         bool weatherStatus=false;
     tunable:
-        const uint16_t DisplayColor=tft->color24to16(0x437aff);
+        const uint16_t DisplayColor=Get16BitFromRGB(0x437aff);
         const int16_t DisplaySpeed=12; // speed of text display
         const int8_t DotSize=3;
         // hour numbers on watchface (12/3/6/9)
@@ -102,9 +102,9 @@ class Watchface2Application: public LunokIoTApplication {
         const int16_t NumberMargin = 16; // distance inner border of sphere
         const GFXfont * NumberFreeFont = &FreeMonoBold18pt7b; // font
         const uint8_t NumberSize = 1; // size
-        const uint16_t NumberColorBright=tft->color24to16(0x546084); // bright
-        const uint16_t NumberColor=tft->color24to16(0x1f2d56); // color
-        const uint16_t NumberColorShadow=tft->color24to16(0x071232); // shadow
+        const uint16_t NumberColorBright=Get16BitFromRGB(0x546084); // bright
+        const uint16_t NumberColor=Get16BitFromRGB(0x1f2d56); // color
+        const uint16_t NumberColorShadow=Get16BitFromRGB(0x071232); // shadow
         const uint8_t OverSphereAlpha=92;
         // hands values
         const int32_t SecondsTickness = 2;
@@ -113,13 +113,13 @@ class Watchface2Application: public LunokIoTApplication {
         const uint8_t MaxSecondsLen = 98; // define the lenght of hand (from up)
 
         const int32_t MinutesTickness = 6;
-        const uint16_t MinutesColor=tft->color24to16(0x787ca0);
+        const uint16_t MinutesColor=Get16BitFromRGB(0x787ca0);
         const uint16_t MinutesBrightColor=tft->alphaBlend(128,MinutesColor,TFT_WHITE);
         const uint8_t MinMinutesLen = 30;
         const uint8_t MaxMinutesLen = 80; // define the lenght of hand
 
         const int32_t HoursTickness = 8;
-        const uint16_t HoursColor=tft->color24to16(0xfcb61d);
+        const uint16_t HoursColor=Get16BitFromRGB(0xfcb61d);
         const uint16_t HoursBrightColor=tft->alphaBlend(128,HoursColor,TFT_BLACK);
         const uint8_t MinHourLen = 30;
         const uint8_t MaxHourLen = 45; // define the lenght of hand

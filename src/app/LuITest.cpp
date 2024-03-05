@@ -31,10 +31,16 @@
 #include "LogView.hpp"
 
 #include "../UI/UI.hpp"
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+extern TFT_eSPI * tft;
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
+
 using namespace LuI;
 #include "../resources.hpp"
-extern TFT_eSPI * tft;
 
 LuITestApplication::LuITestApplication() {
     lAppLog("BEGIN CONSTRUCTOR HERE\n");

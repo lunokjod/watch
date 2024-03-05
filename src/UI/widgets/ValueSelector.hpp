@@ -21,7 +21,7 @@
 #define __LUNOKIOT__UI__VALUE_SELECTOR___
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 
 #include "../activator/ActiveRect.hpp"

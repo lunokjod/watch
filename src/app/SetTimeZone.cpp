@@ -42,16 +42,16 @@ SetTimeZoneApplication::~SetTimeZoneApplication() {
 SetTimeZoneApplication::SetTimeZoneApplication() {
     btnBack=new ButtonImageXBMWidget(5,TFT_HEIGHT-69,64,64,[&,this](void *unused){
         LaunchWatchface();
-    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,canvas->color24to16(0x353e45),false);
+    },img_back_32_bits,img_back_32_height,img_back_32_width,TFT_WHITE,Get16BitFromRGB(0x353e45),false);
 
-    switchDaylight=new SwitchWidget(10,10, [&,this](void *unused) { }, canvas->color24to16(0x555f68));
+    switchDaylight=new SwitchWidget(10,10, [&,this](void *unused) { }, Get16BitFromRGB(0x555f68));
 
     btnSetGMT=new ButtonImageXBMWidget(70,TFT_HEIGHT-69,64,110,[&,this](void *unused){
         lAppLog("Summer time: '%s', GMT: %+d\n",(switchDaylight->switchEnabled?"yes":"no"),timezoneGMTSelector->selectedValue);
-    },img_timezone_32_bits,img_timezone_32_height,img_timezone_32_width,TFT_WHITE, canvas->color24to16(0x353e45));
+    },img_timezone_32_bits,img_timezone_32_height,img_timezone_32_width,TFT_WHITE, Get16BitFromRGB(0x353e45));
 
     timezoneGMTSelector = new ValueSelector(120,60,100,115,-12,12,
-    canvas->color24to16(0x212121),true);
+    Get16BitFromRGB(0x212121),true);
     bool daylight = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::Daylight);
     long timezone = LoT().GetSettings()->GetInt(SystemSettings::SettingKey::TimeZone);
     lAppLog("Summer time: '%s', GMT: %+d\n",(daylight?"yes":"no"),timezone);
@@ -71,7 +71,7 @@ bool SetTimeZoneApplication::Tick() {
     //    nextSelectorTick=millis()+(1000/4);
     //}
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(Get16BitFromRGB(0x212121));
         btnBack->DrawTo(canvas);
         switchDaylight->DrawTo(canvas);
         timezoneGMTSelector->DrawTo(canvas);

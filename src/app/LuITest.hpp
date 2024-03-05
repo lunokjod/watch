@@ -23,7 +23,7 @@
 #include "../UI/AppLuITemplate.hpp"
 #include "../UI/controls/Text.hpp"
 #include "../UI/controls/View3D/View3D.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 class LuITestApplication : public TemplateLuIApplication {
     public:

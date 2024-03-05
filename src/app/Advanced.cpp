@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "Advanced.hpp"
 #include "LogView.hpp"
 #include "../resources.hpp"

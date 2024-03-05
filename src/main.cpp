@@ -43,4 +43,4 @@
 #include "lunokIoT.hpp"         // thats me!
 
 void setup() { LoT(); /* thats all, folks! */ }
-void loop() { vTaskDelete( NULL ); /* harakiri!!! (use apps further) */ }
+void loop() { vTaskDelete( NULL ); /* harakiri!!! (use apps ::Tick() further) */ }

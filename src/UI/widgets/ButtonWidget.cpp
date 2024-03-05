@@ -18,8 +18,8 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <LilyGoWatch.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include <functional>

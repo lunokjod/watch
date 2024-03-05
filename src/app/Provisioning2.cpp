@@ -213,7 +213,7 @@ void Provisioning2Application::GenerateQRCode() {
     }
 
     const int32_t radius = 28; 
-    uint16_t iconColor = canvas->color24to16(0x0a0f1e);
+    uint16_t iconColor = Get16BitFromRGB(0x0a0f1e);
     // border
     currentQRRendered->fillCircle((currentQRRendered->width()/2),(currentQRRendered->height()/2),radius, TFT_WHITE);
     // background
@@ -320,7 +320,7 @@ Provisioning2Application::Provisioning2Application() {
         }
         WiFi.onEvent(Provisioning2_SysProvEvent);
 
-    },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,canvas->color24to16(0x2347bc));
+    },img_provisioning_48_bits,img_provisioning_48_height,img_provisioning_48_width,TFT_WHITE,Get16BitFromRGB(0x2347bc));
     startProvBtn->taskStackSize=LUNOKIOT_PROVISIONING_STACK_SIZE;
     Tick();
 }
@@ -354,7 +354,7 @@ bool Provisioning2Application::Tick() {
     startProvBtn->Interact(touched,touchX,touchY);
     wifiOrBLE->Interact(touched,touchX,touchY);
     if (millis() > nextRedraw ) {
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(Get16BitFromRGB(0x212121));
         btnBack->DrawTo(canvas);
         clearProvBtn->DrawTo(canvas);
         startProvBtn->DrawTo(canvas);

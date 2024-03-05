@@ -22,16 +22,23 @@
 #define ___LUNOKIOT__NTP__WIFI_TASK___
 
 #include "../WiFi.hpp"
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#endif
 
 class NTPWifiTask: public LoTWiFiTask {
     private:
         const unsigned long Every24H = 1000*60*60*24;
         unsigned long nextShoot = 0;
+    #ifdef LILYGO_DEV
+    private:
         PCF8563_Class * rtc = nullptr;
     public:
-        const static char * ntpServer;
         NTPWifiTask(PCF8563_Class * rtc=nullptr);
+    #elif defined(M5_DEV)
+    #endif
+    public:
+        const static char * ntpServer;
         ~NTPWifiTask() override;
         const char * Name() override { return "NTP"; }
         void Launch() override;

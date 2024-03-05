@@ -35,7 +35,8 @@ bool Control::Attach(INOUT Control *control) {
 Control::~Control() {
     lUILog("Control %p destroyed!\n",this);
     if ( nullptr != canvas ) {
-        if ( canvas->created() ) { canvas->deleteSprite(); }
+        //if ( canvas->created() ) { canvas->deleteSprite(); }
+        canvas->deleteSprite();
         delete canvas;
         canvas=nullptr;
     }
@@ -134,7 +135,9 @@ void Control::EventHandler() {
 void Control::Rebuild() {
     lUILog("Control %p Rebuild (w:%u h:%u)\n",this,width,height);
     if ( nullptr != canvas ) {
-        if ( canvas->created() ) { canvas->deleteSprite(); }
+        //@TODO M5 TFT_eSPI don't have ->created()
+        //if ( canvas->created() ) { canvas->deleteSprite(); }
+        canvas->deleteSprite();
         delete canvas;
     }
     // create new with current size

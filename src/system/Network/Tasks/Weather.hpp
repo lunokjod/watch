@@ -22,7 +22,7 @@
 #define ___LUNOKIOT__WEATHER__WIFI_TASK___
 
 #include "../WiFi.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 
 class WeatherWifiTask: public LoTWiFiTask {

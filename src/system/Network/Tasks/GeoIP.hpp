@@ -22,7 +22,12 @@
 #define ___LUNOKIOT__GEOIP__WIFI_TASK___
 
 #include "../WiFi.hpp"
-#include <LilyGoWatch.h>
+
+//#ifdef LILYGO_DEV
+//#include <LilyGoWatch.h>
+//#elif defined(M5_DEV)
+//#include <M5Core2.h>
+//#endif
 
 class GeoIPWifiTask: public LoTWiFiTask {
     private:

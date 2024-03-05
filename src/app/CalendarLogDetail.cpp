@@ -98,7 +98,7 @@ CalendarLogDetailApplication::CalendarLogDetailApplication(int year, int month, 
     screen->AddChild(bottomButtonContainer,0.4);
 
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=0;
     backButton->tapCallback=[](void * obj){ LaunchApplication(new CalendarApplication()); }; // callback when tap
     // load icon in XBM format

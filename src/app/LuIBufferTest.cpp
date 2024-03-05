@@ -54,7 +54,7 @@ LuIBufferTestApplication::LuIBufferTestApplication() {
     // 1.7 + 0.3 = 2.0 of quota (fine for 2 slots)
 
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format

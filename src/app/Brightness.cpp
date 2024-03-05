@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include <ArduinoNvs.h>
 
 #include "Brightness.hpp"
@@ -28,13 +28,21 @@
 
 #include "LogView.hpp"
 
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 BrightnessApplication::~BrightnessApplication() {
     uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
     if (currentValue != 0) {
-        ttgo->setBrightness(currentValue);
+        #ifdef LILYGO_DEV
+            ttgo->setBrightness(currentValue);
+        #elif defined(M5_DEV)
+            tft->setBrightness(currentValue);
+        #endif
         NVS.setInt("lBright",currentValue,false);
     };
     delete brightGauge;
@@ -42,17 +50,22 @@ BrightnessApplication::~BrightnessApplication() {
 
 BrightnessApplication::BrightnessApplication() {
     brightGauge = new GaugeWidget(10,10,220);
-
+#ifdef LILYGO_DEV
     uint8_t userBright = ttgo->bl->getLevel();
     int16_t currentValue = userBright*(360.0/255);
     brightGauge->selectedAngle = currentValue;
+#endif
     Tick();
 }
 
 bool BrightnessApplication::Tick() {
     if ( brightGauge->Interact(touched,touchX, touchY) ) {
         uint16_t currentValue = ((255/360.0)*brightGauge->selectedAngle);
-        ttgo->setBrightness(currentValue);
+        #ifdef LILYGO_DEV
+            ttgo->setBrightness(currentValue);
+        #elif defined(M5_DEV)
+            tft->setBrightness(currentValue);
+        #endif
         brightGauge->DirectDraw();
         return false;
     }

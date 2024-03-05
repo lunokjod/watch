@@ -17,9 +17,7 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 #include "Dungeon.hpp"
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../LogView.hpp"   // for lLog functions
 #include <WiFi.h>
 
@@ -108,7 +106,7 @@ DungeonGameApplication::DungeonGameApplication() {
 
 
 
-    tft->setTextColor(TFT_WHITE,tft->color24to16(0x191919));
+    tft->setTextColor(TFT_WHITE,Get16BitFromRGB(0x191919));
     tft->setTextDatum(BC_DATUM);
     tft->setFreeFont(&FreeSerif12pt7b);
     tft->setTextSize(1);
@@ -509,7 +507,7 @@ void DungeonGameApplication::Redraw() {
 
 void DungeonGameApplication::NoticesBanner(const char *what) {
     if ( false == currentLevel.running ) {
-        tft->fillRect(0,TFT_HEIGHT-40,TFT_WIDTH,40,tft->color24to16(0x191919));
+        tft->fillRect(0,TFT_HEIGHT-40,TFT_WIDTH,40,Get16BitFromRGB(0x191919));
         tft->drawString(what, TFT_WIDTH/2,TFT_HEIGHT-10);
     }
 }

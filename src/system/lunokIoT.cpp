@@ -31,9 +31,15 @@
 #include <ArduinoNvs.h>
 #include <WiFi.h>
 #include <cstdio>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#endif
+
+#ifdef M5_DEV
+#include <M5Core2.h>
+#endif
+
 #include "driver/uart.h"
 
 //#include <SPI.h>
@@ -73,11 +79,16 @@ void ARDUINO_ISR_ATTR *__wrap_ps_malloc(size_t size) {
     return address;
 }*/
 
+#ifdef LILYGO_DEV
 TTGOClass *ttgo = TTGOClass::getWatch();
-//TFT_eSPI * tft = nullptr;
-//TFT_eSPI * tft = new TFT_eSPI();
 TFT_eSPI * tft = nullptr;
 PCF8563_Class * rtc = nullptr;
+#endif
+
+#ifdef M5_DEV
+M5Display * tft = nullptr;
+//PCF8563_Class * rtc = nullptr;
+#endif
 
 extern bool ntpSyncDone;
 //extern const char *ntpServer;
@@ -232,10 +243,16 @@ LunokIoT::LunokIoT() {
     // report initial memory
     FreeSpace();
     // Initialize lilygo lib (mandatory at this time)
+#ifdef LILYGO_DEV
     ttgo->begin();
     tft = ttgo->tft; // set convenient extern
-    
     rtc = ttgo->rtc; // set convenient extern
+#endif
+
+#ifdef M5_DEV
+    M5.begin();
+    tft = &M5.Lcd;
+#endif
     settings=new SystemSettings();
 
     // setup the tft orientation
@@ -309,7 +326,7 @@ LunokIoT::LunokIoT() {
     configTime(timezone*3600, daylight*3600, NTPWifiTask::ntpServer); // set ntp server query
     
     struct tm timeinfo;
-
+#ifdef LILYGO_DEV
     BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
     if (pdTRUE == done) {
         if ( ttgo->rtc->isValid() ) { // woa! RTC seems to guard the correct timedate from last execution :D
@@ -326,6 +343,7 @@ LunokIoT::LunokIoT() {
         }
         xSemaphoreGive(I2cMutex);
     }
+#endif
     SplashAnnounce("    Cleanup    ");
     DestroyOldFiles();
     //SplashAnnounce("      VFS      ");
@@ -558,7 +576,11 @@ void LunokIoT::LogRotate() {
 
 
     // reset all counters
+#ifdef LILYGO_DEV
     ttgo->bma->resetStepCounter();
+#elif defined(M5_DEV)
+    lSysLog("@TODO M5 support for BMA\n");
+#endif
     beginStepsBMAActivity=0; // sorry current activity is discarded
     beginBMAActivity=0;
     
@@ -692,7 +714,11 @@ void LunokIoT::DestroyWiFi() {
 
 LoTWiFi * LunokIoT::CreateWiFi() {
     LoTWiFi * response = new LoTWiFi();
+#ifdef LILYGO_DEV
     response->AddTask(new NTPWifiTask(rtc));
+#elif defined(M5_DEV)
+    lNetLog("CreateWiFi cannot add NTP task due no M5 RTC support @TODO\n");
+#endif
     response->AddTask(new GeoIPWifiTask());
     response->AddTask(new WeatherWifiTask());
     if ( false == NVS.getInt("WifiEnabled") ) {

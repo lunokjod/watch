@@ -90,13 +90,13 @@ bool ThemeApplication::Tick() {
                 themeButton[i]->Interact(touched,touchX,touchY);
 
                 themeButton[i]->canvas->fillSprite(CanvasWidget::MASK_COLOR);
-                themeButton[i]->canvas->fillCircle(40,40,30,canvas->color24to16(AllColorPaletes[i].colors[0]));
+                themeButton[i]->canvas->fillCircle(40,40,30,Get16BitFromRGB(AllColorPaletes[i].colors[0]));
                 int offColor = 0;
                 for(int y=20;y<=60;y+=20) {
                     for(int x=20;x<=60;x+=20) {
                         offColor++;
                         if ( offColor >= AllColorPaletes[i].size ) { break; }
-                        themeButton[i]->canvas->fillCircle(x,y,9,canvas->color24to16(AllColorPaletes[i].colors[offColor]));
+                        themeButton[i]->canvas->fillCircle(x,y,9,Get16BitFromRGB(AllColorPaletes[i].colors[offColor]));
                     }
                 }
 

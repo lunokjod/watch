@@ -31,12 +31,12 @@
 #include "LogView.hpp"
 
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 using namespace LuI;
 #include "../resources.hpp"
 #include "../system/Datasources/database.hpp"
 #include "../system/Network/BLE.hpp"
-extern TFT_eSPI * tft;
+//extern TFT_eSPI * tft;
 static int totalKnowBLEDEvices = 0;
 
 
@@ -104,7 +104,7 @@ KnowLocationApplication::KnowLocationApplication() {
     screen->AddChild(bottomButtonContainer,0.35);
 
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=0;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
@@ -115,7 +115,7 @@ KnowLocationApplication::KnowLocationApplication() {
     // shrink button to left and empty control oversized (want button on left bottom)
     bottomButtonContainer->AddChild(backButton,0.45);
 
-    Button * setButton = new Button(LuI_Vertical_Layout,1);
+    LuI::Button * setButton = new LuI::Button(LuI_Vertical_Layout,1);
     setButton->AddChild(new Text("Set zone"));
 
     setButton->tapCallbackParam=this;

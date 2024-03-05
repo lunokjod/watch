@@ -18,14 +18,14 @@
 //
 
 //#include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "CanvasWidget.hpp"
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../../app/LogView.hpp"
 
-extern TTGOClass *ttgo; // ttgo lib
+//extern TTGOClass *ttgo; // ttgo lib
 
 CanvasWidget::CanvasWidget(int16_t h, int16_t w,int8_t colorDepth) {
     lUIDeepLog("%s new %p\n",__PRETTY_FUNCTION__,this);
@@ -44,10 +44,12 @@ bool CanvasWidget::RebuildCanvas(int16_t h, int16_t w, int8_t colorDepth) {
     canvas->setColorDepth(colorDepth);
     this->colorDepth = colorDepth;
     if ( nullptr == canvas->createSprite(w,h) ) { return false; }
-    
+
+    #ifdef LILYGO_DEV    
     if ( 4 == colorDepth ) {
         canvas->createPalette(default_4bit_palette);
     }
+    #endif
     canvas->fillSprite(MASK_COLOR); // by default use transparent
     return true;
 }

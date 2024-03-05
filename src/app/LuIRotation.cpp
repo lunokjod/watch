@@ -29,14 +29,19 @@
 #include "../system/Datasources/kvo.hpp"
 #include "../system/SystemEvents.hpp"
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
 
+#ifdef LILYGO_DEV
+#include <LilyGoWatch.h>
+extern TFT_eSPI * tft;
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
 
 using namespace LuI;
 
 extern uint8_t bmaRotation;
 extern SemaphoreHandle_t UISemaphore;
-extern TFT_eSPI * tft;
 
 LuIRotateApplication::~LuIRotateApplication() {
     if ( nullptr != ScreenRotateEvent ) { delete ScreenRotateEvent; }
@@ -61,7 +66,8 @@ uint8_t LuIRotateApplication::BMAtoTFTOrientation(uint8_t bma) {
 }
 void LuIRotateApplication::CleanPush(TFT_eSprite * frame, float angle) {
     const uint32_t frameDelay=20;
-    //tft->fillScreen(TFT_BLACK);
+
+    #ifdef LILYGO_DEV
     int16_t minX,minY,maxX,maxY;
     frame->getRotatedBounds(angle,&minX,&minY,&maxX,&maxY);
     // up
@@ -72,6 +78,9 @@ void LuIRotateApplication::CleanPush(TFT_eSprite * frame, float angle) {
     tft->fillRect(0,maxY,canvas->width(),canvas->height()-maxY,TFT_BLACK);
     // right
     tft->fillRect(maxX,minY,canvas->width()-maxX,maxY,TFT_BLACK);
+    #else
+    tft->fillScreen(TFT_BLACK);
+    #endif
     frame->pushRotated(angle);
 
     delay(frameDelay);
@@ -139,7 +148,7 @@ LuIRotateApplication::LuIRotateApplication() {
     screen->AddChild(bottomButtonContainer,0.35);
 
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 #include "ScrollViewWidget.hpp"
 
@@ -59,7 +59,7 @@ void ScrollViewWidget::DrawTo(TFT_eSprite * endCanvas) {
 
     //uint16_t lightColor = canvas->alphaBlend(128,btnBackgroundColor,TFT_WHITE);
     //canvas->fillSprite(lightColor);
-    canvas->fillSprite(canvas->color24to16(0x555f68));
+    canvas->fillSprite(TFT_DARKGREY); //Get16BitFromRGB(0x555f68));
     backroundView->DrawTo(canvas,offsetX,offsetY);
     /*
     if ( borders ) {

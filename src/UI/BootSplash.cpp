@@ -18,7 +18,15 @@
 //
 
 #include <Arduino.h>
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#endif
+
+#ifdef M5_DEV
+#include <M5Core2.h>
+#endif
+
+
 
 #include <esp_task_wdt.h> // used for reset task watchdog
 
@@ -38,7 +46,9 @@
 #include "../app/LogView.hpp" // lLog shit
 #include "../resources.hpp"
 
+#ifdef LILYGO_DEV
 extern TTGOClass *ttgo; // ttgo lib
+#endif
 
 bool bootLoop = true; // this stops the animation loop
 bool bootLoopEnds = false; // this is used by the splash to know bootLoop is ended
@@ -148,7 +158,7 @@ void SleepFanfare() {
     //lLog("FANFARE TIME: %d\n",millis()-begin);
 }
 #endif
-
+/*
 void SplashMeanWhile(void *data) { // task to do boot animation
     bootLoop=true;
     lUILog("Splash loop begin\n");
@@ -189,7 +199,7 @@ void SplashMeanWhile(void *data) { // task to do boot animation
     bootLoopEnds=true;
     vTaskDelete(NULL);
 }
-
+*/
 void SplashBootMode(const char *what) {
     tft->setTextColor(ThCol(boot_splash_foreground),ThCol(boot_splash_background));
     tft->setTextDatum(TL_DATUM);
@@ -204,8 +214,12 @@ void SplashAnnounce(const char * what) {
 
 void SplashAnnounce() {
     bootLoop=true;
-    
-    ttgo->setBrightness(0); // low brightness
+    #ifdef LILYGO_DEV
+        ttgo->setBrightness(0); // low brightness
+    #elif M5_DEV
+        tft->setBrightness(0);
+    #endif
+
     tft->fillScreen(ThCol(boot_splash_background));
     // coords from gimp :) manual stetic-centered same as the group logo on telegram https://t.me/lunowatch!!! come with us if you read this!!! :)
     tft->drawXBitmap(52,73,img_lunokiot_logo_bits, img_lunokiot_logo_width,img_lunokiot_logo_height, ThCol(boot_splash_foreground));
@@ -227,13 +241,22 @@ void SplashAnnounce() {
     tft->drawString(buildNumberAsString, posX, posY);
 #endif
 
-    ttgo->setBrightness(0);
-    ttgo->openBL(); // turn on the lights!
-    for(int i=0;i<255;i++) {
-        ttgo->setBrightness(i);
-        delay(5);
-    }
-    ttgo->setBrightness(BaseBackLightBrightness); // default brightness
+    #ifdef LILYGO_DEV
+        ttgo->setBrightness(0);
+        ttgo->openBL(); // turn on the lights!
+        for(int i=0;i<255;i++) {
+            ttgo->setBrightness(i);
+            delay(5);
+        }
+        ttgo->setBrightness(BaseBackLightBrightness); // default brightness
+    #elif M5_DEV
+        tft->setBrightness(0);
+        for(int i=0;i<255;i++) {
+            tft->setBrightness(i);
+            delay(5);
+        }
+        tft->setBrightness(BaseBackLightBrightness); // default brightness        
+    #endif
 }
 
 
@@ -255,6 +278,10 @@ void SplashAnnounceBegin() { // user eyecandy
         bright++;
         delay(1000/255);
         if ( bright > 255 ) { break; }
-        ttgo->setBrightness(bright);
+        #ifdef LILYGO_DEV
+            ttgo->setBrightness(bright); // low brightness
+        #elif M5_DEV
+            tft->setBrightness(bright);
+        #endif
     }
 }

@@ -20,7 +20,7 @@
 #ifndef __LUNOKIOT__BLEMONITORDEVICE_APP__
 #define __LUNOKIOT__BLEMONITORDEVICE_APP__
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 #include "../system/Network.hpp"
 #include "../UI/AppTemplate.hpp"

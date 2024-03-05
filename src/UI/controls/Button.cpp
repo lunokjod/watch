@@ -24,9 +24,9 @@
 #include "Button.hpp"
 #include "../../app/LogView.hpp"
 #include "../UI.hpp"
-using namespace LuI;
+//using namespace LuI;
 
-void Button::Refresh(bool direct) {
+void LuI::Button::Refresh(bool direct) {
     lLog("Button %p refresh canvas dirty: %s direct: %s\n",this,(dirty?"true":"false"),(direct?"true":"false"));
     // I'm not dirty, but called refresh, send the refresh to children trying to resolve
     if ( false == dirty ) {
@@ -76,12 +76,12 @@ void Button::Refresh(bool direct) {
     Container::Refresh(direct);
 }
 
-Button::Button(LuI_Layout layout, size_t childs,bool decorations,uint16_t color): Container(layout,childs),decorations(decorations),color(color) {
+LuI::Button::Button(LuI_Layout layout, size_t childs,bool decorations,uint16_t color): Container(layout,childs),decorations(decorations),color(color) {
     // a little stylished borders if decorations are enabled
     if ( decorations ) { border=5; }
 }
 
-void Button::EventHandler() {
+void LuI::Button::EventHandler() {
     // I'm a button, react about events (tapCallback mostly)
     Control::EventHandler();
     // Butt... I'm also a container, 'share the word' x'D with children :)

@@ -18,17 +18,23 @@
 //
 
 #include <Arduino.h>
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 #include "LogView.hpp" // log capabilities
 
 #include "Lamp.hpp"
 
 LampApplication::LampApplication() { canvas->fillSprite(TFT_WHITE); }
 bool LampApplication::Tick() {
+    #ifdef LILYGO_DEV
     if ( ttgo->bl->isOn() ) { // is the screen ON? 
         if (  255 > ttgo->bl->getLevel() ) { ttgo->setBrightness(ttgo->bl->getLevel()+1); }
     }
+    #endif
     if ( touched ) { LaunchWatchface(); }
     return false;
 }

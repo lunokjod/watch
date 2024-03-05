@@ -23,8 +23,11 @@
 #include "../UI/widgets/ButtonImageXBMWidget.hpp"
 #include "../UI/widgets/GraphWidget.hpp"
 #include "../resources.hpp"
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo; // ttgo lib
+#endif
 
 extern float PMUBattDischarge;
 extern float batteryRemainingTimeHours;
@@ -52,7 +55,11 @@ BatteryApplication::BatteryApplication() {
         //LaunchWatchface(); // battery full, return to watchface
     },PMU_EVENT_BATT_FULL);
 
+    #ifdef LILYGO_DEV
     charging = ttgo->power->isChargeing();
+    #else
+    charging = false;
+    #endif
     int64_t tmin = int64_t(axpTemp*10)-SCALE;
     int64_t tmax = int64_t(axpTemp*10)+SCALE;
     batteryTempMonitor = new GraphWidget(35,100,tmin,tmax);
@@ -89,7 +96,9 @@ bool BatteryApplication::Tick() {
         return false;
     }
     if (millis() > nextRedraw ) {
+        #ifdef LILYGO_DEV
         charging = ttgo->power->isChargeing();
+        #endif
         //if ( this->dirtyFrame ) { // only refresh when dirty
         canvas->fillSprite(TFT_BLACK);
         canvas->pushImage(TFT_WIDTH-90,40,img_battery_empty_160.width,img_battery_empty_160.height, (uint16_t *)img_battery_empty_160.pixel_data);

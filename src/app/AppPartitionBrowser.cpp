@@ -33,7 +33,7 @@
 #include <esp_ota_ops.h>
 #include "PartitionBrowser.hpp"
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 using namespace LuI;
 #include "../resources.hpp"
 //#include "../system/Datasources/database.hpp"
@@ -58,7 +58,7 @@ AppPartitionApplication::AppPartitionApplication(const esp_partition_t *part) {
     Container * viewContainer = new Container(LuI_Horizontal_Layout,2);
     viewContainer->border=5;
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=0;
     backButton->tapCallback=[](void * obj){ 
         LaunchApplication(new PartitionExplorerApplication());

@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 #include "ValueSelector.hpp"
 #include "../../app/LogView.hpp"

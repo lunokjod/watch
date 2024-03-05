@@ -23,7 +23,6 @@
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 #include "../lunokiot_config.hpp"
 
-#include "../app/LogView.hpp"   // for lLog functions
 #include "../resources.hpp"
 
 TemplateApplication::~TemplateApplication() { delete btnBack; }

@@ -22,7 +22,6 @@
 
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
-#include <LilyGoWatch.h>
 
 namespace LuI {
 

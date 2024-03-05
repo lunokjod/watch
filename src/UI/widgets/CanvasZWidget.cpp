@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "CanvasZWidget.hpp"
 #include "../UI.hpp"
 #include "../../app/LogView.hpp"
@@ -56,9 +56,9 @@ bool CanvasZWidget::SetScale(float z) {
     if ( this->z != z ) {
         this->z=z;
         if ( ( nullptr != canvas ) && ( NULL != canvas ) ) {
-            if ( true == canvas->created() ) {
+            //if ( true == canvas->created() ) {
                 return CanvasWidget::RebuildCanvas(canvas->height(),canvas->width(), colorDepth);
-            }
+            //}
         }
     }
     return false;

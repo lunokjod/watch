@@ -22,8 +22,9 @@
 
 #include <esp_timer.h>
 #include <esp_log.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#endif
 
 #include "../UI/AppTemplate.hpp"
 

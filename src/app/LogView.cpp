@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include <sqlite3.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "../UI/UI.hpp"
 #include "LogView.hpp"
 #include "../system/Datasources/database.hpp"

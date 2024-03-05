@@ -21,7 +21,7 @@
 #include "../lunokIoT.hpp"
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "Calendar.hpp"
 #include "../UI/widgets/ButtonTextWidget.hpp"
 #include <LittleFS.h>
@@ -105,7 +105,7 @@ CalendarApplication::CalendarApplication() {
         //lAppLog("Time: %02d:%02d:%02d %02d-%02d-%04d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon, 1900 + timeinfo.tm_year);
         year = 1900 + timeinfo.tm_year;
         lAppLog("Current year: %d\n", year);
-        if((year% 4) == FALSE && (year%100) != FALSE || (year%400) == FALSE) {
+        if((year% 4) == 0 && (year%100) != 0 || (year%400) == 0) {
             // It is a leap year and February has 29 days.
             days_in_month[1] = 29;
             lAppLog("Is a leap year\n");

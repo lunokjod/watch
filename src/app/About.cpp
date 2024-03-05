@@ -18,16 +18,15 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
+#include "lunokIoT.hpp"
 
 #include "Settings.hpp"
 #include "../lunokiot_config.hpp"
 #include "About.hpp"
 #include "LogView.hpp"
 
-extern TTGOClass *ttgo; // ttgo lib
+//extern TTGOClass *ttgo; // ttgo lib
 const unsigned long AboutBoxTextScrollDelay = 1000/12;
 const unsigned long AboutBoxTextScrollDelayScroll = 1000/24;
 //const unsigned long 
@@ -364,6 +363,36 @@ bool AboutApplication::Tick() {
 
         TemplateApplication::btnBack->DirectDraw();
         // Direct draw xD
+
+        // draw batt if needed (only when external supply)
+        //if ( false == vbusPresent ) {
+            if ( -1 != batteryPercent ) {
+                const int battWidth=25;
+                const int BattHeight=10;
+                const int BORDER=5;
+                #ifdef LILYGO_DEV
+                    const uint16_t BattColor = TFT_WHITE;
+                    const int startX=(TFT_WIDTH-BORDER)-battWidth;
+                    tft->drawRect(startX,BORDER,battWidth,BattHeight,BattColor); // batt
+                    tft->fillRect(startX+battWidth,BattHeight-2,3,BORDER-1,BattColor); // batt cap
+                //else if.....
+                #else
+                    lAppLog("WARNING: DRAWRECT NOT IMPLEMENTED ON THIS ARCHITECTURE 1\n");
+                    // @TODO must define:
+                    //const uint16_t BattColor = TFT_WHITE;
+                    //const int startX=(TFT_WIDTH-BORDER)-battWidth;
+                #endif
+                int pixelBat = (batteryPercent/100.0)*battWidth;
+                if ( pixelBat > 0 ) {
+                    #ifdef LILYGO_DEV
+                        tft->fillRect(startX,5,pixelBat,10,BattColor);
+                        tft->fillRect(startX+pixelBat+1,BORDER+1,battWidth-pixelBat,BattHeight-2,TFT_BLACK);
+                    #else
+                        lAppLog("@TODO WARNING: DRAWRECT NOT IMPLEMENTED ON THIS ARCHITECTURE 2\n");
+                    #endif
+                }
+            }
+        //}
 
         //TransformationMatrix imgTransf = { 0.46, 0.18, 0.06, 0.95 };
         //TFT_eSprite * transformedCopy = ShearSprite(perspectiveTextBuffer->canvas,imgTransf);

@@ -26,7 +26,15 @@ const uint8_t APPLICATIONCORE=UICORE;
 //#include <TTGO.h>
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#endif
+
+#ifdef M5_DEV
+#include <M5Core2.h>
+#include <M5Display.h>
+#endif
+
 #include <functional>
 #include "../system/Datasources/perceptron.hpp"
 #define tunable public // all settings accesable from outside

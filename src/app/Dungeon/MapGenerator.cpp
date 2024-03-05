@@ -21,7 +21,7 @@
 #include "Dungeon.hpp"
 #include "../LogView.hpp"
 
-extern TFT_eSPI * tft;
+//extern TFT_eSPI * tft;
 /*
 void DrawLevelGeneratorMap(levelDescriptor * currentLevel) {
     delay(10);

@@ -20,8 +20,13 @@
 #ifndef __LUNOKIOT__WIDGET__BASE__
 #define __LUNOKIOT__WIDGET__BASE__
 
-#include <LilyGoWatch.h>
+#include <Arduino.h>
 
+#ifdef LILYGO_DEV
+#include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 // https://github.com/Bodmer/TFT_eSPI/blob/master/examples/Sprite/Orrery/Orrery.ino
 class Drawable {
     public:

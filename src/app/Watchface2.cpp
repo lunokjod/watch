@@ -271,9 +271,9 @@ Watchface2Application::Watchface2Application() {
     // initialize corner buttons
     const int16_t ButtonSize = 45;
     const int16_t MenuButtonSize = 50;
-    bottomLeftButton = new ButtonImageXBMWidget(0, canvas->height()-ButtonSize, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); },img_battery_16_bits,img_battery_16_height,img_battery_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
-    topLeftButton = new ButtonImageXBMWidget(0, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); },img_settings_16_bits,img_settings_16_height,img_settings_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
-    topRightButton = new ButtonImageXBMWidget(canvas->width()-ButtonSize, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); },img_steps_16_bits,img_steps_16_height,img_steps_16_width,tft->color24to16(0x3565ff),TFT_BLACK,false);
+    bottomLeftButton = new ButtonImageXBMWidget(0, canvas->height()-ButtonSize, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new BatteryApplication()); },img_battery_16_bits,img_battery_16_height,img_battery_16_width,Get16BitFromRGB(0x3565ff),TFT_BLACK,false);
+    topLeftButton = new ButtonImageXBMWidget(0, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new SettingsApplication()); },img_settings_16_bits,img_settings_16_height,img_settings_16_width,Get16BitFromRGB(0x3565ff),TFT_BLACK,false);
+    topRightButton = new ButtonImageXBMWidget(canvas->width()-ButtonSize, 0, ButtonSize, ButtonSize, [](IGNORE_PARAM) { LaunchApplication(new StepsApplication()); },img_steps_16_bits,img_steps_16_height,img_steps_16_width,Get16BitFromRGB(0x3565ff),TFT_BLACK,false);
     bottomRightButton = new ButtonImageXBMWidget(canvas->width()-MenuButtonSize, canvas->height()-MenuButtonSize, MenuButtonSize, MenuButtonSize, [](IGNORE_PARAM) { LaunchApplication(new LuIMainMenuApplication()); },img_home_32_bits,img_home_32_height,img_home_32_width,TFT_DARKGREY,TFT_BLACK,false);
 
     // generate proceduraly the backface (no bitmap using space on flash)
@@ -297,14 +297,14 @@ Watchface2Application::Watchface2Application() {
     }
     
     // Buttons
-    outherSphere->canvas->fillRect(0, 0, middleX, middleY, tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(middleX, 0, middleX, middleY, tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(0, middleY, middleX, middleY, tft->color24to16(0x000408));
-    outherSphere->canvas->fillRect(middleX, middleY, middleX, middleY, tft->color24to16(0x102048));
+    outherSphere->canvas->fillRect(0, 0, middleX, middleY, Get16BitFromRGB(0x000408));
+    outherSphere->canvas->fillRect(middleX, 0, middleX, middleY, Get16BitFromRGB(0x000408));
+    outherSphere->canvas->fillRect(0, middleY, middleX, middleY, Get16BitFromRGB(0x000408));
+    outherSphere->canvas->fillRect(middleX, middleY, middleX, middleY, Get16BitFromRGB(0x102048));
     outherSphere->canvas->fillCircle(middleX, middleY, radius + (margin * 2), TFT_PINK);
 
     // outher circle
-    outherSphere->canvas->fillCircle(middleX, middleY, radius - margin, tft->color24to16(0x384058));
+    outherSphere->canvas->fillCircle(middleX, middleY, radius - margin, Get16BitFromRGB(0x384058));
     outherSphere->canvas->fillCircle(middleX, middleY, radius - (margin * 2), TFT_PINK);
 
     DescribeCircle(middleX, middleY, radius - (margin * 2.5), [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
@@ -315,7 +315,7 @@ Watchface2Application::Watchface2Application() {
     });
     DescribeCircle(middleX, middleY, radius - (margin * 2), [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
         if (0 == (angle % 30)) { // blue 5mins bumps
-            uint16_t color = tft->color24to16(0x384058);
+            uint16_t color = Get16BitFromRGB(0x384058);
             int heightLine=0;
             DescribeLine(x,y,cx,cy,[&,this](int x, int y, IGNORE_PARAM) {
                 heightLine++;
@@ -336,7 +336,7 @@ Watchface2Application::Watchface2Application() {
     // inner quarter right+down decoration (maybe future data panel)
     CanvasWidget * innerSphere = new CanvasWidget(canvas->width() / 2, canvas->height() / 2);
     innerSphere->canvas->fillSprite(TFT_PINK);
-    innerSphere->canvas->fillCircle(0, 0, 95, tft->color24to16(0x182858));
+    innerSphere->canvas->fillCircle(0, 0, 95, Get16BitFromRGB(0x182858));
     innerSphere->canvas->fillCircle(0, 0, 45, TFT_PINK);
     innerSphere->DumpTo(SphereBackground->canvas, middleX, middleY, TFT_PINK);
     delete innerSphere;
@@ -345,7 +345,7 @@ Watchface2Application::Watchface2Application() {
     // time mark
     DescribeCircle(middleX, middleY, radius - 1, [&, this](int x, int y, int cx, int cy, int angle, int step, void *payload) {
         int angleEnd = (markAngle + 90) % 360;
-        if ((angle > markAngle) && (angle < angleEnd)) { SphereBackground->canvas->fillCircle(x, y, 1, tft->color24to16(0x5890e8)); }
+        if ((angle > markAngle) && (angle < angleEnd)) { SphereBackground->canvas->fillCircle(x, y, 1, Get16BitFromRGB(0x5890e8)); }
         return true;
     });
     textBuffer = (char *)ps_malloc(255);

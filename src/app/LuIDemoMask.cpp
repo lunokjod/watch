@@ -31,13 +31,13 @@
 #include "LogView.hpp"
 
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 using namespace LuI;
 #include "../resources.hpp"
 #include "../../static/img_background_panda.c"
 #include "../../static/img_background_toon.c"
 
-extern TFT_eSPI * tft;
+//extern TFT_eSPI * tft;
 
 LuIExperimentMaskApplication::LuIExperimentMaskApplication() {
     directDraw=false; // disable direct draw meanwhile build the UI
@@ -72,7 +72,7 @@ LuIExperimentMaskApplication::LuIExperimentMaskApplication() {
     screen->AddChild(bottomButtonContainer,0.32);
 
     // add back button to dismiss
-    backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format

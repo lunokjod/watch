@@ -34,8 +34,8 @@ class WatchfaceBasic : public LunokIoTApplication {
         uint8_t dotSize=8;
         CanvasWidget * displayBuffer = nullptr;
         // RED
-        const uint32_t LedTimeColor=tft->color24to16(0xdd3030);
-        // BLUE const uint32_t LedTimeColor=tft->color24to16(0x005fff);
+        const uint32_t LedTimeColor=Get16BitFromRGB(0xdd3030);
+        // BLUE const uint32_t LedTimeColor=Get16BitFromRGB(0x005fff);
         int32_t refreshPoint=0;
         int32_t refreshPointDelayMS=0;
     public:

@@ -19,7 +19,11 @@
 
 #ifndef __LUNOKIOT__ANIMATION__FADE__
 #define __LUNOKIOT__ANIMATION__FADE__
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 void FadeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView);
 

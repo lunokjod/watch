@@ -17,8 +17,13 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 
-
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
+
+//#include <LilyGoWatch.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_event.h>
@@ -52,8 +57,14 @@
 
 extern SoftwareKeyboard *keyboardInstance;
 
+#ifdef LILYGO_DEV
 extern TTGOClass *ttgo; // ttgo library shit ;)
 extern TFT_eSPI * tft;
+#elif defined(M5_DEV)
+//extern TTGOClass *ttgo; // ttgo library shit ;)
+extern M5Display * tft;
+#endif
+
 bool UIlongTap=false; // used to trigger only once the long tap event
 bool UILongTapOverride=false; // disable long tap to task switcher feature
 extern const PROGMEM uint8_t screenshoot_sound_start[] asm("_binary_asset_screenshoot_sound_mp3_start");
@@ -108,7 +119,11 @@ void SetUserBrightness() {
         userBright=BaseBackLightBrightness;
         NVS.setInt("lBright",userBright,false);
     }
+#ifdef LILYGO_DEV
     if ( ttgo->bl->isOn() ) { ttgo->setBrightness(userBright); }
+#elif defined(M5_DEV)
+    tft->setBrightness(userBright);
+#endif
 }
 
 void ScreenWake() {
@@ -118,6 +133,7 @@ void ScreenWake() {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
     }
+    #ifdef LILYGO_DEV
     if ( false == ttgo->bl->isOn() ) {
         LoT().CpuSpeed(240);
         if ( ttgo->rtc->isValid() ) { ttgo->rtc->syncToSystem(); }
@@ -130,9 +146,10 @@ void ScreenWake() {
         //SystemEventBootEnd(); // perform a ready (and if all is ok, launch watchface)
         ttgo->bl->on();
         //tft->fillScreen(TFT_BLACK); // cleanup, better than show old watchface time! (missinformation)
-        esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
-        FPS = MAXFPS;
     }
+    #endif
+    esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_CONTINUE,nullptr, 0, LUNOKIOT_EVENT_IMPORTANT_TIME_TICKS);
+    FPS = MAXFPS;
     xSemaphoreGive(UISemaphore);
 }
 
@@ -142,15 +159,19 @@ void ScreenSleep() {
         lEvLog("Unable to obtain the Screen Lock!\n");
         return;
     }
+    #ifdef LILYGO_DEV
     if ( true == ttgo->bl->isOn() ) {
         ttgo->bl->off();
         lUILog("Put screen to sleep now\n");
         ttgo->displaySleep();
         delay(1);
         ttgo->touchToSleep();
+    #endif
         esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_STOP,nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         LoT().CpuSpeed(80);
+    #ifdef LILYGO_DEV
     }
+    #endif
     xSemaphoreGive(UISemaphore);
     
 }
@@ -353,6 +374,14 @@ TFT_eSprite * ScaleSprite(TFT_eSprite *view, float divisor) {
         }
     }
     return canvas;
+}
+
+uint16_t Get16BitFromRGB(uint32_t color888) {
+    uint16_t r = (color888 >> 8) & 0xF800;
+    uint16_t g = (color888 >> 5) & 0x07E0;
+    uint16_t b = (color888 >> 3) & 0x001F;
+
+    return (r | g | b);
 }
 
 void GetRGBFrom16Bit(const uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b) {
@@ -563,7 +592,14 @@ static void UIEventScreenRefresh(void* handler_args, esp_event_base_t base, int3
     int16_t newTouchX,newTouchY;
     bool newTouch=false;
     if( xSemaphoreTake( I2cMutex, LUNOKIOT_UI_SHORT_WAIT) == pdFALSE )  { return; }
-    newTouch = ttgo->getTouch(newTouchX,newTouchY);
+    #ifdef LILYGO_DEV
+        newTouch = ttgo->getTouch(newTouchX,newTouchY);
+    #elif defined(M5_DEV)
+        Point currPt = M5.Touch.getPressPoint();
+        newTouch = currPt.valid();
+        newTouchX = currPt.x;
+        newTouchY = currPt.y;
+    #endif
     xSemaphoreGive( I2cMutex );
     bool updateCoords=true;
     if ( ( !oldTouchState ) && ( newTouch ) ) { // thumb in
@@ -707,11 +743,15 @@ static void UIEventScreenTimeout(void* handler_args, esp_event_base_t base, int3
     if ( UINextTimeout > millis() ) { return; }
 
     // get a nap!
+#ifdef LILYGO_DEV
     if ( ttgo->bl->isOn() ) {
+#endif
         ScreenSleep();
         esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, SYSTEM_EVENT_STOP, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         DoSleep();
+#ifdef LILYGO_DEV
     }
+#endif
 }
 
 static void UIReadyEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
@@ -728,7 +768,9 @@ static void UITickTask(void* args) {
 
         if ( false == UIRunning ) { continue; }
         if ( systemSleep ) { continue; }
+#ifdef LILYGO_DEV
         if ( false == ttgo->bl->isOn() ) { continue; } // do not send UI tick when screen is off
+#endif
         esp_err_t what = esp_event_post_to(uiEventloopHandle, UI_EVENTS, UI_EVENT_TICK, nullptr, 0, LUNOKIOT_EVENT_DONTCARE_TIME_TICKS);
         // Dynamic FPS... the apps receives less events per second
         if (( ESP_OK != what )||( isDelayed )) {

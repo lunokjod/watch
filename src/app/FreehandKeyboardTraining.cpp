@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "LogView.hpp" // log capabilities
 #include "../UI/AppTemplate.hpp"
 #include "FreehandKeyboardTraining.hpp"
@@ -28,7 +28,7 @@
 #include <ArduinoNvs.h>
 //#include <WiFi.h>
 
-extern TTGOClass *ttgo;
+//extern TTGOClass *ttgo;
 #include "../resources.hpp"
 //#include "../static/img_trash_32.xbm"
 extern bool UILongTapOverride;

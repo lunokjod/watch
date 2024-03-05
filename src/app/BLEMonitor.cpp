@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoNvs.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "BLEMonitor.hpp"
 #include "../static/img_back_32.xbm"
 #include "../static/img_bluetooth_32.xbm"
@@ -120,7 +120,7 @@ bool BLEMonitorApplication::Tick() {
     UINextTimeout = millis() + UITimeout; // no sleep here
     if (millis() > nextRedraw) {
         rotateVal += 1;
-        canvas->fillSprite(canvas->color24to16(0x212121));
+        canvas->fillSprite(TFT_DARKGREY);
         canvas->fillCircle(120, 120, 30, TFT_BLACK);
         canvas->fillCircle(120, 120, 28, TFT_WHITE);
         canvas->fillCircle(120, 120, 24, TFT_BLUE);
@@ -156,11 +156,11 @@ bool BLEMonitorApplication::Tick() {
                             //lLog("DEV RSSI: %d\n",dev->rssi);
                             if ( seconds < 3) { // draw signal
                                 radius+=2;
-                                canvas->fillCircle(x,y,radius,canvas->color24to16(0x1825a9));
-                                canvas->fillCircle(x,y,radius-4,canvas->color24to16(0x212121));
+                                canvas->fillCircle(x,y,radius,TFT_YELLOW);
+                                canvas->fillCircle(x,y,radius-4,TFT_DARKGREY);
 
-                                canvas->fillCircle(x,y,radius-8,canvas->color24to16(0x1825a9));
-                                canvas->fillCircle(x,y,radius-12,canvas->color24to16(0x212121));
+                                canvas->fillCircle(x,y,radius-8,TFT_YELLOW);
+                                canvas->fillCircle(x,y,radius-12,TFT_DARKGREY);
                             } else if ( seconds > 77 ) { radius-=12;
                             } else if ( seconds > 69 ) { radius-=10;
                             } else if ( seconds > 62 ) { radius-=8;
@@ -168,7 +168,7 @@ bool BLEMonitorApplication::Tick() {
                             } else if ( seconds > 40 ) { radius-=3; }
                             canvas->fillCircle(x,y,radius-14,TFT_BLACK);
                             canvas->fillCircle(x,y,radius-16,TFT_WHITE);
-                            uint16_t finalColor = canvas->alphaBlend(alpha,canvas->color24to16(0x212121),TFT_BLUE);
+                            uint16_t finalColor = canvas->alphaBlend(alpha,TFT_DARKGREY,TFT_BLUE);
                             canvas->fillCircle(x,y,radius-18,finalColor);
                             if ( seconds < 5) { // draw signal
                                 canvas->setTextColor(TFT_BLACK);

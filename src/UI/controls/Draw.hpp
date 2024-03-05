@@ -22,7 +22,11 @@
 
 #include "../../lunokIoT.hpp"
 #include "base/Control.hpp"
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 #include "base/Control.hpp"
 
 namespace LuI {

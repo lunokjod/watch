@@ -17,12 +17,19 @@
 // LunokWatch. If not, see <https://www.gnu.org/licenses/>. 
 //
 #include "LunoNoid.hpp"
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+extern TFT_eSPI * tft;
+extern TTGOClass *ttgo;
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
+
 #include "LogView.hpp"   // for lLog functions
 #include <esp_task_wdt.h>
 extern SemaphoreHandle_t I2cMutex;
-extern TTGOClass *ttgo;
 #include "../static/img_nanonoid_level69.c"
 #include "../static/img_nanonoid_level4.c"
 #include "../static/img_nanonoid_level3.c"
@@ -41,7 +48,8 @@ const uint16_t * LunoNoidLevelData[] = {
 
 LunoNoidGameApplication::~LunoNoidGameApplication() {
     if ( nullptr != enemyMap ) {
-        if ( enemyMap->created() ) { enemyMap->deleteSprite(); }
+        //if ( enemyMap->created() ) { enemyMap->deleteSprite(); }
+        enemyMap->deleteSprite();
         delete enemyMap;
         enemyMap=nullptr;
     }
@@ -69,10 +77,11 @@ LunoNoidGameApplication::LunoNoidGameApplication() {
 void LunoNoidGameApplication::GatherButtons() {
     // launch ball on touch
     if ( touched ) { stickyBall=false; }
+    #ifdef LILYGO_DEV
     // get accel dta
-    Accel acc;
     BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_FAST_TIME_TICKS);
     if (pdTRUE != done) { return; }
+    Accel acc;
     bool res = ttgo->bma->getAccel(acc);
     xSemaphoreGive(I2cMutex);
     rollval = atan2(acc.x,acc.z) * RAD_TO_DEG;
@@ -97,6 +106,8 @@ void LunoNoidGameApplication::GatherButtons() {
     if ( 0 > pitchval ) { pitchval+=360; } // dirty module
     else if ( pitchval > 360 ) { pitchval-=360; }
     //lLog("PITCH: %f ROLL: %f\n",pitchval,rollval);
+    #endif
+
 }
 
 bool LunoNoidGameApplication::Tick() {

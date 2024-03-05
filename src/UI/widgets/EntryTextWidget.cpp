@@ -18,7 +18,7 @@
 //
 
 #include <Arduino.h>
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 #include "lunokiot_config.hpp"
 #include "EntryTextWidget.hpp"
 #include "ButtonTextWidget.hpp"

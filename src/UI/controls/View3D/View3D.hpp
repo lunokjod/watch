@@ -42,7 +42,7 @@ namespace LuI {
             //void ThreadedRender();
             //bool renderLoop=true;
             uint16_t MaskColor=TFT_WHITE;
-            typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK, NODRAW} RENDER;
+            typedef enum { FULL = 0, FLAT, WIREFRAME, FLATWIREFRAME, MASK, nodraw } RENDER;
             RENDER RenderMode = FULL; 
             void SetBackgroundColor(uint16_t color) { viewBackgroundColor=color; }
             OrderedFace3D * meshOrderedFaces= { nullptr };

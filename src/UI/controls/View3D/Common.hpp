@@ -20,7 +20,11 @@
 #ifndef __LUNOKIOT__MESH_DEFINES___
 #define __LUNOKIOT__MESH_DEFINES___
 #include <Arduino.h>
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 namespace LuI {
     #define ENGINE_INVALID_VALUE -666

@@ -30,7 +30,7 @@
 #include "../UI/controls/Buffer.hpp"
 #include "LogView.hpp"
 #include "../UI/UI.hpp"
-#include <LilyGoWatch.h>
+
 using namespace LuI;
 #include "../resources.hpp"
 
@@ -38,7 +38,7 @@ using namespace LuI;
 #include "LuIGameOfLife.hpp"
 #include "LuIDemoMask.hpp"
 
-extern TFT_eSPI * tft;
+
 #include "../../static/img_worldcollide_160.c"
 
 

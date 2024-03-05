@@ -24,8 +24,10 @@
 #include "../lunokIoT.hpp"
 #include <freertos/task.h>
 
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
 extern TTGOClass *ttgo;
+#endif
 extern SemaphoreHandle_t I2cMutex;
 
 GestureSettings::GestureSettings() {
@@ -48,11 +50,15 @@ GestureSettings::~GestureSettings() {
         delete UseDoubleTapSwitch;
         BaseType_t done = xSemaphoreTake(I2cMutex, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         if ( doubleTapSetting ) {
+            #ifdef LILYGO_DEV
             bool featureOK = ttgo->bma->enableWakeupInterrupt();
             if ( false == featureOK ) { lEvLog("BMA: Unable to Enable interrupt 'double tap'\n"); }
+            #endif
         } else {
+            #ifdef LILYGO_DEV
             bool featureOK = ttgo->bma->enableWakeupInterrupt(false);
             if ( false == featureOK ) { lEvLog("BMA: Unable to Disable interrupt 'double tap'\n"); }
+            #endif
         }
         xSemaphoreGive(I2cMutex);
     }

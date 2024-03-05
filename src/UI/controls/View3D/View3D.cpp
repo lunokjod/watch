@@ -420,7 +420,7 @@ void View3D::Render() {
     for(int i=0;i<orderdFaces;i++) {
         // don't render faces from bilboards
         if ( mesh[meshOrderedFaces[i].fromMesh]->bilboard ) { continue; }
-        if ( RENDER::NODRAW == RenderMode ) { continue; }
+        if ( RENDER::nodraw == RenderMode ) { continue; }
 
         int32_t tp0x = meshOrderedFaces[i].p0x;
         int32_t tp0y = meshOrderedFaces[i].p0y;
@@ -455,7 +455,7 @@ void View3D::Render() {
             canvas->drawTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,MaskColor);
         } else if ( RENDER::MASK == RenderMode ) {
             canvas->fillTriangle(tp0x,tp0y,tp1x,tp1y,tp2x,tp2y,MaskColor);
-        } // else NODRAW
+        } // else nodraw
         if ( nullptr != polygonCallback ) { (polygonCallback)(polygonCallbackParam,canvas,&meshOrderedFaces[i]); }
     }
     DrawBilboards();

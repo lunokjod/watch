@@ -53,7 +53,7 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     // 1.7 + 0.3 = 2.0 of quota (fine for 2 slots)
 
     // add back button to dismiss
-    Button *backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
     XBM * backButtonIcon = new XBM(img_backscreen_24_width,img_backscreen_24_height,img_backscreen_24_bits);
@@ -78,17 +78,17 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     //leftContainer->AddChild(basicButton);
 
     // -----> text button
-    Button *textButton = new Button(); // a basic default button
+    LuI::Button *textButton = new LuI::Button(); // a basic default button
     textButton->AddChild(new Text("Hello"));
     leftContainer->AddChild(textButton);
 
     // -----> text button with font
-    Button *textButtonAlt = new Button(); // a basic default button
+    LuI::Button *textButtonAlt = new LuI::Button(); // a basic default button
     textButtonAlt->AddChild(new Text("Yep!",TFT_YELLOW,false,1,&FreeSerifItalic12pt7b));
     leftContainer->AddChild(textButtonAlt);
 
     // -----> xbm 1 bit image button
-    Button *XBMButton = new Button();
+    LuI::Button *XBMButton = new LuI::Button();
     XBMButton->AddChild(new XBM(img_xbm_32_width,img_xbm_32_height,img_xbm_32_bits));
     leftContainer->AddChild(XBMButton);
 
@@ -96,19 +96,19 @@ DebugLuIButtonsApplication::DebugLuIButtonsApplication() {
     // right view side ----------------------------------->
 
     // -----> 16 bit image button with mask color
-    Button *ImageButton = new Button();
+    LuI::Button *ImageButton = new LuI::Button();
     ImageButton->AddChild(new Image(img_house_32.width,img_house_32.height,img_house_32.pixel_data,TFT_GREEN));
     rightContainer->AddChild(ImageButton);
 
     // -----> using Container properties of Button to add two controls
-    Button *CombinedButton = new Button(LuI_Vertical_Layout,2);
+    LuI::Button *CombinedButton = new LuI::Button(LuI_Vertical_Layout,2);
     CombinedButton->AddChild(new Image(img_house_32.width,img_house_32.height,img_house_32.pixel_data,TFT_GREEN),0.8);
     CombinedButton->AddChild(new Text("Home"),1.2);
     rightContainer->AddChild(CombinedButton);
 
 
     // -----> can compose with multiple other components, any control can be added
-    Button *Button3d = new Button(LuI_Vertical_Layout,2);
+    LuI::Button *Button3d = new LuI::Button(LuI_Vertical_Layout,2);
     Mesh3D * sparkles = new Mesh3D(&BackButtonMesh); // load 3D mesh
     View3D * sparklesView = new View3D(); // create view for 3D mesh
     sparklesView->SetGlobalScale(0.15);  // mesh methers=pixels 240Meters=240pixels

@@ -25,7 +25,7 @@
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
 
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 #include "../resources.hpp"
 
@@ -45,7 +45,7 @@
 //#include "ScreenTest.hpp"
 #include "KnowLocations.hpp"
 #include "LuiGamesMenu.hpp"
-//#include "LuaLauncher.hpp"
+#include "LuaLauncher.hpp"
 //#include "FileBrowser.hpp"
 #ifdef LUNOKIOT_LILYGO_TWATCH_BUTTON_FAULTY
 #include "Lamp.hpp"
@@ -55,10 +55,19 @@
 //#include "Dungeon/Dungeon.hpp"
 //#include "LuiChess.hpp"
 #include "MostUsedApps.hpp"
+#include "Provisioning2.hpp"
+#include "FreehandKeyboardSetup.hpp"
+#include "NuKeyboard.hpp"
+
 using namespace LuI;
 const IconMenuEntry LuIMenuItems[] = {
     
     {"Back", img_mainmenu_back_bits, img_mainmenu_back_height, img_mainmenu_back_width, [](IGNORE_PARAM) { LaunchWatchface(); } },
+//    {"About",img_mainmenu_about_bits, img_mainmenu_about_height, img_mainmenu_about_width, [](IGNORE_PARAM) { LaunchApplication(new AboutApplication()); } },
+//    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
+
+//    {"NuKeyb",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new NuKeyboardApplication()); } },
+//    {"Keyboard",img_mainmenu_keyboard_bits, img_mainmenu_keyboard_height, img_mainmenu_keyboard_width, [](void *unused) { LaunchApplication(new FreeHandKeyboardSetupApplication()); } },
 
 //    {"MostUsed",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIMostUsedApplication()); } },
 //    {"Chess",img_mainmenu_chess_bits, img_mainmenu_chess_height, img_mainmenu_chess_width, [](IGNORE_PARAM) { LaunchApplication(new ChessApplication()); } },
@@ -72,7 +81,7 @@ const IconMenuEntry LuIMenuItems[] = {
 
 //    {"Prov", img_mainmenu_provisioning_bits, img_mainmenu_provisioning_height, img_mainmenu_provisioning_width, [](void *unused) { LaunchApplication(new Provisioning2Application()); } },
 
-//    {"Lua",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new LuaLauncher(HelloworldLuaScript)); } },
+//    {"Lua",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuaLauncher(HelloworldLuaScript)); } },
 //    {"Screen",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [&](IGNORE_PARAM) { LaunchApplication(new ScreenTestApplication()); } },
 //    {"Rubik's",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuIExperimentRubiksApplication()); } },
 //    {"LuIDemos",img_mainmenu_debug_bits, img_mainmenu_debug_height, img_mainmenu_debug_width, [](IGNORE_PARAM) { LaunchApplication(new LuiExperimentApplication()); } },

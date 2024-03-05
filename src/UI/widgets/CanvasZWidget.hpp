@@ -20,10 +20,12 @@
 #ifndef __LUNOKIOT__CANVAS__Z_WIDGET___HEADER__
 #define __LUNOKIOT__CANVAS__Z_WIDGET___HEADER__
 #include <Arduino.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
 
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
-//#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 #include "lunokiot_config.hpp"
 #include "CanvasWidget.hpp"

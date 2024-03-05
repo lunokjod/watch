@@ -31,11 +31,18 @@
 #include "LogView.hpp"
 
 #include "../UI/UI.hpp"
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+extern TFT_eSPI * tft;
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+extern M5Display * tft;
+#endif
+
 using namespace LuI;
 #include "../resources.hpp"
 
-extern TFT_eSPI * tft;
+
 
 const uint8_t pixelSize=20;
 bool gameStart=false;
@@ -62,7 +69,7 @@ LuIDemoGameOfLifeApplication::LuIDemoGameOfLifeApplication() {
     screen->AddChild(bottomButtonContainer,0.32);
 
     // add back button to dismiss
-    backButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    backButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     backButton->border=10;
     backButton->tapCallback=[](void * obj){ LaunchWatchface(); }; // callback when tap
     // load icon in XBM format
@@ -145,7 +152,7 @@ LuIDemoGameOfLifeApplication::LuIDemoGameOfLifeApplication() {
     
     viewContainer->AddChild(gameOfLife);
 
-    Button *launchButton = new Button(LuI_Vertical_Layout,1,NO_DECORATION);
+    LuI::Button *launchButton = new LuI::Button(LuI_Vertical_Layout,1,NO_DECORATION);
     launchButton->border=10;
     launchButton->AddChild(new Text((char*)"Start/Stop"));
     launchButton->tapCallbackParam=gameOfLife;

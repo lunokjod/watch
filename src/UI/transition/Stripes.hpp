@@ -19,7 +19,12 @@
 
 #ifndef __LUNOKIOT__ANIMATION__STRIPE__
 #define __LUNOKIOT__ANIMATION__STRIPE__
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 void StripeTransition(TFT_eSprite * curentView, TFT_eSprite * nextView);
 

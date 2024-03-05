@@ -18,8 +18,12 @@
 //
 
 #include <Arduino.h>
+
+#ifdef LILYGO_DEV
 #include <LilyGoWatch.h>
-#include <libraries/TFT_eSPI/TFT_eSPI.h>
+#elif defined(M5_DEV)
+#include <M5Core2.h>
+#endif
 
 //#include <libraries/TFT_eSPI/TFT_eSPI.h>
 //extern TFT_eSPI *tft;

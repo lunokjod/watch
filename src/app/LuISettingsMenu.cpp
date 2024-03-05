@@ -25,7 +25,7 @@
 #include "../UI/controls/Text.hpp"
 #include "LogView.hpp"
 
-#include <LilyGoWatch.h>
+//#include <LilyGoWatch.h>
 
 #include "../resources.hpp"
 #include "LuIMainMenu.hpp"

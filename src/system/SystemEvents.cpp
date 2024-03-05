@@ -1289,7 +1289,7 @@ static void AXPInterruptController(void *args) {
             taskEXIT_CRITICAL(&AXPMux);*/
             esp_event_post_to(systemEventloopHandler, SYSTEM_EVENTS, PMU_EVENT_PEK_SHORT, nullptr, 0, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
             continue;
-        } else if (ttgo->power->isPEKLongtPressIRQ()) {
+        } else if (ttgo->power->isPEKLongPressIRQ()) {
             ttgo->power->clearIRQ();
             lEvLog("AXP202: Event PEK Button long press\n");
             xSemaphoreGive(I2cMutex);
