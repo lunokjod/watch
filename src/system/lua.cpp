@@ -46,6 +46,11 @@ extern "C" {
     */
 
 
+    static int lua_wrapper_Debug(lua_State *lua_state) {
+        lRawLog("[LUA] Free System Heap: %d\n",esp_get_free_heap_size());
+        lRawLog("[LUA] Free Task Heap:   %d\n",uxTaskGetStackHighWaterMark(NULL));
+        return 0;
+    }
     static int lua_wrapper_Restart(lua_State *lua_state) {
         LaunchApplication(new ShutdownApplication(true));
         return 0;
@@ -69,7 +74,7 @@ extern "C" {
         lua_pushnumber(lua_state, (lua_Number) millis());
         return 1;
     }
-    static int lua_wrapper_Random(lua_State *lua_state) {
+    static int lua_wrapper_random(lua_State *lua_state) {
         long  floorVal = luaL_optnumber(lua_state, 1,0.0);
         long  maxVal = luaL_optnumber(lua_state, 2,1.0);
         lua_pushnumber(lua_state, (lua_Number) random(floorVal,maxVal));
@@ -93,11 +98,40 @@ extern "C" {
         int32_t y0 = luaL_checkinteger(lua_state, 2);
         int32_t r = luaL_checkinteger(lua_state, 3);
         uint32_t color = luaL_checkinteger(lua_state, 4);
+        luaL_checktype(lua_state, 5, LUA_TBOOLEAN);
+        bool fill = lua_toboolean(lua_state, 5);
 
         xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
         LunokIoTApplication * current = currentApplication;
         if ( nullptr != currentApplication ) {
-            currentApplication->canvas->drawCircle(x0,y0,r,color);
+            if ( fill ) {
+                currentApplication->canvas->fillCircle(x0,y0,r,color);
+            } else {
+                currentApplication->canvas->drawCircle(x0,y0,r,color);
+            }
+            currentApplication->dirty=true;
+        }
+        xSemaphoreGive( UISemaphore );
+        return 0;
+    }
+
+    static int lua_wrapper_tft_drawRect(lua_State *lua_state) {
+        int32_t x0 = luaL_checkinteger(lua_state, 1);
+        int32_t y0 = luaL_checkinteger(lua_state, 2);
+        int32_t x1 = luaL_checkinteger(lua_state, 3);
+        int32_t y1 = luaL_checkinteger(lua_state, 4);
+        uint32_t color = luaL_checkinteger(lua_state, 5);
+        luaL_checktype(lua_state, 6, LUA_TBOOLEAN);
+        bool fill = lua_toboolean(lua_state, 6);
+
+        xSemaphoreTake( UISemaphore, LUNOKIOT_EVENT_MANDATORY_TIME_TICKS);
+        LunokIoTApplication * current = currentApplication;
+        if ( nullptr != currentApplication ) {
+            if ( fill ) {
+                currentApplication->canvas->fillRect(x0,y0,x1,y1,color);
+            } else {
+                currentApplication->canvas->drawRect(x0,y0,x1,y1,color);
+            }
             currentApplication->dirty=true;
         }
         xSemaphoreGive( UISemaphore );
@@ -172,20 +206,24 @@ void LuaInit() {
     // arduino general
     lua.Lua_register("millis", &lua_wrapper_millis);
     lua.Lua_register("delay", &lua_wrapper_delay);
-    lua.Lua_register("random", &lua_wrapper_Random);
+    lua.Lua_register("random", &lua_wrapper_random);
 
-    // lwatch calls
+    // system (lwatch) calls
     lua.Lua_register("LaunchWatchface", &lua_wrapper_LaunchWatchface);
     lua.Lua_register("ScreenSleep", &lua_wrapper_ScreenSleep);
     lua.Lua_register("ScreenWake", &lua_wrapper_ScreenWake);
     lua.Lua_register("DoSleep", &lua_wrapper_DoSleep);
     lua.Lua_register("Shutdown", &lua_wrapper_Shutdown);
     lua.Lua_register("Restart", &lua_wrapper_Restart);
-    // UI calls
+    lua.Lua_register("Debug", &lua_wrapper_Debug);
+    // draw primitives
     lua.Lua_register("FillScreen", &lua_wrapper_tft_fillScreen);
     lua.Lua_register("DrawLine", &lua_wrapper_tft_drawLine);
     lua.Lua_register("DrawCircle", &lua_wrapper_tft_drawCircle);
+    lua.Lua_register("DrawRect", &lua_wrapper_tft_drawRect);
     lua.Lua_register("RGBTft", &lua_wrapper_tft_rgbTFTColor);
+    // @TODO UI calls
+    // @TODO GUI calls
 
 }
 void LuaRunTask(void *data) {
